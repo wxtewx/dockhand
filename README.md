@@ -47,6 +47,14 @@ Dockhand is licensed under the [Business Source License 1.1](LICENSE.txt) (BSL 1
 
 See [LICENSE.txt](LICENSE.txt) for full terms.
 
+
+<a href="https://buymeacoffee.com/dockhand" target="_blank">
+  <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
+       alt="Buy Me A Coffee"
+       height="40">
+</a>
+
+
 ## Links
 
 - **Website**: [https://dockhand.pro](https://dockhand.pro)
