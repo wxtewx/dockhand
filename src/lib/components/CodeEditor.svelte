@@ -214,7 +214,10 @@
 		variableMarkers?: VariableMarker[];
 	}
 
-	let { value = '', language = 'yaml', readonly = false, theme = 'dark', onchange, class: className = '', variableMarkers = [] }: Props = $props();
+	let { value = '', language = 'yaml', readonly = false, theme = 'dark', onchange, class: className = '', variableMarkers: variableMarkersProp = [] }: Props = $props();
+
+	// Keep markers reactive - destructured props with defaults lose reactivity
+	const variableMarkers = $derived(variableMarkersProp);
 
 	let container: HTMLDivElement;
 	let view: EditorView | null = null;

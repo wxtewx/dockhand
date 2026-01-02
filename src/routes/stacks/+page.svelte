@@ -1055,8 +1055,6 @@
 	onDestroy(() => {
 		document.removeEventListener('visibilitychange', handleVisibilityChange);
 		document.removeEventListener('resume', handleVisibilityChange);
-		errorTimeouts.forEach(id => clearTimeout(id));
-		errorTimeouts = [];
 	});
 </script>
 

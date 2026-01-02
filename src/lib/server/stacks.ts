@@ -263,24 +263,19 @@ export async function getStackComposeFile(
 ): Promise<{ success: boolean; content?: string; stackDir?: string; error?: string }> {
 	const stacksDir = getStacksDir();
 	const stackDir = join(stacksDir, stackName);
-	const composeFile = join(stackDir, 'docker-compose.yml');
 
-	const ymlFile = Bun.file(composeFile);
-	if (await ymlFile.exists()) {
-		return {
-			success: true,
-			content: await ymlFile.text(),
-			stackDir
-		};
-	}
+	// Check all common compose file names (Docker Compose v1 and v2 naming conventions)
+	const composeFileNames = ['docker-compose.yml', 'docker-compose.yaml', 'compose.yml', 'compose.yaml'];
 
-	const yamlFile = Bun.file(join(stackDir, 'docker-compose.yaml'));
-	if (await yamlFile.exists()) {
-		return {
-			success: true,
-			content: await yamlFile.text(),
-			stackDir
-		};
+	for (const fileName of composeFileNames) {
+		const file = Bun.file(join(stackDir, fileName));
+		if (await file.exists()) {
+			return {
+				success: true,
+				content: await file.text(),
+				stackDir
+			};
+		}
 	}
 
 	return {
@@ -1289,8 +1284,10 @@ export async function writeStackEnvFile(
 	const stacksDir = getStacksDir();
 	const envFilePath = join(stacksDir, stackName, '.env');
 
+	// SECURITY: Only write non-secret variables to .env file
+	// Secrets are stored in DB and injected via shell environment at runtime
 	const rawContent = variables
-		.filter(v => v.key?.trim())
+		.filter(v => v.key?.trim() && !v.isSecret)
 		.map(v => `${v.key.trim()}=${v.value}`)
 		.join('\n') + '\n';
 
@@ -1299,16 +1296,14 @@ export async function writeStackEnvFile(
 
 /**
  * Write raw environment content directly to the .env file (preserves comments/formatting)
+ *
+ * NOTE: Raw content should NOT contain secrets. Secrets are managed via the form view,
+ * stored in DB, and injected via shell environment at runtime.
  */
 export async function writeRawStackEnvFile(
 	stackName: string,
 	rawContent: string
 ): Promise<void> {
-	// Guard against writing masked secret placeholders (would corrupt the file)
-	if (rawContent.match(/^[A-Za-z_][A-Za-z0-9_]*=\*\*\*$/m)) {
-		throw new Error('Cannot write masked placeholder "***" to .env file - this would corrupt secret values');
-	}
-
 	const stacksDir = getStacksDir();
 	const stackDir = join(stacksDir, stackName);
 

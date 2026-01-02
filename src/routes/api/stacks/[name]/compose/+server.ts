@@ -49,11 +49,13 @@ export const PUT: RequestHandler = async ({ params, request, url, cookies }) => 
 
 		let result;
 		if (restart) {
-			// Deploy with docker compose up -d (only recreates changed services)
+			// Deploy with docker compose up -d --force-recreate
+			// Force recreate ensures env var changes are applied
 			result = await deployStack({
 				name,
 				compose: content,
-				envId: envIdNum
+				envId: envIdNum,
+				forceRecreate: true
 			});
 		} else {
 			// Just save the file without restarting

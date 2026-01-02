@@ -7,7 +7,7 @@
 	import CodeEditor, { type VariableMarker } from '$lib/components/CodeEditor.svelte';
 	import StackEnvVarsPanel from '$lib/components/StackEnvVarsPanel.svelte';
 	import { type EnvVar, type ValidationResult } from '$lib/components/StackEnvVarsEditor.svelte';
-	import { Layers, Save, Play, Code, GitGraph, Loader2, AlertCircle, X, Sun, Moon, TriangleAlert, ChevronsLeft, ChevronsRight, Variable, HelpCircle, GripVertical, FolderOpen } from 'lucide-svelte';
+	import { Layers, Save, Play, Code, GitGraph, Loader2, AlertCircle, X, Sun, Moon, TriangleAlert, ChevronsLeft, ChevronsRight, Variable, HelpCircle, GripVertical, FolderOpen, Copy, Check } from 'lucide-svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { currentEnvironment, appendEnvParam } from '$lib/stores/environment';
 	import { focusFirstInput } from '$lib/utils';
@@ -32,6 +32,7 @@
 	let newStackName = $state('');
 	let loading = $state(false);
 	let saving = $state(false);
+	let savingWithRestart = $state(false); // Track which save action is in progress
 	let error = $state<string | null>(null);
 	let loadError = $state<string | null>(null);
 	let errors = $state<{ stackName?: string; compose?: string }>({});
@@ -56,6 +57,15 @@
 
 	// Stack location (for edit mode)
 	let stackLocation = $state<string | null>(null);
+	let pathCopied = $state(false);
+
+	function copyPath() {
+		if (stackLocation) {
+			navigator.clipboard.writeText(stackLocation);
+			pathCopied = true;
+			setTimeout(() => pathCopied = false, 2000);
+		}
+	}
 
 	// CodeEditor reference for explicit marker updates
 	let codeEditorRef: CodeEditor | null = $state(null);
@@ -181,13 +191,18 @@ services:
 	const displayName = $derived(mode === 'edit' ? stackName : (newStackName || 'New stack'));
 
 	onMount(() => {
-		// Follow app theme from localStorage
-		const appTheme = localStorage.getItem('theme');
-		if (appTheme === 'dark' || appTheme === 'light') {
-			editorTheme = appTheme;
+		// Load saved editor theme, or fall back to app theme / system preference
+		const savedEditorTheme = localStorage.getItem('dockhand-editor-theme');
+		if (savedEditorTheme === 'dark' || savedEditorTheme === 'light') {
+			editorTheme = savedEditorTheme;
 		} else {
-			// Fallback to system preference
-			editorTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+			const appTheme = localStorage.getItem('theme');
+			if (appTheme === 'dark' || appTheme === 'light') {
+				editorTheme = appTheme;
+			} else {
+				// Fallback to system preference
+				editorTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+			}
 		}
 
 		// Load saved split ratio
@@ -395,6 +410,7 @@ services:
 		}
 
 		saving = true;
+		savingWithRestart = restart;
 		error = null;
 
 		// Prepare env vars for saving - syncs variables and rawContent
@@ -602,9 +618,20 @@ services:
 								{#if mode === 'create'}
 									Create a new Docker Compose stack
 								{:else if stackLocation}
-									<span class="flex items-center gap-1">
-										<FolderOpen class="w-3 h-3" />
-										<code class="bg-zinc-200 dark:bg-zinc-700 px-1 rounded text-2xs">{stackLocation}</code>
+									<span class="flex items-center gap-1.5">
+										<FolderOpen class="w-3.5 h-3.5" />
+										<code class="bg-zinc-200 dark:bg-zinc-700 px-1.5 py-0.5 rounded text-xs">{stackLocation}</code>
+										<button
+											onclick={copyPath}
+											class="p-0.5 rounded hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors"
+											title="Copy path"
+										>
+											{#if pathCopied}
+												<Check class="w-3.5 h-3.5 text-green-500" />
+											{:else}
+												<Copy class="w-3.5 h-3.5" />
+											{/if}
+										</button>
 									</span>
 								{:else}
 									Edit compose file and view stack structure
@@ -612,9 +639,11 @@ services:
 							</Dialog.Description>
 						</div>
 					</div>
+				</div>
 
+				<div class="flex items-center gap-2">
 					<!-- View toggle -->
-					<div class="flex items-center gap-0.5 bg-zinc-200 dark:bg-zinc-700 rounded-md p-0.5 ml-3">
+					<div class="flex items-center gap-0.5 bg-zinc-200 dark:bg-zinc-700 rounded-md p-0.5">
 						<button
 							class="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs transition-colors {activeTab === 'editor' ? 'bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100 shadow-sm' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'}"
 							onclick={() => activeTab = 'editor'}
@@ -630,9 +659,7 @@ services:
 							Graph
 						</button>
 					</div>
-				</div>
 
-				<div class="flex items-center gap-1">
 					<!-- Theme toggle (only in editor mode) -->
 					{#if activeTab === 'editor'}
 						<button
@@ -787,6 +814,7 @@ services:
 									validation={envValidation}
 									existingSecretKeys={mode === 'edit' ? existingSecretKeys : new Set()}
 									onchange={() => { markDirty(); debouncedValidate(); }}
+									theme={editorTheme}
 								/>
 							</div>
 						</div>
@@ -840,8 +868,8 @@ services:
 					</Button>
 				{:else}
 					<!-- Edit mode buttons -->
-					<Button variant="outline" onclick={() => handleSave(false)} disabled={saving || loading || !!loadError}>
-						{#if saving}
+					<Button variant="outline" class="w-24" onclick={() => handleSave(false)} disabled={saving || loading || !!loadError}>
+						{#if saving && !savingWithRestart}
 							<Loader2 class="w-4 h-4 mr-2 animate-spin" />
 							Saving...
 						{:else}
@@ -849,13 +877,13 @@ services:
 							Save
 						{/if}
 					</Button>
-					<Button onclick={() => handleSave(true)} disabled={saving || loading || !!loadError}>
-						{#if saving}
+					<Button class="w-36" onclick={() => handleSave(true)} disabled={saving || loading || !!loadError}>
+						{#if saving && savingWithRestart}
 							<Loader2 class="w-4 h-4 mr-2 animate-spin" />
-							Applying...
+							Restarting...
 						{:else}
 							<Play class="w-4 h-4 mr-2" />
-							Save & apply
+							Save & restart
 						{/if}
 					</Button>
 				{/if}

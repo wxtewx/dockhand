@@ -17,6 +17,7 @@
 		placeholder?: { key: string; value: string };
 		infoText?: string;
 		existingSecretKeys?: Set<string>;
+		theme?: 'light' | 'dark';
 		class?: string;
 		onchange?: () => void;
 	}
@@ -31,6 +32,7 @@
 		placeholder = { key: 'VARIABLE_NAME', value: 'value' },
 		infoText,
 		existingSecretKeys = new Set<string>(),
+		theme = 'dark',
 		class: className = '',
 		onchange
 	}: Props = $props();
@@ -44,7 +46,6 @@
 	let confirmClearOpen = $state(false);
 	let contentAreaRef: HTMLDivElement;
 	let parseWarnings = $state<string[]>([]);
-	let editorTheme = $state<'light' | 'dark'>('dark');
 	let hasMergedOnLoad = $state(false);
 
 	// Count of secrets (for display in hint)
@@ -370,9 +371,9 @@
 			</div>
 		{:else if secretCount > 0}
 			<!-- Text view hint about secrets (only shown when secrets exist) -->
-			<div class="flex items-start gap-2 px-2 py-1.5 rounded bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50">
-				<ShieldAlert class="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
-				<div class="text-2xs text-amber-700 dark:text-amber-300">
+			<div class="flex items-start gap-2 px-2.5 py-2 rounded bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50">
+				<ShieldAlert class="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+				<div class="text-xs text-amber-700 dark:text-amber-300">
 					<span class="font-medium">{secretCount} secret{secretCount === 1 ? '' : 's'} not shown.</span>
 					<span class="text-amber-600 dark:text-amber-400">Secrets are never written to disk and are injected via shell environment when the stack starts.</span>
 				</div>
@@ -429,7 +430,7 @@
 			<CodeEditor
 				value={rawContent}
 				language="dotenv"
-				theme={editorTheme}
+				theme={theme}
 				readonly={readonly}
 				onchange={handleTextChange}
 				class="h-full min-h-[200px] rounded-md overflow-hidden border border-zinc-200 dark:border-zinc-700"

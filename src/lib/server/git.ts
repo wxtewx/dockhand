@@ -58,7 +58,14 @@ async function buildGitEnv(credential: GitCredential | null): Promise<GitEnv> {
 	if (credential?.authType === 'ssh' && credential.sshPrivateKey) {
 		// Create a temporary SSH key file (use absolute path so SSH can find it)
 		const sshKeyPath = resolve(join(GIT_REPOS_DIR, `.ssh-key-${credential.id}`));
-		await Bun.write(sshKeyPath, credential.sshPrivateKey);
+
+		// Ensure SSH key ends with a newline (newer SSH versions are strict about this)
+		let keyContent = credential.sshPrivateKey;
+		if (!keyContent.endsWith('\n')) {
+			keyContent += '\n';
+		}
+
+		await Bun.write(sshKeyPath, keyContent);
 		// Ensure SSH key has correct permissions (0600 = owner read/write only)
 		// Bun.write's mode option doesn't always work reliably, so use chmodSync
 		chmodSync(sshKeyPath, 0o600);

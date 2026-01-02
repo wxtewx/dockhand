@@ -96,17 +96,18 @@ export const POST: RequestHandler = async ({ request, url, cookies }) => {
 			}
 
 			// Save environment variables
-			// NEW SIMPLIFIED: rawEnvContent contains ALL vars including secrets (with real values)
-			// Secrets are visually masked in the UI but stored with real values in .env file
+			// - rawEnvContent: non-secret vars with comments → .env file
+			// - envVars: ALL vars → DB (secrets stored for shell injection, non-secrets for metadata)
 			if (rawEnvContent) {
-				// Write raw content directly to .env file (includes secrets with real values)
+				// Write raw content to .env file (should NOT contain secrets)
 				await writeRawStackEnvFile(name, rawEnvContent);
-				// Save secret metadata to DB (for UI masking purposes)
-				if (envVars && Array.isArray(envVars) && envVars.length > 0) {
-					await saveStackEnvVarsToDb(name, envVars, envIdNum);
-				}
-			} else if (envVars && Array.isArray(envVars) && envVars.length > 0) {
-				// Fallback: generate from vars (no raw content provided)
+			}
+			// Save ALL vars to DB (secrets for shell injection at runtime)
+			if (envVars && Array.isArray(envVars) && envVars.length > 0) {
+				await saveStackEnvVarsToDb(name, envVars, envIdNum);
+			}
+			// Fallback: if no rawEnvContent, generate .env from non-secret vars
+			if (!rawEnvContent && envVars && Array.isArray(envVars) && envVars.length > 0) {
 				await saveStackEnvVars(name, envVars, envIdNum);
 			}
 
@@ -125,16 +126,18 @@ export const POST: RequestHandler = async ({ request, url, cookies }) => {
 			// First ensure the stack directory exists by saving compose file
 			await saveStackComposeFile(name, compose, true);
 
-			// NEW SIMPLIFIED: rawEnvContent contains ALL vars including secrets (with real values)
+			// - rawEnvContent: non-secret vars with comments → .env file
+			// - envVars: ALL vars → DB (secrets stored for shell injection, non-secrets for metadata)
 			if (rawEnvContent) {
-				// Write raw content directly to .env file (includes secrets with real values)
+				// Write raw content to .env file (should NOT contain secrets)
 				await writeRawStackEnvFile(name, rawEnvContent);
-				// Save secret metadata to DB (for UI masking purposes)
-				if (envVars && Array.isArray(envVars) && envVars.length > 0) {
-					await saveStackEnvVarsToDb(name, envVars, envIdNum);
-				}
-			} else {
-				// Fallback: generate from vars (no raw content provided)
+			}
+			// Save ALL vars to DB (secrets for shell injection at runtime)
+			if (envVars && Array.isArray(envVars) && envVars.length > 0) {
+				await saveStackEnvVarsToDb(name, envVars, envIdNum);
+			}
+			// Fallback: if no rawEnvContent, generate .env from non-secret vars
+			if (!rawEnvContent && envVars && Array.isArray(envVars) && envVars.length > 0) {
 				await saveStackEnvVars(name, envVars, envIdNum);
 			}
 		}
