@@ -58,6 +58,20 @@ body:
       placeholder: e.g. 1.0.14 352a295 (Jan 30, 2026)
     validations:
       required: true
+  - type: input
+    id: hawser-version
+    attributes:
+      label: Hawser version (if used)
+    validations:
+      required: false
+  - type:input
+    id: connection
+    attributes:
+      label: Connection mod
+      description: How you connect your Docker host to Dockhand
+      placeholder: socket/direct IP/hawser/hawser-edge
+    validations:
+      required: false
   - type: checkboxes
     id: required-checks
     attributes:
