@@ -84,6 +84,10 @@ let lineBuffer: Buffer = Buffer.alloc(0);
 let restartDelay = 1000;
 const MAX_RESTART_DELAY = 60000;
 
+// Ready-signal plumbing: resolved when Go sends {"type":"ready"}
+let readyResolve: (() => void) | null = null;
+let readyPromise: Promise<void> | null = null;
+
 // Dedup cache for events
 const recentEvents: Map<string, number> = new Map();
 // Disk warning cooldown per env
@@ -147,6 +151,8 @@ function handleLine(line: string): void {
 		case 'ready':
 			console.log('[SubprocessManager] Go worker ready');
 			restartDelay = 1000; // Reset backoff on successful start
+			readyResolve?.();
+			readyResolve = null;
 			break;
 
 		case 'metrics':
@@ -531,6 +537,9 @@ export async function startSubprocesses(): Promise<void> {
 	const workerPath = resolveWorkerPath();
 	console.log(`[SubprocessManager] Starting Go worker (${workerPath})...`);
 
+	// Set up ready promise BEFORE spawning so we don't miss the signal
+	readyPromise = new Promise<void>(resolve => { readyResolve = resolve; });
+
 	proc = spawn(workerPath, [], {
 		stdio: ['pipe', 'pipe', 'inherit']
 	});
@@ -540,6 +549,10 @@ export async function startSubprocesses(): Promise<void> {
 
 	// Handle process exit
 	proc.on('exit', (code) => {
+		// Clear stale ready promise if process exits before signalling ready
+		readyResolve = null;
+		readyPromise = null;
+
 		if (!isShuttingDown) {
 			console.warn(`[SubprocessManager] Go worker exited with code ${code}, restarting in ${restartDelay / 1000}s...`);
 			proc = null;
@@ -554,8 +567,18 @@ export async function startSubprocesses(): Promise<void> {
 		proc = null;
 	});
 
-	// Wait a moment for the process to start, then send configs
-	await new Promise(resolve => setTimeout(resolve, 100));
+	// Wait for Go to signal it's ready and reading stdin, then send configs.
+	// This fixes a race on DietPi where stdin closes transiently before the
+	// old blind 100ms wait ends, causing configure messages to be silently dropped.
+	try {
+		await Promise.race([
+			readyPromise,
+			new Promise<void>((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
+		]);
+	} catch {
+		console.warn('[SubprocessManager] Go worker ready timeout, sending configs anyway');
+	}
+	readyPromise = null;
 	await sendEnvironmentConfigs();
 
 	// Start dedup cleanup interval

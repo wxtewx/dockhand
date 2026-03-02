@@ -90,10 +90,11 @@ RUN rm -rf node_modules \
     && rm -rf node_modules/@types
 
 # Build Go collector
-FROM golang:1.24 AS go-builder
+FROM --platform=$BUILDPLATFORM golang:1.24 AS go-builder
+ARG TARGETARCH
 WORKDIR /app
 COPY collector/ ./collector/
-RUN cd collector && CGO_ENABLED=0 go build -o /app/bin/collection-worker .
+RUN cd collector && CGO_ENABLED=0 GOARCH=$TARGETARCH go build -o /app/bin/collection-worker .
 
 # -----------------------------------------------------------------------------
 # Stage 3: Final Image (Scratch + Custom Wolfi OS)
