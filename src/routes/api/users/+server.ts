@@ -20,7 +20,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
 
 	// When auth is enabled, require valid session (no specific permission needed to view users list)
 	if (auth.authEnabled && !auth.isAuthenticated) {
-		return json({ error: 'Authentication required' }, { status: 401 });
+		return json({ error: '需要登录' }, { status: 401 });
 	}
 	// Any authenticated user can view the users list
 	// Admin permissions are only needed for create/edit/delete operations
@@ -57,8 +57,8 @@ export const GET: RequestHandler = async ({ cookies }) => {
 		}));
 		return json(users);
 	} catch (error) {
-		console.error('Failed to get users:', error);
-		return json({ error: 'Failed to get users' }, { status: 500 });
+		console.error('获取用户列表失败：', error);
+		return json({ error: '获取用户列表失败' }, { status: 500 });
 	}
 };
 
@@ -71,19 +71,19 @@ export const POST: RequestHandler = async (event) => {
 	// When auth is enabled and user is logged in, check they can manage users
 	// (allow if no user logged in for initial setup when no users exist)
 	if (auth.authEnabled && auth.isAuthenticated && !await auth.canManageUsers()) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const { username, email, password, displayName } = await request.json();
 
 		if (!username || !password) {
-			return json({ error: 'Username and password are required' }, { status: 400 });
+			return json({ error: '用户名和密码为必填项' }, { status: 400 });
 		}
 
 		// Validate password strength
 		if (password.length < 8) {
-			return json({ error: 'Password must be at least 8 characters' }, { status: 400 });
+			return json({ error: '密码长度至少为 8 位' }, { status: 400 });
 		}
 
 		// Hash password
@@ -132,16 +132,16 @@ export const POST: RequestHandler = async (event) => {
 			autoLoggedIn: autoLoggedIn
 		}, { status: 201 });
 	} catch (error: any) {
-		console.error('Failed to create user:', error);
-		console.error('Error details:', {
+		console.error('创建用户失败：', error);
+		console.error('错误详情：', {
 			message: error.message,
 			code: error.code,
 			name: error.name,
 			stack: error.stack
 		});
 		if (error.message?.includes('UNIQUE constraint failed') || error.code === '23505' || (error as any).cause?.code === '23505') {
-			return json({ error: 'Username already exists' }, { status: 409 });
+			return json({ error: '用户名已存在' }, { status: 409 });
 		}
-		return json({ error: 'Failed to create user', details: error.message }, { status: 500 });
+		return json({ error: '创建用户失败', details: error.message }, { status: 500 });
 	}
 };

@@ -40,16 +40,16 @@ export const POST: RequestHandler = async ({ params }) => {
 				result = await triggerImagePrune(scheduleId);
 				break;
 			default:
-				return json({ error: 'Invalid schedule type' }, { status: 400 });
+				return json({ error: '无效的计划任务类型' }, { status: 400 });
 		}
 
 		if (!result.success) {
 			return json({ error: result.error }, { status: 400 });
 		}
 
-		return json({ success: true, message: 'Schedule triggered successfully' });
+		return json({ success: true, message: '计划任务触发成功' });
 	} catch (error: any) {
-		console.error('Failed to trigger schedule:', error);
+		console.error('触发计划任务失败:', error);
 		return json({ error: error.message }, { status: 500 });
 	}
 };

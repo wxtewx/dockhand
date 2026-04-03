@@ -18,7 +18,7 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('images', 'inspect', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -43,7 +43,7 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 		const dockerResponse = await exportImage(params.id, envIdNum);
 
 		if (!dockerResponse.body) {
-			return json({ error: 'No response body from Docker' }, { status: 500 });
+			return json({ error: 'Docker 未返回响应体' }, { status: 500 });
 		}
 
 		const extension = compress ? 'tar.gz' : 'tar';
@@ -77,7 +77,7 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 			});
 		}
 	} catch (error: any) {
-		console.error('Error exporting image:', error);
-		return json({ error: error.message || 'Failed to export image' }, { status: 500 });
+		console.error('导出镜像失败:', error);
+		return json({ error: error.message || '导出镜像失败' }, { status: 500 });
 	}
 };

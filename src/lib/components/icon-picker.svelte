@@ -41,7 +41,7 @@
 		<div class="space-y-3">
 			<Input
 				bind:value={searchQuery}
-				placeholder="Search icons..."
+				placeholder="搜索图标..."
 				class="h-8"
 			/>
 			<div class="grid grid-cols-8 gap-1 max-h-48 overflow-y-auto">
@@ -58,7 +58,7 @@
 				{/each}
 			</div>
 			{#if filteredIcons.length === 0}
-				<p class="text-sm text-muted-foreground text-center py-2">No icons found</p>
+				<p class="text-sm text-muted-foreground text-center py-2">未找到图标</p>
 			{/if}
 		</div>
 	</Popover.Content>

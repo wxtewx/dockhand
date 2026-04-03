@@ -31,19 +31,19 @@ export const POST: RequestHandler = async (event) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('images', 'push', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const { imageId, imageName, registryId, newTag } = await request.json();
 
 		if (!imageId || !registryId) {
-			return json({ error: 'Image ID and registry ID are required' }, { status: 400 });
+			return json({ error: '镜像 ID 和仓库 ID 为必填项' }, { status: 400 });
 		}
 
 		const registry = await getRegistry(registryId);
 		if (!registry) {
-			return json({ error: 'Registry not found' }, { status: 404 });
+			return json({ error: '未找到仓库' }, { status: 404 });
 		}
 
 		// Get the image info
@@ -56,7 +56,7 @@ export const POST: RequestHandler = async (event) => {
 		}
 
 		if (!sourceTag || sourceTag === '<none>:<none>') {
-			return json({ error: 'Image has no tag. Please provide a tag name.' }, { status: 400 });
+			return json({ error: '镜像没有标签，请提供标签名称。' }, { status: 400 });
 		}
 
 		// Extract just the image name (without registry prefix if any)
@@ -123,14 +123,14 @@ export const POST: RequestHandler = async (event) => {
 
 		const formatError = (error: any): string => {
 			const errorMessage = error.message || error || '';
-			let userMessage = errorMessage || 'Failed to push image';
+			let userMessage = errorMessage || '推送镜像失败';
 
 			if (error.statusCode === 401 || errorMessage.includes('401')) {
-				userMessage = 'Authentication failed. Check registry credentials.';
+				userMessage = '认证失败，请检查仓库凭据。';
 			} else if (error.statusCode === 404 || errorMessage.includes('404')) {
-				userMessage = 'Image not found';
+				userMessage = '未找到镜像';
 			} else if (errorMessage.includes('https') || errorMessage.includes('tls') || errorMessage.includes('certificate') || errorMessage.includes('x509')) {
-				userMessage = `TLS/HTTPS error. If your registry uses HTTP, add it to Docker's insecure-registries in /etc/docker/daemon.json`;
+				userMessage = `TLS/HTTPS 错误。如果你的仓库使用 HTTP，请在 /etc/docker/daemon.json 中将其添加到 Docker 的不安全仓库列表`;
 			}
 
 			return userMessage;
@@ -138,13 +138,13 @@ export const POST: RequestHandler = async (event) => {
 
 		// Core push logic — emit callback receives progress data objects
 		async function runPush(emit: (data: unknown) => void): Promise<void> {
-			emit({ status: 'tagging', message: 'Tagging image...' });
+			emit({ status: 'tagging', message: '正在标记镜像...' });
 			await tagImage(imageId, repo, tag, envIdNum);
-			emit({ status: 'pushing', message: 'Pushing to registry...' });
+			emit({ status: 'pushing', message: '正在推送到仓库...' });
 
 			if (edgeCheck.isEdge && edgeCheck.environmentId) {
 				if (!isEdgeConnected(edgeCheck.environmentId)) {
-					emit({ status: 'error', error: 'Edge agent not connected' });
+					emit({ status: 'error', error: '边缘代理未连接' });
 					return;
 				}
 
@@ -174,11 +174,11 @@ export const POST: RequestHandler = async (event) => {
 							},
 							onEnd: async () => {
 								await auditImage(event, 'push', imageId, imageName || targetTag, envIdNum, { targetTag, registry: registry.name });
-								emit({ status: 'complete', message: `Image pushed to ${targetTag}`, targetTag });
+								emit({ status: 'complete', message: `镜像已推送到 ${targetTag}`, targetTag });
 								resolve();
 							},
 							onError: (error: string) => {
-								console.error('Edge push error:', error);
+								console.error('边缘推送错误:', error);
 								emit({ status: 'error', error: formatError(error) });
 								reject(new Error(error));
 							}
@@ -190,7 +190,7 @@ export const POST: RequestHandler = async (event) => {
 			} else {
 				await pushImage(targetTag, authConfig, (progress) => emit(progress), envIdNum);
 				await auditImage(event, 'push', imageId, imageName || targetTag, envIdNum, { targetTag, registry: registry.name });
-				emit({ status: 'complete', message: `Image pushed to ${targetTag}`, targetTag });
+				emit({ status: 'complete', message: `镜像已推送到 ${targetTag}`, targetTag });
 			}
 		}
 
@@ -218,7 +218,7 @@ export const POST: RequestHandler = async (event) => {
 		})();
 		return json({ jobId: job.id });
 	} catch (error: any) {
-		console.error('Error setting up push:', error);
-		return json({ error: error.message || 'Failed to push image' }, { status: 500 });
+		console.error('设置推送失败:', error);
+		return json({ error: error.message || '推送镜像失败' }, { status: 500 });
 	}
 };

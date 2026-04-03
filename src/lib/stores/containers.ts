@@ -62,32 +62,32 @@ function createContainerStore() {
 		scheduleType: string,
 		cronExpression: string
 	): { label: string; tooltip: string } {
-		if (!cronExpression) return { label: 'on', tooltip: 'Auto-update enabled' };
+		if (!cronExpression) return { label: '开启', tooltip: '自动更新已启用' };
 
 		const parts = cronExpression.split(' ');
-		if (parts.length < 5) return { label: 'cron', tooltip: cronExpression };
+		if (parts.length < 5) return { label: '定时任务', tooltip: cronExpression };
 
 		const [min, hr, , , dow] = parts;
 		const hourNum = parseInt(hr);
 		const minNum = parseInt(min);
-		const ampm = hourNum >= 12 ? 'PM' : 'AM';
+		const ampm = hourNum >= 12 ? '下午' : '上午';
 		const hour12 = hourNum === 0 ? 12 : hourNum > 12 ? hourNum - 12 : hourNum;
 		const timeStr = `${hour12}:${minNum.toString().padStart(2, '0')} ${ampm}`;
 
 		if (scheduleType === 'daily' || dow === '*') {
-			return { label: 'daily', tooltip: `Daily at ${timeStr}` };
+			return { label: '每日', tooltip: `每日 ${timeStr}` };
 		}
 
 		if (scheduleType === 'weekly') {
-			const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+			const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 			const dayName = days[parseInt(dow)] || dow;
 			return {
 				label: dayName,
-				tooltip: `Every ${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][parseInt(dow)] || dow} at ${timeStr}`
+				tooltip: `每周${['周日', '周一', '周二', '周三', '周四', '周五', '周六'][parseInt(dow)] || dow} ${timeStr}`
 			};
 		}
 
-		return { label: 'cron', tooltip: cronExpression };
+		return { label: '定时任务', tooltip: cronExpression };
 	}
 
 	async function checkScannerSettings(envId: number | null) {
@@ -158,7 +158,7 @@ function createContainerStore() {
 				}
 			}
 		} catch (err) {
-			console.error('Failed to fetch auto-update settings:', err);
+			console.error('获取自动更新设置失败:', err);
 		}
 
 		patch({ autoUpdateSettings: settings });
@@ -183,7 +183,7 @@ function createContainerStore() {
 					environments.refresh();
 					return;
 				}
-				toast.error('Failed to load containers');
+				toast.error('加载容器失败');
 				return;
 			}
 			const data: ContainerInfo[] = await response.json();
@@ -192,8 +192,8 @@ function createContainerStore() {
 			// Fetch auto-update settings after containers load
 			await fetchAutoUpdateSettings(envId);
 		} catch (error) {
-			console.error('Failed to fetch containers:', error);
-			toast.error('Failed to load containers');
+			console.error('获取容器失败:', error);
+			toast.error('加载容器失败');
 		} finally {
 			patch({ loading: false });
 			fetchingContainers = false;
@@ -263,7 +263,7 @@ function createContainerStore() {
 			}
 		} catch (error: any) {
 			if (error?.name !== 'AbortError') {
-				console.error('Failed to fetch container stats:', error);
+				console.error('获取容器统计数据失败:', error);
 			}
 		} finally {
 			fetchingStats = false;

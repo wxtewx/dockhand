@@ -6,18 +6,18 @@ import { validateSession, hashPassword, isAuthEnabled } from '$lib/server/auth';
 // GET /api/profile - Get current user's profile
 export const GET: RequestHandler = async ({ cookies }) => {
 	if (!(await isAuthEnabled())) {
-		return json({ error: 'Authentication is not enabled' }, { status: 400 });
+		return json({ error: '未启用身份验证' }, { status: 400 });
 	}
 
 	const currentUser = await validateSession(cookies);
 	if (!currentUser) {
-		return json({ error: 'Not authenticated' }, { status: 401 });
+		return json({ error: '未登录' }, { status: 401 });
 	}
 
 	try {
 		const user = await getUser(currentUser.id);
 		if (!user) {
-			return json({ error: 'User not found' }, { status: 404 });
+			return json({ error: '用户不存在' }, { status: 404 });
 		}
 
 		// Derive isAdmin from role assignment
@@ -37,20 +37,20 @@ export const GET: RequestHandler = async ({ cookies }) => {
 			updatedAt: user.updatedAt
 		});
 	} catch (error) {
-		console.error('Failed to get profile:', error);
-		return json({ error: 'Failed to get profile' }, { status: 500 });
+		console.error('获取个人资料失败:', error);
+		return json({ error: '获取个人资料失败' }, { status: 500 });
 	}
 };
 
 // PUT /api/profile - Update current user's profile
 export const PUT: RequestHandler = async ({ request, cookies }) => {
 	if (!(await isAuthEnabled())) {
-		return json({ error: 'Authentication is not enabled' }, { status: 400 });
+		return json({ error: '未启用身份验证' }, { status: 400 });
 	}
 
 	const currentUser = await validateSession(cookies);
 	if (!currentUser) {
-		return json({ error: 'Not authenticated' }, { status: 401 });
+		return json({ error: '未登录' }, { status: 401 });
 	}
 
 	try {
@@ -58,7 +58,7 @@ export const PUT: RequestHandler = async ({ request, cookies }) => {
 		const existingUser = await getUser(currentUser.id);
 
 		if (!existingUser) {
-			return json({ error: 'User not found' }, { status: 404 });
+			return json({ error: '用户不存在' }, { status: 404 });
 		}
 
 		// Build update object - users can only update certain fields
@@ -70,18 +70,18 @@ export const PUT: RequestHandler = async ({ request, cookies }) => {
 		// Handle password change - require current password
 		if (data.newPassword) {
 			if (!data.currentPassword) {
-				return json({ error: 'Current password is required' }, { status: 400 });
+				return json({ error: '必须提供当前密码' }, { status: 400 });
 			}
 
 			if (data.newPassword.length < 8) {
-				return json({ error: 'Password must be at least 8 characters' }, { status: 400 });
+				return json({ error: '密码长度至少为 8 位' }, { status: 400 });
 			}
 
 			// Verify current password
 			const { verifyPassword } = await import('$lib/server/auth');
 			const isValid = await verifyPassword(data.currentPassword, existingUser.passwordHash);
 			if (!isValid) {
-				return json({ error: 'Current password is incorrect' }, { status: 400 });
+				return json({ error: '当前密码不正确' }, { status: 400 });
 			}
 
 			updateData.passwordHash = await hashPassword(data.newPassword);
@@ -92,7 +92,7 @@ export const PUT: RequestHandler = async ({ request, cookies }) => {
 		const user = await dbUpdateUser(currentUser.id, updateData);
 
 		if (!user) {
-			return json({ error: 'Failed to update profile' }, { status: 500 });
+			return json({ error: '更新个人资料失败' }, { status: 500 });
 		}
 
 		// Derive isAdmin from role assignment
@@ -111,7 +111,7 @@ export const PUT: RequestHandler = async ({ request, cookies }) => {
 			updatedAt: user.updatedAt
 		});
 	} catch (error: any) {
-		console.error('Failed to update profile:', error);
-		return json({ error: 'Failed to update profile' }, { status: 500 });
+		console.error('更新个人资料失败:', error);
+		return json({ error: '更新个人资料失败' }, { status: 500 });
 	}
 };

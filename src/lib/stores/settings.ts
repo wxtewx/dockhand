@@ -150,7 +150,7 @@ function createSettingsStore() {
 				});
 			}
 		} catch (error) {
-			console.error('Failed to save settings:', error);
+			console.error('保存设置失败:', error);
 		}
 	}
 
@@ -400,7 +400,7 @@ function formatTimePart(d: Date, includeSeconds = false): string {
 
 	if (cachedTimeFormat === '12h') {
 		const hour12 = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
-		const ampm = hours >= 12 ? 'PM' : 'AM';
+		const ampm = hours >= 12 ? '下午' : '上午';
 		return includeSeconds
 			? `${hour12}:${minutes}:${seconds} ${ampm}`
 			: `${hour12}:${minutes} ${ampm}`;

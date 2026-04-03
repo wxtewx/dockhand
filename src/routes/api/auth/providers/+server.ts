@@ -23,7 +23,7 @@ export const GET: RequestHandler = async () => {
 
 		// Local auth is available unless DISABLE_LOCAL_LOGIN is set
 		if (process.env.DISABLE_LOCAL_LOGIN !== 'true') {
-			providers.push({ id: 'local', name: 'Local', type: 'local' });
+			providers.push({ id: 'local', name: 'local', type: 'local' });
 		}
 
 		// Add enabled LDAP providers (enterprise only)
@@ -50,10 +50,10 @@ export const GET: RequestHandler = async () => {
 			defaultProvider: settings.defaultProvider || 'local'
 		});
 	} catch (error) {
-		console.error('Failed to get auth providers:', error);
+		console.error('获取身份验证提供商失败:', error);
 		const fallbackProviders = process.env.DISABLE_LOCAL_LOGIN === 'true'
 			? []
-			: [{ id: 'local', name: 'Local', type: 'local' }];
+			: [{ id: 'local', name: 'local', type: 'local' }];
 		return json({ providers: fallbackProviders });
 	}
 };

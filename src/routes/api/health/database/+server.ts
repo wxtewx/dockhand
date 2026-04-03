@@ -39,7 +39,7 @@ export const GET: RequestHandler = async () => {
 			}
 		});
 	} catch (error) {
-		const message = error instanceof Error ? error.message : 'Unknown error';
+		const message = error instanceof Error ? error.message : '未知错误';
 
 		return json(
 			{

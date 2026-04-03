@@ -56,7 +56,7 @@ export async function runEnvUpdateCheckJob(
 ): Promise<void> {
 	// Prevent concurrent execution for the same environment
 	if (runningUpdateChecks.has(environmentId)) {
-		console.log(`[EnvUpdateCheck] Environment ${environmentId} update check already running, skipping`);
+		console.log(`[环境更新检查] 环境 ${environmentId} 的更新检查正在运行，已跳过`);
 		return;
 	}
 
@@ -67,14 +67,14 @@ export async function runEnvUpdateCheckJob(
 	// Get environment info
 	const env = await getEnvironment(environmentId);
 	if (!env) {
-		console.error(`[EnvUpdateCheck] Environment ${environmentId} not found`);
+		console.error(`[环境更新检查] 未找到环境 ${environmentId}`);
 		return;
 	}
 
 	// Get settings
 	const config = await getEnvUpdateCheckSettings(environmentId);
 	if (!config) {
-		console.error(`[EnvUpdateCheck] No settings found for environment ${environmentId}`);
+		console.error(`[环境更新检查] 未找到环境 ${environmentId} 的配置`);
 		return;
 	}
 
@@ -83,7 +83,7 @@ export async function runEnvUpdateCheckJob(
 		scheduleType: 'env_update_check',
 		scheduleId: environmentId,
 		environmentId,
-		entityName: `Update: ${env.name}`,
+		entityName: `更新检查： ${env.name}`,
 		triggeredBy,
 		status: 'running'
 	});
@@ -93,20 +93,20 @@ export async function runEnvUpdateCheckJob(
 	});
 
 	const log = async (message: string) => {
-		console.log(`[EnvUpdateCheck] ${message}`);
+		console.log(`[环境更新检查] ${message}`);
 		await appendScheduleExecutionLog(execution.id, `[${new Date().toISOString()}] ${message}`);
 	};
 
 	try {
-		await log(`Starting update check for environment: ${env.name}`);
-		await log(`Auto-update mode: ${config.autoUpdate ? 'ON' : 'OFF'}`);
+		await log(`开始检查环境更新：${env.name}`);
+		await log(`自动更新模式：${config.autoUpdate ? '开启' : '关闭'}`);
 
 		// Clear pending updates at the start - we'll re-add as we discover updates
 		await clearPendingContainerUpdates(environmentId);
 
 		// Get all containers in this environment
 		const containers = await listContainers(true, environmentId);
-		await log(`Found ${containers.length} containers`);
+		await log(`找到 ${containers.length} 个容器`);
 
 		const updatesAvailable: UpdateInfo[] = [];
 		let checkedCount = 0;
@@ -120,27 +120,27 @@ export async function runEnvUpdateCheckJob(
 				const currentImageId = inspectData.Image;
 
 				if (!imageName) {
-					await log(`  [${container.name}] Skipping - no image name found`);
+					await log(`  [${container.name}] 已跳过 - 未找到镜像名称`);
 					continue;
 				}
 
 				if (isSystemContainer(imageName)) {
-					await log(`  [${container.name}] Skipping - system container`);
+					await log(`  [${container.name}] 已跳过 - 系统容器`);
 					continue;
 				}
 
 				checkedCount++;
-				await log(`  Checking: ${container.name} (${imageName})`);
+				await log(`  正在检查：${container.name} (${imageName})`);
 
 				const result = await checkImageUpdateAvailable(imageName, currentImageId, environmentId);
 
 				if (result.isLocalImage) {
-					await log(`    Local image - skipping update check`);
+					await log(`    本地镜像 - 跳过更新检查`);
 					continue;
 				}
 
 				if (result.error) {
-					await log(`    Error: ${result.error}`);
+					await log(`    错误：${result.error}`);
 					errorCount++;
 					continue;
 				}
@@ -156,28 +156,28 @@ export async function runEnvUpdateCheckJob(
 					});
 					// Add to pending table immediately - will be removed on successful update
 					await addPendingContainerUpdate(environmentId, container.id, container.name, imageName);
-					await log(`    UPDATE AVAILABLE`);
-					await log(`      Current: ${result.currentDigest?.substring(0, 24) || 'unknown'}...`);
-					await log(`      New:     ${result.registryDigest?.substring(0, 24) || 'unknown'}...`);
+					await log(`    发现可用更新`);
+					await log(`      当前版本：${result.currentDigest?.substring(0, 24) || '未知'}...`);
+					await log(`      最新版本：${result.registryDigest?.substring(0, 24) || '未知'}...`);
 				} else {
-					await log(`    Up to date`);
+					await log(`    已是最新版本`);
 				}
 			} catch (err: any) {
-				await log(`  [${container.name}] Error: ${err.message}`);
+				await log(`  [${container.name}] 错误：${err.message}`);
 				errorCount++;
 			}
 		}
 
 		// Summary
 		await log('');
-		await log('=== SUMMARY ===');
-		await log(`Total containers: ${containers.length}`);
-		await log(`Checked: ${checkedCount}`);
-		await log(`Updates available: ${updatesAvailable.length}`);
-		await log(`Errors: ${errorCount}`);
+		await log('=== 检查汇总 ===');
+		await log(`总容器数：${containers.length}`);
+		await log(`已检查：${checkedCount}`);
+		await log(`可更新：${updatesAvailable.length}`);
+		await log(`错误数：${errorCount}`);
 
 		if (updatesAvailable.length === 0) {
-			await log('All containers are up to date');
+			await log('所有容器均为最新版本');
 			// Pending updates already cleared at start, nothing to add
 			await updateScheduleExecution(execution.id, {
 				status: 'success',
@@ -195,8 +195,8 @@ export async function runEnvUpdateCheckJob(
 		// Build notification message with details
 		const updateList = updatesAvailable
 			.map(u => {
-				const currentShort = u.currentDigest?.substring(0, 12) || 'unknown';
-				const newShort = u.newDigest?.substring(0, 12) || 'unknown';
+				const currentShort = u.currentDigest?.substring(0, 12) || '未知';
+				const newShort = u.newDigest?.substring(0, 12) || '未知';
 				return `- ${u.containerName} (${u.imageName})\n  ${currentShort}... -> ${newShort}...`;
 			})
 			.join('\n');
@@ -204,7 +204,7 @@ export async function runEnvUpdateCheckJob(
 		if (config.autoUpdate) {
 			// Auto-update mode: actually update the containers with safe-pull flow
 			await log('');
-			await log('=== AUTO-UPDATE MODE ===');
+			await log('=== 自动更新模式 ===');
 
 			// Get scanner settings and vulnerability criteria
 			const scannerSettings = await getScannerSettings(environmentId);
@@ -213,11 +213,11 @@ export async function runEnvUpdateCheckJob(
 			// The vulnerabilityCriteria only controls whether to BLOCK updates, not whether to SCAN
 			const shouldScan = scannerSettings.scanner !== 'none';
 
-			await log(`Vulnerability criteria: ${vulnerabilityCriteria}`);
+			await log(`漏洞检测规则：${vulnerabilityCriteria}`);
 			if (shouldScan) {
-				await log(`Scanner: ${scannerSettings.scanner} (scan enabled)`);
+				await log(`扫描器：${scannerSettings.scanner} (已启用扫描)`);
 			}
-			await log(`Updating ${updatesAvailable.length} containers...`);
+			await log(`正在更新 ${updatesAvailable.length} 个容器...`);
 
 			let successCount = 0;
 			let failCount = 0;
@@ -228,35 +228,35 @@ export async function runEnvUpdateCheckJob(
 
 			for (const update of updatesAvailable) {
 				try {
-					await log(`\nUpdating: ${update.containerName}`);
+					await log(`\n正在更新：${update.containerName}`);
 
 					// SAFE-PULL FLOW
 					if (shouldScan && !isDigestBasedImage(update.imageName)) {
 						const tempTag = getTempImageTag(update.imageName);
-						await log(`  Safe-pull with temp tag: ${tempTag}`);
+						await log(`  使用临时标签安全拉取：${tempTag}`);
 
 						// Step 1: Pull new image
-						await log(`  Pulling ${update.imageName}...`);
+						await log(`  正在拉取 ${update.imageName}...`);
 						await pullImage(update.imageName, () => {}, environmentId);
 
 						// Step 2: Get new image ID
 						const newImageId = await getImageIdByTag(update.imageName, environmentId);
 						if (!newImageId) {
-							throw new Error('Failed to get new image ID after pull');
+							throw new Error('拉取后无法获取新镜像 ID');
 						}
-						await log(`  New image: ${newImageId.substring(0, 19)}`);
+						await log(`  新镜像：${newImageId.substring(0, 19)}`);
 
 						// Step 3: SAFETY - Restore original tag to old image
 						const [oldRepo, oldTag] = parseImageNameAndTag(update.imageName);
 						await tagImage(update.currentImageId, oldRepo, oldTag, environmentId);
-						await log(`  Restored original tag to safe image`);
+						await log(`  已将原始标签恢复到安全镜像`);
 
 						// Step 4: Tag new image with temp suffix
 						const [tempRepo, tempTagName] = parseImageNameAndTag(tempTag);
 						await tagImage(newImageId, tempRepo, tempTagName, environmentId);
 
 						// Step 5: Scan temp image
-						await log(`  Scanning for vulnerabilities...`);
+						await log(`  正在扫描漏洞...`);
 						let scanBlocked = false;
 						let blockReason = '';
 						let currentScannerResults: { scanner: string; critical: number; high: number; medium: number; low: number }[] = [];
@@ -278,7 +278,7 @@ export async function runEnvUpdateCheckJob(
 
 							if (scanResults.length > 0) {
 								const scanSummary = combineScanSummaries(scanResults);
-								await log(`  Scan: ${scanSummary.critical} critical, ${scanSummary.high} high, ${scanSummary.medium} medium, ${scanSummary.low} low`);
+								await log(`  扫描结果：严重 ${scanSummary.critical} 个，高危 ${scanSummary.high} 个，中危 ${scanSummary.medium} 个，低危 ${scanSummary.low}`);
 
 								// Capture per-scanner results for blocking info
 								currentScannerResults = scanResults.map(r => ({
@@ -319,16 +319,16 @@ export async function runEnvUpdateCheckJob(
 								}
 							}
 						} catch (scanErr: any) {
-							await log(`  Scan failed: ${scanErr.message}`);
+							await log(`  扫描失败：${scanErr.message}`);
 							scanBlocked = true;
-							blockReason = `Scan failed: ${scanErr.message}`;
+							blockReason = `扫描失败：${scanErr.message}`;
 						}
 
 						if (scanBlocked) {
 							// BLOCKED - Remove temp image
-							await log(`  UPDATE BLOCKED: ${blockReason}`);
+							await log(`  已阻止更新：${blockReason}`);
 							await removeTempImage(newImageId, environmentId);
-							await log(`  Removed blocked image - container stays safe`);
+							await log(`  已移除风险镜像 - 容器保持安全`);
 							blockedCount++;
 							blockedContainers.push({
 								name: update.containerName,
@@ -339,56 +339,56 @@ export async function runEnvUpdateCheckJob(
 						}
 
 						// APPROVED - Re-tag to original
-						await log(`  Scan passed, re-tagging...`);
+						await log(`  扫描通过，重新标记镜像...`);
 						await tagImage(newImageId, oldRepo, oldTag, environmentId);
 						try {
 							await removeTempImage(tempTag, environmentId);
 						} catch { /* ignore cleanup errors */ }
 					} else {
 						// Simple pull (no scanning or digest-based image)
-						await log(`  Pulling ${update.imageName}...`);
+						await log(`  正在拉取 ${update.imageName}...`);
 						await pullImage(update.imageName, () => {}, environmentId);
 					}
 
 					// Recreate container with full config passthrough
-					await log(`  Recreating container...`);
+					await log(`  正在重新创建容器...`);
 					const result = await recreateContainer(update.containerName, environmentId,
 						(msg) => { log(`  ${msg}`); });
-					if (!result.success) throw new Error(result.error || 'Container recreation failed');
+					if (!result.success) throw new Error(result.error || '容器重建失败');
 
-					await log(`  Updated successfully`);
+					await log(`  更新成功`);
 					successCount++;
 					updatedContainers.push(update.containerName);
 					// Remove from pending table - successfully updated
 					await removePendingContainerUpdate(environmentId, update.containerId);
 				} catch (err: any) {
-					await log(`  FAILED: ${err.message}`);
+					await log(`  失败：${err.message}`);
 					failCount++;
 					failedContainers.push(update.containerName);
 				}
 			}
 
 			await log('');
-			await log(`=== UPDATE COMPLETE ===`);
-			await log(`Updated: ${successCount}`);
-			await log(`Blocked: ${blockedCount}`);
-			await log(`Failed: ${failCount}`);
+			await log(`=== 更新完成 ===`);
+			await log(`更新成功：${successCount}`);
+			await log(`已阻止：${blockedCount}`);
+			await log(`更新失败：${failCount}`);
 
 			// Send notifications
 			if (blockedCount > 0) {
 				await sendEventNotification('auto_update_blocked', {
-					title: `${blockedCount} update(s) blocked in ${env.name}`,
+					title: `${env.name} 中有 ${blockedCount} 个更新已被阻止`,
 					message: blockedContainers.map(c => `- ${c.name}: ${c.reason}`).join('\n'),
 					type: 'warning'
 				}, environmentId);
 			}
 
 			const notificationMessage = successCount > 0
-				? `Updated ${successCount} container(s) in ${env.name}:\n${updatedContainers.map(c => `- ${c}`).join('\n')}${blockedCount > 0 ? `\n\nBlocked (${blockedCount}):\n${blockedContainers.map(c => `- ${c.name}`).join('\n')}` : ''}${failCount > 0 ? `\n\nFailed (${failCount}):\n${failedContainers.map(c => `- ${c}`).join('\n')}` : ''}`
-				: blockedCount > 0 ? `All updates blocked in ${env.name}` : `Update failed for all containers in ${env.name}`;
+				? `已更新 ${successCount} 个容器 (环境：${env.name})：\n${updatedContainers.map(c => `- ${c}`).join('\n')}${blockedCount > 0 ? `\n\n已阻止 (${blockedCount} 个):\n${blockedContainers.map(c => `- ${c.name}`).join('\n')}` : ''}${failCount > 0 ? `\n\n失败 (${failCount} 个):\n${failedContainers.map(c => `- ${c}`).join('\n')}` : ''}`
+				: blockedCount > 0 ? `${env.name} 中所有更新均已被阻止` : `${env.name} 中所有容器更新均失败`;
 
 			await sendEventNotification('batch_update_success', {
-				title: successCount > 0 ? `Containers updated in ${env.name}` : blockedCount > 0 ? `Updates blocked in ${env.name}` : `Container updates failed in ${env.name}`,
+				title: successCount > 0 ? `${env.name} 容器已更新` : blockedCount > 0 ? `${env.name} 更新已阻止` : `${env.name} 容器更新失败`,
 				message: notificationMessage,
 				type: successCount > 0 && failCount === 0 && blockedCount === 0 ? 'success' : successCount > 0 ? 'warning' : 'error'
 			}, environmentId);
@@ -421,12 +421,12 @@ export async function runEnvUpdateCheckJob(
 		} else {
 			// Check-only mode: just send notification
 			await log('');
-			await log('Check-only mode - sending notification about available updates');
+			await log('仅检查模式 - 正在发送可用更新通知');
 			// Pending updates already added as we discovered them
 
 			await sendEventNotification('updates_detected', {
-				title: `Container updates available in ${env.name}`,
-				message: `${updatesAvailable.length} update(s) available:\n${updateList}`,
+				title: `${env.name} 中发现容器更新`,
+				message: `发现 ${updatesAvailable.length} 个可用更新：\n${updateList}`,
 				type: 'info'
 			}, environmentId);
 
@@ -452,7 +452,7 @@ export async function runEnvUpdateCheckJob(
 			});
 		}
 	} catch (error: any) {
-		await log(`Error: ${error.message}`);
+		await log(`错误：${error.message}`);
 		await updateScheduleExecution(execution.id, {
 			status: 'failed',
 			completedAt: new Date().toISOString(),

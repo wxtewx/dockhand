@@ -11,11 +11,11 @@
 {#if compact}
 	<div class="flex items-center gap-2 text-muted-foreground py-1">
 		<Loader2 class="w-4 h-4 animate-spin opacity-50" />
-		<span class="text-xs">Connecting...</span>
+		<span class="text-xs">正在连接...</span>
 	</div>
 {:else}
 	<div class="flex flex-col items-center justify-center py-8 text-muted-foreground">
 		<Loader2 class="w-8 h-8 mb-2 animate-spin opacity-50" />
-		<span class="text-sm">Connecting to environment...</span>
+		<span class="text-sm">正在连接到环境...</span>
 	</div>
 {/if}

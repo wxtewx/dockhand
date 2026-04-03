@@ -117,7 +117,7 @@ function resolveWorkerPath(): string {
 	const dockerPath = '/app/bin/collection-worker';
 	if (existsSync(dockerPath)) return dockerPath;
 
-	throw new Error(`Go collection-worker not found at ${devPath}, ${prodPath}, or ${dockerPath}`);
+	throw new Error(`Go 采集工作进程未在 ${devPath}、${prodPath} 或 ${dockerPath} 路径找到`);
 }
 
 // ---------------------------------------------------------------------------
@@ -142,14 +142,14 @@ function handleLine(line: string): void {
 	try {
 		msg = JSON.parse(line);
 	} catch {
-		console.error('[SubprocessManager] Invalid JSON from Go worker:', line.substring(0, 200));
+		console.error('[子进程管理器] 来自 Go 工作进程的无效 JSON：', line.substring(0, 200));
 		return;
 	}
 	rssAfterOp('ipc_parse', parseBefore);
 
 	switch (msg.type) {
 		case 'ready':
-			console.log('[SubprocessManager] Go worker ready');
+			console.log('[子进程管理器] Go 工作进程已就绪');
 			restartDelay = 1000; // Reset backoff on successful start
 			readyResolve?.();
 			readyResolve = null;
@@ -173,9 +173,9 @@ function handleLine(line: string): void {
 
 		case 'error':
 			if (msg.envId) {
-				console.warn(`[SubprocessManager] Go worker error for env ${msg.envId}: ${msg.error}`);
+				console.warn(`[子进程管理器] 环境 ${msg.envId} 的 Go 工作进程错误：${msg.error}`);
 			} else {
-				console.error(`[SubprocessManager] Go worker error: ${msg.error}`);
+				console.error(`[子进程管理器] Go 工作进程错误：${msg.error}`);
 			}
 			break;
 	}
@@ -198,7 +198,7 @@ function handleEnvStatus(msg: GoMessage): void {
 	if (!msg.envId || msg.online === undefined) return;
 
 	const before = rssBeforeOp();
-	const envName = envNames.get(msg.envId) || `env-${msg.envId}`;
+	const envName = envNames.get(msg.envId) || `环境-${msg.envId}`;
 
 	containerEventEmitter.emit('env_status', {
 		envId: msg.envId,
@@ -209,27 +209,27 @@ function handleEnvStatus(msg: GoMessage): void {
 
 	// Log status changes
 	if (msg.online) {
-		console.log(`[SubprocessManager] Environment "${envName}" (${msg.envId}) is now online`);
+		console.log(`[子进程管理器] 环境 "${envName}" (${msg.envId}) 现已在线`);
 	} else {
-		console.warn(`[SubprocessManager] Environment "${envName}" (${msg.envId}) is offline${msg.error ? `: ${msg.error}` : ''}`);
+		console.warn(`[子进程管理器] 环境 "${envName}" (${msg.envId}) 已离线${msg.error ? `：${msg.error}` : ''}`);
 	}
 
 	// Send notifications for status changes
 	if (msg.online) {
 		sendEventNotification('environment_online', {
-			title: 'Environment online',
-			message: `Environment "${envName}" is now reachable`,
+			title: '环境已上线',
+			message: `环境 "${envName}" 现已可访问`,
 			type: 'success'
 		}, msg.envId).catch((err) => {
-			console.error('[SubprocessManager] Failed to send online notification:', err instanceof Error ? err.message : String(err));
+			console.error('[子进程管理器] 发送上线通知失败：', err instanceof Error ? err.message : String(err));
 		});
 	} else {
 		sendEventNotification('environment_offline', {
-			title: 'Environment offline',
-			message: `Environment "${envName}" is unreachable${msg.error ? `: ${msg.error}` : ''}`,
+			title: '环境已离线',
+			message: `环境 "${envName}" 无法访问${msg.error ? `：${msg.error}` : ''}`,
 			type: 'error'
 		}, msg.envId).catch((err) => {
-			console.error('[SubprocessManager] Failed to send offline notification:', err instanceof Error ? err.message : String(err));
+			console.error('[子进程管理器] 发送离线通知失败：', err instanceof Error ? err.message : String(err));
 		});
 	}
 	rssAfterOp('status', before);
@@ -279,14 +279,14 @@ async function handleContainerEvent(msg: GoMessage): Promise<void> {
 
 		containerEventEmitter.emit('event', savedEvent);
 	} catch (err) {
-		console.error('[SubprocessManager] Failed to save event:', err instanceof Error ? err.message : String(err));
+		console.error('[子进程管理器] 保存事件失败：', err instanceof Error ? err.message : String(err));
 	}
 	rssAfterOp('events_db', dbBefore);
 
 	// Sub-category: notification
 	const notifBefore = rssBeforeOp();
 	const actionLabel = action.startsWith('health_status')
-		? action.includes('unhealthy') ? 'Unhealthy' : 'Healthy'
+		? action.includes('unhealthy') ? '不健康' : '健康'
 		: action.charAt(0).toUpperCase() + action.slice(1);
 	const containerLabel = containerName || containerId.substring(0, 12);
 	const notificationType =
@@ -299,8 +299,8 @@ async function handleContainerEvent(msg: GoMessage): Promise<void> {
 					: 'info';
 
 	sendEnvironmentNotification(msg.envId, action, {
-		title: `Container ${actionLabel}`,
-		message: `Container "${containerLabel}" ${action}${image ? ` (${image})` : ''}`,
+		title: `容器 ${actionLabel}`,
+		message: `容器 "${containerLabel}" ${action}${image ? ` (${image})` : ''}`,
 		type: notificationType
 	}, image).catch(() => {});
 	rssAfterOp('events_notif', notifBefore);
@@ -312,7 +312,7 @@ async function handleDiskUsage(msg: GoMessage): Promise<void> {
 	if (!configuredEnvs.has(msg.envId)) return;
 
 	const before = rssBeforeOp();
-	const envName = envNames.get(msg.envId) || `env-${msg.envId}`;
+	const envName = envNames.get(msg.envId) || `环境-${msg.envId}`;
 
 	try {
 		const diskWarningEnabled = (await getEnvSetting('disk_warning_enabled', msg.envId)) ?? true;
@@ -335,8 +335,8 @@ async function handleDiskUsage(msg: GoMessage): Promise<void> {
 			const thresholdGb = (await getEnvSetting('disk_warning_threshold_gb', msg.envId)) ?? 50;
 			if (totalUsed > thresholdGb * GB) {
 				await sendEventNotification('disk_space_warning', {
-					title: 'High Docker disk usage',
-					message: `Environment "${envName}" is using ${formatSize(totalUsed)} of Docker disk space (threshold: ${thresholdGb} GB)`,
+					title: 'Docker 磁盘占用过高',
+					message: `环境 "${envName}" 已使用 ${formatSize(totalUsed)} 的 Docker 磁盘空间 (阈值：${thresholdGb} GB)`,
 					type: 'warning'
 				}, msg.envId);
 				lastDiskWarning.set(msg.envId, Date.now());
@@ -358,17 +358,17 @@ async function handleDiskUsage(msg: GoMessage): Promise<void> {
 			const diskPercentUsed = (totalUsed / dataSpaceTotal) * 100;
 			const threshold = (await getEnvSetting('disk_warning_threshold', msg.envId)) || 80;
 			if (diskPercentUsed >= threshold) {
-				console.log(`[SubprocessManager] Docker disk usage for ${envName}: ${diskPercentUsed.toFixed(1)}% (threshold: ${threshold}%)`);
+				console.log(`[[子进程管理器] ${envName} 的 Docker 磁盘使用率：${diskPercentUsed.toFixed(1)}% (阈值：${threshold}%)`);
 				await sendEventNotification('disk_space_warning', {
-					title: 'Disk space warning',
-					message: `Environment "${envName}" Docker disk usage is at ${diskPercentUsed.toFixed(1)}% (${formatSize(totalUsed)} used)`,
+					title: '磁盘空间警告',
+					message: `环境 "${envName}" 的 Docker 磁盘使用率已达 ${diskPercentUsed.toFixed(1)}% (已使用 ${formatSize(totalUsed)})`,
 					type: 'warning'
 				}, msg.envId);
 				lastDiskWarning.set(msg.envId, Date.now());
 			}
 		}
 	} catch (err) {
-		console.error(`[SubprocessManager] Failed to process disk usage for env ${msg.envId}:`, err instanceof Error ? err.message : String(err));
+		console.error(`[子进程管理器] 处理环境 ${msg.envId} 的磁盘使用率失败：`, err instanceof Error ? err.message : String(err));
 	}
 	rssAfterOp('disk', before);
 }
@@ -526,7 +526,7 @@ function readStdout(): void {
 
 	proc.stdout.on('error', (err) => {
 		if (!isShuttingDown) {
-			console.error('[SubprocessManager] stdout read error:', err.message);
+			console.error('[子进程管理器] 标准输出读取错误：', err.message);
 		}
 	});
 }
@@ -542,12 +542,12 @@ export async function startSubprocesses(): Promise<void> {
 	if (isShuttingDown) return;
 
 	if (process.env.DISABLE_METRICS === 'true' && process.env.DISABLE_EVENTS === 'true') {
-		console.log('[SubprocessManager] Metrics and events both disabled, skipping worker');
+		console.log('[子进程管理器] 指标和事件均已禁用，跳过工作进程');
 		return;
 	}
 
 	const workerPath = resolveWorkerPath();
-	console.log(`[SubprocessManager] Starting Go worker (${workerPath})...`);
+	console.log(`[子进程管理器] 正在启动 Go 工作进程 (${workerPath})...`);
 
 	// Set up ready promise BEFORE spawning so we don't miss the signal
 	readyPromise = new Promise<void>(resolve => { readyResolve = resolve; });
@@ -562,7 +562,7 @@ export async function startSubprocesses(): Promise<void> {
 	// it to exit — which looks like a mysterious restart loop on Raspberry Pi.
 	proc.stdin?.on('error', (err: NodeJS.ErrnoException) => {
 		if (!isShuttingDown) {
-			console.error('[SubprocessManager] stdin pipe error:', err.message);
+			console.error('[子进程管理器] 标准输入管道错误：', err.message);
 		}
 	});
 
@@ -576,7 +576,7 @@ export async function startSubprocesses(): Promise<void> {
 		readyPromise = null;
 
 		if (!isShuttingDown) {
-			console.warn(`[SubprocessManager] Go worker exited with code ${code}, restarting in ${restartDelay / 1000}s...`);
+			console.warn(`[子进程管理器] Go 工作进程退出，代码 ${code}，将在 ${restartDelay / 1000} 秒后重启...`);
 			proc = null;
 			configuredEnvs.clear();
 			setTimeout(() => startSubprocesses(), restartDelay);
@@ -585,7 +585,7 @@ export async function startSubprocesses(): Promise<void> {
 	});
 
 	proc.on('error', (err) => {
-		console.error('[SubprocessManager] Failed to start Go worker:', err.message);
+		console.error('[子进程管理器] 启动 Go 工作进程失败：', err.message);
 		proc = null;
 	});
 
@@ -595,10 +595,10 @@ export async function startSubprocesses(): Promise<void> {
 	try {
 		await Promise.race([
 			readyPromise,
-			new Promise<void>((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
+			new Promise<void>((_, reject) => setTimeout(() => reject(new Error('超时')), 5000))
 		]);
 	} catch {
-		console.warn('[SubprocessManager] Go worker ready timeout, sending configs anyway');
+		console.warn('[子进程管理器] Go 工作进程就绪超时，仍将发送配置');
 	}
 	readyPromise = null;
 	await sendEnvironmentConfigs();
@@ -651,7 +651,7 @@ export async function stopSubprocesses(): Promise<void> {
  */
 export function refreshSubprocessEnvironments(): void {
 	sendEnvironmentConfigs().catch(err => {
-		console.error('[SubprocessManager] Failed to refresh configs:', err instanceof Error ? err.message : String(err));
+		console.error('[子进程管理器] 刷新配置失败：', err instanceof Error ? err.message : String(err));
 	});
 }
 

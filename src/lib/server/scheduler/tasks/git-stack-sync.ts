@@ -39,12 +39,12 @@ export async function runGitStackSync(
 	});
 
 	const log = (message: string) => {
-		console.log(`[Git-sync] ${message}`);
+		console.log(`[Git 同步] ${message}`);
 		appendScheduleExecutionLog(execution.id, `[${new Date().toISOString()}] ${message}`);
 	};
 
 	try {
-		log(`Starting sync for stack: ${stackName}`);
+		log(`开始同步堆栈：${stackName}`);
 
 		// Deploy the git stack (only if there are changes)
 		const result = await deployGitStack(stackId, { force: false });
@@ -53,21 +53,21 @@ export async function runGitStackSync(
 
 		if (result.success) {
 			if (result.skipped) {
-				log(`No changes detected for stack: ${stackName}, skipping redeploy`);
+				log(`未检测到堆栈变更：${stackName}，跳过重新部署`);
 
 				// Send notification for skipped sync
 				await sendEventNotification('git_sync_skipped', {
-					title: 'Git sync skipped',
-					message: `Stack "${stackName}" sync skipped: no changes detected`,
+					title: '已跳过 Git 同步',
+					message: `堆栈 "${stackName}" 同步已跳过：未检测到变更`,
 					type: 'info'
 				}, envId);
 			} else {
-				log(`Successfully deployed stack: ${stackName}`);
+				log(`堆栈部署成功：${stackName}`);
 
 				// Send notification for successful sync
 				await sendEventNotification('git_sync_success', {
-					title: 'Git stack deployed',
-					message: `Stack "${stackName}" was synced and deployed successfully`,
+					title: 'Git 堆栈已部署',
+					message: `堆栈 "${stackName}" 已同步并成功部署`,
 					type: 'success'
 				}, envId);
 			}
@@ -80,10 +80,10 @@ export async function runGitStackSync(
 				details: { output: result.output }
 			});
 		} else {
-			throw new Error(result.error || 'Deployment failed');
+			throw new Error(result.error || '部署失败');
 		}
 	} catch (error: any) {
-		log(`Error: ${error.message}`);
+		log(`错误：${error.message}`);
 		await updateScheduleExecution(execution.id, {
 			status: 'failed',
 			completedAt: new Date().toISOString(),
@@ -94,8 +94,8 @@ export async function runGitStackSync(
 		// Send notification for failed sync
 		const envId = environmentId ?? undefined;
 		await sendEventNotification('git_sync_failed', {
-			title: 'Git sync failed',
-			message: `Stack "${stackName}" sync failed: ${error.message}`,
+			title: 'Git 同步失败',
+			message: `堆栈 "${stackName}" 同步失败：${error.message}`,
 			type: 'error'
 		}, envId);
 	}

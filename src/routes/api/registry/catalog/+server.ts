@@ -11,17 +11,17 @@ export const GET: RequestHandler = async ({ url }) => {
 		const lastParam = url.searchParams.get('last'); // For pagination
 
 		if (!registryId) {
-			return json({ error: 'Registry ID is required' }, { status: 400 });
+			return json({ error: '必须提供镜像仓库 ID' }, { status: 400 });
 		}
 
 		const registry = await getRegistry(parseInt(registryId));
 		if (!registry) {
-			return json({ error: 'Registry not found' }, { status: 404 });
+			return json({ error: '未找到该镜像仓库' }, { status: 404 });
 		}
 
 		// Docker Hub doesn't support catalog listing
 		if (registry.url.includes('docker.io') || registry.url.includes('hub.docker.com') || registry.url.includes('registry.hub.docker.com')) {
-			return json({ error: 'Docker Hub does not support catalog listing. Please use search instead.' }, { status: 400 });
+			return json({ error: 'Docker Hub 不支持目录列表，请使用搜索功能' }, { status: 400 });
 		}
 
 		const { baseUrl, orgPath, authHeader } = await getRegistryAuth(registry, 'registry:catalog:*');
@@ -47,12 +47,12 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		if (!response.ok) {
 			if (response.status === 401) {
-				return json({ error: 'Authentication failed. Please check your credentials.' }, { status: 401 });
+				return json({ error: '认证失败，请检查你的凭据' }, { status: 401 });
 			}
 			if (response.status === 404) {
-				return json({ error: 'Registry does not support V2 catalog API' }, { status: 404 });
+				return json({ error: '该镜像仓库不支持 V2 目录 API' }, { status: 404 });
 			}
-			return json({ error: `Registry returned error: ${response.status}` }, { status: response.status });
+			return json({ error: `镜像仓库返回错误：${response.status}` }, { status: response.status });
 		}
 
 		const data = await response.json();
@@ -96,21 +96,21 @@ export const GET: RequestHandler = async ({ url }) => {
 			}
 		});
 	} catch (error: any) {
-		console.error('Error fetching registry catalog:', error);
+		console.error('获取镜像仓库目录失败:', error);
 
 		if (error.code === 'ECONNREFUSED') {
-			return json({ error: 'Could not connect to registry' }, { status: 503 });
+			return json({ error: '无法连接到镜像仓库' }, { status: 503 });
 		}
 		if (error.code === 'ENOTFOUND') {
-			return json({ error: 'Registry host not found' }, { status: 503 });
+			return json({ error: '未找到镜像仓库主机' }, { status: 503 });
 		}
 		if (error.cause?.code === 'ERR_SSL_PACKET_LENGTH_TOO_LONG') {
-			return json({ error: 'SSL error: Registry may be using HTTP, not HTTPS. Try changing the URL to http://' }, { status: 503 });
+			return json({ error: 'SSL 错误：镜像仓库可能使用 HTTP 而非 HTTPS，请尝试将 URL 改为 http://' }, { status: 503 });
 		}
 		if (error.cause?.code === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE' || error.cause?.code === 'CERT_HAS_EXPIRED') {
-			return json({ error: 'SSL certificate error. Registry may have an invalid or self-signed certificate.' }, { status: 503 });
+			return json({ error: 'SSL 证书错误，镜像仓库可能使用无效或自签名证书' }, { status: 503 });
 		}
 
-		return json({ error: 'Failed to fetch catalog: ' + (error.message || 'Unknown error') }, { status: 500 });
+		return json({ error: '获取目录失败：' + (error.message || '未知错误') }, { status: 500 });
 	}
 };

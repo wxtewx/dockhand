@@ -17,14 +17,14 @@ import { authorize } from '$lib/server/authorize';
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('settings', 'manage')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const body = await request.json();
 
 		if (!body.url || typeof body.url !== 'string') {
-			return json({ error: 'Repository URL is required' }, { status: 400 });
+			return json({ error: '仓库 URL 为必填项' }, { status: 400 });
 		}
 
 		const result = await testRepositoryConfig({
@@ -35,7 +35,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 		return json(result);
 	} catch (error) {
-		console.error('Failed to test repository:', error);
-		return json({ success: false, error: 'Failed to test repository' }, { status: 500 });
+		console.error('测试仓库配置失败:', error);
+		return json({ success: false, error: '测试仓库配置失败' }, { status: 500 });
 	}
 };

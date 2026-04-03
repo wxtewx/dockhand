@@ -57,7 +57,7 @@ async function pullImageLocal(imageName: string, onProgress?: (line: string) => 
 
 	if (!response.ok) {
 		const text = await response.text();
-		throw new Error(`Failed to pull image: ${text}`);
+		throw new Error(`拉取镜像失败：${text}`);
 	}
 
 	const reader = response.body?.getReader();
@@ -78,10 +78,10 @@ async function pullImageLocal(imageName: string, onProgress?: (line: string) => 
 				try {
 					const json = JSON.parse(line);
 					if (json.error) {
-						onProgress(`Error: ${json.error}`);
+						onProgress(`错误：${json.error}`);
 					} else if (json.status) {
 						let msg = json.status;
-						if (json.id) msg = `${json.id}: ${msg}`;
+						if (json.id) msg = `${json.id}：${msg}`;
 						if (json.progress) msg += ` ${json.progress}`;
 						onProgress(msg);
 					}
@@ -206,10 +206,10 @@ function buildNetworkEnvVars(inspectData: any): string[] {
 		const opts: string[] = [];
 
 		if (nc.IPAMConfig?.IPv4Address) {
-			opts.push(`--ip ${nc.IPAMConfig.IPv4Address}`);
+			opts.push(`--ip ${nc.IPAMConfig?.IPv4Address}`);
 		}
 		if (nc.IPAMConfig?.IPv6Address) {
-			opts.push(`--ip6 ${nc.IPAMConfig.IPv6Address}`);
+			opts.push(`--ip6 ${nc.IPAMConfig?.IPv6Address}`);
 		}
 		if (nc.Aliases && nc.Aliases.length > 0) {
 			for (const alias of nc.Aliases) {
@@ -240,36 +240,36 @@ function buildNetworkEnvVars(inspectData: any): string[] {
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !auth.isAdmin) {
-		return json({ error: 'Admin access required' }, { status: 403 });
+		return json({ error: '需要管理员权限' }, { status: 403 });
 	}
 
 	const body = await request.json().catch(() => ({})) as { newImage?: string };
 	const newImage = body.newImage;
 	if (!newImage) {
-		return json({ error: 'newImage is required' }, { status: 400 });
+		return json({ error: 'newImage 为必填项' }, { status: 400 });
 	}
 
 	// Fail-fast validation before starting SSE stream
 	const containerId = getOwnContainerId();
 	if (!containerId) {
-		return json({ error: 'Not running in Docker' }, { status: 400 });
+		return json({ error: '未在 Docker 中运行' }, { status: 400 });
 	}
 
 	const writable = await isDockerWritable(containerId);
 	if (!writable) {
 		return json({
-			error: 'Docker socket is mounted read-only. Self-update requires read-write Docker socket access.'
+			error: 'Docker socket 以只读模式挂载。自动更新需要读写权限的 Docker socket 访问。'
 		}, { status: 400 });
 	}
 
 	const nameResponse = await localDockerFetch(`/containers/${containerId}/json`);
 	if (!nameResponse.ok) {
-		return json({ error: 'Failed to inspect own container' }, { status: 500 });
+		return json({ error: '检查自身容器失败' }, { status: 500 });
 	}
 	const nameInfo = await nameResponse.json() as { Name?: string };
 	const containerName = nameInfo.Name?.replace(/^\//, '') || '';
 	if (!containerName) {
-		return json({ error: 'Failed to determine container name' }, { status: 500 });
+		return json({ error: '无法获取容器名称' }, { status: 500 });
 	}
 
 	// Start SSE stream for preparation progress
@@ -295,35 +295,35 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 			try {
 				// Step 1: Pull the new Dockhand image
-				sendStep('pulling_image', 'active', `Pulling ${newImage}...`);
-				send('log', { message: `Pulling ${newImage}...` });
+				sendStep('pulling_image', 'active', `正在拉取 ${newImage}...`);
+				send('log', { message: `正在拉取 ${newImage}...` });
 				await pullImageLocal(newImage, (msg) => send('log', { message: msg }));
-				sendStep('pulling_image', 'completed', 'Image pulled');
-				send('log', { message: 'Image pulled successfully' });
+				sendStep('pulling_image', 'completed', '镜像拉取完成');
+				send('log', { message: '镜像拉取成功' });
 
 				// Step 2: Build container config from self-inspect
-				sendStep('building_config', 'active', 'Building container config...');
-				send('log', { message: `Inspecting container ${containerId.substring(0, 12)}...` });
+				sendStep('building_config', 'active', '正在构建容器配置...');
+				send('log', { message: `正在检查容器 ${containerId.substring(0, 12)}...` });
 				const inspectResponse = await localDockerFetch(`/containers/${containerId}/json`);
 				if (!inspectResponse.ok) {
-					throw new Error('Failed to inspect own container');
+					throw new Error('检查自身容器失败');
 				}
 				const inspectData = await inspectResponse.json();
 				const createConfig = buildCreateConfig(inspectData, newImage);
 				const networkEnvVars = buildNetworkEnvVars(inspectData);
-				send('log', { message: `Networks: ${networkEnvVars.length > 0 ? networkEnvVars[0] : 'default'}` });
-				sendStep('building_config', 'completed', 'Config ready');
+				send('log', { message: `网络：${networkEnvVars.length > 0 ? networkEnvVars[0] : '默认'}` });
+				sendStep('building_config', 'completed', '配置已就绪');
 
 				// Step 3: Pull the updater image
-				sendStep('pulling_updater', 'active', 'Pulling updater image...');
-				send('log', { message: `Pulling ${UPDATER_IMAGE}...` });
+				sendStep('pulling_updater', 'active', '正在拉取更新程序镜像...');
+				send('log', { message: `正在拉取 ${UPDATER_IMAGE}...` });
 				await pullImageLocal(UPDATER_IMAGE, (msg) => send('log', { message: msg }));
-				sendStep('pulling_updater', 'completed', 'Updater ready');
-				send('log', { message: 'Updater image ready' });
+				sendStep('pulling_updater', 'completed', '更新程序已就绪');
+				send('log', { message: '更新程序镜像准备完成' });
 
 				// Step 4: Create new container with temp name (no NetworkingConfig)
-				sendStep('creating_container', 'active', 'Creating new container...');
-				send('log', { message: 'Cleaning up previous updater containers...' });
+				sendStep('creating_container', 'active', '正在创建新容器...');
+				send('log', { message: '正在清理之前的更新程序容器...' });
 				await cleanupExistingUpdaters();
 
 				// Also clean up any leftover -updating containers from previous attempts
@@ -352,17 +352,17 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 				if (!createResponse.ok) {
 					const errText = await createResponse.text();
-					throw new Error(`Failed to create container: ${errText}`);
+					throw new Error(`创建容器失败：${errText}`);
 				}
 
 				const createResult = await createResponse.json() as { Id: string };
 				newContainerId = createResult.Id;
-				console.log(`[SelfUpdate] New container created: ${newContainerId.substring(0, 12)} (${tempName})`);
-				send('log', { message: `Container created: ${newContainerId.substring(0, 12)} (${tempName})` });
-				sendStep('creating_container', 'completed', 'Container created');
+				console.log(`[自动更新] 已创建新容器：${newContainerId.substring(0, 12)} (${tempName})`);
+				send('log', { message: `容器已创建：${newContainerId.substring(0, 12)} (${tempName})` });
+				sendStep('creating_container', 'completed', '容器创建完成');
 
 				// Step 5: Launch updater sidecar (point of no return)
-				sendStep('launching_updater', 'active', 'Launching updater...');
+				sendStep('launching_updater', 'active', '正在启动更新程序...');
 
 				const updaterEnv = [
 					`OLD_CONTAINER_ID=${containerId}`,
@@ -376,7 +376,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 				// (e.g. Synology DSM with Docker 24.x / API 1.43)
 				if (process.env.DOCKER_API_VERSION) {
 					updaterEnv.push(`DOCKER_API_VERSION=${process.env.DOCKER_API_VERSION}`);
-					console.log(`[SelfUpdate] Forwarding explicit DOCKER_API_VERSION: ${process.env.DOCKER_API_VERSION}`);
+					console.log(`[自动更新] 转发指定的 DOCKER_API_VERSION：${process.env.DOCKER_API_VERSION}`);
 				} else {
 					try {
 						const versionResp = await localDockerFetch('/version');
@@ -384,11 +384,11 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 							const versionInfo = await versionResp.json() as { ApiVersion?: string };
 							if (versionInfo.ApiVersion) {
 								updaterEnv.push(`DOCKER_API_VERSION=${versionInfo.ApiVersion}`);
-								console.log(`[SelfUpdate] Using negotiated Docker API version: ${versionInfo.ApiVersion}`);
+								console.log(`[自动更新] 使用协商后的 Docker API 版本：${versionInfo.ApiVersion}`);
 							}
 						}
 					} catch {
-						console.warn('[SelfUpdate] Could not detect Docker API version, updater will negotiate on its own');
+						console.warn('[自动更新] 无法检测 Docker API 版本，更新程序将自行协商版本');
 					}
 				}
 
@@ -404,14 +404,14 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 					if (network) {
 						updaterHostConfig.NetworkMode = network;
 					}
-					send('log', { message: `Updater using TCP: ${tcpHost}` });
+					send('log', { message: `更新程序使用 TCP：${tcpHost}` });
 				} else {
 					// Socket: bind-mount the host Docker socket
 					const socketHostPath = getHostDockerSocket();
 					updaterHostConfig.Binds = [`${socketHostPath}:/var/run/docker.sock`];
 				}
 
-				console.log('[SelfUpdate] Creating updater container...');
+				console.log('[自动更新] 正在创建更新程序容器...');
 				const updaterResponse = await localDockerFetch('/containers/create?name=dockhand-updater', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
@@ -427,7 +427,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 				if (!updaterResponse.ok) {
 					const errText = await updaterResponse.text();
-					throw new Error(`Failed to create updater container: ${errText}`);
+					throw new Error(`创建更新程序容器失败：${errText}`);
 				}
 
 				const { Id: updaterId } = await updaterResponse.json() as { Id: string };
@@ -436,16 +436,16 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 				const startResponse = await localDockerFetch(`/containers/${updaterId}/start`, { method: 'POST' });
 				if (!startResponse.ok) {
 					await localDockerFetch(`/containers/${updaterId}?force=true`, { method: 'DELETE' });
-					throw new Error('Failed to start updater container');
+					throw new Error('启动更新程序容器失败');
 				}
 
-				console.log(`[SelfUpdate] Updater started (${updaterId.substring(0, 12)}). Dockhand will be stopped shortly.`);
-				send('log', { message: `Updater started: ${updaterId.substring(0, 12)}` });
-				send('log', { message: 'Handing off to updater sidecar...' });
-				sendStep('launching_updater', 'completed', 'Updater launched');
+				console.log(`[自动更新] 更新程序已启动 (${updaterId.substring(0, 12)})。Dockhand 即将停止。`);
+				send('log', { message: `更新程序已启动：${updaterId.substring(0, 12)}` });
+				send('log', { message: '正在移交控制权给更新程序辅助容器...' });
+				sendStep('launching_updater', 'completed', '更新程序已启动');
 				send('launched', { updaterId });
 			} catch (err: any) {
-				console.error('[SelfUpdate] Error:', err);
+				console.error('[自动更新] 错误：', err);
 				send('error', { step: 'preparation', message: err.message || String(err) });
 
 				// Clean up the pre-created container on failure

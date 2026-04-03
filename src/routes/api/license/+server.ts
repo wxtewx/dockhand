@@ -13,7 +13,7 @@ import { authorize } from '$lib/server/authorize';
 export const GET: RequestHandler = async ({ cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !auth.isAuthenticated) {
-		return json({ error: 'Authentication required' }, { status: 401 });
+		return json({ error: '需要登录' }, { status: 401 });
 	}
 
 	try {
@@ -25,9 +25,9 @@ export const GET: RequestHandler = async ({ cookies }) => {
 			hostname
 		});
 	} catch (error) {
-		console.error('Error getting license status:', error);
+		console.error('获取许可证状态失败:', error);
 		return json(
-			{ error: 'Failed to get license status' },
+			{ error: '获取许可证状态失败' },
 			{ status: 500 }
 		);
 	}
@@ -37,7 +37,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('license', 'manage')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -45,7 +45,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 		if (!name || !key) {
 			return json(
-				{ error: 'Name and key are required' },
+				{ error: '名称和密钥为必填项' },
 				{ status: 400 }
 			);
 		}
@@ -64,9 +64,9 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			license: result.license
 		});
 	} catch (error) {
-		console.error('Error activating license:', error);
+		console.error('激活许可证失败:', error);
 		return json(
-			{ error: 'Failed to activate license' },
+			{ error: '激活许可证失败' },
 			{ status: 500 }
 		);
 	}
@@ -76,16 +76,16 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 export const DELETE: RequestHandler = async ({ cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('license', 'manage')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		await deactivateLicense();
 		return json({ success: true });
 	} catch (error) {
-		console.error('Error deactivating license:', error);
+		console.error('停用许可证失败:', error);
 		return json(
-			{ error: 'Failed to deactivate license' },
+			{ error: '停用许可证失败' },
 			{ status: 500 }
 		);
 	}

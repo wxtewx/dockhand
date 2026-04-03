@@ -14,12 +14,12 @@ export const DELETE: RequestHandler = async (event) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !(await auth.can('stacks', 'remove', envIdNum))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Environment access check (enterprise only)
 	if (envIdNum && auth.isEnterprise && !(await auth.canAccessEnvironment(envIdNum))) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问该环境' }, { status: 403 });
 	}
 
 	try {
@@ -37,7 +37,7 @@ export const DELETE: RequestHandler = async (event) => {
 		if (error instanceof ComposeFileNotFoundError) {
 			return json({ error: error.message }, { status: 404 });
 		}
-		console.error('Error removing compose stack:', error);
-		return json({ error: 'Failed to remove compose stack' }, { status: 500 });
+		console.error('删除 Compose 堆栈时出错：', error);
+		return json({ error: '删除 Compose 堆栈失败' }, { status: 500 });
 	}
 };

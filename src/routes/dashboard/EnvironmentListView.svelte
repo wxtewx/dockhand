@@ -22,9 +22,9 @@
 
 	function connectionLabel(type: string | undefined): string {
 		switch (type) {
-			case 'hawser-standard': return 'Standard';
-			case 'hawser-edge': return 'Edge';
-			case 'direct': return 'Direct';
+			case 'hawser-standard': return '标准';
+			case 'hawser-edge': return '边缘';
+			case 'direct': return '直连';
 			case 'socket': return 'Socket';
 			default: return 'Socket';
 		}

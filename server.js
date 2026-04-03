@@ -55,7 +55,7 @@ globalThis.__hawserSendMessage = (envId, message) => {
 		conn.ws.send(message);
 		return true;
 	} catch (e) {
-		console.error('[Hawser WS] sendMessage error:', e);
+		console.error('[Hawser WS] 发送消息错误:', e);
 		return false;
 	}
 };
@@ -249,7 +249,7 @@ async function handleTerminalConnection(ws, url, connId) {
 		});
 
 		dockerStream.on('error', (err) => {
-			console.error('[Terminal WS] Socket error:', err.message);
+			console.error('[Terminal WS] Socket 错误:', err.message);
 			if (ws.readyState === 1) {
 				ws.send(JSON.stringify({ type: 'error', message: err.message }));
 			}
@@ -286,7 +286,7 @@ async function handleTerminalConnection(ws, url, connId) {
 
 		wsConnections.set(connId, { stream: dockerStream, ws });
 	} catch (err) {
-		console.error('[Terminal WS] Error:', err.message);
+		console.error('[Terminal WS] 错误:', err.message);
 		if (ws.readyState === 1) {
 			ws.send(JSON.stringify({ type: 'error', message: err.message }));
 			ws.close();
@@ -304,7 +304,7 @@ async function handleTerminalConnection(ws, url, connId) {
  */
 function handleEdgeExec(ws, connId, containerId, shell, user, environmentId) {
 	if (typeof globalThis.__hawserSendMessage !== 'function') {
-		ws.send(JSON.stringify({ type: 'error', message: 'Edge agent handler not ready' }));
+		ws.send(JSON.stringify({ type: 'error', message: '边缘代理处理程序未就绪' }));
 		ws.close();
 		return;
 	}
@@ -326,7 +326,7 @@ function handleEdgeExec(ws, connId, containerId, shell, user, environmentId) {
 	const sent = globalThis.__hawserSendMessage(environmentId, execStartMsg);
 	if (!sent) {
 		edgeExecSessions.delete(execId);
-		ws.send(JSON.stringify({ type: 'error', message: 'Edge agent not connected' }));
+		ws.send(JSON.stringify({ type: 'error', message: '边缘代理未连接' }));
 		ws.close();
 		return;
 	}
@@ -402,10 +402,10 @@ function createExecLocal(containerId, shell, user, socketPath) {
 					if (res.statusCode === 201 && body.Id) {
 						resolve(body.Id);
 					} else {
-						reject(new Error(body.message || `Exec create failed: ${res.statusCode}`));
+						reject(new Error(body.message || `执行创建失败: ${res.statusCode}`));
 					}
 				} catch (e) {
-					reject(new Error('Failed to parse exec response'));
+					reject(new Error('解析执行响应失败'));
 				}
 			});
 			res.on('error', reject);
@@ -422,7 +422,7 @@ function createExecLocal(containerId, shell, user, socketPath) {
  * via the global hawser connection manager.
  */
 function handleHawserConnection(ws, connId, remoteIp) {
-	console.log('[Hawser WS] New connection pending authentication');
+	console.log('[Hawser WS] 新连接等待认证');
 
 	ws.on('message', async (data) => {
 		try {
@@ -432,11 +432,11 @@ function handleHawserConnection(ws, connId, remoteIp) {
 			if (typeof globalThis.__hawserHandleMessage === 'function') {
 				await globalThis.__hawserHandleMessage(ws, msg, connId, remoteIp);
 			} else {
-				console.warn('[Hawser WS] No global handler registered');
-				ws.send(JSON.stringify({ type: 'error', message: 'Server not ready' }));
+				console.warn('[Hawser WS] 未注册全局处理程序');
+				ws.send(JSON.stringify({ type: 'error', message: '服务器未就绪' }));
 			}
 		} catch (err) {
-			console.error('[Hawser WS] Message parse error:', err.message);
+			console.error('[Hawser WS] 消息解析错误:', err.message);
 		}
 	});
 
@@ -447,11 +447,11 @@ function handleHawserConnection(ws, connId, remoteIp) {
 	});
 
 	ws.on('error', (err) => {
-		console.error('[Hawser WS] Connection error:', err.message);
+		console.error('[Hawser WS] 连接错误:', err.message);
 	});
 }
 
 // Start the server
 server.listen(PORT, HOST, () => {
-	console.log(`Listening on http://${HOST}:${PORT}/ with WebSocket`);
+	console.log(`正在 http://${HOST}:${PORT}/ 监听，已启用 WebSocket`);
 });

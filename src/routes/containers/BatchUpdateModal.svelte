@@ -88,9 +88,9 @@
 		// Clarify potentially confusing Docker messages
 		let status = entry.status;
 		if (status.toLowerCase().includes('image is up to date')) {
-			status = 'Image cached (registry version matches local)';
+			status = '镜像已缓存 (仓库版本与本地一致)';
 		} else if (status.toLowerCase().includes('status: image is up to date')) {
-			status = 'Image cached (registry version matches local)';
+			status = '镜像已缓存 (仓库版本与本地一致)';
 		}
 
 		if (entry.id && entry.progress) {
@@ -128,7 +128,7 @@
 
 			if (!response.ok) {
 				const data = await response.json();
-				throw new Error(data.error || 'Failed to start update');
+				throw new Error(data.error || '启动更新失败');
 			}
 
 			const { jobId } = await response.json();
@@ -244,16 +244,16 @@
 						onComplete({ success: successIds, failed: failedIds, blocked: blockedIds });
 					} else if (data.type === 'error') {
 						status = 'error';
-						errorMessage = data.error || 'Unknown error occurred';
+						errorMessage = data.error || '发生未知错误';
 					}
 				} catch (e) {
-					console.error('Failed to process job line:', e);
+					console.error('处理任务日志失败：', e);
 				}
 			});
 		} catch (error: any) {
-			console.error('Failed to update containers:', error);
+			console.error('更新容器失败：', error);
 			status = 'error';
-			errorMessage = error.message || 'Failed to update';
+			errorMessage = error.message || '更新失败';
 		}
 	}
 
@@ -325,7 +325,7 @@ const severityOrder: Record<string, number> = { critical: 0, high: 1, medium: 2,
 
 			if (!response.ok) {
 				const data = await response.json();
-				throw new Error(data.error || 'Failed to start update');
+				throw new Error(data.error || '启动强制更新失败');
 			}
 
 			const { jobId } = await response.json();
@@ -364,9 +364,9 @@ const severityOrder: Record<string, number> = { critical: 0, high: 1, medium: 2,
 				}
 			});
 		} catch (error: any) {
-			console.error('Failed to force update container:', error);
+			console.error('强制更新容器失败:', error);
 			item.step = 'failed';
-			item.error = error.message || 'Force update failed';
+			item.error = error.message || '强制更新失败';
 			progress = [...progress];
 		} finally {
 			forceUpdating = new Set([...forceUpdating].filter(id => id !== containerId));
@@ -400,7 +400,7 @@ const severityOrder: Record<string, number> = { critical: 0, high: 1, medium: 2,
 		<Dialog.Header class="shrink-0">
 			<Dialog.Title class="flex items-center gap-2">
 				<CircleArrowUp class="w-5 h-5 text-amber-500" />
-				Updating containers
+				正在更新容器
 				{#if vulnerabilityCriteria !== 'never'}
 					<span class="ml-2">
 						<VulnerabilityCriteriaBadge criteria={vulnerabilityCriteria} />
@@ -416,14 +416,14 @@ const severityOrder: Record<string, number> = { critical: 0, high: 1, medium: 2,
 						</span>
 						<span class="text-muted-foreground ml-2">({currentIndex}/{totalCount})</span>
 					{:else}
-						Processing {currentIndex} of {totalCount} containers...
+						正在处理 {currentIndex}/{totalCount} 个容器...
 					{/if}
 				{:else if status === 'complete'}
-					Update complete
+					更新完成
 				{:else if status === 'error'}
-					Update failed
+					更新失败
 				{:else}
-					Preparing to update {containerIds.length} container{containerIds.length > 1 ? 's' : ''}...
+					正在准备更新 {containerIds.length} 个容器...
 				{/if}
 			</Dialog.Description>
 		</Dialog.Header>
@@ -432,7 +432,7 @@ const severityOrder: Record<string, number> = { critical: 0, high: 1, medium: 2,
 			<!-- Progress bar -->
 			<div class="space-y-2 shrink-0">
 				<div class="flex items-center justify-between text-sm">
-					<span class="text-muted-foreground">Progress</span>
+					<span class="text-muted-foreground">更新进度</span>
 					<Badge variant="secondary">{currentIndex}/{totalCount}</Badge>
 				</div>
 				<Progress value={progressPercentage} class="h-2" />
@@ -481,7 +481,7 @@ const severityOrder: Record<string, number> = { critical: 0, high: 1, medium: 2,
 											class="h-6 px-2 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/50"
 											onclick={() => forceUpdateContainer(item.containerId)}
 										>
-											Update anyway
+											强制更新
 										</Button>
 									{/if}
 								{/if}
@@ -490,7 +490,7 @@ const severityOrder: Record<string, number> = { critical: 0, high: 1, medium: 2,
 										type="button"
 										onclick={() => toggleLogs(item.containerId)}
 										class="p-1 hover:bg-muted rounded cursor-pointer"
-										title={item.showLogs ? 'Hide logs' : 'Show logs'}
+										title={item.showLogs ? '隐藏日志' : '查看日志'}
 									>
 										{#if item.showLogs}
 											<ChevronDown class="w-4 h-4 text-muted-foreground" />
@@ -524,17 +524,17 @@ const severityOrder: Record<string, number> = { critical: 0, high: 1, medium: 2,
 									{#if item.vulnerabilities && item.vulnerabilities.length > 0}
 										<div class="border-t border-dashed my-1 border-muted-foreground/30"></div>
 										<div class="text-muted-foreground text-[10px] uppercase tracking-wider font-medium mb-1">
-											{item.vulnerabilities.length}{item.vulnerabilities.length >= 100 ? '+' : ''} vulnerabilities found
+											发现 {item.vulnerabilities.length}{item.vulnerabilities.length >= 100 ? '+' : ''} 个漏洞
 										</div>
 										<div>
 											<table class="w-full">
 												<thead>
 													<tr class="text-left text-muted-foreground border-b">
 														<th class="pb-1 pr-2 font-medium">CVE</th>
-														<th class="pb-1 pr-2 font-medium">Severity</th>
-														<th class="pb-1 pr-2 font-medium">Package</th>
-														<th class="pb-1 pr-2 font-medium">Version</th>
-														<th class="pb-1 font-medium">Fixed</th>
+														<th class="pb-1 pr-2 font-medium">风险等级</th>
+														<th class="pb-1 pr-2 font-medium">软件包</th>
+														<th class="pb-1 pr-2 font-medium">版本</th>
+														<th class="pb-1 font-medium">修复版本</th>
 													</tr>
 												</thead>
 												<tbody>
@@ -567,7 +567,7 @@ const severityOrder: Record<string, number> = { critical: 0, high: 1, medium: 2,
 											</table>
 											{#if item.vulnerabilities.length > 50}
 												<div class="text-muted-foreground mt-1">
-													...and {item.vulnerabilities.length - 50} more
+													...以及其他 {item.vulnerabilities.length - 50} 个漏洞
 												</div>
 											{/if}
 										</div>
@@ -604,11 +604,11 @@ const severityOrder: Record<string, number> = { critical: 0, high: 1, medium: 2,
 			{#if status === 'updating'}
 				<Button variant="outline" disabled>
 					<Loader2 class="w-4 h-4 mr-2 animate-spin" />
-					Updating...
+					正在更新...
 				</Button>
 			{:else}
 				<Button variant="outline" onclick={handleClose}>
-					Close
+					关闭
 				</Button>
 			{/if}
 		</Dialog.Footer>

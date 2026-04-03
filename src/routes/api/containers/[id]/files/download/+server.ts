@@ -16,14 +16,14 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('containers', 'view', envIdNum)) {
-		return new Response(JSON.stringify({ error: 'Permission denied' }), {
+		return new Response(JSON.stringify({ error: '权限不足' }), {
 			status: 403,
 			headers: { 'Content-Type': 'application/json' }
 		});
 	}
 
 	if (!path) {
-		return new Response(JSON.stringify({ error: 'Path is required' }), {
+		return new Response(JSON.stringify({ error: '路径为必填项' }), {
 			status: 400,
 			headers: { 'Content-Type': 'application/json' }
 		});
@@ -80,22 +80,22 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 
 		return new Response(body, { headers });
 	} catch (error: any) {
-		console.error('Error downloading container file:', error?.message || error);
+		console.error('下载容器文件错误:', error?.message || error);
 
 		if (error.message?.includes('No such file or directory')) {
-			return new Response(JSON.stringify({ error: 'File not found' }), {
+			return new Response(JSON.stringify({ error: '文件未找到' }), {
 				status: 404,
 				headers: { 'Content-Type': 'application/json' }
 			});
 		}
 		if (error.message?.includes('Permission denied')) {
-			return new Response(JSON.stringify({ error: 'Permission denied to access this path' }), {
+			return new Response(JSON.stringify({ error: '访问此路径权限不足' }), {
 				status: 403,
 				headers: { 'Content-Type': 'application/json' }
 			});
 		}
 
-		return new Response(JSON.stringify({ error: 'Failed to download file' }), {
+		return new Response(JSON.stringify({ error: '下载文件失败' }), {
 			status: 500,
 			headers: { 'Content-Type': 'application/json' }
 		});

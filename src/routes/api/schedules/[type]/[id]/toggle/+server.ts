@@ -14,13 +14,13 @@ export const POST: RequestHandler = async ({ params }) => {
 		const scheduleId = parseInt(id, 10);
 
 		if (isNaN(scheduleId)) {
-			return json({ error: 'Invalid schedule ID' }, { status: 400 });
+			return json({ error: '无效的定时任务 ID' }, { status: 400 });
 		}
 
 		if (type === 'container_update') {
 			const setting = await getAutoUpdateSettingById(scheduleId);
 			if (!setting) {
-				return json({ error: 'Schedule not found' }, { status: 404 });
+				return json({ error: '未找到定时任务' }, { status: 404 });
 			}
 
 			const newEnabled = !setting.enabled;
@@ -39,7 +39,7 @@ export const POST: RequestHandler = async ({ params }) => {
 		} else if (type === 'git_stack_sync') {
 			const stack = await getGitStack(scheduleId);
 			if (!stack) {
-				return json({ error: 'Schedule not found' }, { status: 404 });
+				return json({ error: '未找到定时任务' }, { status: 404 });
 			}
 
 			const newEnabled = !stack.autoUpdate;
@@ -59,7 +59,7 @@ export const POST: RequestHandler = async ({ params }) => {
 			// scheduleId is environmentId for env update check
 			const config = await getEnvUpdateCheckSettings(scheduleId);
 			if (!config) {
-				return json({ error: 'Schedule not found' }, { status: 404 });
+				return json({ error: '未找到定时任务' }, { status: 404 });
 			}
 
 			const newEnabled = !config.enabled;
@@ -80,7 +80,7 @@ export const POST: RequestHandler = async ({ params }) => {
 			// scheduleId is environmentId for image prune
 			const config = await getImagePruneSettings(scheduleId);
 			if (!config) {
-				return json({ error: 'Schedule not found' }, { status: 404 });
+				return json({ error: '未找到定时任务' }, { status: 404 });
 			}
 
 			const newEnabled = !config.enabled;
@@ -98,12 +98,12 @@ export const POST: RequestHandler = async ({ params }) => {
 
 			return json({ success: true, enabled: newEnabled });
 		} else if (type === 'system_cleanup') {
-			return json({ error: 'System schedules cannot be paused' }, { status: 400 });
+			return json({ error: '系统定时任务无法暂停' }, { status: 400 });
 		} else {
-			return json({ error: 'Invalid schedule type' }, { status: 400 });
+			return json({ error: '无效的定时任务类型' }, { status: 400 });
 		}
 	} catch (error) {
-		console.error('Failed to toggle schedule:', error);
-		return json({ error: 'Failed to toggle schedule' }, { status: 500 });
+		console.error('切换定时任务状态失败:', error);
+		return json({ error: '切换定时任务状态失败' }, { status: 500 });
 	}
 };

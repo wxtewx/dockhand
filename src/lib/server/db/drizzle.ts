@@ -67,7 +67,7 @@ function logHeader(title: string): void {
 }
 
 function logSuccess(message: string): void {
-	console.log(`[OK] ${message}`);
+	console.log(`[成功] ${message}`);
 }
 
 function logInfo(message: string): void {
@@ -75,7 +75,7 @@ function logInfo(message: string): void {
 }
 
 function logWarning(message: string): void {
-	console.log(`[!!] ${message}`);
+	console.log(`[警告] ${message}`);
 }
 
 function logStep(step: string): void {
@@ -106,18 +106,18 @@ function validatePostgresUrl(url: string): void {
 		const parsed = new URL(url);
 
 		if (parsed.protocol !== 'postgres:' && parsed.protocol !== 'postgresql:') {
-			exitWithError(`Invalid protocol "${parsed.protocol}". Expected "postgres:" or "postgresql:"`, url);
+			exitWithError(`无效协议 "${parsed.protocol}"，期望为 "postgres:" 或 "postgresql:"`, url);
 		}
 
 		if (!parsed.hostname) {
-			exitWithError('Missing hostname in DATABASE_URL', url);
+			exitWithError('DATABASE_URL 中缺少主机名', url);
 		}
 
 		if (!parsed.pathname || parsed.pathname === '/') {
-			exitWithError('Missing database name in DATABASE_URL', url);
+			exitWithError('DATABASE_URL 中缺少数据库名称', url);
 		}
 	} catch {
-		exitWithError('Invalid URL format', url);
+		exitWithError('无效的 URL 格式', url);
 	}
 }
 
@@ -126,24 +126,24 @@ function validatePostgresUrl(url: string): void {
  */
 function exitWithError(error: string, url?: string): never {
 	console.error('\n' + SEPARATOR);
-	console.error('DATABASE CONNECTION ERROR');
+	console.error('数据库连接错误');
 	console.error(SEPARATOR);
-	console.error(`\nError: ${error}`);
+	console.error(`\n错误：${error}`);
 
 	if (url) {
-		console.error(`\nProvided URL: ${maskPassword(url)}`);
+		console.error(`\n提供的 URL：${maskPassword(url)}`);
 	}
 
 	console.error('\n' + '-'.repeat(60));
-	console.error('DATABASE_URL format:');
+	console.error('DATABASE_URL 格式：');
 	console.error('-'.repeat(60));
-	console.error('\n  postgres://USER:PASSWORD@HOST:PORT/DATABASE');
-	console.error('\nExamples:');
+	console.error('\n  postgres://用户名:密码@主机:端口/数据库名');
+	console.error('\n示例：');
 	console.error('  postgres://dockhand:secret@localhost:5432/dockhand');
 	console.error('  postgres://admin:p4ssw0rd@192.168.1.100:5432/dockhand');
 	console.error('  postgresql://user:pass@db.example.com/mydb?sslmode=require');
 	console.error('\n' + '-'.repeat(60));
-	console.error('To use SQLite instead, remove the DATABASE_URL environment variable.');
+	console.error('如需使用 SQLite，请删除 DATABASE_URL 环境变量。');
 	console.error(SEPARATOR + '\n');
 
 	process.exit(1);
@@ -195,7 +195,7 @@ function readMigrationJournal(migrationsFolder: string): MigrationJournal | null
 		const config = getConfig();
 		if (config.verboseLogging) {
 			const errorMsg = error instanceof Error ? error.message : String(error);
-			console.error('[DB] Failed to read migration journal:', errorMsg);
+			console.error('[DB] 读取迁移日志失败：', errorMsg);
 		}
 		return null;
 	}
@@ -453,7 +453,7 @@ async function runMigrations(
 	const config = getConfig();
 
 	if (config.skipMigrations) {
-		logInfo('Migrations skipped (SKIP_MIGRATIONS=true)');
+		logInfo('已跳过迁移（SKIP_MIGRATIONS=true）');
 		return { success: true, applied: 0, skipped: true };
 	}
 
@@ -461,21 +461,21 @@ async function runMigrations(
 	const state = await getMigrationState(client, postgres, migrationsFolder);
 
 	if (!state.journalExists) {
-		logWarning('Migration journal not found - this may be a development setup');
+		logWarning('未找到迁移日志 - 这可能是开发环境');
 		return { success: true, applied: 0, skipped: true };
 	}
 
-	logInfo(`Total migrations: ${state.allMigrations.length}`);
-	logInfo(`Applied: ${state.appliedMigrations.length}`);
-	logInfo(`Pending: ${state.pendingMigrations.length}`);
+	logInfo(`总迁移数：${state.allMigrations.length}`);
+	logInfo(`已应用：${state.appliedMigrations.length}`);
+	logInfo(`待执行：${state.pendingMigrations.length}`);
 
 	if (state.pendingMigrations.length === 0) {
-		logSuccess('Database schema is up to date');
+		logSuccess('数据库结构已是最新版本');
 		return { success: true, applied: 0, skipped: false };
 	}
 
 	// Log pending migrations
-	console.log('\nPending migrations:');
+	console.log('\n待执行迁移：');
 	for (const migration of state.pendingMigrations) {
 		logStep(migration);
 	}
@@ -491,7 +491,7 @@ async function runMigrations(
 			await migrate(database, { migrationsFolder });
 		}
 
-		logSuccess(`Applied ${state.pendingMigrations.length} migration(s)`);
+		logSuccess(`已应用 ${state.pendingMigrations.length} 个迁移`);
 		return { success: true, applied: state.pendingMigrations.length, skipped: false };
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
@@ -506,28 +506,28 @@ function handleMigrationFailure(error: string, postgres: boolean): never {
 	const config = getConfig();
 
 	console.error('\n' + WARNING_SEPARATOR);
-	console.error('MIGRATION FAILED');
+	console.error('迁移失败');
 	console.error(WARNING_SEPARATOR);
-	console.error(`\nError: ${error}`);
+	console.error(`\n错误：${error}`);
 
 	// Provide specific guidance based on error type
 	if (error.includes('already exists')) {
 		console.error('\n' + '-'.repeat(60));
-		console.error('DIAGNOSIS: Table or column already exists');
+		console.error('诊断：表或字段已存在');
 		console.error('-'.repeat(60));
-		console.error('\nThis usually happens when:');
-		console.error('  1. A previous migration was partially applied');
-		console.error('  2. The database was modified manually');
-		console.error('  3. Migrations were regenerated without resetting the database');
-		console.error('\nRECOVERY OPTIONS:');
-		console.error('\n  Option 1: Reset the database (DELETES ALL DATA)');
+		console.error('\n通常由以下原因导致：');
+		console.error('  1. 上一次迁移仅部分执行');
+		console.error('  2. 数据库被手动修改');
+		console.error('  3. 迁移重新生成但未重置数据库');
+		console.error('\n恢复选项：');
+		console.error('\n  选项 1：重置数据库（删除所有数据）');
 		if (postgres) {
 			console.error('    docker exec postgres psql -U <user> -d postgres -c "DROP DATABASE dockhand;"');
 			console.error('    docker exec postgres psql -U <user> -d postgres -c "CREATE DATABASE dockhand;"');
 		} else {
 			console.error('    rm -f ./data/db/dockhand.db');
 		}
-		console.error('\n  Option 2: Mark migration as applied (if schema is correct)');
+		console.error('\n  选项 2：标记迁移为已应用（结构正确时）');
 		if (postgres) {
 			console.error('    INSERT INTO __drizzle_migrations (hash, created_at)');
 			console.error("    VALUES ('<migration_tag>', NOW());");
@@ -535,41 +535,41 @@ function handleMigrationFailure(error: string, postgres: boolean): never {
 			console.error('    INSERT INTO __drizzle_migrations (hash, created_at)');
 			console.error("    VALUES ('<migration_tag>', strftime('%s', 'now') * 1000);");
 		}
-		console.error('\n  Option 3: Use emergency scripts');
+		console.error('\n  选项 3：使用紧急脚本');
 		console.error('    docker exec dockhand /app/scripts/emergency/reset-db.sh');
 	} else if (error.includes('does not exist') || error.includes('no such table')) {
 		console.error('\n' + '-'.repeat(60));
-		console.error('DIAGNOSIS: Missing table or column');
+		console.error('诊断：表或字段不存在');
 		console.error('-'.repeat(60));
-		console.error('\nThis usually happens when:');
-		console.error('  1. The database was created but migrations never ran');
-		console.error('  2. The __drizzle_migrations table is out of sync');
-		console.error('\nRECOVERY OPTIONS:');
-		console.error('\n  Option 1: Clear migration history and retry');
+		console.error('\n通常由以下原因导致：');
+		console.error('  1. 数据库已创建但未执行迁移');
+		console.error('  2. __drizzle_migrations 表不同步');
+		console.error('\n恢复选项：');
+		console.error('\n  选项 1：清空迁移历史并重试');
 		if (postgres) {
 			console.error('    TRUNCATE TABLE __drizzle_migrations;');
 		} else {
 			console.error('    DELETE FROM __drizzle_migrations;');
 		}
-		console.error('    Then restart the application.');
+		console.error('    然后重启应用。');
 	} else if (error.includes('connection') || error.includes('ECONNREFUSED')) {
 		console.error('\n' + '-'.repeat(60));
-		console.error('DIAGNOSIS: Database connection failed');
+		console.error('诊断：数据库连接失败');
 		console.error('-'.repeat(60));
-		console.error('\nPlease verify:');
-		console.error('  1. Database server is running');
-		console.error('  2. DATABASE_URL is correct');
-		console.error('  3. Network connectivity to database host');
-		console.error('  4. Database user has necessary permissions');
+		console.error('\n请检查：');
+		console.error('  1. 数据库服务正在运行');
+		console.error('  2. DATABASE_URL 配置正确');
+		console.error('  3. 与数据库主机的网络连通性');
+		console.error('  4. 数据库用户拥有必要权限');
 	}
 
 	console.error('\n' + '-'.repeat(60));
-	console.error('OVERRIDE OPTIONS');
+	console.error('覆盖选项');
 	console.error('-'.repeat(60));
 	console.error('\n  DB_FAIL_ON_MIGRATION_ERROR=false');
-	console.error('    Start anyway (DANGEROUS - may cause runtime errors)');
+	console.error('    仍继续启动（危险 - 可能导致运行时错误）');
 	console.error('\n  SKIP_MIGRATIONS=true');
-	console.error('    Skip migrations entirely (only for debugging)');
+	console.error('    完全跳过迁移（仅用于调试）');
 
 	console.error('\n' + WARNING_SEPARATOR + '\n');
 
@@ -578,7 +578,7 @@ function handleMigrationFailure(error: string, postgres: boolean): never {
 	}
 
 	// This line is never reached if failOnMigrationError is true
-	throw new Error(`Migration failed: ${error}`);
+	throw new Error(`迁移失败：${error}`);
 }
 
 // =============================================================================
@@ -602,14 +602,14 @@ async function initializeDatabase() {
 	const config = getConfig();
 	const verbose = config.verboseLogging;
 
-	logHeader('DATABASE INITIALIZATION');
+	logHeader('数据库初始化');
 
 	if (isPostgres) {
 		// PostgreSQL via postgres-js
 		validatePostgresUrl(config.databaseUrl!);
 
-		logInfo(`Database: PostgreSQL`);
-		logInfo(`Connection: ${maskPassword(config.databaseUrl!)}`);
+		logInfo(`数据库：PostgreSQL`);
+		logInfo(`连接：${maskPassword(config.databaseUrl!)}`);
 
 		const { drizzle } = await import('drizzle-orm/postgres-js');
 		const postgres = (await import('postgres')).default;
@@ -617,14 +617,14 @@ async function initializeDatabase() {
 		// Import PostgreSQL schema
 		schema = await import('./schema/pg-schema.js');
 
-		if (verbose) logStep('Connecting to PostgreSQL...');
+		if (verbose) logStep('正在连接 PostgreSQL...');
 		try {
 			rawClient = postgres(config.databaseUrl!);
 			db = drizzle({ client: rawClient, schema });
-			logSuccess('PostgreSQL connection established');
+			logSuccess('PostgreSQL 连接已建立');
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
-			exitWithError(`Failed to connect to PostgreSQL: ${message}`, config.databaseUrl);
+			exitWithError(`PostgreSQL 连接失败：${message}`, config.databaseUrl);
 		}
 
 		// Run migrations
@@ -642,8 +642,8 @@ async function initializeDatabase() {
 
 		const dbPath = join(dbDir, 'dockhand.db');
 
-		logInfo(`Database: SQLite`);
-		logInfo(`Path: ${dbPath}`);
+		logInfo(`数据库：SQLite`);
+		logInfo(`路径：${dbPath}`);
 
 		const { drizzle } = await import('drizzle-orm/better-sqlite3');
 		const Database = (await import('better-sqlite3')).default;
@@ -651,7 +651,7 @@ async function initializeDatabase() {
 		// Import SQLite schema
 		schema = await import('./schema/index.js');
 
-		if (verbose) logStep('Opening SQLite database...');
+		if (verbose) logStep('正在打开 SQLite 数据库...');
 		rawClient = new Database(dbPath);
 
 		// Enable WAL mode for better performance and concurrency
@@ -662,7 +662,7 @@ async function initializeDatabase() {
 		rawClient.pragma('busy_timeout = 5000');
 
 		db = drizzle({ client: rawClient, schema });
-		logSuccess('SQLite database opened');
+		logSuccess('SQLite 数据库已打开');
 
 		// Run migrations
 		const migrationsFolder = './drizzle';
@@ -689,7 +689,7 @@ async function seedDatabase(): Promise<void> {
 	const config = getConfig();
 	const verbose = config.verboseLogging;
 
-	if (verbose) console.log('\nSeeding database...');
+	if (verbose) console.log('\n正在初始化数据库数据...');
 
 	// Create Docker Hub registry if no registries exist
 	const existingRegistries = await db.select().from(schema.registries);
@@ -699,7 +699,7 @@ async function seedDatabase(): Promise<void> {
 			url: 'https://registry.hub.docker.com',
 			isDefault: true
 		});
-		logStep('Created Docker Hub registry');
+		logStep('已创建 Docker Hub 镜像仓库');
 	}
 
 	// Create default auth settings if none exist
@@ -710,7 +710,7 @@ async function seedDatabase(): Promise<void> {
 			defaultProvider: 'local',
 			sessionTimeout: 86400
 		});
-		logStep('Created default auth settings');
+		logStep('已创建默认认证设置');
 	}
 
 	// Create default cron settings for system schedules if not exist
@@ -720,7 +720,7 @@ async function seedDatabase(): Promise<void> {
 			key: 'schedule_cleanup_cron',
 			value: '0 3 * * *' // Daily at 3 AM
 		});
-		if (verbose) logStep('Created default schedule cleanup cron setting');
+		if (verbose) logStep('已创建默认计划清理定时任务');
 	}
 
 	const eventCleanupCron = await db.select().from(schema.settings).where(eq(schema.settings.key, 'event_cleanup_cron'));
@@ -729,7 +729,7 @@ async function seedDatabase(): Promise<void> {
 			key: 'event_cleanup_cron',
 			value: '30 3 * * *' // Daily at 3:30 AM
 		});
-		if (verbose) logStep('Created default event cleanup cron setting');
+		if (verbose) logStep('已创建默认事件清理定时任务');
 	}
 
 	// Create default enabled flags for cleanup jobs
@@ -739,7 +739,7 @@ async function seedDatabase(): Promise<void> {
 			key: 'schedule_cleanup_enabled',
 			value: 'true'
 		});
-		if (verbose) logStep('Created default schedule cleanup enabled setting');
+		if (verbose) logStep('已创建默认计划清理启用设置');
 	}
 
 	const eventCleanupEnabled = await db.select().from(schema.settings).where(eq(schema.settings.key, 'event_cleanup_enabled'));
@@ -748,7 +748,7 @@ async function seedDatabase(): Promise<void> {
 			key: 'event_cleanup_enabled',
 			value: 'true'
 		});
-		if (verbose) logStep('Created default event cleanup enabled setting');
+		if (verbose) logStep('已创建默认事件清理启用设置');
 	}
 
 	// Create system roles if not exist
@@ -812,11 +812,11 @@ async function seedDatabase(): Promise<void> {
 	const existingRoles = await db.select().from(schema.roles);
 	if (existingRoles.length === 0) {
 		await db.insert(schema.roles).values([
-			{ name: 'Admin', description: 'Full access to all resources', isSystem: true, permissions: adminPermissions },
-			{ name: 'Operator', description: 'Can manage containers and view resources', isSystem: true, permissions: operatorPermissions },
-			{ name: 'Viewer', description: 'Read-only access to all resources', isSystem: true, permissions: viewerPermissions }
+			{ name: 'Admin', description: '拥有所有资源的完全访问权限', isSystem: true, permissions: adminPermissions },
+			{ name: 'Operator', description: '可管理容器并查看资源', isSystem: true, permissions: operatorPermissions },
+			{ name: 'Viewer', description: '所有资源的只读权限', isSystem: true, permissions: viewerPermissions }
 		]);
-		logStep('Created system roles');
+		logStep('已创建系统角色');
 	} else {
 		// Update system roles permissions
 		const now = new Date().toISOString();
@@ -831,7 +831,7 @@ async function seedDatabase(): Promise<void> {
 			.where(eq(schema.roles.name, 'Viewer'));
 	}
 
-	logSuccess(`Database initialized (${isPostgres ? 'PostgreSQL' : 'SQLite'})`);
+	logSuccess(`数据库初始化完成（${isPostgres ? 'PostgreSQL' : 'SQLite'}）`);
 	console.log(SEPARATOR + '\n');
 }
 
@@ -850,7 +850,7 @@ await seedDatabase();
 const dbProxy = new Proxy({} as any, {
 	get(_target, prop) {
 		if (!initialized) {
-			throw new Error('Database not initialized. This should not happen.');
+			throw new Error('数据库未初始化，此错误不应发生。');
 		}
 		return db[prop];
 	}
@@ -863,7 +863,7 @@ export { dbProxy as db, rawClient };
 const schemaProxy = new Proxy({} as any, {
 	get(_target, prop) {
 		if (!initialized || !schema) {
-			throw new Error('Database not initialized. This should not happen.');
+			throw new Error('数据库未初始化，此错误不应发生。');
 		}
 		return schema[prop];
 	}
@@ -988,7 +988,7 @@ export async function getDatabaseSchemaVersion(): Promise<SchemaInfo> {
 		return { version: null, date: null };
 	} catch (e) {
 		const errorMsg = e instanceof Error ? e.message : String(e);
-		console.error('[DB] Error getting schema version:', errorMsg);
+		console.error('[DB] 获取结构版本失败：', errorMsg);
 		return { version: null, date: null };
 	}
 }

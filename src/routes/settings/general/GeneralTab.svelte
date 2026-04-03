@@ -50,40 +50,40 @@
 	function handleScheduleRetentionChange(e: Event) {
 		const value = Math.max(1, Math.min(365, parseInt((e.target as HTMLInputElement).value) || 30));
 		appSettings.setScheduleRetentionDays(value);
-		toast.success('Schedule retention updated');
+		toast.success('计划保留时间已更新');
 	}
 
 	function handleEventRetentionChange(e: Event) {
 		const value = Math.max(1, Math.min(365, parseInt((e.target as HTMLInputElement).value) || 30));
 		appSettings.setEventRetentionDays(value);
-		toast.success('Event retention updated');
+		toast.success('事件保留时间已更新');
 	}
 
 	function handleScheduleCleanupCronChange(cron: string) {
 		appSettings.setScheduleCleanupCron(cron);
-		toast.success('Schedule cleanup cron updated');
+		toast.success('计划清理定时任务已更新');
 	}
 
 	function handleEventCleanupCronChange(cron: string) {
 		appSettings.setEventCleanupCron(cron);
-		toast.success('Event cleanup cron updated');
+		toast.success('事件清理定时任务已更新');
 	}
 
 	function handleScheduleCleanupEnabledChange() {
 		appSettings.setScheduleCleanupEnabled(!scheduleCleanupEnabled);
-		toast.success(scheduleCleanupEnabled ? 'Schedule cleanup disabled' : 'Schedule cleanup enabled');
+		toast.success(scheduleCleanupEnabled ? '计划清理已启用' : '计划清理已禁用');
 	}
 
 	function handleEventCleanupEnabledChange() {
 		appSettings.setEventCleanupEnabled(!eventCleanupEnabled);
-		toast.success(eventCleanupEnabled ? 'Event cleanup disabled' : 'Event cleanup enabled');
+		toast.success(eventCleanupEnabled ? '事件清理已启用' : '事件清理已禁用');
 	}
 
 	function handleGrypeImageBlur(e: Event) {
 		const value = (e.target as HTMLInputElement).value.trim();
 		if (value && value !== defaultGrypeImage) {
 			appSettings.setDefaultGrypeImage(value);
-			toast.success('Grype image updated');
+			toast.success('Grype 镜像已更新');
 		}
 	}
 
@@ -91,7 +91,7 @@
 		const value = (e.target as HTMLInputElement).value.trim();
 		if (value && value !== defaultTrivyImage) {
 			appSettings.setDefaultTrivyImage(value);
-			toast.success('Trivy image updated');
+			toast.success('Trivy 镜像已更新');
 		}
 	}
 
@@ -99,7 +99,7 @@
 		const value = (e.target as HTMLInputElement).value.trim();
 		if (value !== defaultGrypeArgs) {
 			appSettings.setDefaultGrypeArgs(value);
-			toast.success('Grype default arguments updated');
+			toast.success('Grype 默认参数已更新');
 		}
 	}
 
@@ -107,34 +107,34 @@
 		const value = (e.target as HTMLInputElement).value.trim();
 		if (value !== defaultTrivyArgs) {
 			appSettings.setDefaultTrivyArgs(value);
-			toast.success('Trivy default arguments updated');
+			toast.success('Trivy 默认参数已更新');
 		}
 	}
 
 	function handleLogBufferSizeChange(e: Event) {
 		const value = Math.max(100, Math.min(5000, parseInt((e.target as HTMLInputElement).value) || 500));
 		appSettings.setLogBufferSizeKb(value);
-		toast.success('Log buffer size updated');
+		toast.success('日志缓冲区大小已更新');
 	}
 
 	function handleEventCollectionModeChange(value: string | undefined) {
 		if (value === 'stream' || value === 'poll') {
 			appSettings.setEventCollectionMode(value);
-			toast.success(`Event collection mode: ${value}`);
+			toast.success(`事件采集模式：${value === 'stream' ? '流式' : '轮询'}`);
 		}
 	}
 
 	function handleEventPollIntervalChange(selected: { value: number } | undefined) {
 		if (selected?.value) {
 			appSettings.setEventPollInterval(selected.value);
-			toast.success(`Event poll interval: ${selected.value / 1000}s`);
+			toast.success(`事件轮询间隔：${selected.value / 1000}秒`);
 		}
 	}
 
 	function handleMetricsIntervalChange(selected: { value: number } | undefined) {
 		if (selected?.value) {
 			appSettings.setMetricsCollectionInterval(selected.value);
-			toast.success(`Metrics interval: ${selected.value / 1000}s`);
+			toast.success(`指标采集间隔：${selected.value / 1000}秒`);
 		}
 	}
 </script>
@@ -147,7 +147,7 @@
 				<Card.Header>
 					<Card.Title class="text-sm font-medium flex items-center gap-2">
 						<Eye class="w-4 h-4" />
-						Appearance
+						界面显示
 						<Tooltip.Provider delayDuration={100}>
 							<Tooltip.Root>
 								<Tooltip.Trigger>
@@ -156,9 +156,9 @@
 								<Tooltip.Portal>
 									<Tooltip.Content side="right" sideOffset={8} class="!w-80">
 										{#if $authStore.authEnabled}
-											These settings apply to the login page and as defaults. Personal preferences can be configured in your profile.
+											这些设置应用于登录页并作为默认值，个人偏好可在个人资料中配置。
 										{:else}
-											Theme and font settings are global when authentication is disabled.
+											关闭身份验证时，主题和字体设置为全局生效。
 										{/if}
 									</Tooltip.Content>
 								</Tooltip.Portal>
@@ -172,72 +172,72 @@
 						<div class="space-y-4">
 							<div class="space-y-1">
 								<div class="flex items-center gap-3">
-									<Label>Show stopped containers</Label>
+									<Label>显示已停止容器</Label>
 									<TogglePill
 										checked={showStoppedContainers}
 										onchange={() => {
 											appSettings.setShowStoppedContainers(!showStoppedContainers);
-											toast.success(showStoppedContainers ? 'Stopped containers hidden' : 'Stopped containers shown');
+											toast.success(showStoppedContainers ? '已显示停止的容器' : '已隐藏停止的容器');
 										}}
 										disabled={!$canAccess('settings', 'edit')}
 									/>
 								</div>
-								<p class="text-xs text-muted-foreground">Display stopped and exited containers in lists</p>
+								<p class="text-xs text-muted-foreground">在列表中显示已停止和已退出的容器</p>
 							</div>
 							<div class="space-y-1">
 								<div class="flex items-center gap-3">
-									<Label>Highlight available updates</Label>
+									<Label>高亮显示可用更新</Label>
 									<TogglePill
 										checked={highlightUpdates}
 										onchange={() => {
 											appSettings.setHighlightUpdates(!highlightUpdates);
-											toast.success(highlightUpdates ? 'Update highlighting disabled' : 'Update highlighting enabled');
+											toast.success(highlightUpdates ? '已开启更新高亮' : '已关闭更新高亮');
 										}}
 										disabled={!$canAccess('settings', 'edit')}
 									/>
 								</div>
-								<p class="text-xs text-muted-foreground">Highlight container rows in amber when updates are available</p>
+								<p class="text-xs text-muted-foreground">有可用更新时，用琥珀色高亮容器行</p>
 							</div>
 							<div class="space-y-1">
 								<div class="flex items-center gap-3">
-									<Label>Compact port display</Label>
+									<Label>紧凑端口显示</Label>
 									<TogglePill
 										checked={compactPorts}
 										onchange={() => {
 											appSettings.setCompactPorts(!compactPorts);
-											toast.success(compactPorts ? 'Showing all ports' : 'Compact port display enabled');
+											toast.success(compactPorts ? '已开启紧凑端口显示' : '已显示全部端口');
 										}}
 										disabled={!$canAccess('settings', 'edit')}
 									/>
 								</div>
-								<p class="text-xs text-muted-foreground">Show first port with +N count instead of all ports</p>
+								<p class="text-xs text-muted-foreground">只显示第一个端口+数量，而非全部端口</p>
 							</div>
 							<div class="space-y-1">
 								<div class="flex items-center gap-3">
-									<Label>Time format</Label>
+									<Label>时间格式</Label>
 									<ToggleSwitch
 										value={timeFormat}
 										leftValue="24h"
 										rightValue="12h"
 										onchange={(newFormat) => {
 											appSettings.setTimeFormat(newFormat as '12h' | '24h');
-											toast.success(`Time format set to ${newFormat === '12h' ? '12-hour (AM/PM)' : '24-hour'}`);
+											toast.success(`时间格式已设为${newFormat === '12h' ? '12小时制(AM/PM)' : '24小时制'}`);
 										}}
 										disabled={!$canAccess('settings', 'edit')}
 									/>
 								</div>
-								<p class="text-xs text-muted-foreground">Display timestamps in 12-hour (AM/PM) or 24-hour format</p>
+								<p class="text-xs text-muted-foreground">使用 12 小时制或 24小时制显示时间戳</p>
 							</div>
 							<div class="space-y-1">
 								<div class="flex items-center gap-3">
-									<Label>Date format</Label>
+									<Label>日期格式</Label>
 									<Select.Root
 										type="single"
 										value={dateFormat}
 										onValueChange={(value) => {
 											if (value) {
 												appSettings.setDateFormat(value as DateFormat);
-												toast.success(`Date format set to ${value}`);
+												toast.success(`日期格式已设置为 ${value}`);
 											}
 										}}
 										disabled={!$canAccess('settings', 'edit')}
@@ -258,7 +258,7 @@
 										</Select.Content>
 									</Select.Root>
 								</div>
-								<p class="text-xs text-muted-foreground">How dates are displayed throughout the app</p>
+								<p class="text-xs text-muted-foreground">应用内全局日期显示方式</p>
 							</div>
 						</div>
 						<!-- Right column: Theme settings (always shown, with hint when auth enabled) -->
@@ -268,7 +268,7 @@
 								<div class="text-xs text-muted-foreground flex items-start gap-1.5 mt-2 p-2 bg-muted/50 rounded-md">
 									<HelpCircle class="w-3.5 h-3.5 shrink-0 mt-0.5" />
 									<div>
-										<p>Personal theme preferences can be configured in your <a href="/profile" class="text-primary hover:underline">profile</a>.</p>
+										<p>个人主题偏好可在<a href="/profile" class="text-primary hover:underline">个人资料</a>中配置。</p>
 									</div>
 								</div>
 							{/if}
@@ -281,21 +281,21 @@
 				<Card.Header>
 					<Card.Title class="text-sm font-medium flex items-center gap-2">
 						<Globe class="w-4 h-4" />
-						Scheduling
+						计划任务
 					</Card.Title>
 				</Card.Header>
 				<Card.Content class="space-y-4">
 					<div class="space-y-2">
-						<Label>Default timezone</Label>
+						<Label>默认时区</Label>
 						<TimezoneSelector
 							value={defaultTimezone}
 							onchange={(value) => {
 								appSettings.setDefaultTimezone(value);
-								toast.success(`Default timezone set to ${value}`);
+								toast.success(`默认时区已设为 ${value}`);
 							}}
 							class="w-[320px]"
 						/>
-						<p class="text-xs text-muted-foreground">Default timezone for new environments. Used for scheduled tasks like auto-updates.</p>
+						<p class="text-xs text-muted-foreground">新建环境的默认时区，用于自动更新等计划任务。</p>
 					</div>
 				</Card.Content>
 			</Card.Root>
@@ -304,23 +304,23 @@
 				<Card.Header>
 					<Card.Title class="text-sm font-medium flex items-center gap-2">
 						<Bell class="w-4 h-4" />
-						Confirmations
+						操作确认
 					</Card.Title>
 				</Card.Header>
 				<Card.Content class="space-y-4">
 					<div class="space-y-1">
 						<div class="flex items-center gap-3">
-							<Label>Confirm destructive actions</Label>
+							<Label>确认危险操作</Label>
 							<TogglePill
 								checked={confirmDestructive}
 								onchange={() => {
 									appSettings.setConfirmDestructive(!confirmDestructive);
-									toast.success(confirmDestructive ? 'Confirmations disabled' : 'Confirmations enabled');
+									toast.success(confirmDestructive ? '已开启操作确认' : '已关闭操作确认');
 								}}
 								disabled={!$canAccess('settings', 'edit')}
 							/>
 						</div>
-						<p class="text-xs text-muted-foreground">Show confirmation dialogs before deleting resources</p>
+						<p class="text-xs text-muted-foreground">删除资源前显示确认对话框</p>
 					</div>
 				</Card.Content>
 			</Card.Root>
@@ -329,14 +329,14 @@
 				<Card.Header>
 					<Card.Title class="text-sm font-medium flex items-center gap-2">
 						<FileText class="w-4 h-4" />
-						Logs & files
+						日志与文件
 					</Card.Title>
 				</Card.Header>
 				<Card.Content>
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
 						<div class="space-y-4">
 							<div class="space-y-2">
-								<Label for="log-buffer-size">Log buffer size (KB)</Label>
+								<Label for="log-buffer-size">日志缓冲区大小 (KB)</Label>
 								<div class="flex items-center gap-2">
 									<Input
 										id="log-buffer-size"
@@ -350,48 +350,48 @@
 									/>
 									<span class="text-sm text-muted-foreground">KB</span>
 								</div>
-								<p class="text-xs text-muted-foreground">Maximum log buffer per container panel. Older logs are truncated when exceeded.</p>
+								<p class="text-xs text-muted-foreground">每个容器面板的最大日志缓冲区，超出后旧日志会被截断。</p>
 								{#if logBufferSizeKb > 1000}
 									<div class="flex items-start gap-2 p-2 rounded-md bg-amber-500/10 border border-amber-500/20">
 										<AlertTriangle class="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-										<p class="text-xs text-amber-600 dark:text-amber-400">High values may degrade browser performance with verbose containers. Recommended: 250-1000 KB.</p>
+										<p class="text-xs text-amber-600 dark:text-amber-400">值过高可能降低浏览器性能，推荐：250-1000 KB。</p>
 									</div>
 								{/if}
 							</div>
 							<div class="space-y-1">
 								<div class="flex items-center gap-3">
-									<Label>Download format</Label>
+									<Label>下载格式</Label>
 									<ToggleSwitch
 										value={downloadFormat}
 										leftValue="tar"
 										rightValue="tar.gz"
 										onchange={(newFormat) => {
 											appSettings.setDownloadFormat(newFormat as DownloadFormat);
-											toast.success(`Download format set to ${newFormat}`);
+											toast.success(`下载格式已设为 ${newFormat}`);
 										}}
 										disabled={!$canAccess('settings', 'edit')}
 									/>
 								</div>
-								<p class="text-xs text-muted-foreground">Archive format when downloading files from containers</p>
+								<p class="text-xs text-muted-foreground">从容器下载文件时的归档格式</p>
 							</div>
 						</div>
 						<div class="space-y-4">
 							<div class="space-y-1">
 								<div class="flex items-center gap-3">
-									<Label>Format log timestamps</Label>
+									<Label>格式化日志时间戳</Label>
 									<TogglePill
 										checked={formatLogTimestamps}
 										onchange={() => {
 											appSettings.setFormatLogTimestamps(!formatLogTimestamps);
-											toast.success(formatLogTimestamps ? 'Log timestamp formatting disabled' : 'Log timestamp formatting enabled');
+											toast.success(formatLogTimestamps ? '已开启日志时间戳格式化' : '已关闭日志时间戳格式化');
 										}}
 										disabled={!$canAccess('settings', 'edit')}
 									/>
 								</div>
-								<p class="text-xs text-muted-foreground">Convert ISO timestamps in logs to your configured date/time format</p>
+								<p class="text-xs text-muted-foreground">将日志中的 ISO 时间戳转换为你配置的日期时间格式</p>
 								<div class="flex items-start gap-1.5 mt-1">
 									<Info class="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
-									<p class="text-xs text-muted-foreground">Docker logs use UTC timestamps by default. When enabled, timestamps like <code class="bg-muted px-1 rounded">2026-01-12T07:47:44Z</code> are converted to local time using your date/time settings.</p>
+									<p class="text-xs text-muted-foreground">Docker 日志默认使用 UTC 时间，启用后时间戳会转换为本地时间。</p>
 								</div>
 							</div>
 						</div>
@@ -407,12 +407,12 @@
 				<Card.Header>
 					<Card.Title class="text-sm font-medium flex items-center gap-2">
 						<ShieldCheck class="w-4 h-4" />
-						Vulnerability scanners
+						漏洞扫描器
 					</Card.Title>
 				</Card.Header>
 				<Card.Content class="space-y-4">
 					<div class="space-y-2">
-						<Label for="grype-image">Grype image</Label>
+						<Label for="grype-image">Grype 镜像</Label>
 						<Input
 							id="grype-image"
 							value={defaultGrypeImage}
@@ -420,10 +420,10 @@
 							disabled={!$canAccess('settings', 'edit')}
 							placeholder={"anchore/grype:v0.110.0"}
 						/>
-						<p class="text-xs text-muted-foreground">Docker image for Grype scanner. Pin to a specific version for supply chain security.</p>
+						<p class="text-xs text-muted-foreground">Grype 扫描器使用的 Docker 镜像，建议固定版本以保证供应链安全。</p>
 					</div>
 					<div class="space-y-2">
-						<Label for="trivy-image">Trivy image</Label>
+						<Label for="trivy-image">Trivy 镜像</Label>
 						<Input
 							id="trivy-image"
 							value={defaultTrivyImage}
@@ -431,10 +431,10 @@
 							disabled={!$canAccess('settings', 'edit')}
 							placeholder={"aquasec/trivy:0.69.3"}
 						/>
-						<p class="text-xs text-muted-foreground">Docker image for Trivy scanner. Pin to a specific version for supply chain security.</p>
+						<p class="text-xs text-muted-foreground">Trivy 扫描器使用的 Docker 镜像，建议固定版本以保证供应链安全。</p>
 					</div>
 					<div class="space-y-2">
-						<Label for="grype-args">Default Grype arguments</Label>
+						<Label for="grype-args">Grype 默认参数</Label>
 						<Input
 							id="grype-args"
 							value={defaultGrypeArgs}
@@ -442,10 +442,10 @@
 							disabled={!$canAccess('settings', 'edit')}
 							placeholder={"-o json -v {image}"}
 						/>
-						<p class="text-xs text-muted-foreground">Use <code class="bg-muted px-1 rounded">{'{image}'}</code> as placeholder for the image name</p>
+						<p class="text-xs text-muted-foreground">使用 <code class="bg-muted px-1 rounded">{'{image}'}</code> 作为镜像名称占位符</p>
 					</div>
 					<div class="space-y-2">
-						<Label for="trivy-args">Default Trivy arguments</Label>
+						<Label for="trivy-args">Trivy 默认参数</Label>
 						<Input
 							id="trivy-args"
 							value={defaultTrivyArgs}
@@ -453,7 +453,7 @@
 							disabled={!$canAccess('settings', 'edit')}
 							placeholder={"image --format json {image}"}
 						/>
-						<p class="text-xs text-muted-foreground">Use <code class="bg-muted px-1 rounded">{'{image}'}</code> as placeholder for the image name</p>
+						<p class="text-xs text-muted-foreground">使用 <code class="bg-muted px-1 rounded">{'{image}'}</code> 作为镜像名称占位符</p>
 					</div>
 				</Card.Content>
 			</Card.Root>
@@ -462,22 +462,22 @@
 				<Card.Header>
 					<Card.Title class="text-sm font-medium flex items-center gap-2">
 						<Database class="w-4 h-4" />
-						System jobs
+						系统任务
 					</Card.Title>
 				</Card.Header>
 				<Card.Content class="space-y-4">
 					<div class="space-y-3">
 						<div>
 							<div class="flex items-center gap-2">
-								<Label>Activity event collection mode</Label>
+								<Label>活动事件采集模式</Label>
 								<Tooltip.Root>
 									<Tooltip.Trigger>
 										<HelpCircle class="w-3.5 h-3.5 text-muted-foreground" />
 									</Tooltip.Trigger>
 									<Tooltip.Content class="w-80">
 										<p class="text-xs">
-											<strong>Stream:</strong> Continuous event stream from Docker, instant notifications, higher CPU usage<br />
-											<strong>Poll:</strong> Periodic checks for new events, slight notification delay, lower CPU usage
+											<strong>流式：</strong> Docker 持续事件流，实时通知，CPU 占用较高<br />
+											<strong>轮询：</strong> 定期检查新事件，通知略有延迟，CPU 占用较低
 										</p>
 									</Tooltip.Content>
 								</Tooltip.Root>
@@ -494,7 +494,7 @@
 										class="accent-primary w-4 h-4"
 									/>
 									<Activity class="w-3.5 h-3.5" />
-									<span class="text-sm">Stream</span>
+									<span class="text-sm">流式</span>
 								</label>
 								<label class="flex items-center gap-2 cursor-pointer">
 									<input
@@ -507,10 +507,10 @@
 										class="accent-primary w-4 h-4"
 									/>
 									<Clock class="w-3.5 h-3.5" />
-									<span class="text-sm">Poll</span>
+									<span class="text-sm">轮询</span>
 								</label>
 
-								<span class="text-xs text-muted-foreground {(eventCollectionMode || 'stream') === 'poll' ? '' : 'invisible'}">every</span>
+								<span class="text-xs text-muted-foreground {(eventCollectionMode || 'stream') === 'poll' ? '' : 'invisible'}">每</span>
 								<Select.Root
 									type="single"
 									value={String(eventPollInterval || 60000)}
@@ -533,15 +533,14 @@
 
 					<div class="space-y-1 pt-2 border-t">
 						<div class="flex items-center gap-2">
-							<Label for="metrics-interval">Metrics collection interval</Label>
+							<Label for="metrics-interval">指标采集间隔</Label>
 							<Tooltip.Root>
 								<Tooltip.Trigger>
 									<HelpCircle class="w-3.5 h-3.5 text-muted-foreground" />
 								</Tooltip.Trigger>
 								<Tooltip.Content class="w-80">
 									<p class="text-xs">
-										How often to collect CPU/memory metrics from running containers. Lower intervals
-										provide more frequent updates but increase CPU usage.
+										采集运行中容器 CPU/内存指标的频率，间隔越小更新越频繁，但 CPU 占用越高
 									</p>
 								</Tooltip.Content>
 							</Tooltip.Root>
@@ -568,14 +567,14 @@
 
 					<div class="space-y-1 pt-2 border-t">
 						<div class="flex items-center gap-3">
-							<Label for="schedule-retention">Schedule execution cleanup</Label>
+							<Label for="schedule-retention">计划执行清理</Label>
 							<TogglePill
 								checked={scheduleCleanupEnabled}
 								onchange={handleScheduleCleanupEnabledChange}
 								disabled={!$canAccess('settings', 'edit')}
 							/>
 						</div>
-						<p class="text-xs text-muted-foreground">Delete executions older than specified days</p>
+						<p class="text-xs text-muted-foreground">删除超过指定天数的执行记录</p>
 						<div class="flex items-center gap-2 mt-2">
 							<Input
 								id="schedule-retention"
@@ -587,7 +586,7 @@
 								disabled={!$canAccess('settings', 'edit') || !scheduleCleanupEnabled}
 								class="w-20"
 							/>
-							<span class="text-sm text-muted-foreground">days</span>
+							<span class="text-sm text-muted-foreground">天</span>
 							<div class="ml-auto">
 								<CronEditor
 									value={scheduleCleanupCron}
@@ -599,14 +598,14 @@
 					</div>
 					<div class="space-y-1">
 						<div class="flex items-center gap-3">
-							<Label for="event-retention">Container event cleanup</Label>
+							<Label for="event-retention">容器事件清理</Label>
 							<TogglePill
 								checked={eventCleanupEnabled}
 								onchange={handleEventCleanupEnabledChange}
 								disabled={!$canAccess('settings', 'edit')}
 							/>
 						</div>
-						<p class="text-xs text-muted-foreground">Delete events older than specified days</p>
+						<p class="text-xs text-muted-foreground">删除超过指定天数的事件记录</p>
 						<div class="flex items-center gap-2 mt-2">
 							<Input
 								id="event-retention"
@@ -618,7 +617,7 @@
 								disabled={!$canAccess('settings', 'edit') || !eventCleanupEnabled}
 								class="w-20"
 							/>
-							<span class="text-sm text-muted-foreground">days</span>
+							<span class="text-sm text-muted-foreground">天</span>
 							<div class="ml-auto">
 								<CronEditor
 									value={eventCleanupCron}
@@ -630,12 +629,11 @@
 					</div>
 					<div class="space-y-1 pt-2 border-t">
 						<div class="flex items-center gap-3">
-							<Label>Volume helper cleanup</Label>
-							<Badge variant="secondary" class="text-xs">Always enabled</Badge>
+							<Label>数据卷助手清理</Label>
+							<Badge variant="secondary" class="text-xs">始终启用</Badge>
 						</div>
 						<p class="text-xs text-muted-foreground">
-							Automatically removes temporary containers used for browsing volume contents.
-							Runs every 30 minutes and on startup.
+							自动删除用于浏览数据卷内容的临时容器，每 30 分钟执行一次，启动时也会执行
 						</p>
 					</div>
 				</Card.Content>

@@ -42,22 +42,22 @@
 
 <div class="flex-1 min-h-0 flex flex-col gap-3 overflow-hidden">
 	<div class="shrink-0 flex flex-wrap justify-between items-center gap-3 min-h-8">
-		<PageHeader icon={Settings} title="Settings" showConnection={false} />
+		<PageHeader icon={Settings} title="设置" showConnection={false} />
 	</div>
 
 	<Tabs.Root value={activeTab} onValueChange={handleTabChange} class="w-full flex-1 min-h-0 flex flex-col">
 		<Tabs.List class="w-full flex flex-wrap h-auto gap-1 p-1">
 			<Tabs.Trigger value="general" class="flex-1 flex items-center justify-center gap-1.5">
 				<Settings class="w-4 h-4" />
-				General
+				常规
 			</Tabs.Trigger>
 			<Tabs.Trigger value="environments" class="flex-1 flex items-center justify-center gap-1.5">
 				<Globe class="w-4 h-4" />
-				Environments
+				环境
 			</Tabs.Trigger>
 			<Tabs.Trigger value="registries" class="flex-1 flex items-center justify-center gap-1.5">
 				<Download class="w-4 h-4" />
-				Registries
+				镜像仓库
 			</Tabs.Trigger>
 			<Tabs.Trigger value="git" class="flex-1 flex items-center justify-center gap-1.5">
 				<GitBranch class="w-4 h-4" />
@@ -65,23 +65,23 @@
 			</Tabs.Trigger>
 			<Tabs.Trigger value="config-sets" class="flex-1 flex items-center justify-center gap-1.5">
 				<Layers class="w-4 h-4" />
-				Config sets
+				配置集
 			</Tabs.Trigger>
 			<Tabs.Trigger value="notifications" class="flex-1 flex items-center justify-center gap-1.5">
 				<Bell class="w-4 h-4" />
-				Notifications
+				通知
 			</Tabs.Trigger>
 			<Tabs.Trigger value="auth" class="flex-1 flex items-center justify-center gap-1.5">
 				<Users class="w-4 h-4" />
-				Authentication
+				认证
 			</Tabs.Trigger>
 			<Tabs.Trigger value="license" class="flex-1 flex items-center justify-center gap-1.5">
 				<Crown class="w-4 h-4" />
-				License
+				许可证
 			</Tabs.Trigger>
 			<Tabs.Trigger value="about" class="flex-1 flex items-center justify-center gap-1.5">
 				<Info class="w-4 h-4" />
-				About
+				关于
 			</Tabs.Trigger>
 		</Tabs.List>
 

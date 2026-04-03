@@ -15,18 +15,18 @@ import type { RequestHandler } from './$types';
 export const GET: RequestHandler = async ({ params, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('notifications', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const id = parseInt(params.id);
 		if (isNaN(id)) {
-			return json({ error: 'Invalid ID' }, { status: 400 });
+			return json({ error: '无效的 ID' }, { status: 400 });
 		}
 
 		const setting = await getNotificationSetting(id);
 		if (!setting) {
-			return json({ error: 'Notification setting not found' }, { status: 404 });
+			return json({ error: '未找到通知设置' }, { status: 404 });
 		}
 
 		// Don't expose passwords
@@ -40,8 +40,8 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 
 		return json(safeSetting);
 	} catch (error) {
-		console.error('Error fetching notification setting:', error);
-		return json({ error: 'Failed to fetch notification setting' }, { status: 500 });
+		console.error('获取通知设置失败:', error);
+		return json({ error: '获取通知设置失败' }, { status: 500 });
 	}
 };
 
@@ -49,18 +49,18 @@ export const PUT: RequestHandler = async (event) => {
 	const { params, request, cookies } = event;
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('notifications', 'edit')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const id = parseInt(params.id);
 		if (isNaN(id)) {
-			return json({ error: 'Invalid ID' }, { status: 400 });
+			return json({ error: '无效的 ID' }, { status: 400 });
 		}
 
 		const existing = await getNotificationSetting(id);
 		if (!existing) {
-			return json({ error: 'Notification setting not found' }, { status: 404 });
+			return json({ error: '未找到通知设置' }, { status: 404 });
 		}
 
 		const body = await request.json();
@@ -73,7 +73,7 @@ export const PUT: RequestHandler = async (event) => {
 			if (existing.type === 'smtp') {
 				const smtpConfig = config as SmtpConfig;
 				if (!smtpConfig.host || !smtpConfig.port || !smtpConfig.from_email || !smtpConfig.to_emails?.length) {
-					return json({ error: 'SMTP config requires host, port, from_email, and to_emails' }, { status: 400 });
+					return json({ error: 'SMTP 配置必须包含主机、端口、发件邮箱和收件邮箱' }, { status: 400 });
 				}
 				// If password is masked, keep the existing one
 				if (smtpConfig.password === '********') {
@@ -82,7 +82,7 @@ export const PUT: RequestHandler = async (event) => {
 			} else if (existing.type === 'apprise') {
 				const appriseConfig = config as AppriseConfig;
 				if (!appriseConfig.urls?.length) {
-					return json({ error: 'Apprise config requires at least one URL' }, { status: 400 });
+					return json({ error: 'Apprise 配置至少需要一个 URL' }, { status: 400 });
 				}
 			}
 		}
@@ -94,7 +94,7 @@ export const PUT: RequestHandler = async (event) => {
 			eventTypes: resolvedEventTypes as NotificationEventType[]
 		});
 		if (!updated) {
-			return json({ error: 'Failed to update notification setting' }, { status: 500 });
+			return json({ error: '更新通知设置失败' }, { status: 500 });
 		}
 
 		// Compute diff for audit (exclude config to avoid logging sensitive data)
@@ -117,8 +117,8 @@ export const PUT: RequestHandler = async (event) => {
 
 		return json(safeSetting);
 	} catch (error: any) {
-		console.error('Error updating notification setting:', error);
-		return json({ error: error.message || 'Failed to update notification setting' }, { status: 500 });
+		console.error('更新通知设置失败:', error);
+		return json({ error: error.message || '更新通知设置失败' }, { status: 500 });
 	}
 };
 
@@ -126,24 +126,24 @@ export const DELETE: RequestHandler = async (event) => {
 	const { params, cookies } = event;
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('notifications', 'delete')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const id = parseInt(params.id);
 		if (isNaN(id)) {
-			return json({ error: 'Invalid ID' }, { status: 400 });
+			return json({ error: '无效的 ID' }, { status: 400 });
 		}
 
 		// Get notification name before deletion for audit log
 		const setting = await getNotificationSetting(id);
 		if (!setting) {
-			return json({ error: 'Notification setting not found' }, { status: 404 });
+			return json({ error: '未找到通知设置' }, { status: 404 });
 		}
 
 		const deleted = await deleteNotificationSetting(id);
 		if (!deleted) {
-			return json({ error: 'Failed to delete notification setting' }, { status: 500 });
+			return json({ error: '删除通知设置失败' }, { status: 500 });
 		}
 
 		// Audit log
@@ -151,7 +151,7 @@ export const DELETE: RequestHandler = async (event) => {
 
 		return json({ success: true });
 	} catch (error) {
-		console.error('Error deleting notification setting:', error);
-		return json({ error: 'Failed to delete notification setting' }, { status: 500 });
+		console.error('删除通知设置失败:', error);
+		return json({ error: '删除通知设置失败' }, { status: 500 });
 	}
 };

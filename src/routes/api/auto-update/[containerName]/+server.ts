@@ -33,8 +33,8 @@ export const GET: RequestHandler = async ({ params, url }) => {
 			vulnerabilityCriteria: setting.vulnerabilityCriteria || 'never'
 		});
 	} catch (error) {
-		console.error('Failed to get auto-update setting:', error);
-		return json({ error: 'Failed to get auto-update setting' }, { status: 500 });
+		console.error('获取自动更新设置失败:', error);
+		return json({ error: '获取自动更新设置失败' }, { status: 500 });
 	}
 };
 
@@ -96,8 +96,8 @@ export const POST: RequestHandler = async ({ params, url, request }) => {
 			vulnerabilityCriteria: setting.vulnerabilityCriteria || 'never'
 		});
 	} catch (error) {
-		console.error('Failed to save auto-update setting:', error);
-		return json({ error: 'Failed to save auto-update setting' }, { status: 500 });
+		console.error('保存自动更新设置失败:', error);
+		return json({ error: '保存自动更新设置失败' }, { status: 500 });
 	}
 };
 
@@ -120,7 +120,7 @@ export const DELETE: RequestHandler = async ({ params, url }) => {
 
 		return json({ success: deleted });
 	} catch (error) {
-		console.error('Failed to delete auto-update setting:', error);
-		return json({ error: 'Failed to delete auto-update setting' }, { status: 500 });
+		console.error('删除自动更新设置失败:', error);
+		return json({ error: '删除自动更新设置失败' }, { status: 500 });
 	}
 };

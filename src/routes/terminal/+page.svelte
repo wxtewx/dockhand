@@ -1,5 +1,5 @@
 <svelte:head>
-	<title>Terminal - Dockhand</title>
+	<title>终端 - Dockhand</title>
 </svelte:head>
 
 <script lang="ts">
@@ -91,7 +91,7 @@
 				clearSelection();
 			}
 		} catch (error) {
-			console.error('Failed to fetch containers:', error);
+			console.error('获取容器失败：', error);
 		}
 	}
 
@@ -116,7 +116,7 @@
 				selectedShell = bestShell;
 			}
 		} catch (error) {
-			console.error('Failed to detect shells:', error);
+			console.error('检测终端失败：', error);
 		} finally {
 			detectingShells = false;
 		}
@@ -217,7 +217,7 @@
 
 {#if $environments.length === 0 || !$currentEnvironment}
 	<div class="flex flex-col flex-1 min-h-0 h-full">
-		<PageHeader icon={TerminalIcon} title="Shell" class="h-9 mb-3" />
+		<PageHeader icon={TerminalIcon} title="终端" class="h-9 mb-3" />
 		<NoEnvironment />
 	</div>
 {:else}
@@ -231,7 +231,7 @@
 				<Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
 				<Input
 					type="text"
-					placeholder={selectedContainer ? selectedContainer.name : "Search running containers..."}
+					placeholder={selectedContainer ? selectedContainer.name : "搜索运行中的容器..."}
 					bind:value={searchQuery}
 					onfocus={handleInputFocus}
 					onblur={handleInputBlur}
@@ -246,7 +246,7 @@
 				<div class="absolute top-full left-0 right-0 mt-1 border rounded-md bg-popover shadow-lg z-50 max-h-64 overflow-auto">
 					{#if filteredContainers().length === 0}
 						<div class="px-3 py-2 text-sm text-muted-foreground">
-							{containers.length === 0 ? 'No running containers' : 'No matches found'}
+							{containers.length === 0 ? '无运行中的容器' : '未找到匹配项'}
 						</div>
 					{:else}
 						{#each filteredContainers() as container}
@@ -258,7 +258,7 @@
 								<span class="font-medium truncate">{container.name}</span>
 								<span class="text-muted-foreground text-xs truncate">({container.image})</span>
 								{#if selectedContainer?.id === container.id}
-									<span class="ml-auto text-xs text-primary">connected</span>
+									<span class="ml-auto text-xs text-primary">已连接</span>
 								{/if}
 							</button>
 						{/each}
@@ -270,7 +270,7 @@
 		{#if selectedContainer}
 			<Button size="sm" variant="ghost" onclick={clearSelection} class="h-9 px-3 text-sm text-muted-foreground hover:text-foreground">
 				<Unplug class="w-4 h-4 mr-1.5" />
-				Disconnect
+				断开连接
 			</Button>
 		{/if}
 
@@ -290,7 +290,7 @@
 							 (selectedShell === '/bin/bash' ? 'Bash' :
 							  selectedShell === '/bin/sh' ? 'Shell (sh)' :
 							  selectedShell === '/bin/zsh' ? 'Zsh' :
-							  selectedShell === '/bin/ash' ? 'Ash (Alpine)' : 'Select')}
+							  selectedShell === '/bin/ash' ? 'Ash (Alpine)' : '请选择')}
 						</span>
 					</Select.Trigger>
 					<Select.Content>
@@ -305,7 +305,7 @@
 									<span class={option.available ? 'text-foreground' : 'text-muted-foreground/60'}>
 										{option.label}
 										{#if !option.available}
-											<span class="text-xs ml-1">(unavailable)</span>
+											<span class="text-xs ml-1">(不可用)</span>
 										{/if}
 									</span>
 								</Select.Item>
@@ -335,11 +335,11 @@
 
 		<!-- User selector - always visible -->
 		<div class="flex items-center gap-2">
-			<Label class="text-sm text-muted-foreground">User:</Label>
+			<Label class="text-sm text-muted-foreground">用户：</Label>
 			<Select.Root type="single" bind:value={selectedUser}>
 				<Select.Trigger class="h-9 w-48">
 					<User class="w-4 h-4 mr-2 text-muted-foreground" />
-					<span>{USER_OPTIONS.find(o => o.value === selectedUser)?.label || 'Select'}</span>
+					<span>{USER_OPTIONS.find(o => o.value === selectedUser)?.label || '请选择'}</span>
 				</Select.Trigger>
 				<Select.Content>
 					{#each USER_OPTIONS as option}
@@ -359,24 +359,24 @@
 			<div class="flex items-center justify-center h-full text-muted-foreground">
 				<div class="text-center">
 					<TerminalIcon class="w-12 h-12 mx-auto mb-3 opacity-50" />
-					<p>Select a container to open shell</p>
+					<p>选择容器以打开终端</p>
 				</div>
 			</div>
 		{:else if detectingShells}
 			<div class="flex items-center justify-center h-full text-muted-foreground">
 				<div class="text-center">
 					<Loader2 class="w-12 h-12 mx-auto mb-3 opacity-50 animate-spin" />
-					<p>Detecting available shells...</p>
+					<p>正在检测可用终端...</p>
 				</div>
 			</div>
 		{:else if !anyShellAvailable}
 			<div class="flex items-center justify-center h-full text-muted-foreground">
 				<div class="text-center">
 					<AlertCircle class="w-12 h-12 mx-auto mb-3 opacity-50 text-amber-500" />
-					<p class="font-medium text-amber-500">No shell available in this container</p>
-					<p class="text-sm mt-2">This container may not have a shell installed.</p>
+					<p class="font-medium text-amber-500">该容器中无可用终端</p>
+					<p class="text-sm mt-2">该容器可能未安装终端程序。</p>
 					<p class="text-xs mt-1 text-muted-foreground/70">
-						Containers built from scratch or distroless images often don't include shells.
+						基于空白镜像或极简镜像构建的容器通常不包含终端。
 					</p>
 				</div>
 			</div>
@@ -387,10 +387,10 @@
 					{#if connected}
 						<span class="inline-flex items-center gap-1 text-xs text-green-500">
 							<span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-							Connected
+							已连接
 						</span>
 					{:else}
-						<span class="text-xs text-zinc-500">Disconnected</span>
+						<span class="text-xs text-zinc-500">已断开连接</span>
 					{/if}
 				</div>
 				<div class="flex items-center gap-3">
@@ -407,21 +407,21 @@
 					<button
 						onclick={() => terminalComponent?.copyOutput()}
 						class="p-1 rounded hover:bg-zinc-800 transition-colors"
-						title="Copy output"
+						title="复制输出内容"
 					>
 						<Copy class="w-3 h-3 text-zinc-500 hover:text-zinc-300" />
 					</button>
 					<button
 						onclick={() => terminalComponent?.clear()}
 						class="p-1 rounded hover:bg-zinc-800 transition-colors"
-						title="Clear (Cmd+L)"
+						title="清空 (Cmd+L)"
 					>
 						<Trash2 class="w-3 h-3 text-zinc-500 hover:text-zinc-300" />
 					</button>
 					<button
 						onclick={() => terminalComponent?.reconnect()}
 						class="p-1 rounded hover:bg-zinc-800 transition-colors"
-						title="Reconnect"
+						title="重新连接"
 					>
 						<RefreshCw class="w-3 h-3 text-zinc-500 hover:text-zinc-300" />
 					</button>

@@ -80,7 +80,7 @@ export async function sseToJSON(sseResponse: Response): Promise<Response> {
 		reader.releaseLock();
 	}
 
-	const body = resultData ?? { success: false, error: 'No result' };
+	const body = resultData ?? { success: false, error: '无结果' };
 	return new Response(JSON.stringify(body), {
 		headers: { 'Content-Type': 'application/json' }
 	});
@@ -107,7 +107,7 @@ export function createJobResponse(
 		const encoder = new TextEncoder();
 		const stream = new ReadableStream({
 			async start(controller) {
-				let resultData: unknown = { success: false, error: 'No result' };
+				let resultData: unknown = { success: false, error: '无结果' };
 				const send = (_event: string, data: unknown) => {
 					resultData = data;
 				};

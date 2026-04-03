@@ -28,7 +28,7 @@
 				defaultBasePath = data.basePath;
 			}
 		} catch (e) {
-			console.error('Failed to load default base path:', e);
+			console.error('加载默认基础路径失败:', e);
 		}
 	}
 
@@ -40,7 +40,7 @@
 				locations = settings.externalStackPaths || [];
 			}
 		} catch (e) {
-			console.error('Failed to load recent locations:', e);
+			console.error('加载最近位置失败:', e);
 		}
 	}
 
@@ -52,7 +52,7 @@
 				body: JSON.stringify({ externalStackPaths: newLocations })
 			});
 		} catch (e) {
-			console.error('Failed to save recent locations:', e);
+			console.error('保存最近位置失败:', e);
 		}
 	}
 
@@ -75,7 +75,7 @@
 </script>
 
 <div class="w-56 border-r p-3 overflow-y-auto shrink-0">
-	<h3 class="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Locations</h3>
+	<h3 class="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">位置</h3>
 	<div class="space-y-1">
 		<!-- Default Dockhand location (always shown, not removable) -->
 		{#if defaultBasePath}
@@ -85,7 +85,7 @@
 				onclick={() => onSelect(defaultBasePath!)}
 			>
 				<Home class="w-4 h-4 shrink-0 text-sky-500" />
-				<span class="truncate" title={defaultBasePath}>Dockhand default</span>
+				<span class="truncate" title={defaultBasePath}>Dockhand 默认</span>
 			</button>
 		{/if}
 
@@ -104,7 +104,7 @@
 					type="button"
 					class="p-1 opacity-0 group-hover:opacity-100 hover:bg-muted rounded transition-opacity"
 					onclick={() => handleRemove(location)}
-					title="Remove from recent"
+					title="从最近列表中移除"
 				>
 					<X class="w-3 h-3 text-muted-foreground" />
 				</button>
@@ -113,7 +113,7 @@
 
 		{#if !defaultBasePath && locations.length === 0}
 			<p class="text-xs text-muted-foreground italic px-2">
-				No locations yet. Browse folders to add them here.
+				暂无位置。浏览文件夹即可添加到此处。
 			</p>
 		{/if}
 	</div>

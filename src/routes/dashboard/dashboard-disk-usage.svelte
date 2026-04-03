@@ -27,10 +27,10 @@
 	// Pie chart data - only include non-zero values
 	const pieData = $derived(
 		[
-			{ key: 'images', label: 'Images', value: imagesSize, color: '#0ea5e9' },
-			{ key: 'containers', label: 'Containers', value: containersSize, color: '#10b981' },
-			{ key: 'volumes', label: 'Volumes', value: volumesSize, color: '#f59e0b' },
-			{ key: 'buildCache', label: 'Build cache', value: buildCacheSize, color: '#8b5cf6' }
+			{ key: 'images', label: '镜像', value: imagesSize, color: '#0ea5e9' },
+			{ key: 'containers', label: '容器', value: containersSize, color: '#10b981' },
+			{ key: 'volumes', label: '数据卷', value: volumesSize, color: '#f59e0b' },
+			{ key: 'buildCache', label: '构建缓存', value: buildCacheSize, color: '#8b5cf6' }
 		].filter(d => d.value > 0)
 	);
 
@@ -52,7 +52,7 @@
 	<div class="{withBorder ? 'pt-2 border-t border-border/50' : ''}">
 		<div class="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
 			<HardDrive class="w-3 h-3" />
-			<span class="font-medium">Disk usage</span>
+			<span class="font-medium">磁盘使用</span>
 			<Loader2 class="w-3 h-3 animate-spin" />
 			<div class="skeleton w-12 h-3.5 rounded ml-auto"></div>
 		</div>
@@ -65,13 +65,13 @@
 			<div class="flex items-center gap-1.5">
 				<div class="w-2 h-2 rounded-full bg-muted shrink-0"></div>
 				<Image class="w-3 h-3 text-muted-foreground/50 shrink-0" />
-				<span class="text-muted-foreground/50">Images</span>
+				<span class="text-muted-foreground/50">镜像</span>
 				<div class="skeleton w-10 h-3 rounded ml-auto"></div>
 			</div>
 			<div class="flex items-center gap-1.5">
 				<div class="w-2 h-2 rounded-full bg-muted shrink-0"></div>
 				<Database class="w-3 h-3 text-muted-foreground/50 shrink-0" />
-				<span class="text-muted-foreground/50">Volumes</span>
+				<span class="text-muted-foreground/50">数据卷</span>
 				<div class="skeleton w-10 h-3 rounded ml-auto"></div>
 			</div>
 		</div>
@@ -80,7 +80,7 @@
 	<div class="{withBorder ? 'pt-2 border-t border-border/50' : ''}">
 		<div class="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
 			<HardDrive class="w-3 h-3" />
-			<span class="font-medium">Disk usage</span>
+			<span class="font-medium">磁盘使用</span>
 			<span class="ml-auto font-medium text-foreground">{formatBytes(totalSize)}</span>
 		</div>
 
@@ -135,28 +135,28 @@
 				<div
 					class="bg-sky-500 h-full transition-all duration-300"
 					style="width: {getPercentage(imagesSize)}%"
-					title="Images: {formatBytes(imagesSize)}"
+					title="镜像: {formatBytes(imagesSize)}"
 				></div>
 			{/if}
 			{#if containersSize > 0}
 				<div
 					class="bg-emerald-500 h-full transition-all duration-300"
 					style="width: {getPercentage(containersSize)}%"
-					title="Containers: {formatBytes(containersSize)}"
+					title="容器: {formatBytes(containersSize)}"
 				></div>
 			{/if}
 			{#if volumesSize > 0}
 				<div
 					class="bg-amber-500 h-full transition-all duration-300"
 					style="width: {getPercentage(volumesSize)}%"
-					title="Volumes: {formatBytes(volumesSize)}"
+					title="数据卷: {formatBytes(volumesSize)}"
 				></div>
 			{/if}
 			{#if buildCacheSize > 0}
 				<div
 					class="bg-violet-500 h-full transition-all duration-300"
 					style="width: {getPercentage(buildCacheSize)}%"
-					title="Build cache: {formatBytes(buildCacheSize)}"
+					title="构建缓存: {formatBytes(buildCacheSize)}"
 				></div>
 			{/if}
 		</div>
@@ -167,7 +167,7 @@
 				<div class="flex items-center gap-1.5">
 					<div class="w-2 h-2 rounded-full bg-sky-500 shrink-0"></div>
 					<Image class="w-3 h-3 text-muted-foreground shrink-0" />
-					<span class="text-muted-foreground truncate">Images</span>
+					<span class="text-muted-foreground truncate">镜像</span>
 					<span class="ml-auto font-medium tabular-nums">{formatBytes(imagesSize)}</span>
 				</div>
 			{/if}
@@ -175,7 +175,7 @@
 				<div class="flex items-center gap-1.5">
 					<div class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></div>
 					<Box class="w-3 h-3 text-muted-foreground shrink-0" />
-					<span class="text-muted-foreground truncate">Containers</span>
+					<span class="text-muted-foreground truncate">容器</span>
 					<span class="ml-auto font-medium tabular-nums">{formatBytes(containersSize)}</span>
 				</div>
 			{/if}
@@ -183,7 +183,7 @@
 				<div class="flex items-center gap-1.5">
 					<div class="w-2 h-2 rounded-full bg-amber-500 shrink-0"></div>
 					<Database class="w-3 h-3 text-muted-foreground shrink-0" />
-					<span class="text-muted-foreground truncate">Volumes</span>
+					<span class="text-muted-foreground truncate">数据卷</span>
 					<span class="ml-auto font-medium tabular-nums">{formatBytes(volumesSize)}</span>
 				</div>
 			{/if}
@@ -191,7 +191,7 @@
 				<div class="flex items-center gap-1.5">
 					<div class="w-2 h-2 rounded-full bg-violet-500 shrink-0"></div>
 					<Hammer class="w-3 h-3 text-muted-foreground shrink-0" />
-					<span class="text-muted-foreground truncate">Build cache</span>
+					<span class="text-muted-foreground truncate">构建缓存</span>
 					<span class="ml-auto font-medium tabular-nums">{formatBytes(buildCacheSize)}</span>
 				</div>
 			{/if}

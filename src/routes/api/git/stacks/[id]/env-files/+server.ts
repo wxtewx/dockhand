@@ -16,12 +16,12 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 		const id = parseInt(params.id);
 		const gitStack = await getGitStack(id);
 		if (!gitStack) {
-			return json({ error: 'Git stack not found' }, { status: 404 });
+			return json({ error: 'Git 堆栈不存在' }, { status: 404 });
 		}
 
 		// Permission check with environment context
 		if (auth.authEnabled && !await auth.can('stacks', 'view', gitStack.environmentId || undefined)) {
-			return json({ error: 'Permission denied' }, { status: 403 });
+			return json({ error: '权限不足' }, { status: 403 });
 		}
 
 		const result = await listGitStackEnvFiles(id);
@@ -31,8 +31,8 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 
 		return json({ files: result.files });
 	} catch (error) {
-		console.error('Failed to list env files:', error);
-		return json({ error: 'Failed to list env files' }, { status: 500 });
+		console.error('获取环境变量文件列表失败:', error);
+		return json({ error: '获取环境变量文件列表失败' }, { status: 500 });
 	}
 };
 
@@ -49,17 +49,17 @@ export const POST: RequestHandler = async ({ params, cookies, request }) => {
 		const id = parseInt(params.id);
 		const gitStack = await getGitStack(id);
 		if (!gitStack) {
-			return json({ error: 'Git stack not found' }, { status: 404 });
+			return json({ error: 'Git 堆栈不存在' }, { status: 404 });
 		}
 
 		// Permission check with environment context
 		if (auth.authEnabled && !await auth.can('stacks', 'view', gitStack.environmentId || undefined)) {
-			return json({ error: 'Permission denied' }, { status: 403 });
+			return json({ error: '权限不足' }, { status: 403 });
 		}
 
 		const body = await request.json();
 		if (!body.path || typeof body.path !== 'string') {
-			return json({ error: 'File path is required' }, { status: 400 });
+			return json({ error: '文件路径为必填项' }, { status: 400 });
 		}
 
 		const result = await readGitStackEnvFile(id, body.path);
@@ -69,7 +69,7 @@ export const POST: RequestHandler = async ({ params, cookies, request }) => {
 
 		return json({ vars: result.vars });
 	} catch (error) {
-		console.error('Failed to read env file:', error);
-		return json({ error: 'Failed to read env file' }, { status: 500 });
+		console.error('读取环境变量文件失败:', error);
+		return json({ error: '读取环境变量文件失败' }, { status: 500 });
 	}
 };

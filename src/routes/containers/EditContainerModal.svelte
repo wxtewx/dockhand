@@ -75,7 +75,7 @@
 				configSets = await response.json();
 			}
 		} catch (err) {
-			console.error('Failed to fetch config sets:', err);
+			console.error('获取配置集失败:', err);
 		}
 	}
 
@@ -248,7 +248,7 @@
 				availableNetworks = await response.json();
 			}
 		} catch (err) {
-			console.error('Failed to fetch networks:', err);
+			console.error('获取网络失败:', err);
 		}
 	}
 
@@ -289,7 +289,7 @@
 				const settings = data.settings || data;
 			}
 		} catch (err) {
-			console.error('Failed to check scanner settings:', err);
+			console.error('检查扫描器设置失败:', err);
 		}
 	}
 
@@ -312,7 +312,7 @@
 				};
 			}
 		} catch (err) {
-			console.error('Failed to fetch auto-update settings:', err);
+			console.error('获取自动更新设置失败:', err);
 		}
 	}
 
@@ -329,7 +329,7 @@
 				})
 			});
 		} catch (err) {
-			console.error('Failed to save auto-update settings:', err);
+			console.error('保存自动更新设置失败:', err);
 		}
 	}
 
@@ -348,7 +348,7 @@
 			const data = await response.json();
 
 			if (!response.ok || data.error) {
-				throw new Error(data.error || `Failed to fetch container: ${response.status}`);
+				throw new Error(data.error || `获取容器失败: ${response.status}`);
 			}
 
 			// Parse basic container data
@@ -593,7 +593,7 @@
 				runtime
 			};
 		} catch (err) {
-			error = 'Failed to load container data: ' + String(err);
+			error = '加载容器数据失败：' + String(err);
 		} finally {
 			loadingData = false;
 			requestAnimationFrame(() => {
@@ -764,12 +764,12 @@
 
 		let hasErrors = false;
 		if (!name.trim()) {
-			errors.name = 'Container name is required';
+			errors.name = '容器名称为必填项';
 			hasErrors = true;
 		}
 
 		if (!image.trim()) {
-			errors.image = 'Image name is required';
+			errors.image = '镜像名称为必填项';
 			hasErrors = true;
 		}
 
@@ -793,7 +793,7 @@
 		try {
 			// If only name changed, use the rename endpoint
 			if (hasOnlyNameChanged()) {
-				statusMessage = 'Renaming container...';
+				statusMessage = '正在重命名容器...';
 
 				const response = await fetch(appendEnvParam(
 					`/api/containers/${containerId}/rename`,
@@ -808,12 +808,12 @@
 				const result = await response.json();
 
 				if (!response.ok) {
-					error = result.error || 'Failed to rename container';
+					error = result.error || '重命名容器失败';
 					loading = false;
 					return;
 				}
 
-				statusMessage = 'Container renamed successfully!';
+				statusMessage = '容器重命名成功！';
 
 				if (autoUpdateChanged) {
 					await saveAutoUpdateSettings(name.trim());
@@ -828,7 +828,7 @@
 
 			// Full update required - recreate container
 			if (containerConfigChanged) {
-				statusMessage = 'Updating container...';
+				statusMessage = '正在更新容器...';
 
 				const ports: any = {};
 				portMappings
@@ -944,23 +944,23 @@
 				const result = await response.json();
 
 				if (!response.ok) {
-					error = result.error || 'Failed to update container';
+					error = result.error || '更新容器失败';
 					if (result.details) {
 						error += ': ' + result.details;
 					}
 					return;
 				}
 
-				statusMessage = 'Container updated successfully!';
+				statusMessage = '容器更新成功！';
 			}
 
 			if (autoUpdateChanged) {
 				if (!containerConfigChanged) {
-					statusMessage = 'Saving auto-update settings...';
+					statusMessage = '正在保存自动更新设置...';
 				}
 				await saveAutoUpdateSettings(name.trim());
 				if (!containerConfigChanged) {
-					statusMessage = 'Auto-update settings saved!';
+					statusMessage = '自动更新设置已保存！';
 				}
 			}
 
@@ -970,7 +970,7 @@
 			onClose();
 		} catch (err) {
 			if (signal.aborted) return;
-			error = 'Failed to update container: ' + String(err);
+			error = '更新容器失败：' + String(err);
 		} finally {
 			loading = false;
 			abortController = null;
@@ -1009,7 +1009,7 @@
 	<Dialog.Content class="max-w-4xl w-full max-h-[90vh] p-0 flex flex-col overflow-hidden sm:max-h-[85vh]">
 		<Dialog.Header class="px-5 py-4 border-b bg-muted/30 shrink-0 sticky top-0 z-10">
 			<Dialog.Title class="text-base font-semibold flex items-center gap-1">
-				Edit container
+				编辑容器
 				{#if isEditingTitle}
 					<span class="ml-1">-</span>
 					<input
@@ -1025,7 +1025,7 @@
 					<button
 						type="button"
 						onclick={saveEditingTitle}
-						title="Save"
+						title="保存"
 						class="p-0.5 rounded hover:bg-muted transition-colors"
 					>
 						<Check class="w-3 h-3 text-green-500 hover:text-green-600" />
@@ -1033,7 +1033,7 @@
 					<button
 						type="button"
 						onclick={cancelEditingTitle}
-						title="Cancel"
+						title="取消"
 						class="p-0.5 rounded hover:bg-muted transition-colors"
 					>
 						<X class="w-3 h-3 text-muted-foreground hover:text-foreground" />
@@ -1043,7 +1043,7 @@
 					<button
 						type="button"
 						onclick={startEditingTitle}
-						title="Rename container"
+						title="重命名容器"
 						class="p-0.5 rounded hover:bg-muted transition-colors ml-0.5"
 					>
 						<Pencil class="w-3 h-3 text-muted-foreground hover:text-foreground" />
@@ -1055,7 +1055,7 @@
 		{#if loadingData}
 			<div class="flex-1 flex items-center justify-center text-muted-foreground text-sm min-h-[200px]">
 				<Loader2 class="w-5 h-5 animate-spin mr-2" />
-				Loading container data...
+				正在加载容器数据...
 			</div>
 		{:else}
 			<div class="px-5 py-4 flex-1 overflow-y-auto">
@@ -1063,13 +1063,13 @@
 				{#if showComposeRenameWarning}
 					<div class="mb-4 px-3 py-2 text-xs text-amber-700 dark:text-amber-300 bg-amber-100/50 dark:bg-amber-900/30 rounded-md flex items-start gap-2">
 						<Layers class="w-4 h-4 shrink-0 mt-0.5" />
-						<span>This container is part of the <strong>{composeStackName}</strong> compose stack. Renaming it may cause issues with stack management.</span>
+						<span>该容器属于 <strong>{composeStackName}</strong> 堆栈的一部分，重命名可能会导致堆栈管理异常。</span>
 					</div>
 				{/if}
 				{#if showComposeConfigWarning}
 					<div class="mb-4 px-3 py-2 text-xs text-amber-700 dark:text-amber-300 bg-amber-100/50 dark:bg-amber-900/30 rounded-md flex items-start gap-2">
 						<Layers class="w-4 h-4 shrink-0 mt-0.5" />
-						<span>This container is part of the <strong>{composeStackName}</strong> compose stack. Changes may be overwritten when the stack is redeployed.</span>
+						<span>该容器属于 <strong>{composeStackName}</strong> 堆栈的一部分，重新部署堆栈时可能会覆盖本次修改。</span>
 					</div>
 				{/if}
 
@@ -1141,14 +1141,14 @@
 
 			<div class="flex justify-end gap-2 px-5 py-3 border-t bg-muted/30 shrink-0">
 				<Button type="button" variant="outline" onclick={handleClose} size="sm">
-					Cancel
+					取消
 				</Button>
 				<Button type="button" variant="secondary" disabled={loading} size="sm" onclick={handleSubmit}>
 					{#if loading}
 						<Loader2 class="w-4 h-4 mr-1 animate-spin" />
-						Updating...
+						更新中...
 					{:else}
-						Update container
+						更新容器
 					{/if}
 				</Button>
 			</div>

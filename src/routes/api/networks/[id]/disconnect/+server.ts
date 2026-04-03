@@ -17,7 +17,7 @@ export const POST: RequestHandler = async (event) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('networks', 'disconnect', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -26,7 +26,7 @@ export const POST: RequestHandler = async (event) => {
 		const { containerId, containerName, force } = body;
 
 		if (!containerId) {
-			return json({ error: 'Container ID is required' }, { status: 400 });
+			return json({ error: '容器 ID 为必填项' }, { status: 400 });
 		}
 
 		const invalidContainer = validateDockerIdParam(containerId, 'container');
@@ -51,9 +51,9 @@ export const POST: RequestHandler = async (event) => {
 
 		return json({ success: true });
 	} catch (error: any) {
-		console.error('Failed to disconnect container from network:', error);
+		console.error('断开容器与网络的连接失败:', error);
 		return json({
-			error: 'Failed to disconnect container from network',
+			error: '断开容器与网络的连接失败',
 			details: error.message
 		}, { status: 500 });
 	}

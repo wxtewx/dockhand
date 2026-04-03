@@ -72,7 +72,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 	const envIdNum = envId ? parseInt(envId) : undefined;
 
 	if (auth.authEnabled && !await auth.can('containers', 'view', envIdNum)) {
-		return new Response(JSON.stringify({ error: 'Permission denied' }), {
+		return new Response(JSON.stringify({ error: '权限不足' }), {
 			status: 403,
 			headers: { 'Content-Type': 'application/json' }
 		});
@@ -153,7 +153,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 				await Promise.all(statsPromises);
 			} catch (error: any) {
 				if (error instanceof EnvironmentNotFoundError) {
-					safeEnqueue(`event: error\ndata: ${JSON.stringify({ error: 'Environment not found' })}\n\n`);
+					safeEnqueue(`event: error\ndata: ${JSON.stringify({ error: '环境未找到' })}\n\n`);
 				}
 			}
 

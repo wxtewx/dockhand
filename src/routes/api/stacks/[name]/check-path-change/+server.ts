@@ -15,7 +15,7 @@ import { join, dirname } from 'node:path';
 export const POST: RequestHandler = async ({ params, request, url, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !(await auth.can('stacks', 'edit'))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const { name } = params;
@@ -77,7 +77,7 @@ export const POST: RequestHandler = async ({ params, request, url, cookies }) =>
 			currentComposePath
 		});
 	} catch (error: any) {
-		console.error(`Error checking path change for stack ${name}:`, error);
-		return json({ error: error.message || 'Failed to check path changes' }, { status: 500 });
+		console.error(`检查堆栈 ${name} 路径变更时出错：`, error);
+		return json({ error: error.message || '检查路径变更失败' }, { status: 500 });
 	}
 };

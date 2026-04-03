@@ -125,7 +125,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 	// Check basic environment view permission
 	if (auth.authEnabled && !await auth.can('environments', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -133,7 +133,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 		// Check environment access in enterprise mode
 		if (envId && auth.authEnabled && auth.isEnterprise && !await auth.canAccessEnvironment(envId)) {
-			return json({ error: 'Access denied to this environment' }, { status: 403 });
+			return json({ error: '无权访问该环境' }, { status: 403 });
 		}
 		const schemaVersion = await getDatabaseSchemaVersion();
 
@@ -160,7 +160,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 				]);
 			} catch (dockerError) {
 				// Docker not available - continue with null values
-				console.log('Docker not available for system info:', dockerError instanceof Error ? dockerError.message : String(dockerError));
+				console.log('环境系统信息获取失败，Docker 不可用：', dockerError instanceof Error ? dockerError.message : String(dockerError));
 			}
 		}
 
@@ -228,7 +228,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 			}
 		});
 	} catch (error) {
-		console.error('Error fetching system info:', error);
-		return json({ error: 'Failed to fetch system info' }, { status: 500 });
+		console.error('获取系统信息时出错：', error);
+		return json({ error: '获取系统信息失败' }, { status: 500 });
 	}
 };

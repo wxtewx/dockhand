@@ -42,7 +42,7 @@ function normalizeTimezone(tz: string): string {
 export const GET: RequestHandler = async ({ params, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('environments', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -51,7 +51,7 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 		// Verify environment exists
 		const env = await getEnvironment(id);
 		if (!env) {
-			return json({ error: 'Environment not found' }, { status: 404 });
+			return json({ error: '环境不存在' }, { status: 404 });
 		}
 
 		const rawTimezone = await getEnvironmentTimezone(id);
@@ -59,8 +59,8 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 
 		return json({ timezone });
 	} catch (error) {
-		console.error('Failed to get environment timezone:', error);
-		return json({ error: 'Failed to get environment timezone' }, { status: 500 });
+		console.error('获取环境时区失败:', error);
+		return json({ error: '获取环境时区失败' }, { status: 500 });
 	}
 };
 
@@ -70,7 +70,7 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 export const POST: RequestHandler = async ({ params, request, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('environments', 'edit')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -79,7 +79,7 @@ export const POST: RequestHandler = async ({ params, request, cookies }) => {
 		// Verify environment exists
 		const env = await getEnvironment(id);
 		if (!env) {
-			return json({ error: 'Environment not found' }, { status: 404 });
+			return json({ error: '环境不存在' }, { status: 404 });
 		}
 
 		const data = await request.json();
@@ -88,7 +88,7 @@ export const POST: RequestHandler = async ({ params, request, cookies }) => {
 		// Validate timezone
 		const validTimezones = Intl.supportedValuesOf('timeZone');
 		if (!validTimezones.includes(timezone) && timezone !== 'UTC') {
-			return json({ error: 'Invalid timezone' }, { status: 400 });
+			return json({ error: '无效的时区' }, { status: 400 });
 		}
 
 		await setEnvironmentTimezone(id, timezone);
@@ -98,7 +98,7 @@ export const POST: RequestHandler = async ({ params, request, cookies }) => {
 
 		return json({ success: true, timezone });
 	} catch (error) {
-		console.error('Failed to set environment timezone:', error);
-		return json({ error: 'Failed to set environment timezone' }, { status: 500 });
+		console.error('设置环境时区失败:', error);
+		return json({ error: '设置环境时区失败' }, { status: 500 });
 	}
 };

@@ -86,7 +86,7 @@ export async function audit(
 	} catch (error) {
 		// Don't let audit logging errors break the main operation
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		console.error('[Audit] Failed to log event:', errorMsg);
+		console.error('[审计] 记录事件失败：', errorMsg);
 	}
 }
 
@@ -105,7 +105,7 @@ export async function auditContainer(
 		entityId: containerId,
 		entityName: containerName,
 		environmentId,
-		description: `Container ${containerName} ${action}`,
+		description: `容器 ${containerName} ${action}`,
 		details
 	});
 }
@@ -125,7 +125,7 @@ export async function auditImage(
 		entityId: imageId,
 		entityName: imageName,
 		environmentId,
-		description: `Image ${imageName} ${action}`,
+		description: `镜像 ${imageName} ${action}`,
 		details
 	});
 }
@@ -144,7 +144,7 @@ export async function auditStack(
 		entityId: stackName,
 		entityName: stackName,
 		environmentId,
-		description: `Stack ${stackName} ${action}`,
+		description: `堆栈 ${stackName} ${action}`,
 		details
 	});
 }
@@ -164,7 +164,7 @@ export async function auditVolume(
 		entityId: volumeId,
 		entityName: volumeName,
 		environmentId,
-		description: `Volume ${volumeName} ${action}`,
+		description: `数据卷 ${volumeName} ${action}`,
 		details
 	});
 }
@@ -184,7 +184,7 @@ export async function auditNetwork(
 		entityId: networkId,
 		entityName: networkName,
 		environmentId,
-		description: `Network ${networkName} ${action}`,
+		description: `网络 ${networkName} ${action}`,
 		details
 	});
 }
@@ -202,7 +202,7 @@ export async function auditUser(
 	await audit(event, action, 'user', {
 		entityId: String(userId),
 		entityName: username,
-		description: `User ${username} ${action}`,
+		description: `用户 ${username} ${action}`,
 		details
 	});
 }
@@ -220,7 +220,7 @@ export async function auditRole(
 	await audit(event, action, 'role', {
 		entityId: String(roleId),
 		entityName: roleName,
-		description: `Role ${roleName} ${action}`,
+		description: `角色 ${roleName} ${action}`,
 		details
 	});
 }
@@ -237,7 +237,7 @@ export async function auditSettings(
 	await audit(event, action, 'settings', {
 		entityId: settingName,
 		entityName: settingName,
-		description: `Settings ${settingName} ${action}`,
+		description: `设置 ${settingName} ${action}`,
 		details
 	});
 }
@@ -256,7 +256,7 @@ export async function auditEnvironment(
 		entityId: String(environmentId),
 		entityName: environmentName,
 		environmentId,
-		description: `Environment ${environmentName} ${action}`,
+		description: `环境 ${environmentName} ${action}`,
 		details
 	});
 }
@@ -274,7 +274,7 @@ export async function auditRegistry(
 	await audit(event, action, 'registry', {
 		entityId: String(registryId),
 		entityName: registryName,
-		description: `Registry ${registryName} ${action}`,
+		description: `镜像仓库 ${registryName} ${action}`,
 		details
 	});
 }
@@ -292,7 +292,7 @@ export async function auditGitRepository(
 	await audit(event, action, 'git_repository', {
 		entityId: String(repositoryId),
 		entityName: repositoryName,
-		description: `Git repository ${repositoryName} ${action}`,
+		description: `Git 仓库 ${repositoryName} ${action}`,
 		details
 	});
 }
@@ -310,7 +310,7 @@ export async function auditGitCredential(
 	await audit(event, action, 'git_credential', {
 		entityId: String(credentialId),
 		entityName: credentialName,
-		description: `Git credential ${credentialName} ${action}`,
+		description: `Git 凭据 ${credentialName} ${action}`,
 		details
 	});
 }
@@ -328,7 +328,7 @@ export async function auditConfigSet(
 	await audit(event, action, 'config_set', {
 		entityId: String(configSetId),
 		entityName: configSetName,
-		description: `Config set ${configSetName} ${action}`,
+		description: `配置集 ${configSetName} ${action}`,
 		details
 	});
 }
@@ -346,7 +346,7 @@ export async function auditNotification(
 	await audit(event, action, 'notification', {
 		entityId: String(notificationId),
 		entityName: notificationName,
-		description: `Notification channel ${notificationName} ${action}`,
+		description: `通知通道 ${notificationName} ${action}`,
 		details
 	});
 }
@@ -364,7 +364,7 @@ export async function auditOidcProvider(
 	await audit(event, action, 'oidc_provider', {
 		entityId: String(providerId),
 		entityName: providerName,
-		description: `OIDC provider ${providerName} ${action}`,
+		description: `OIDC 提供商 ${providerName} ${action}`,
 		details
 	});
 }
@@ -382,7 +382,7 @@ export async function auditLdapConfig(
 	await audit(event, action, 'ldap_config', {
 		entityId: String(configId),
 		entityName: configName,
-		description: `LDAP config ${configName} ${action}`,
+		description: `LDAP 配置 ${configName} ${action}`,
 		details
 	});
 }
@@ -402,7 +402,7 @@ export async function auditGitStack(
 		entityId: String(stackId),
 		entityName: stackName,
 		environmentId,
-		description: `Git stack ${stackName} ${action}`,
+		description: `Git 堆栈 ${stackName} ${action}`,
 		details
 	});
 }
@@ -440,7 +440,7 @@ export async function auditAuth(
 		entityId: null,
 		entityName: username,
 		environmentId: null,
-		description: `User ${username} ${action}`,
+		description: `用户 ${username} ${action}`,
 		details,
 		ipAddress: ipAddress,
 		userAgent: userAgent
@@ -450,6 +450,6 @@ export async function auditAuth(
 		await logAuditEvent(data);
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		console.error('[Audit] Failed to log event:', errorMsg);
+		console.error('[审计] 记录事件失败：', errorMsg);
 	}
 }

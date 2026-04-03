@@ -199,7 +199,7 @@
 			<button
 				onclick={() => onAutoRefreshChange?.(!autoRefresh)}
 				class="flex items-center gap-1 px-1.5 py-0.5 rounded text-xs transition-colors {autoRefresh ? 'bg-amber-500/20 ring-1 ring-amber-500/50 text-amber-400' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'}"
-				title="Toggle auto-refresh"
+				title="切换自动刷新"
 			>
 				<RefreshCw class="w-3 h-3" />
 			</button>
@@ -207,7 +207,7 @@
 			<button
 				onclick={() => onAutoScrollChange?.(!autoScroll)}
 				class="flex items-center gap-1 px-1.5 py-0.5 rounded text-xs transition-colors {autoScroll ? 'bg-amber-500/20 ring-1 ring-amber-500/50 text-amber-400' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'}"
-				title="Toggle auto-scroll"
+				title="切换自动滚动"
 			>
 				<ArrowDownToLine class="w-3 h-3" />
 			</button>
@@ -230,7 +230,7 @@
 			<button
 				onclick={() => wordWrap = !wordWrap}
 				class="p-1 rounded hover:bg-zinc-800 transition-colors {wordWrap ? 'bg-amber-500/20 ring-1 ring-amber-500/50' : ''}"
-				title="Toggle word wrap"
+				title="切换自动换行"
 			>
 				<WrapText class="w-3 h-3 transition-colors {wordWrap ? 'text-amber-400' : 'text-zinc-500 hover:text-zinc-300'}" />
 			</button>
@@ -241,7 +241,7 @@
 					<input
 						bind:this={logSearchInputRef}
 						type="text"
-						placeholder="Search..."
+						placeholder="搜索..."
 						bind:value={logSearchQuery}
 						onkeydown={handleLogSearchKeydown}
 						class="bg-transparent border-none outline-none text-xs text-zinc-200 w-20 placeholder:text-zinc-500"
@@ -251,13 +251,13 @@
 					{:else if logSearchQuery}
 						<span class="text-xs text-zinc-500">0/0</span>
 					{/if}
-					<button onclick={() => navigateMatch('prev')} class="p-0.5 rounded hover:bg-zinc-700" title="Previous">
+					<button onclick={() => navigateMatch('prev')} class="p-0.5 rounded hover:bg-zinc-700" title="上一个">
 						<ChevronUp class="w-3 h-3 text-zinc-400" />
 					</button>
-					<button onclick={() => navigateMatch('next')} class="p-0.5 rounded hover:bg-zinc-700" title="Next">
+					<button onclick={() => navigateMatch('next')} class="p-0.5 rounded hover:bg-zinc-700" title="下一个">
 						<ChevronDown class="w-3 h-3 text-zinc-400" />
 					</button>
-					<button onclick={closeLogSearch} class="p-0.5 rounded hover:bg-zinc-700" title="Close">
+					<button onclick={closeLogSearch} class="p-0.5 rounded hover:bg-zinc-700" title="关闭">
 						<X class="w-3 h-3 text-zinc-400" />
 					</button>
 				</div>
@@ -265,7 +265,7 @@
 				<button
 					onclick={toggleLogSearch}
 					class="p-1 rounded hover:bg-zinc-800 transition-colors"
-					title="Search logs"
+					title="搜索日志"
 				>
 					<Search class="w-3 h-3 text-zinc-500 hover:text-zinc-300" />
 				</button>
@@ -274,7 +274,7 @@
 			<button
 				onclick={copyLogs}
 				class="p-1 rounded hover:bg-zinc-800 transition-colors"
-				title="Copy logs"
+				title="复制日志"
 			>
 				<Copy class="w-3 h-3 text-zinc-500 hover:text-zinc-300" />
 			</button>
@@ -282,7 +282,7 @@
 			<button
 				onclick={downloadLogs}
 				class="p-1 rounded hover:bg-zinc-800 transition-colors"
-				title="Download logs"
+				title="下载日志"
 			>
 				<Download class="w-3 h-3 text-zinc-500 hover:text-zinc-300" />
 			</button>
@@ -290,7 +290,7 @@
 			<button
 				onclick={() => onClear?.()}
 				class="p-1 rounded hover:bg-zinc-800 transition-colors"
-				title="Clear logs"
+				title="清空日志"
 			>
 				<Eraser class="w-3 h-3 text-zinc-500 hover:text-zinc-300" />
 			</button>
@@ -298,7 +298,7 @@
 			<button
 				onclick={() => onRefresh?.()}
 				class="p-1 rounded hover:bg-zinc-800 transition-colors"
-				title="Refresh logs"
+				title="刷新日志"
 			>
 				<RefreshCw class="w-3 h-3 text-zinc-500 hover:text-zinc-300" />
 			</button>
@@ -312,10 +312,10 @@
 		{:else if loading}
 			<div class="flex items-center justify-center h-full text-muted-foreground">
 				<RefreshCw class="w-5 h-5 animate-spin mr-2" />
-				Loading logs...
+				正在加载日志...
 			</div>
 		{:else}
-			<p class="text-zinc-500 text-sm">No logs available</p>
+			<p class="text-zinc-500 text-sm">暂无日志</p>
 		{/if}
 	</div>
 </div>

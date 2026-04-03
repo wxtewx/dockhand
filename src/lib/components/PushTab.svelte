@@ -90,7 +90,7 @@
 
 		reset();
 		status = 'pushing';
-		statusMessage = 'Finding image...';
+		statusMessage = '正在查找镜像...';
 
 		try {
 			// Small delay to ensure image is indexed
@@ -115,14 +115,14 @@
 			});
 
 			if (!pulledImage) {
-				console.log('Looking for:', sourceImageName, 'Available tags:', images.map((i: any) => i.tags).flat());
-				errorMessage = 'Could not find image to push';
+				console.log('正在查找:', sourceImageName, '可用标签:', images.map((i: any) => i.tags).flat());
+				errorMessage = '无法找到要推送的镜像';
 				status = 'error';
 				onError?.(errorMessage);
 				return;
 			}
 
-			addOutputLine(`[push] Starting push to ${registryName}...`);
+			addOutputLine(`[push] 开始推送到 ${registryName}...`);
 
 			// Push to target registry with streaming
 			const pushResponse = await fetch(appendEnvParam('/api/images/push', envId), {
@@ -138,7 +138,7 @@
 
 			if (!pushResponse.ok) {
 				const data = await pushResponse.json();
-				errorMessage = data.error || 'Failed to push image';
+				errorMessage = data.error || '推送镜像失败';
 				status = 'error';
 				addOutputLine(`[error] ${errorMessage}`);
 				onError?.(errorMessage);
@@ -153,13 +153,13 @@
 			// If job ended without an explicit complete/error event
 			if (status === 'pushing') {
 				status = 'complete';
-				statusMessage = 'Image pushed successfully!';
-				addOutputLine(`[push] Push complete!`);
+				statusMessage = '镜像推送成功！';
+				addOutputLine(`[push] 推送完成！`);
 				onComplete?.(targetTag);
 			}
 		} catch (error: any) {
-			console.error('Failed to push image:', error);
-			errorMessage = error.message || 'Failed to push image';
+			console.error('推送镜像失败:', error);
+			errorMessage = error.message || '推送镜像失败';
 			status = 'error';
 			addOutputLine(`[error] ${errorMessage}`);
 			onError?.(errorMessage);
@@ -172,16 +172,16 @@
 		}
 
 		if (data.status === 'tagging') {
-			addOutputLine(`[push] Tagging image for target registry...`);
+			addOutputLine(`[push] 正在为目标仓库标记镜像...`);
 		} else if (data.status === 'pushing') {
-			addOutputLine(`[push] Pushing layers...`);
+			addOutputLine(`[push] 正在推送镜像层...`);
 		} else if (data.status === 'complete') {
-			statusMessage = data.message || 'Image pushed successfully!';
+			statusMessage = data.message || '镜像推送成功！';
 			status = 'complete';
-			addOutputLine(`[push] ${data.message || 'Push complete!'}`);
+			addOutputLine(`[push] ${data.message || '推送完成！'}`);
 			onComplete?.(targetTag || data.targetTag || '');
 		} else if (data.status === 'error' || data.error) {
-			errorMessage = data.error || 'Push failed';
+			errorMessage = data.error || '推送失败';
 			status = 'error';
 			addOutputLine(`[error] ${data.error}`);
 			onError?.(errorMessage);
@@ -210,10 +210,10 @@
 						<span class="text-sm">{statusMessage}</span>
 					{:else if status === 'complete'}
 						<CheckCircle2 class="w-4 h-4 text-green-600" />
-						<span class="text-sm text-green-600">Push complete!</span>
+						<span class="text-sm text-green-600">推送完成！</span>
 					{:else if status === 'error'}
 						<XCircle class="w-4 h-4 text-red-600" />
-						<span class="text-sm text-red-600">Push failed</span>
+						<span class="text-sm text-red-600">推送失败</span>
 					{/if}
 				</div>
 				{#if status === 'complete' && targetTag}
@@ -237,9 +237,9 @@
 				<div class="flex items-center justify-between text-xs text-muted-foreground mb-2 shrink-0">
 					<div class="flex items-center gap-2">
 						<Terminal class="w-3.5 h-3.5" />
-						<span>Output ({outputLines.length} lines)</span>
+						<span>输出 ({outputLines.length} 行)</span>
 					</div>
-					<button type="button" onclick={toggleLogTheme} class="p-1 rounded hover:bg-muted transition-colors cursor-pointer" title="Toggle log theme">
+					<button type="button" onclick={toggleLogTheme} class="p-1 rounded hover:bg-muted transition-colors cursor-pointer" title="切换日志主题">
 						{#if logDarkMode}
 							<Sun class="w-3.5 h-3.5" />
 						{:else}
@@ -254,13 +254,13 @@
 					{#each outputLines as line}
 						<div class="whitespace-pre-wrap break-all leading-relaxed flex items-start gap-1.5">
 							{#if line.startsWith('[push]')}
-								<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-blue-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">push</span>
+								<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-blue-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">推送</span>
 								<span>{line.slice(7)}</span>
 							{:else if line.startsWith('[layer')}
-								<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-violet-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">layer</span>
+								<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-violet-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">层</span>
 								<span>{line.slice(line.indexOf(']') + 2)}</span>
 							{:else if line.startsWith('[error]')}
-								<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-red-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">error</span>
+								<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-red-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">错误</span>
 								<span class="text-red-400">{line.slice(8)}</span>
 							{:else}
 								<span>{line}</span>
@@ -276,7 +276,7 @@
 	{#if status === 'idle'}
 		<div class="flex-1 flex flex-col items-center justify-center gap-4 text-muted-foreground">
 			<Upload class="w-12 h-12 opacity-50" />
-			<p class="text-sm">Ready to push to <code class="bg-muted px-1.5 py-0.5 rounded">{registryName}</code></p>
+			<p class="text-sm">准备推送到 <code class="bg-muted px-1.5 py-0.5 rounded">{registryName}</code></p>
 		</div>
 	{/if}
 </div>

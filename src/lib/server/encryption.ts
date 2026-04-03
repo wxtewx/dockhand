@@ -74,7 +74,7 @@ function getOrCreateKey(): Buffer {
 		try {
 			const fileKey = readFileSync(keyPath);
 			if (fileKey.length !== KEY_LENGTH) {
-				throw new Error(`Key file has invalid length: expected ${KEY_LENGTH}, got ${fileKey.length}`);
+				throw new Error(`密钥文件长度无效：预期长度 ${KEY_LENGTH}，实际长度 ${fileKey.length}`);
 			}
 
 			// Env var also set? Env var takes over, file will be deleted
@@ -82,12 +82,12 @@ function getOrCreateKey(): Buffer {
 				try {
 					const envKeyBuffer = Buffer.from(envKey, 'base64');
 					if (envKeyBuffer.length !== KEY_LENGTH) {
-						console.warn('[Encryption] WARNING: ENCRYPTION_KEY env var has invalid length (ignored)');
+						console.warn('[加密] 警告：环境变量 ENCRYPTION_KEY 长度无效 (已忽略)');
 						// Fall through to use file key
 					} else if (!fileKey.equals(envKeyBuffer)) {
 						// Different key - trigger key rotation mode
 						// File will be deleted after re-encryption in migrateCredentials()
-						console.log('[Encryption] Key change detected - will re-encrypt and remove key file');
+						console.log('[加密] 检测到密钥变更 - 将重新加密并删除密钥文件');
 						pendingKeyRotation = { oldKey: fileKey, newKey: envKeyBuffer };
 						// Return OLD key for decryption first
 						cachedKey = fileKey;
@@ -96,26 +96,26 @@ function getOrCreateKey(): Buffer {
 						// Same key - delete file immediately, env var is now source of truth
 						try {
 							unlinkSync(keyPath);
-							console.log('[Encryption] Using ENCRYPTION_KEY from environment, removed key file');
+							console.log('[加密] 使用环境变量中的 ENCRYPTION_KEY，已删除密钥文件');
 						} catch (unlinkError) {
 							const msg = unlinkError instanceof Error ? unlinkError.message : String(unlinkError);
-							console.warn(`[Encryption] Could not remove key file: ${msg}`);
+							console.warn(`[加密] 无法删除密钥文件：${msg}`);
 						}
 						cachedKey = envKeyBuffer;
 						return cachedKey;
 					}
 				} catch {
-					console.warn('[Encryption] WARNING: ENCRYPTION_KEY env var is invalid (ignored)');
+					console.warn('[加密] 警告：环境变量 ENCRYPTION_KEY 无效 (已忽略)');
 				}
 			}
 
 			// No env var or invalid env var - use file key
 			cachedKey = fileKey;
-			console.log('[Encryption] Using encryption key from', keyPath);
+			console.log('[加密] 使用来自', keyPath, '的加密密钥');
 			return cachedKey;
 		} catch (error) {
 			const msg = error instanceof Error ? error.message : String(error);
-			throw new Error(`Failed to read encryption key from ${keyPath}: ${msg}`);
+			throw new Error(`从 ${keyPath} 读取加密密钥失败：${msg}`);
 		}
 	}
 
@@ -124,14 +124,14 @@ function getOrCreateKey(): Buffer {
 		try {
 			const keyBuffer = Buffer.from(envKey, 'base64');
 			if (keyBuffer.length !== KEY_LENGTH) {
-				throw new Error(`ENCRYPTION_KEY must be exactly ${KEY_LENGTH} bytes when decoded`);
+				throw new Error(`ENCRYPTION_KEY 解码后必须为 ${KEY_LENGTH} 字节`);
 			}
 			cachedKey = keyBuffer;
-			console.log('[Encryption] Using ENCRYPTION_KEY from environment (not persisted to disk)');
+			console.log('[加密] 使用环境变量中的 ENCRYPTION_KEY (未持久化到磁盘)');
 			return cachedKey;
 		} catch (error) {
 			const msg = error instanceof Error ? error.message : String(error);
-			throw new Error(`Invalid ENCRYPTION_KEY: ${msg}`);
+			throw new Error(`无效的 ENCRYPTION_KEY：${msg}`);
 		}
 	}
 
@@ -141,17 +141,17 @@ function getOrCreateKey(): Buffer {
 		mkdirSync(dataDir, { recursive: true });
 	}
 
-	console.log('[Encryption] Generating new encryption key...');
+	console.log('[加密] 正在生成新的加密密钥...');
 	cachedKey = randomBytes(KEY_LENGTH);
 
 	// Save key with restricted permissions (0600 = owner read/write only)
 	try {
 		writeFileSync(keyPath, cachedKey, { mode: 0o600 });
-		console.log('[Encryption] Saved new encryption key to', keyPath);
+		console.log('[加密] 已将新加密密钥保存到', keyPath);
 	} catch (error) {
 		const msg = error instanceof Error ? error.message : String(error);
-		console.error(`[Encryption] Warning: Failed to save encryption key to ${keyPath}: ${msg}`);
-		console.error('[Encryption] Encryption will work for this session but keys will be regenerated on restart');
+		console.error(`[加密] 警告：无法将加密密钥保存到 ${keyPath}：${msg}`);
+		console.error('[加密] 加密功能在本次会话中有效，但重启后密钥将重新生成');
 	}
 
 	return cachedKey;
@@ -223,14 +223,14 @@ export function decrypt(value: string | null | undefined): string | null {
 	try {
 		combined = Buffer.from(payload, 'base64');
 	} catch {
-		console.error('[Encryption] Failed to decode base64 payload');
+		console.error('[加密] Base64 载荷解码失败');
 		// Return original value to avoid data loss
 		return value;
 	}
 
 	// Validate minimum length: iv (12) + authTag (16) + at least 1 byte ciphertext
 	if (combined.length < IV_LENGTH + AUTH_TAG_LENGTH + 1) {
-		console.error('[Encryption] Encrypted payload is too short');
+		console.error('[加密] 加密载荷长度过短');
 		return value;
 	}
 
@@ -252,7 +252,7 @@ export function decrypt(value: string | null | undefined): string | null {
 		return decrypted.toString('utf8');
 	} catch (error) {
 		const msg = error instanceof Error ? error.message : String(error);
-		console.error(`[Encryption] Decryption failed: ${msg}`);
+		console.error(`[加密] 解密失败：${msg}`);
 		// Return original value to avoid data loss (might be corrupted or wrong key)
 		return value;
 	}
@@ -301,7 +301,7 @@ export async function migrateCredentials(): Promise<void> {
 	// This ensures the key file is created before any credentials are added.
 	getOrCreateKey();
 
-	console.log('[Encryption] Checking for unencrypted credentials...');
+	console.log('[加密] 正在检查未加密的凭据...');
 
 	// Import database dynamically to avoid circular dependency
 	const {
@@ -321,7 +321,7 @@ export async function migrateCredentials(): Promise<void> {
 
 	// Check for key rotation first
 	if (pendingKeyRotation) {
-		console.log('[Encryption] Performing key rotation - re-encrypting all credentials...');
+		console.log('[加密] 正在执行密钥轮换 - 重新加密所有凭据...');
 
 		// Decrypt everything with old key, then switch to new key
 		// The old key is already cached, so decrypt will use it
@@ -448,19 +448,19 @@ export async function migrateCredentials(): Promise<void> {
 		if (existsSync(keyPath)) {
 			try {
 				unlinkSync(keyPath);
-				console.log('[Encryption] Deleted key file - now using ENCRYPTION_KEY from environment only');
+				console.log('[加密] 已删除密钥文件 - 现在仅使用环境变量中的 ENCRYPTION_KEY');
 			} catch (error) {
 				const msg = error instanceof Error ? error.message : String(error);
-				console.warn(`[Encryption] Could not delete key file: ${msg}`);
+				console.warn(`[加密] 无法删除密钥文件：${msg}`);
 			}
 		}
 
 		pendingKeyRotation = null;
 
 		if (migrated > 0) {
-			console.log(`[Encryption] Re-encrypted ${migrated} credentials with new key`);
+			console.log(`[加密] 已使用新密钥重新加密 ${migrated} 个凭据`);
 		} else {
-			console.log('[Encryption] Key rotation complete (no credentials to re-encrypt)');
+			console.log('[加密] 密钥轮换完成 (无需要重新加密的凭据)');
 		}
 		return;
 	}
@@ -560,6 +560,6 @@ export async function migrateCredentials(): Promise<void> {
 	}
 
 	if (migrated > 0) {
-		console.log(`[Encryption] Migrated ${migrated} credentials to encrypted storage`);
+		console.log(`[加密] 已将 ${migrated} 个凭据迁移至加密存储`);
 	}
 }

@@ -9,20 +9,20 @@ export const POST: RequestHandler = async ({ params, cookies }) => {
 	if (await isAuthEnabled()) {
 		const user = await validateSession(cookies);
 		if (!user || !user.isAdmin) {
-			return json({ error: 'Admin access required' }, { status: 403 });
+			return json({ error: '需要管理员权限' }, { status: 403 });
 		}
 	}
 
 	const id = parseInt(params.id || '');
 	if (isNaN(id)) {
-		return json({ error: 'Invalid configuration ID' }, { status: 400 });
+		return json({ error: '无效的配置 ID' }, { status: 400 });
 	}
 
 	try {
 		const result = await testOidcConnection(id);
 		return json(result);
 	} catch (error: any) {
-		console.error('Failed to test OIDC connection:', error);
-		return json({ success: false, error: error.message || 'Test failed' }, { status: 500 });
+		console.error('测试 OIDC 连接失败:', error);
+		return json({ success: false, error: error.message || '测试失败' }, { status: 500 });
 	}
 };

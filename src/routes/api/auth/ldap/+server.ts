@@ -10,11 +10,11 @@ export const GET: RequestHandler = async ({ cookies }) => {
 
 	// Allow access when auth is disabled (setup mode) or when user is admin
 	if (auth.authEnabled && (!auth.isAuthenticated || !auth.isAdmin)) {
-		return json({ error: 'Unauthorized' }, { status: 401 });
+		return json({ error: '未授权' }, { status: 401 });
 	}
 
 	if (!auth.isEnterprise) {
-		return json({ error: 'Enterprise license required' }, { status: 403 });
+		return json({ error: '需要企业版许可证' }, { status: 403 });
 	}
 
 	try {
@@ -26,8 +26,8 @@ export const GET: RequestHandler = async ({ cookies }) => {
 		}));
 		return json(sanitized);
 	} catch (error) {
-		console.error('Failed to get LDAP configs:', error);
-		return json({ error: 'Failed to get LDAP configurations' }, { status: 500 });
+		console.error('获取LDAP配置失败: ', error);
+		return json({ error: '获取LDAP配置失败' }, { status: 500 });
 	}
 };
 
@@ -38,11 +38,11 @@ export const POST: RequestHandler = async (event) => {
 
 	// Allow access when auth is disabled (setup mode) or when user is admin
 	if (auth.authEnabled && (!auth.isAuthenticated || !auth.isAdmin)) {
-		return json({ error: 'Unauthorized' }, { status: 401 });
+		return json({ error: '未授权' }, { status: 401 });
 	}
 
 	if (!auth.isEnterprise) {
-		return json({ error: 'Enterprise license required' }, { status: 403 });
+		return json({ error: '需要企业版许可证' }, { status: 403 });
 	}
 
 	try {
@@ -50,7 +50,7 @@ export const POST: RequestHandler = async (event) => {
 
 		// Validate required fields
 		if (!data.name || !data.serverUrl || !data.baseDn) {
-			return json({ error: 'Name, server URL, and base DN are required' }, { status: 400 });
+			return json({ error: '名称、服务器 URL 和基础 DN 为必填项' }, { status: 400 });
 		}
 
 		const config = await createLdapConfig({
@@ -80,7 +80,7 @@ export const POST: RequestHandler = async (event) => {
 			bindPassword: config.bindPassword ? '********' : undefined
 		}, { status: 201 });
 	} catch (error) {
-		console.error('Failed to create LDAP config:', error);
-		return json({ error: 'Failed to create LDAP configuration' }, { status: 500 });
+		console.error('创建 LDAP 配置失败：', error);
+		return json({ error: '创建 LDAP 配置失败' }, { status: 500 });
 	}
 };

@@ -84,7 +84,7 @@
 		const file = input.files?.[0];
 		if (file) {
 			if (!file.type.startsWith('image/')) {
-				formError = 'Please select an image file';
+				formError = '请选择图片文件';
 				return;
 			}
 			const reader = new FileReader();
@@ -122,10 +122,10 @@
 				goto('/login');
 			} else {
 				const data = await response.json();
-				error = data.error || 'Failed to load profile';
+				error = data.error || '加载个人资料失败';
 			}
 		} catch (e) {
-			error = 'Failed to load profile';
+			error = '加载个人资料失败';
 		} finally {
 			loading = false;
 		}
@@ -148,16 +148,16 @@
 
 			if (response.ok) {
 				profile = await response.json();
-				formSuccess = 'Profile updated successfully';
+				formSuccess = '个人资料更新成功';
 				// Refresh auth store to update sidebar
 				await authStore.check();
 				setTimeout(() => formSuccess = '', 3000);
 			} else {
 				const data = await response.json();
-				formError = data.error || 'Failed to update profile';
+				formError = data.error || '更新个人资料失败';
 			}
 		} catch (e) {
-			formError = 'Failed to update profile';
+			formError = '更新个人资料失败';
 		} finally {
 			formSaving = false;
 		}
@@ -190,10 +190,10 @@
 				showMfaSetupModal = true;
 			} else {
 				const data = await response.json();
-				mfaError = data.error || 'Failed to setup MFA';
+				mfaError = data.error || 'MFA 设置失败';
 			}
 		} catch (e) {
-			mfaError = 'Failed to setup MFA';
+			mfaError = 'MFA 设置失败';
 		} finally {
 			mfaLoading = false;
 		}
@@ -201,16 +201,16 @@
 
 	async function handleMfaEnabled() {
 		await fetchProfile();
-		showSuccessMessage('MFA enabled successfully');
+		showSuccessMessage('MFA 启用成功');
 	}
 
 	async function handleMfaDisabled() {
 		await fetchProfile();
-		showSuccessMessage('MFA disabled successfully');
+		showSuccessMessage('MFA 禁用成功');
 	}
 
 	function formatProfileDate(dateStr: string | null): string {
-		if (!dateStr) return 'Never';
+		if (!dateStr) return '从未';
 		return formatDateTime(dateStr, true);
 	}
 
@@ -230,7 +230,7 @@
 				if (profile) {
 					profile.avatar = data.avatar;
 				}
-				formSuccess = 'Avatar updated successfully';
+				formSuccess = '头像更新成功';
 				await authStore.check();
 				setTimeout(() => formSuccess = '', 3000);
 				// Close cropper
@@ -241,10 +241,10 @@
 				}
 			} else {
 				const data = await response.json();
-				formError = data.error || 'Failed to upload avatar';
+				formError = data.error || '上传头像失败';
 			}
 		} catch (e) {
-			formError = 'Failed to upload avatar';
+			formError = '上传头像失败';
 		} finally {
 			avatarSaving = false;
 		}
@@ -263,15 +263,15 @@
 				if (profile) {
 					profile.avatar = null;
 				}
-				formSuccess = 'Avatar removed successfully';
+				formSuccess = '头像移除成功';
 				await authStore.check();
 				setTimeout(() => formSuccess = '', 3000);
 			} else {
 				const data = await response.json();
-				formError = data.error || 'Failed to remove avatar';
+				formError = data.error || '移除头像失败';
 			}
 		} catch (e) {
-			formError = 'Failed to remove avatar';
+			formError = '移除头像失败';
 		} finally {
 			avatarSaving = false;
 		}
@@ -297,13 +297,13 @@
 </script>
 
 <svelte:head>
-	<title>Profile - Dockhand</title>
+	<title>个人资料 - Dockhand</title>
 </svelte:head>
 
 <div class="container mx-auto p-6 max-w-4xl">
 	<div class="flex items-center gap-3 mb-6">
-		<PageHeader icon={User} title="Profile" showConnection={false}>
-			<p class="text-muted-foreground text-sm">Manage your account settings</p>
+		<PageHeader icon={User} title="个人资料" showConnection={false}>
+			<p class="text-muted-foreground text-sm">管理你的账户设置</p>
 		</PageHeader>
 	</div>
 
@@ -335,7 +335,7 @@
 				<Card.Header>
 					<Card.Title class="flex items-center gap-2">
 						<User class="w-5 h-5" />
-						Account information
+						账户信息
 					</Card.Title>
 				</Card.Header>
 				<Card.Content class="space-y-4">
@@ -379,7 +379,7 @@
 										onclick={removeAvatar}
 										disabled={avatarSaving}
 										class="absolute -bottom-1 -right-1 p-1 rounded-full bg-background border border-border text-muted-foreground hover:text-destructive hover:border-destructive transition-colors"
-										title="Remove photo"
+										title="移除图片"
 									>
 										<Trash2 class="w-3.5 h-3.5" />
 									</button>
@@ -391,19 +391,19 @@
 						<div class="flex-1 space-y-4">
 							<div class="grid grid-cols-2 gap-4">
 								<div>
-									<Label class="text-muted-foreground text-xs">Username</Label>
+									<Label class="text-muted-foreground text-xs">用户名</Label>
 									<p class="font-medium">{profile.username}</p>
 								</div>
 								<div>
-									<Label class="text-muted-foreground text-xs">Role</Label>
+									<Label class="text-muted-foreground text-xs">角色</Label>
 									<div class="flex items-center gap-2">
 										{#if profile.isAdmin}
 											<Badge variant="default" class="gap-1 rounded-sm">
 												<Crown class="w-3 h-3" />
-												Admin
+												管理员
 											</Badge>
 										{:else}
-											<Badge variant="secondary" class="rounded-sm">User</Badge>
+											<Badge variant="secondary" class="rounded-sm">普通用户</Badge>
 										{/if}
 									</div>
 								</div>
@@ -411,14 +411,14 @@
 
 							<div class="grid grid-cols-2 gap-4">
 								<div>
-									<Label class="text-muted-foreground text-xs">Created</Label>
+									<Label class="text-muted-foreground text-xs">创建时间</Label>
 									<p class="text-sm flex items-center gap-1">
 										<Calendar class="w-3.5 h-3.5" />
 										{formatProfileDate(profile.createdAt)}
 									</p>
 								</div>
 								<div>
-									<Label class="text-muted-foreground text-xs">Last login</Label>
+									<Label class="text-muted-foreground text-xs">最后登录</Label>
 									<p class="text-sm flex items-center gap-1">
 										<Clock class="w-3.5 h-3.5" />
 										{formatProfileDate(profile.lastLogin)}
@@ -435,7 +435,7 @@
 				<Card.Header>
 					<Card.Title class="flex items-center gap-2">
 						<Mail class="w-5 h-5" />
-						Profile details
+						资料详情
 					</Card.Title>
 				</Card.Header>
 				<Card.Content class="space-y-4">
@@ -448,18 +448,18 @@
 
 					<div class="grid grid-cols-2 gap-4">
 						<div class="space-y-2">
-							<Label>Display name</Label>
+							<Label>显示名称</Label>
 							<Input
 								bind:value={formDisplayName}
-								placeholder="Enter display name"
+								placeholder="输入显示名称"
 							/>
 						</div>
 						<div class="space-y-2">
-							<Label>Email</Label>
+							<Label>电子邮箱</Label>
 							<Input
 								type="email"
 								bind:value={formEmail}
-								placeholder="Enter email"
+								placeholder="输入电子邮箱"
 							/>
 						</div>
 					</div>
@@ -471,7 +471,7 @@
 							{:else}
 								<Check class="w-4 h-4" />
 							{/if}
-							Save changes
+							保存更改
 						</Button>
 					</div>
 				</Card.Content>
@@ -482,7 +482,7 @@
 				<Card.Header>
 					<Card.Title class="flex items-center gap-2">
 						<Shield class="w-5 h-5" />
-						Security
+						安全设置
 					</Card.Title>
 				</Card.Header>
 				<Card.Content class="space-y-4">
@@ -492,12 +492,12 @@
 							<div class="flex items-center gap-3">
 								<Key class="w-5 h-5 text-muted-foreground" />
 								<div>
-									<p class="font-medium">Password</p>
-									<p class="text-sm text-muted-foreground">Change your password</p>
+									<p class="font-medium">密码</p>
+									<p class="text-sm text-muted-foreground">修改你的密码</p>
 								</div>
 							</div>
 							<Button variant="outline" onclick={() => showPasswordModal = true}>
-								Change password
+								修改密码
 							</Button>
 						</div>
 					{:else}
@@ -505,8 +505,8 @@
 							<div class="flex items-center gap-3">
 								<Key class="w-5 h-5 text-muted-foreground" />
 								<div>
-									<p class="font-medium">Password</p>
-									<p class="text-sm text-muted-foreground">Managed by your SSO provider</p>
+									<p class="font-medium">密码</p>
+									<p class="text-sm text-muted-foreground">由你的单点登录提供商管理</p>
 								</div>
 							</div>
 							<Badge class="gap-1 rounded-sm bg-yellow-500/20 text-yellow-600 border-yellow-500/30 hover:bg-yellow-500/30">
@@ -523,28 +523,28 @@
 								<Smartphone class="w-5 h-5 text-muted-foreground" />
 								<div>
 									<div class="flex items-center gap-2">
-										<p class="font-medium">Two-factor authentication</p>
+										<p class="font-medium">双因素认证</p>
 										{#if profile.mfaEnabled}
 											<Badge variant="default" class="bg-green-500 gap-1 rounded-sm">
 												<ShieldCheck class="w-3 h-3" />
-												Enabled
+												已启用
 											</Badge>
 										{:else}
-											<Badge variant="secondary" class="rounded-sm">Disabled</Badge>
+											<Badge variant="secondary" class="rounded-sm">已禁用</Badge>
 										{/if}
 									</div>
 									<p class="text-sm text-muted-foreground">
 										{#if profile.mfaEnabled}
-											MFA is enabled for your account
+											你的账户已启用 MFA
 										{:else}
-											Add an extra layer of security
+											添加额外的安全防护层
 										{/if}
 									</p>
 								</div>
 							</div>
 							{#if profile.mfaEnabled}
 								<Button variant="outline" onclick={() => showDisableMfaModal = true}>
-									Disable MFA
+									禁用 MFA
 								</Button>
 							{:else}
 								<Button onclick={setupMfa} disabled={mfaLoading}>
@@ -553,7 +553,7 @@
 									{:else}
 										<QrCode class="w-4 h-4" />
 									{/if}
-									Setup MFA
+									设置 MFA
 								</Button>
 							{/if}
 						</div>
@@ -562,8 +562,8 @@
 							<div class="flex items-center gap-3">
 								<Smartphone class="w-5 h-5 text-muted-foreground" />
 								<div>
-									<p class="font-medium">Two-factor authentication</p>
-									<p class="text-sm text-muted-foreground">Managed by your SSO provider</p>
+									<p class="font-medium">双因素认证</p>
+									<p class="text-sm text-muted-foreground">由你的单点登录提供商管理</p>
 								</div>
 							</div>
 							<Badge class="gap-1 rounded-sm bg-yellow-500/20 text-yellow-600 border-yellow-500/30 hover:bg-yellow-500/30">
@@ -587,9 +587,9 @@
 				<Card.Header>
 					<Card.Title class="flex items-center gap-2">
 						<Palette class="w-5 h-5" />
-						Appearance
+						外观设置
 					</Card.Title>
-					<Card.Description>Customize the look of the application</Card.Description>
+					<Card.Description>自定义应用的显示样式</Card.Description>
 				</Card.Header>
 				<Card.Content>
 					<ThemeSelector userId={profile.id} />

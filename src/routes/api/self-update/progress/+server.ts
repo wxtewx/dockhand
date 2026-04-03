@@ -64,12 +64,12 @@ function stripDockerLogHeaders(raw: Uint8Array): string {
 export const GET: RequestHandler = async ({ url, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !auth.isAdmin) {
-		return json({ error: 'Admin access required' }, { status: 403 });
+		return json({ error: '需要管理员权限' }, { status: 403 });
 	}
 
 	const containerId = url.searchParams.get('id');
 	if (!containerId) {
-		return json({ error: 'Container ID is required' }, { status: 400 });
+		return json({ error: '必须提供容器 ID' }, { status: 400 });
 	}
 
 	try {
@@ -81,7 +81,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 				// Container removed (AutoRemove after exit)
 				return json({ logs: '', status: 'removed' });
 			}
-			return json({ error: 'Failed to inspect container' }, { status: 500 });
+			return json({ error: '检查容器失败' }, { status: 500 });
 		}
 
 		const info = await inspectResponse.json() as {
@@ -104,6 +104,6 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 		return json({ logs, status, exitCode });
 	} catch (err) {
-		return json({ error: 'Failed to fetch progress: ' + String(err) }, { status: 500 });
+		return json({ error: '获取进度失败: ' + String(err) }, { status: 500 });
 	}
 };

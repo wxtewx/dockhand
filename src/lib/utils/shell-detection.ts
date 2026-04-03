@@ -16,7 +16,7 @@ export const SHELL_OPTIONS: Omit<ShellInfo, 'available'>[] = [
 export const USER_OPTIONS = [
 	{ value: 'root', label: 'root' },
 	{ value: 'nobody', label: 'nobody' },
-	{ value: '', label: 'Container default' }
+	{ value: '', label: '容器默认' }
 ];
 
 export interface ShellDetectionResult {
@@ -45,12 +45,12 @@ export async function detectShells(
 			error: data.error
 		};
 	} catch (error) {
-		console.error('Failed to detect shells:', error);
+		console.error('检测 Shell 失败:', error);
 		return {
 			shells: [],
 			defaultShell: null,
 			allShells: SHELL_OPTIONS.map(s => ({ ...s, available: false })),
-			error: 'Failed to detect available shells'
+			error: '检测可用 Shell 失败'
 		};
 	}
 }

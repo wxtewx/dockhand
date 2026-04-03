@@ -85,7 +85,7 @@
 
 			if (!response.ok) {
 				const data = await response.json();
-				throw new Error(data.error || 'Failed to start deployment');
+				throw new Error(data.error || '启动部署失败');
 			}
 
 			const { jobId } = await response.json();
@@ -100,7 +100,7 @@
 						onComplete?.();
 					} else if (data.status === 'error') {
 						overallStatus = 'error';
-						errorMessage = data.error || 'Unknown error occurred';
+						errorMessage = data.error || '发生未知错误';
 						currentStep = data;
 						steps = [...steps, data];
 					} else {
@@ -108,7 +108,7 @@
 						steps = [...steps, data];
 					}
 				} catch (e) {
-					console.error('Failed to process job line:', e);
+					console.error('处理任务日志失败:', e);
 				}
 			});
 
@@ -117,9 +117,9 @@
 				onComplete?.();
 			}
 		} catch (error: any) {
-			console.error('Failed to deploy git stack:', error);
+			console.error('部署 Git 堆栈失败:', error);
 			overallStatus = 'error';
-			errorMessage = error.message || 'Failed to deploy';
+			errorMessage = error.message || '部署失败';
 		}
 	}
 
@@ -154,7 +154,7 @@
 
 	async function copyLogs() {
 		const lines = steps.map(s => s.message || s.status);
-		if (errorMessage) lines.push(`Error: ${errorMessage}`);
+		if (errorMessage) lines.push(`错误: ${errorMessage}`);
 		await navigator.clipboard.writeText(lines.join('\n'));
 		copied = true;
 		setTimeout(() => { copied = false; }, 2000);
@@ -193,18 +193,18 @@
 				{:else}
 					<Rocket class="w-5 h-5 text-violet-500 shrink-0" />
 				{/if}
-				<span class="text-base font-semibold">Git deploy</span>
+				<span class="text-base font-semibold">Git 部署</span>
 				<code class="text-sm font-normal bg-muted px-1.5 py-0.5 rounded ml-1 truncate">{stackName}</code>
 				{#if overallStatus === 'complete'}
-					<Badge variant="outline" class="ml-auto shrink-0 text-green-600 border-green-600/30">Complete</Badge>
+					<Badge variant="outline" class="ml-auto shrink-0 text-green-600 border-green-600/30">已完成</Badge>
 				{:else if overallStatus === 'error'}
-					<Badge variant="outline" class="ml-auto shrink-0 text-red-600 border-red-600/30">Failed</Badge>
+					<Badge variant="outline" class="ml-auto shrink-0 text-red-600 border-red-600/30">部署失败</Badge>
 				{:else if isDeploying}
 					<Badge variant="secondary" class="ml-auto shrink-0 tabular-nums text-xs">
 						{#if currentStep?.step && currentStep?.totalSteps}
 							{currentStep.step}/{currentStep.totalSteps}
 						{:else}
-							Deploying...
+							部署中...
 						{/if}
 					</Badge>
 				{/if}
@@ -222,17 +222,17 @@
 				<div class="flex items-start gap-3 py-2 px-2">
 					<AlertTriangle class="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
 					<div class="space-y-1">
-						<p class="font-medium">Sync from git?</p>
+						<p class="font-medium">从 Git 同步？</p>
 						<p class="text-sm text-muted-foreground">
-							This will pull the latest changes for <strong class="text-foreground">{stackName}</strong>.
-							Containers will only restart if the configuration changed.
+							此操作将拉取<strong class="text-foreground">{stackName}</strong>的最新更改。
+							仅当配置发生变更时，容器才会重启。
 						</p>
 					</div>
 				</div>
 			{:else if steps.length === 0 && isDeploying}
 				<div class="flex items-center gap-3 text-muted-foreground py-2 px-2">
 					<Loader2 class="w-4 h-4 animate-spin shrink-0" />
-					<span class="text-sm">Initializing...</span>
+					<span class="text-sm">初始化中...</span>
 				</div>
 			{:else}
 				<div class="space-y-0.5">
@@ -271,10 +271,10 @@
 					<Button variant="outline" size="sm" onclick={copyLogs} class="gap-1.5">
 						{#if copied}
 							<Check class="w-3.5 h-3.5" />
-							Copied!
+							已复制！
 						{:else}
 							<Copy class="w-3.5 h-3.5" />
-							Copy logs
+							复制日志
 						{/if}
 					</Button>
 				{/if}
@@ -285,7 +285,7 @@
 				{#if overallStatus === 'confirming'}
 					<Button onclick={handleConfirmDeploy}>
 						<Rocket class="w-4 h-4" />
-						Deploy
+						部署
 					</Button>
 				{:else}
 					<Button
@@ -295,9 +295,9 @@
 					>
 						{#if isDeploying}
 							<Loader2 class="w-4 h-4 animate-spin" />
-							Deploying...
+							部署中...
 						{:else}
-							Close
+							关闭
 						{/if}
 					</Button>
 				{/if}

@@ -96,27 +96,27 @@
 {:else if compact}
 	<!-- Compact view for mini tiles -->
 	<div class="flex items-center gap-1.5 shrink-0">
-		<div class="flex items-center gap-0.5" title="Running">
+		<div class="flex items-center gap-0.5" title="运行中">
 			<Play class="w-3 h-3 text-emerald-500" />
 			<span class="text-2xs font-medium">{containers.running}</span>
 		</div>
-		<div class="flex items-center gap-0.5" title="Stopped">
+		<div class="flex items-center gap-0.5" title="已停止">
 			<Square class="w-3 h-3 text-muted-foreground" />
 			<span class="text-2xs font-medium">{containers.stopped}</span>
 		</div>
-		<div class="flex items-center gap-0.5" title="Paused">
+		<div class="flex items-center gap-0.5" title="已暂停">
 			<Pause class="w-3 h-3 text-amber-500" />
 			<span class="text-2xs font-medium">{containers.paused}</span>
 		</div>
-		<div class="flex items-center gap-0.5" title="Restarting">
+		<div class="flex items-center gap-0.5" title="重启中">
 			<RefreshCw class="w-3 h-3 {containers.restarting > 0 ? 'text-red-500 animate-spin' : 'text-emerald-500'}" />
 			<span class="text-2xs font-medium">{containers.restarting}</span>
 		</div>
-		<div class="flex items-center gap-0.5" title="Unhealthy">
+		<div class="flex items-center gap-0.5" title="异常">
 			<AlertTriangle class="w-3 h-3 {containers.unhealthy > 0 ? 'text-red-500' : 'text-emerald-500'}" />
 			<span class="text-2xs font-medium">{containers.unhealthy}</span>
 		</div>
-		<div class="flex items-center gap-0.5 {containers.pendingUpdates > 0 ? 'pending-glow' : ''}" title="Pending updates">
+		<div class="flex items-center gap-0.5 {containers.pendingUpdates > 0 ? 'pending-glow' : ''}" title="待更新">
 			<ArrowUpCircle class="w-3 h-3 {containers.pendingUpdates > 0 ? 'text-amber-400' : 'text-muted-foreground'}" />
 			<span class="text-2xs font-medium {containers.pendingUpdates > 0 ? 'text-amber-400' : ''}">{containers.pendingUpdates}</span>
 		</div>
@@ -124,32 +124,32 @@
 {:else}
 	<!-- Full grid view -->
 	<div class="grid grid-cols-7 gap-1 min-h-5">
-		<div class="flex items-center gap-1" title="Running containers">
+		<div class="flex items-center gap-1" title="运行中容器">
 			<Play class="w-3.5 h-3.5 text-emerald-500" />
 			<span class="text-sm font-medium">{containers.running}</span>
 		</div>
-		<div class="flex items-center gap-1" title="Stopped containers">
+		<div class="flex items-center gap-1" title="已停止容器">
 			<Square class="w-3.5 h-3.5 text-muted-foreground" />
 			<span class="text-sm font-medium">{containers.stopped}</span>
 		</div>
-		<div class="flex items-center gap-1" title="Paused containers">
+		<div class="flex items-center gap-1" title="已暂停容器">
 			<Pause class="w-3.5 h-3.5 text-amber-500" />
 			<span class="text-sm font-medium">{containers.paused}</span>
 		</div>
-		<div class="flex items-center gap-1" title="Restarting containers">
+		<div class="flex items-center gap-1" title="重启中容器">
 			<RefreshCw class="w-3.5 h-3.5 {containers.restarting > 0 ? 'text-red-500 animate-spin' : 'text-emerald-500'}" />
 			<span class="text-sm font-medium">{containers.restarting}</span>
 		</div>
-		<div class="flex items-center gap-1" title="Unhealthy containers">
+		<div class="flex items-center gap-1" title="异常容器">
 			<AlertTriangle class="w-3.5 h-3.5 {containers.unhealthy > 0 ? 'text-red-500' : 'text-emerald-500'}" />
 			<span class="text-sm font-medium">{containers.unhealthy}</span>
 		</div>
-		<div class="flex items-center gap-1 {containers.pendingUpdates > 0 ? 'pending-glow' : ''}" title="Pending updates">
+		<div class="flex items-center gap-1 {containers.pendingUpdates > 0 ? 'pending-glow' : ''}" title="待更新">
 			<ArrowUpCircle class="w-3.5 h-3.5 {containers.pendingUpdates > 0 ? 'text-amber-400' : 'text-muted-foreground'}" />
 			<span class="text-sm font-medium {containers.pendingUpdates > 0 ? 'text-amber-400' : ''}">{containers.pendingUpdates}</span>
 		</div>
-		<div class="flex items-center gap-1" title="Total containers">
-			<span class="text-xs text-muted-foreground">Total</span>
+		<div class="flex items-center gap-1" title="容器总数">
+			<span class="text-xs text-muted-foreground">总计</span>
 			<span class="text-sm font-medium">{containers.total}</span>
 		</div>
 	</div>

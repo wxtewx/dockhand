@@ -17,7 +17,7 @@ export const POST: RequestHandler = async ({ params, request, cookies, url }) =>
 
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !auth.isAuthenticated) {
-		return json({ error: 'Unauthorized' }, { status: 401 });
+		return json({ error: '未授权' }, { status: 401 });
 	}
 
 	const containerId = params.id;
@@ -26,7 +26,7 @@ export const POST: RequestHandler = async ({ params, request, cookies, url }) =>
 
 	// Permission check with environment context
 	if (!await auth.can('containers', 'exec', envId)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -54,9 +54,9 @@ export const POST: RequestHandler = async ({ params, request, cookies, url }) =>
 			}
 		});
 	} catch (error: any) {
-		console.error('Failed to create exec:', error);
+		console.error('创建执行实例失败:', error);
 		return json(
-			{ error: error.message || 'Failed to create exec instance' },
+			{ error: error.message || '创建执行实例失败' },
 			{ status: 500 }
 		);
 	}

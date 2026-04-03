@@ -93,7 +93,7 @@
 				}
 			}
 		} catch (e) {
-			console.error('Failed to load preview:', e);
+			console.error('加载预览失败:', e);
 		} finally {
 			loadingPreview = false;
 		}
@@ -119,7 +119,7 @@
 			const data = await res.json();
 
 			if (!res.ok) {
-				toast.error(data.error || 'Failed to scan directory');
+				toast.error(data.error || '扫描目录失败');
 				return;
 			}
 
@@ -144,7 +144,7 @@
 						}
 					}
 				} catch (e) {
-					console.error('Failed to detect running stacks:', e);
+					console.error('检测运行中堆栈失败:', e);
 				}
 			}
 
@@ -153,9 +153,9 @@
 
 			if (discovered.length === 0) {
 				if (skippedCount > 0) {
-					toast.info(`All ${skippedCount} stack(s) in this directory are already adopted`);
+					toast.info(`此目录下的 ${skippedCount} 个堆栈均已纳入管理`);
 				} else {
-					toast.info('No compose stacks found in this directory');
+					toast.info('此目录中未找到 compose 堆栈');
 				}
 			} else {
 				const selections = new Map<string, boolean>();
@@ -170,7 +170,7 @@
 			await filesystemBrowser?.addRecentLocation(path);
 
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to scan directory');
+			toast.error(e instanceof Error ? e.message : '扫描目录失败');
 		} finally {
 			scanning = false;
 		}
@@ -178,7 +178,7 @@
 
 	async function adoptSingleFile(entry: FileEntry) {
 		if (!envId) {
-			toast.error('No environment selected');
+			toast.error('未选择环境');
 			return;
 		}
 
@@ -209,20 +209,20 @@
 			const data = await res.json();
 
 			if (!res.ok) {
-				toast.error(data.error || 'Failed to adopt stack');
+				toast.error(data.error || '纳入堆栈管理失败');
 				return;
 			}
 
 			if (data.adopted?.length > 0) {
-				toast.success(`Adopted stack "${data.adopted[0]}"`);
+				toast.success(`已纳入堆栈管理："${data.adopted[0]}"`);
 				await filesystemBrowser?.addRecentLocation(parentDir);
 				onAdopted?.();
 				handleClose();
 			} else if (data.failed?.length > 0) {
-				toast.error(`Failed: ${data.failed[0].error}`);
+				toast.error(`失败：${data.failed[0].error}`);
 			}
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to adopt');
+			toast.error(e instanceof Error ? e.message : '纳入管理失败');
 		} finally {
 			adopting = false;
 		}
@@ -249,20 +249,20 @@
 			const data = await res.json();
 
 			if (!res.ok) {
-				toast.error(data.error || 'Failed to adopt stacks');
+				toast.error(data.error || '纳入堆栈管理失败');
 				return;
 			}
 
 			if (data.adopted?.length > 0) {
-				toast.success(`Adopted ${data.adopted.length} stack(s)`);
+				toast.success(`已纳入 ${data.adopted.length} 个堆栈的管理`);
 				onAdopted?.();
 				handleClose();
 			}
 			if (data.failed?.length > 0) {
-				toast.error(`Failed to adopt ${data.failed.length} stack(s)`);
+				toast.error(`纳入 ${data.failed.length} 个堆栈管理失败`);
 			}
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to adopt');
+			toast.error(e instanceof Error ? e.message : '纳入管理失败');
 		} finally {
 			adopting = false;
 		}
@@ -300,7 +300,7 @@
 	// Browser title with environment info
 	const browserTitle = $derived.by(() => {
 		const envPart = envName ? ` · ${envName}` : '';
-		return `Adopt stacks${envPart}`;
+		return `纳入堆栈管理 ${envPart}`;
 	});
 </script>
 
@@ -311,7 +311,7 @@
 		bind:open
 		title={browserTitle}
 		icon={Import}
-		description="Browse to a compose file or scan a directory for stacks."
+		description="浏览至 Compose 文件或扫描目录查找堆栈。"
 		selectMode="adopt"
 		highlightFilter={/\.ya?ml$/i}
 		onFilePreview={handleFilePreview}
@@ -327,13 +327,13 @@
 			<Dialog.Header class="px-6 py-4 border-b shrink-0">
 				<Dialog.Title class="flex items-center gap-2">
 					<Import class="w-5 h-5" />
-					Select stacks to adopt
+					选择要纳入管理的堆栈
 					<span class="text-muted-foreground">·</span>
 					<EnvironmentIcon icon={envIcon} envId={envId} class="w-4 h-4 text-muted-foreground" />
 					<span class="text-muted-foreground font-normal">{envName}</span>
 				</Dialog.Title>
 				<Dialog.Description>
-					{scanResults.length} stack(s) found. Select which ones to adopt into {envName}.
+					找到 {scanResults.length} 个堆栈。选择需要纳入 {envName} 管理的堆栈。
 				</Dialog.Description>
 			</Dialog.Header>
 
@@ -357,13 +357,13 @@
 										<span class="font-medium truncate">{stack.name}</span>
 										{#if stack.serviceCount}
 											<Badge variant="outline" class="text-xs">
-												{stack.serviceCount} service{stack.serviceCount !== 1 ? 's' : ''}
+												{stack.serviceCount} 个服务
 											</Badge>
 										{/if}
 										{#if stack.running}
 											<Badge variant="default" class="text-xs {countsMismatch ? 'bg-amber-600' : 'bg-green-600'}">
 												<Play class="w-3 h-3 mr-1" />
-												{stack.containerCount} running
+												{stack.containerCount} 个运行中
 											</Badge>
 										{/if}
 									</div>
@@ -384,7 +384,7 @@
 				<div class="px-4 py-3 border-t shrink-0">
 					<div class="flex items-start gap-2.5 text-xs bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-md px-3 py-2.5">
 						<Info class="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-						<span><span class="font-medium text-amber-600 dark:text-amber-400">What happens when you adopt:</span> <span class="text-zinc-600 dark:text-zinc-400">Dockhand will track these compose files, letting you edit, start, and stop the stacks from the UI. Your files stay in their current location.</span></span>
+						<span><span class="font-medium text-amber-600 dark:text-amber-400">纳入管理后会发生什么：</span> <span class="text-zinc-600 dark:text-zinc-400">Dockhand 将跟踪这些 compose 文件，您可以在界面中编辑、启动和停止堆栈。文件将保留在当前位置。</span></span>
 					</div>
 				</div>
 			</div>
@@ -397,15 +397,15 @@
 						onCheckedChange={toggleAll}
 					/>
 					<span class="text-sm text-muted-foreground">
-						<span class="font-medium text-foreground">{selectedCount}</span> of {scanResults.length} selected
+						已选择 <span class="font-medium text-foreground">{selectedCount}</span> / {scanResults.length} 个
 					</span>
 				</div>
 				<div class="flex gap-2">
 					<Button variant="outline" onclick={goBackToBrowse}>
-						Back
+						返回
 					</Button>
 					<Button variant="outline" onclick={handleClose}>
-						Cancel
+						取消
 					</Button>
 					<Button
 						variant="default"
@@ -414,10 +414,10 @@
 					>
 						{#if adopting}
 							<Loader2 class="w-4 h-4 mr-2 animate-spin" />
-							Adopting...
+							纳入管理中...
 						{:else}
 							<Import class="w-4 h-4" />
-							Adopt {selectedCount} stack(s)
+							纳入 {selectedCount} 个堆栈管理
 						{/if}
 					</Button>
 				</div>
@@ -432,10 +432,10 @@
 		<Dialog.Header class="px-5 py-4 border-b shrink-0">
 			<Dialog.Title class="flex items-center gap-2">
 				<Import class="w-5 h-5" />
-				Adopt this stack?
+				将此堆栈纳入管理？
 			</Dialog.Title>
 			<Dialog.Description>
-				Review the compose file before adopting.
+				纳入管理前请检查 Compose 文件。
 			</Dialog.Description>
 		</Dialog.Header>
 
@@ -444,11 +444,11 @@
 				<!-- Stack info bar -->
 				<div class="px-5 py-3 border-b bg-muted/30 flex items-center gap-4 shrink-0">
 					<div class="flex items-center gap-2">
-						<span class="text-sm text-muted-foreground">Stack:</span>
+						<span class="text-sm text-muted-foreground">堆栈：</span>
 						<span class="font-medium">{previewFile.path.replace(/\/[^/]+$/, '').split('/').pop() || 'unknown'}</span>
 						{#if previewServiceCount > 0}
 							<Badge variant="outline" class="text-xs">
-								{previewServiceCount} service{previewServiceCount !== 1 ? 's' : ''}
+								{previewServiceCount} 个服务
 							</Badge>
 						{/if}
 					</div>
@@ -478,7 +478,7 @@
 				<div class="px-5 py-3 border-t shrink-0">
 					<div class="flex items-start gap-2.5 text-xs bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-md px-3 py-2.5">
 						<Info class="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-						<span><span class="font-medium text-amber-600 dark:text-amber-400">What happens when you adopt:</span> <span class="text-zinc-600 dark:text-zinc-400">Dockhand will track this compose file, letting you edit, start, and stop the stack from the UI. Your files stay in their current location.</span></span>
+						<span><span class="font-medium text-amber-600 dark:text-amber-400">纳入管理后会发生什么：</span> <span class="text-zinc-600 dark:text-zinc-400">Dockhand 将跟踪此 compose 文件，您可以在界面中编辑、启动和停止堆栈。文件将保留在当前位置。</span></span>
 					</div>
 				</div>
 			</div>
@@ -486,15 +486,15 @@
 
 		<div class="px-5 py-3 border-t flex justify-end gap-2 shrink-0">
 			<Button variant="outline" onclick={() => showPreview = false}>
-				Cancel
+				取消
 			</Button>
 			<Button onclick={confirmAdoptFromPreview} disabled={adopting}>
 				{#if adopting}
 					<Loader2 class="w-4 h-4 mr-2 animate-spin" />
-					Adopting...
+					纳入管理中...
 				{:else}
 					<Import class="w-4 h-4" />
-					Adopt stack
+					纳入堆栈管理
 				{/if}
 			</Button>
 		</div>

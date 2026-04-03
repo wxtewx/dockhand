@@ -286,7 +286,7 @@
 				availableNetworks = await response.json();
 			}
 		} catch (err) {
-			console.error('Failed to fetch networks:', err);
+			console.error('获取网络失败:', err);
 		}
 	}
 
@@ -297,7 +297,7 @@
 				configSets = await response.json();
 			}
 		} catch (err) {
-			console.error('Failed to fetch config sets:', err);
+			console.error('获取配置集失败:', err);
 		}
 	}
 
@@ -313,7 +313,7 @@
 				envHasScanning = scanner !== 'none';
 			}
 		} catch (err) {
-			console.error('Failed to fetch scanner settings:', err);
+			console.error('获取扫描器设置失败:', err);
 		}
 	}
 
@@ -346,12 +346,12 @@
 
 		let hasErrors = false;
 		if (!name.trim()) {
-			errors.name = 'Container name is required';
+			errors.name = '容器名称为必填项';
 			hasErrors = true;
 		}
 
 		if (!image.trim()) {
-			errors.image = 'Image name is required';
+			errors.image = '镜像名称为必填项';
 			hasErrors = true;
 		}
 
@@ -475,7 +475,7 @@
 			const result = await response.json();
 
 			if (!response.ok) {
-				let errorMsg = result.error || 'Failed to create container';
+				let errorMsg = result.error || '创建容器失败';
 				if (result.details) {
 					errorMsg += ': ' + result.details;
 				}
@@ -496,14 +496,14 @@
 						})
 					});
 				} catch (err) {
-					console.error('Failed to save auto-update settings:', err);
+					console.error('保存自动更新设置失败:', err);
 				}
 			}
 
 			if (result.imagePulled) {
-				toast.success(`Container created (image ${image.trim()} was pulled automatically)`);
+				toast.success(`容器创建成功 (已自动拉取镜像 ${image.trim()}`);
 			} else {
-				toast.success('Container created successfully');
+				toast.success('容器创建成功');
 			}
 
 			open = false;
@@ -511,7 +511,7 @@
 			onSuccess?.();
 			onClose?.();
 		} catch (err) {
-			toast.error('Failed to create container: ' + String(err));
+			toast.error('创建容器失败: ' + String(err));
 		} finally {
 			loading = false;
 		}
@@ -601,7 +601,7 @@
 <Dialog.Root bind:open onOpenChange={(isOpen) => isOpen && focusFirstInput()}>
 	<Dialog.Content class="max-w-4xl w-full h-[85vh] p-0 flex flex-col overflow-hidden !zoom-in-0 !zoom-out-0" showCloseButton={false}>
 		<Dialog.Header class="px-5 py-4 border-b bg-muted/30 shrink-0 sticky top-0 z-10">
-			<Dialog.Title class="text-base font-semibold">Create new container</Dialog.Title>
+			<Dialog.Title class="text-base font-semibold">创建新容器</Dialog.Title>
 			<button
 				type="button"
 				onclick={handleClose}
@@ -609,7 +609,7 @@
 				class="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-30"
 			>
 				<X class="h-4 w-4" />
-				<span class="sr-only">Close</span>
+				<span class="sr-only">关闭</span>
 			</button>
 		</Dialog.Header>
 
@@ -622,7 +622,7 @@
 				onclick={() => activeTab = 'pull'}
 			>
 				<Download class="w-4 h-4" />
-				Pull
+				拉取
 				{#if pullStatus === 'complete'}
 					<CheckCircle2 class="w-3.5 h-3.5 text-green-500" />
 				{:else if pullStatus === 'pulling'}
@@ -640,7 +640,7 @@
 					disabled={pullStatus === 'idle' || pullStatus === 'pulling'}
 				>
 					<Shield class="w-4 h-4" />
-					Scan
+					安全扫描
 					{#if scanStatus === 'complete' && scanResults.length > 0}
 						{#if hasCriticalOrHigh}
 							<ShieldX class="w-3.5 h-3.5 text-red-500" />
@@ -661,7 +661,7 @@
 				onclick={() => activeTab = 'container'}
 			>
 				<Settings2 class="w-4 h-4" />
-				Container
+				容器配置
 			</button>
 		</div>
 		{/if}
@@ -699,8 +699,8 @@
 				<div class="flex-1 flex items-center justify-center">
 					<div class="text-center">
 						<Shield class="w-12 h-12 text-muted-foreground/50 mx-auto mb-2" />
-						<p class="text-sm text-muted-foreground">Vulnerability scanning is disabled for this environment.</p>
-						<p class="text-xs text-muted-foreground mt-1">Enable it in Settings -> Environments to scan images.</p>
+						<p class="text-sm text-muted-foreground">当前环境已禁用漏洞扫描。</p>
+						<p class="text-xs text-muted-foreground mt-1">请在 设置 -> 环境 中启用以扫描镜像。</p>
 					</div>
 				</div>
 			{/if}
@@ -774,21 +774,21 @@
 				{#if activeTab === 'container' && hasCriticalOrHigh}
 					<div class="flex items-center gap-2 text-amber-600 text-xs">
 						<AlertTriangle class="w-4 h-4" />
-						<span>Critical/high vulnerabilities found in image</span>
+						<span>镜像中发现严重/高危漏洞</span>
 					</div>
 				{/if}
 			</div>
 			<div class="flex gap-2">
 				<Button type="button" variant="outline" onclick={handleClose} disabled={loading || isPulling || isScanning}>
-					Cancel
+					取消
 				</Button>
 				<Button type="button" disabled={loading || isPulling || isScanning || activeTab !== 'container'} onclick={handleSubmit}>
 					{#if loading}
 						<Loader2 class="w-4 h-4 animate-spin" />
-						Creating...
+						创建中...
 					{:else}
 						<Play class="w-4 h-4" />
-						Create container
+						创建容器
 					{/if}
 				</Button>
 			</div>

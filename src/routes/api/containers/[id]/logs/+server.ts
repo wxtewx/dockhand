@@ -16,14 +16,14 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('containers', 'logs', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const logs = await getContainerLogs(params.id, tail, envIdNum);
 		return json({ logs });
 	} catch (error: any) {
-		console.error('Error getting container logs:', error?.message || error, error?.stack);
-		return json({ error: 'Failed to get container logs', details: error?.message }, { status: 500 });
+		console.error('获取容器日志错误:', error?.message || error, error?.stack);
+		return json({ error: '获取容器日志失败', details: error?.message }, { status: 500 });
 	}
 };

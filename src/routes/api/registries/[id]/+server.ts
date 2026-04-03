@@ -8,26 +8,26 @@ import { computeAuditDiff } from '$lib/utils/diff';
 export const GET: RequestHandler = async ({ params, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('registries', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const id = parseInt(params.id);
 		if (isNaN(id)) {
-			return json({ error: 'Invalid registry ID' }, { status: 400 });
+			return json({ error: '无效的镜像仓库 ID' }, { status: 400 });
 		}
 
 		const registry = await getRegistry(id);
 		if (!registry) {
-			return json({ error: 'Registry not found' }, { status: 404 });
+			return json({ error: '未找到镜像仓库' }, { status: 404 });
 		}
 
 		// Don't expose password
 		const { password, ...safeRegistry } = registry;
 		return json({ ...safeRegistry, hasCredentials: !!password });
 	} catch (error) {
-		console.error('Error fetching registry:', error);
-		return json({ error: 'Failed to fetch registry' }, { status: 500 });
+		console.error('获取镜像仓库失败:', error);
+		return json({ error: '获取镜像仓库失败' }, { status: 500 });
 	}
 };
 
@@ -35,19 +35,19 @@ export const PUT: RequestHandler = async (event) => {
 	const { params, request, cookies } = event;
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('registries', 'edit')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const id = parseInt(params.id);
 		if (isNaN(id)) {
-			return json({ error: 'Invalid registry ID' }, { status: 400 });
+			return json({ error: '无效的镜像仓库 ID' }, { status: 400 });
 		}
 
 		// Get old values before update for diff
 		const oldRegistry = await getRegistry(id);
 		if (!oldRegistry) {
-			return json({ error: 'Registry not found' }, { status: 404 });
+			return json({ error: '未找到镜像仓库' }, { status: 404 });
 		}
 
 		const data = await request.json();
@@ -60,7 +60,7 @@ export const PUT: RequestHandler = async (event) => {
 		});
 
 		if (!registry) {
-			return json({ error: 'Registry not found' }, { status: 404 });
+			return json({ error: '未找到镜像仓库' }, { status: 404 });
 		}
 
 		// If this registry should be default, set it
@@ -78,11 +78,11 @@ export const PUT: RequestHandler = async (event) => {
 		const { password, ...safeRegistry } = registry;
 		return json({ ...safeRegistry, hasCredentials: !!password });
 	} catch (error: any) {
-		console.error('Error updating registry:', error);
+		console.error('更新镜像仓库失败:', error);
 		if (error.message?.includes('UNIQUE constraint failed')) {
-			return json({ error: 'A registry with this name already exists' }, { status: 400 });
+			return json({ error: '同名镜像仓库已存在' }, { status: 400 });
 		}
-		return json({ error: 'Failed to update registry' }, { status: 500 });
+		return json({ error: '更新镜像仓库失败' }, { status: 500 });
 	}
 };
 
@@ -90,24 +90,24 @@ export const DELETE: RequestHandler = async (event) => {
 	const { params, cookies } = event;
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('registries', 'delete')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const id = parseInt(params.id);
 		if (isNaN(id)) {
-			return json({ error: 'Invalid registry ID' }, { status: 400 });
+			return json({ error: '无效的镜像仓库 ID' }, { status: 400 });
 		}
 
 		// Get registry name before deletion for audit log
 		const registry = await getRegistry(id);
 		if (!registry) {
-			return json({ error: 'Registry not found' }, { status: 404 });
+			return json({ error: '未找到镜像仓库' }, { status: 404 });
 		}
 
 		const deleted = await deleteRegistry(id);
 		if (!deleted) {
-			return json({ error: 'Registry cannot be deleted' }, { status: 400 });
+			return json({ error: '无法删除该镜像仓库' }, { status: 400 });
 		}
 
 		// Audit log
@@ -115,7 +115,7 @@ export const DELETE: RequestHandler = async (event) => {
 
 		return json({ success: true });
 	} catch (error) {
-		console.error('Error deleting registry:', error);
-		return json({ error: 'Failed to delete registry' }, { status: 500 });
+		console.error('删除镜像仓库失败:', error);
+		return json({ error: '删除镜像仓库失败' }, { status: 500 });
 	}
 };

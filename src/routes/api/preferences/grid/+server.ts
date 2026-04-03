@@ -14,8 +14,8 @@ export const GET: RequestHandler = async ({ cookies }) => {
 
 		return json({ preferences });
 	} catch (error) {
-		console.error('Failed to get grid preferences:', error);
-		return json({ error: 'Failed to get grid preferences' }, { status: 500 });
+		console.error('获取表格偏好设置失败:', error);
+		return json({ error: '获取表格偏好设置失败' }, { status: 500 });
 	}
 };
 
@@ -28,17 +28,17 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		const { gridId, columns } = body;
 
 		if (!gridId || typeof gridId !== 'string') {
-			return json({ error: 'gridId is required' }, { status: 400 });
+			return json({ error: 'gridId 为必填项' }, { status: 400 });
 		}
 
 		if (!columns || !Array.isArray(columns)) {
-			return json({ error: 'columns array is required' }, { status: 400 });
+			return json({ error: 'columns 数组为必填项' }, { status: 400 });
 		}
 
 		// Validate column structure
 		for (const col of columns) {
 			if (typeof col.id !== 'string' || typeof col.visible !== 'boolean') {
-				return json({ error: 'Each column must have id (string) and visible (boolean)' }, { status: 400 });
+				return json({ error: '每个列必须包含 id (字符串) 和 visible (布尔值)' }, { status: 400 });
 			}
 		}
 
@@ -52,8 +52,8 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		const preferences = await getGridPreferences(userId);
 		return json({ preferences });
 	} catch (error) {
-		console.error('Failed to save grid preferences:', error);
-		return json({ error: 'Failed to save grid preferences' }, { status: 500 });
+		console.error('保存表格偏好设置失败:', error);
+		return json({ error: '保存表格偏好设置失败' }, { status: 500 });
 	}
 };
 
@@ -75,7 +75,7 @@ export const DELETE: RequestHandler = async ({ url, cookies }) => {
 		const preferences = await getGridPreferences(userId);
 		return json({ preferences });
 	} catch (error) {
-		console.error('Failed to reset grid preferences:', error);
-		return json({ error: 'Failed to reset grid preferences' }, { status: 500 });
+		console.error('重置表格偏好设置失败:', error);
+		return json({ error: '重置表格偏好设置失败' }, { status: 500 });
 	}
 };

@@ -251,9 +251,9 @@
 			// The colored dot
 			const dot = document.createElement('span');
 			dot.className = `var-marker var-marker-${this.type}`;
-			dot.title = this.type === 'missing' ? 'Missing required variable'
-				: this.type === 'required' ? 'Required variable (defined)'
-				: 'Optional variable (has default)';
+			dot.title = this.type === 'missing' ? '缺少必填变量'
+				: this.type === 'required' ? '必填变量 (已定义)'
+				: '可选变量 (有默认值)';
 			wrapper.appendChild(dot);
 
 			// Checkmark if value is provided
@@ -261,7 +261,7 @@
 				const check = document.createElement('span');
 				check.className = 'var-marker-check';
 				check.innerHTML = '✓';
-				check.title = 'Value provided';
+				check.title = '已提供值';
 				wrapper.appendChild(check);
 			}
 
@@ -289,11 +289,11 @@
 
 			if (this.variant === 'missing') {
 				// Red MISSING badge with icon
-				span.innerHTML = '⚠ MISSING';
-				span.title = 'Required variable not defined';
+				span.innerHTML = '⚠ 缺失';
+				span.title = '未定义必填变量';
 			} else {
 				span.textContent = this.isSecret ? '••••••' : this.value;
-				span.title = this.isSecret ? 'Secret value' : this.value;
+				span.title = this.isSecret ? '密钥值' : this.value;
 			}
 			return span;
 		}

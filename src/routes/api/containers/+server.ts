@@ -14,12 +14,12 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('containers', 'view', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Environment access check (enterprise only)
 	if (envIdNum && auth.isEnterprise && !await auth.canAccessEnvironment(envIdNum)) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问此环境' }, { status: 403 });
 	}
 
 	// Early return if no environments configured (fresh install)
@@ -38,10 +38,10 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 	} catch (error: any) {
 		// Return 404 for missing environment so frontend can clear stale localStorage
 		if (error instanceof EnvironmentNotFoundError) {
-			return json({ error: 'Environment not found' }, { status: 404 });
+			return json({ error: '环境未找到' }, { status: 404 });
 		}
 		if (!(error instanceof DockerConnectionError)) {
-			console.error('Error listing containers:', error);
+			console.error('列出容器时出错:', error);
 		}
 		// Return empty array instead of error to allow UI to load
 		return json([]);
@@ -57,12 +57,12 @@ export const POST: RequestHandler = async (event) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('containers', 'create', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Environment access check (enterprise only)
 	if (envIdNum && auth.isEnterprise && !await auth.canAccessEnvironment(envIdNum)) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问此环境' }, { status: 403 });
 	}
 
 	try {
@@ -71,7 +71,7 @@ export const POST: RequestHandler = async (event) => {
 
 		// Check if image needs to be pulled
 		try {
-			console.log(`Attempting to create container with image: ${options.image}`);
+			console.log(`尝试使用镜像创建容器: ${options.image}`);
 			const container = await createContainer(options, envIdNum);
 
 			// Start the container if requested
@@ -80,18 +80,18 @@ export const POST: RequestHandler = async (event) => {
 			}
 
 			// Audit log
-		await auditContainer(event, 'create', container.id, options.name, envIdNum, { image: options.image });
+			await auditContainer(event, 'create', container.id, options.name, envIdNum, { image: options.image });
 
 			return json({ success: true, id: container.id });
 		} catch (createError: any) {
 			// If error is due to missing image, try to pull it first
 			if (createError.statusCode === 404 && createError.json?.message?.includes('No such image')) {
-				console.log(`Image ${options.image} not found locally. Pulling...`);
+				console.log(`本地未找到镜像 ${options.image}，正在拉取...`);
 
 				try {
 					// Pull the image
 					await pullImage(options.image, undefined, envIdNum);
-					console.log(`Successfully pulled image: ${options.image}`);
+					console.log(`成功拉取镜像: ${options.image}`);
 
 					// Retry creating the container
 					const container = await createContainer(options, envIdNum);
@@ -102,14 +102,14 @@ export const POST: RequestHandler = async (event) => {
 					}
 
 					// Audit log
-		await auditContainer(event, 'create', container.id, options.name, envIdNum, { image: options.image, imagePulled: true });
+					await auditContainer(event, 'create', container.id, options.name, envIdNum, { image: options.image, imagePulled: true });
 
 					return json({ success: true, id: container.id, imagePulled: true });
 				} catch (pullError) {
-					console.error('Error pulling image:', pullError);
+					console.error('拉取镜像时出错:', pullError);
 					return json({
-						error: 'Failed to pull image',
-						details: `Could not pull image ${options.image}: ${String(pullError)}`
+						error: '拉取镜像失败',
+						details: `无法拉取镜像 ${options.image}: ${String(pullError)}`
 					}, { status: 500 });
 				}
 			}
@@ -119,7 +119,7 @@ export const POST: RequestHandler = async (event) => {
 		}
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
-		console.error(`[Container] Create failed: ${message}`);
-		return json({ error: 'Failed to create container', details: message }, { status: 500 });
+		console.error(`[容器] 创建失败: ${message}`);
+		return json({ error: '创建容器失败', details: message }, { status: 500 });
 	}
 };

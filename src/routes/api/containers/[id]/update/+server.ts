@@ -18,7 +18,7 @@ export const POST: RequestHandler = async (event) => {
 
 	// Permission check with environment context (update requires create permission)
 	if (auth.authEnabled && !await auth.can('containers', 'create', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -26,17 +26,17 @@ export const POST: RequestHandler = async (event) => {
 		const { startAfterUpdate, repullImage, ...options } = body;
 
 		if (repullImage) {
-			console.log(`Pulling image...`);
+			console.log(`正在拉取镜像...`);
 			try {
 				await pullImage(options.image, undefined, envIdNum);
-				console.log(`Image pulled successfully`);
+				console.log(`镜像拉取成功`);
 			} catch (pullError: any) {
-				console.log(`Pull failed: ${pullError.message}`);
+				console.log(`拉取失败: ${pullError.message}`);
 				throw pullError;
 			}
 		}
 
-		console.log(`Updating container ${params.id} with name: ${options.name}`);
+		console.log(`正在更新容器 ${params.id}，名称: ${options.name}`);
 
 		const container = await updateContainer(params.id, options, startAfterUpdate, envIdNum);
 
@@ -53,9 +53,9 @@ export const POST: RequestHandler = async (event) => {
 		return json({ success: true, id: container.id });
 	} catch (error: any) {
 		if (error?.statusCode === 404) {
-			return json({ error: error.json?.message || 'Container not found' }, { status: 404 });
+			return json({ error: error.json?.message || '容器未找到' }, { status: 404 });
 		}
-		console.error('Error updating container:', error?.message || error);
-		return json({ error: 'Failed to update container', details: error?.message || String(error) }, { status: 500 });
+		console.error('更新容器错误:', error?.message || error);
+		return json({ error: '更新容器失败', details: error?.message || String(error) }, { status: 500 });
 	}
 };

@@ -1,5 +1,5 @@
 <svelte:head>
-	<title>Logs - Dockhand</title>
+	<title>日志 - Dockhand</title>
 </svelte:head>
 
 <script lang="ts">
@@ -206,9 +206,9 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 
 	// Layout mode options for ToggleGroup
 	const layoutModeOptions = [
-		{ value: 'single', label: 'Single', icon: Square },
-		{ value: 'multi', label: 'Multi', icon: LayoutList },
-		{ value: 'grouped', label: 'Grouped', icon: Layers }
+		{ value: 'single', label: '单容器', icon: Square },
+		{ value: 'multi', label: '多容器', icon: LayoutList },
+		{ value: 'grouped', label: '分组', icon: Layers }
 	];
 
 	// Svelte action to focus element on mount
@@ -471,7 +471,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 
 			return loggableContainers;
 		} catch (error) {
-			console.error('Failed to fetch containers:', error);
+			console.error('获取容器列表失败:', error);
 			return [];
 		}
 	}
@@ -486,7 +486,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 			const data = await response.json();
 			favorites = data.favorites ?? [];
 		} catch (error) {
-			console.error('Failed to fetch favorites:', error);
+			console.error('获取容器列表失败:', error);
 			favorites = [];
 		} finally {
 			favoritesLoading = false;
@@ -503,7 +503,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 			const data = await response.json();
 			favoriteGroups = data.groups ?? [];
 		} catch (error) {
-			console.error('Failed to fetch favorite groups:', error);
+			console.error('获取收藏组失败:', error);
 			favoriteGroups = [];
 		} finally {
 			favoriteGroupsLoading = false;
@@ -540,7 +540,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 				showSaveGroupInput = false;
 			}
 		} catch (error) {
-			console.error('Failed to save favorite group:', error);
+			console.error('保存收藏分组失败:', error);
 		}
 	}
 
@@ -564,7 +564,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 				favoriteGroups = data.groups;
 			}
 		} catch (error) {
-			console.error('Failed to delete favorite group:', error);
+			console.error('删除收藏分组失败:', error);
 		}
 	}
 
@@ -623,7 +623,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 				favorites = data.favorites;
 			}
 		} catch (error) {
-			console.error('Failed to toggle favorite:', error);
+			console.error('切换收藏状态失败:', error);
 			// Revert on error
 			if (isFavorite) {
 				favorites = [...favorites, containerName];
@@ -704,7 +704,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 				favorites = data.favorites;
 			}
 		} catch (error) {
-			console.error('Failed to reorder favorites:', error);
+			console.error('收藏排序失败:', error);
 			// Refresh from server on error
 			await fetchFavorites();
 		}
@@ -717,11 +717,11 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 		try {
 			const response = await fetch(appendEnvParam(`/api/containers/${selectedContainer.id}/logs?tail=${tail}`, envId));
 			const data = await response.json();
-			logs = data.logs || 'No logs available';
+			logs = data.logs || '暂无可用日志';
 			scrollToBottom(true); // Force scroll on initial load
 		} catch (error) {
-			console.error('Failed to fetch logs:', error);
-			logs = 'Failed to fetch logs: ' + String(error);
+			console.error('获取日志失败:', error);
+			logs = '获取日志失败: ' + String(error);
 		} finally {
 			loading = false;
 		}
@@ -783,9 +783,9 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 			eventSource.addEventListener('error', (event: Event) => {
 				try {
 					const data = JSON.parse((event as MessageEvent).data);
-					connectionError = data.error || 'Connection error';
+					connectionError = data.error || '连接错误';
 				} catch {
-					connectionError = 'Connection error';
+					connectionError = '连接错误';
 				}
 				handleStreamError();
 			});
@@ -793,7 +793,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 			eventSource.addEventListener('end', () => {
 				isConnected = false;
 				// Container stopped or stream ended normally - don't auto-reconnect
-				connectionError = 'Stream ended';
+				connectionError = '日志流已结束';
 			});
 
 			eventSource.onerror = () => {
@@ -801,8 +801,8 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 				handleStreamError();
 			};
 		} catch (error) {
-			console.error('Failed to start streaming:', error);
-			connectionError = 'Failed to start streaming';
+			console.error('启动日志流失败:', error);
+			connectionError = '启动日志流失败';
 			isConnected = false;
 			loading = false;
 		}
@@ -850,7 +850,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 					mergedLogs = mergedLogs;
 				}
 			} catch (error) {
-				console.error(`Failed to fetch logs for stopped container ${containerId}:`, error);
+				console.error(`获取已停止容器 ${containerId} 的日志失败:`, error);
 				// Still add to header even on error
 				const containerName = container.name;
 				const color = getContainerColor(containerId);
@@ -976,16 +976,16 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 			eventSource.addEventListener('error', (event: Event) => {
 				try {
 					const data = JSON.parse((event as MessageEvent).data);
-					connectionError = data.error || 'Connection error';
+					connectionError = data.error || '连接错误';
 				} catch {
-					connectionError = 'Connection error';
+					connectionError = '连接错误';
 				}
 				handleStreamError();
 			});
 
 			eventSource.addEventListener('end', () => {
 				isConnected = false;
-				connectionError = 'Stream ended';
+				connectionError = '日志流已结束';
 				// If we're still in initial buffering, flush immediately
 				if (initialBuffering) {
 					initialBuffering = false;
@@ -1002,8 +1002,8 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 				handleStreamError();
 			};
 		} catch (error) {
-			console.error('Failed to start grouped streaming:', error);
-			connectionError = 'Failed to start streaming';
+			console.error('启动分组日志流失败:', error);
+			connectionError = '启动合并日志流失败';
 			isConnected = false;
 			loading = false;
 		}
@@ -1042,7 +1042,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 		// Check if we should attempt reconnection
 		if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
 			reconnectAttempts++;
-			connectionError = `Reconnecting (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`;
+			connectionError = `正在重连 (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`;
 
 			// Clear any existing reconnect timeout
 			if (reconnectTimeout) {
@@ -1061,7 +1061,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 				}
 			}, RECONNECT_DELAY);
 		} else {
-			connectionError = 'Connection failed. Click to retry.';
+			connectionError = '连接失败，点击重试';
 		}
 	}
 
@@ -1451,14 +1451,14 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 
 {#if $environments.length === 0 || !$currentEnvironment}
 	<div class="flex flex-col flex-1 min-h-0 h-full">
-		<PageHeader icon={ScrollText} title="Logs" class="h-9 mb-3" />
+		<PageHeader icon={ScrollText} title="日志" class="h-9 mb-3" />
 		<NoEnvironment />
 	</div>
 {:else}
 <div class="flex flex-col flex-1 min-h-0 h-full gap-3">
 	<!-- Header with container selector -->
 	<div class="flex items-center gap-4 h-9">
-		<PageHeader icon={ScrollText} title="Logs" />
+		<PageHeader icon={ScrollText} title="日志" />
 		<!-- Layout toggle - fixed position after title -->
 		<ToggleGroup
 			bind:value={layoutMode}
@@ -1472,7 +1472,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 					<Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
 					<Input
 						type="text"
-						placeholder={selectedContainer ? `${selectedContainer.name} (${selectedContainer.image})` : "Search containers..."}
+						placeholder={selectedContainer ? `${selectedContainer.name} (${selectedContainer.image})` : "搜索容器..."}
 						bind:value={searchQuery}
 						onfocus={handleInputFocus}
 						onblur={handleInputBlur}
@@ -1487,7 +1487,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 					<div class="absolute top-full left-0 right-0 mt-1 border rounded-md bg-popover shadow-lg z-50 max-h-64 overflow-auto">
 						{#if filteredContainers().length === 0}
 							<div class="px-3 py-2 text-sm text-muted-foreground">
-								{containers.length === 0 ? 'No containers' : 'No matches found'}
+								{containers.length === 0 ? '无容器' : '未找到匹配项'}
 							</div>
 						{:else}
 							{#each filteredContainers() as container}
@@ -1501,7 +1501,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 									<span class="font-medium truncate">{container.name}</span>
 									<span class="text-muted-foreground text-xs truncate">({container.image})</span>
 									{#if isCurrentSelection}
-										<span class="ml-auto text-xs text-muted-foreground">current</span>
+										<span class="ml-auto text-xs text-muted-foreground">当前</span>
 									{/if}
 								</button>
 							{/each}
@@ -1528,7 +1528,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 						<Search class="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
 						<Input
 							type="text"
-							placeholder="Filter containers..."
+							placeholder="过滤容器..."
 							bind:value={searchQuery}
 							class="pl-8 h-8 text-sm"
 						/>
@@ -1542,7 +1542,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 							onclick={selectAllContainers}
 							class="text-2xs text-muted-foreground hover:text-foreground transition-colors"
 						>
-							Select all
+							全选
 						</button>
 						<span class="text-muted-foreground">|</span>
 						<button
@@ -1550,7 +1550,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 							onclick={clearContainerSelection}
 							class="text-2xs text-muted-foreground hover:text-foreground transition-colors"
 						>
-							Clear
+							清空
 						</button>
 					</div>
 				{/if}
@@ -1562,7 +1562,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 							<div class="border-b border-purple-500/30 bg-purple-500/5">
 								<div class="px-2 py-1 text-2xs font-medium text-purple-600 dark:text-purple-400 flex items-center gap-1">
 									<FolderHeart class="w-2.5 h-2.5" />
-									Saved groups
+									已保存分组
 								</div>
 								{#each validFavoriteGroups as savedGroup, idx (savedGroup.name || `group-${idx}`)}
 									<div
@@ -1575,13 +1575,13 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 										<Layers class="w-3 h-3 shrink-0 text-purple-500" />
 										<div class="flex-1 min-w-0">
 											<div class="font-medium truncate text-xs leading-tight">{savedGroup.name}</div>
-											<div class="text-2xs text-muted-foreground truncate leading-tight">{savedGroup.containers.length} container{savedGroup.containers.length !== 1 ? 's' : ''}</div>
+											<div class="text-2xs text-muted-foreground truncate leading-tight">{savedGroup.containers.length} 个容器</div>
 										</div>
 										<button
 											type="button"
 											onclick={(e) => { e.stopPropagation(); deleteFavoriteGroup(savedGroup.name); }}
 											class="p-0.5 rounded hover:bg-red-500/20 transition-colors opacity-0 [.saved-group-item:hover_&]:opacity-100"
-											title="Delete group"
+											title="删除分组"
 										>
 											<Trash2 class="w-2.5 h-2.5 text-muted-foreground hover:text-red-500" />
 										</button>
@@ -1592,7 +1592,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 					{/if}
 					{#if filteredContainers().length === 0}
 						<div class="px-3 py-4 text-sm text-muted-foreground text-center">
-							{containers.length === 0 ? 'No containers' : 'No matches found'}
+							{containers.length === 0 ? '无容器' : '未找到匹配项'}
 						</div>
 					{:else}
 						<!-- Favorites section (only in multi mode) -->
@@ -1600,7 +1600,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 							<div class="border-b border-amber-500/30 bg-amber-500/5">
 								<div class="px-2 py-1 text-2xs font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1">
 									<Star class="w-2.5 h-2.5 fill-current" />
-									Favorites
+									收藏
 								</div>
 								{#each favoriteContainers() as container}
 									{@const isMultiSelected = multiModeSelections.has(container.id)}
@@ -1622,7 +1622,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 											type="button"
 											onclick={(e) => toggleMultiModeSelection(container.id, e)}
 											class="w-4 h-4 shrink-0 flex items-center justify-center"
-											title="Select for merge"
+											title="选择用于合并"
 										>
 											{#if isMultiSelected}
 												<div class="w-3.5 h-3.5 rounded border-2 flex items-center justify-center border-blue-500 bg-blue-500/20">
@@ -1642,7 +1642,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 											type="button"
 											onclick={(e) => toggleFavorite(container.name, e)}
 											class="p-0.5 rounded hover:bg-amber-500/20 transition-colors"
-											title="Remove from favorites"
+											title="取消收藏"
 										>
 											<Star class="w-2.5 h-2.5 text-amber-500 fill-amber-500" />
 										</button>
@@ -1655,7 +1655,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 							<div class="border-b border-amber-500/30 bg-amber-500/5">
 								<div class="px-2 py-1 text-2xs font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1">
 									<Star class="w-2.5 h-2.5 fill-current" />
-									Favorites
+									收藏
 								</div>
 								{#each favoriteContainers() as container}
 									{@const isSelected = selectedContainerIds.has(container.id)}
@@ -1685,7 +1685,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 											type="button"
 											onclick={(e) => toggleFavorite(container.name, e)}
 											class="p-0.5 rounded hover:bg-amber-500/20 transition-colors"
-											title="Remove from favorites"
+											title="取消收藏"
 										>
 											<Star class="w-2.5 h-2.5 text-amber-500 fill-amber-500" />
 										</button>
@@ -1697,7 +1697,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 						{#if layoutMode === 'multi' ? nonFavoriteContainers().length > 0 : (layoutMode === 'grouped' ? nonFavoriteContainers().length > 0 : filteredContainers().length > 0)}
 							{#if (layoutMode === 'multi' || layoutMode === 'grouped') && favoriteContainers().length > 0}
 								<div class="px-2 py-1 text-2xs font-medium text-muted-foreground border-b border-border/50">
-									All containers
+									全部容器
 								</div>
 							{/if}
 							{#each layoutMode === 'multi' || layoutMode === 'grouped' ? nonFavoriteContainers() : filteredContainers() as container}
@@ -1727,7 +1727,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 											type="button"
 											onclick={(e) => toggleMultiModeSelection(container.id, e)}
 											class="w-4 h-4 shrink-0 flex items-center justify-center"
-											title="Select for merge"
+											title="选择用于合并"
 										>
 											{#if isMultiSelected}
 												<div class="w-3.5 h-3.5 rounded border-2 flex items-center justify-center border-blue-500 bg-blue-500/20">
@@ -1748,7 +1748,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 											type="button"
 											onclick={(e) => toggleFavorite(container.name, e)}
 											class="p-0.5 rounded hover:bg-amber-500/20 transition-colors opacity-30 group-hover:opacity-100"
-											title="Add to favorites"
+											title="添加收藏"
 										>
 											<Star class="w-2.5 h-2.5 text-muted-foreground hover:text-amber-500" />
 										</button>
@@ -1762,8 +1762,8 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 					<!-- Grouped mode footer -->
 					<div class="px-2 py-2 border-t bg-muted/30 flex flex-col gap-2">
 						<div class="flex items-center justify-between text-xs text-muted-foreground">
-							<span>{selectedContainerIds.size} selected</span>
-							<span>{containers.length} total</span>
+							<span>已选择 {selectedContainerIds.size} 个</span>
+							<span>总计 {containers.length} 个</span>
 						</div>
 						{#if selectedContainerIds.size > 0}
 							<!-- Save group section -->
@@ -1771,7 +1771,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 								<div class="flex items-center gap-1">
 									<input
 										type="text"
-										placeholder="Group name..."
+										placeholder="分组名称..."
 										bind:value={newGroupName}
 										onkeydown={(e) => e.key === 'Enter' && saveCurrentGroup()}
 										use:focusOnMount
@@ -1782,7 +1782,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 										onclick={saveCurrentGroup}
 										disabled={!newGroupName.trim()}
 										class="h-6 w-6 flex items-center justify-center rounded hover:bg-green-500/20 text-muted-foreground hover:text-green-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-										title="Save"
+										title="保存"
 									>
 										<Check class="w-3.5 h-3.5" />
 									</button>
@@ -1790,7 +1790,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 										type="button"
 										onclick={() => { showSaveGroupInput = false; newGroupName = ''; }}
 										class="h-6 w-6 flex items-center justify-center rounded hover:bg-red-500/20 text-muted-foreground hover:text-red-500 transition-colors"
-										title="Cancel"
+										title="取消"
 									>
 										<X class="w-3.5 h-3.5" />
 									</button>
@@ -1798,7 +1798,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 							{:else}
 								<Button size="sm" variant="outline" onclick={() => showSaveGroupInput = true} class="w-full h-7 gap-1.5 text-xs">
 									<Save class="w-3 h-3" />
-									Save group
+									保存分组
 								</Button>
 							{/if}
 						{/if}
@@ -1808,22 +1808,22 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 					<div class="px-2 py-2 border-t bg-muted/30 flex flex-col gap-2">
 						<div class="flex items-center justify-between text-xs text-muted-foreground">
 							{#if multiModeSelections.size > 0}
-								<span>{multiModeSelections.size} selected</span>
+								<span>已选择 {multiModeSelections.size} 个</span>
 								<button
 									type="button"
 									onclick={clearMultiModeSelection}
 									class="text-2xs text-muted-foreground hover:text-foreground transition-colors"
 								>
-									Clear
+									清空
 								</button>
 							{:else}
-								<span>{containers.length} container{containers.length !== 1 ? 's' : ''}</span>
+								<span>{containers.length} 个容器</span>
 							{/if}
 						</div>
 						{#if multiModeSelections.size >= 2}
 							<Button size="sm" variant="default" onclick={mergeSelectedContainers} class="w-full h-7 gap-1.5 text-xs">
 								<Layers class="w-3 h-3" />
-								Merge {multiModeSelections.size} containers
+								合并 {multiModeSelections.size} 个容器
 							</Button>
 						{/if}
 					</div>
@@ -1836,7 +1836,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 			{#if layoutMode === 'grouped'}
 				{#if selectedContainerIds.size === 0}
 					<div class="flex items-center justify-center h-full text-muted-foreground">
-						Select containers from the list to view merged logs
+						从列表中选择容器以查看合并日志
 					</div>
 				{:else}
 					<!-- Header bar for grouped mode -->
@@ -1844,25 +1844,25 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 						<div class="flex items-center gap-2 min-w-[100px]">
 							{#if streamingEnabled}
 								{#if isConnected}
-									<div class="flex items-center gap-1.5" title="Connected - Live streaming">
+									<div class="flex items-center gap-1.5" title="已连接 - 实时推送">
 										<Wifi class="w-3.5 h-3.5 text-green-500" />
-										<span class="text-xs text-green-500 font-medium">Live</span>
+										<span class="text-xs text-green-500 font-medium">实时</span>
 									</div>
 								{:else if loading}
-									<div class="flex items-center gap-1.5" title="Connecting...">
+									<div class="flex items-center gap-1.5" title="正在连接...">
 										<RefreshCw class="w-3.5 h-3.5 animate-spin {darkMode ? 'text-amber-500' : 'text-amber-600'}" />
-										<span class="text-xs {darkMode ? 'text-amber-500' : 'text-amber-600'}">Connecting...</span>
+										<span class="text-xs {darkMode ? 'text-amber-500' : 'text-amber-600'}">正在连接...</span>
 									</div>
 								{:else if connectionError}
 									<button onclick={retryConnection} class="flex items-center gap-1.5 hover:opacity-80" title={connectionError}>
 										<WifiOff class="w-3.5 h-3.5 {darkMode ? 'text-zinc-500' : 'text-gray-400'}" />
-										<span class="text-xs {darkMode ? 'text-zinc-500' : 'text-gray-400'}">Disconnected</span>
+										<span class="text-xs {darkMode ? 'text-zinc-500' : 'text-gray-400'}">已断开</span>
 									</button>
 								{/if}
 							{:else}
-								<div class="flex items-center gap-1.5" title="Streaming paused">
+								<div class="flex items-center gap-1.5" title="已暂停推送">
 									<Pause class="w-3.5 h-3.5 {darkMode ? 'text-zinc-500' : 'text-gray-400'}" />
-									<span class="text-xs {darkMode ? 'text-zinc-500' : 'text-gray-400'}">Paused</span>
+									<span class="text-xs {darkMode ? 'text-zinc-500' : 'text-gray-400'}">已暂停</span>
 								</div>
 							{/if}
 							<!-- Stack name / container name and color legend -->
@@ -1889,23 +1889,23 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 							<button
 								onclick={toggleStreaming}
 								class="flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors {streamingEnabled ? (darkMode ? 'bg-amber-500/20 ring-1 ring-amber-500/50 text-amber-400' : 'bg-amber-500/30 ring-1 ring-amber-600/50 text-amber-700') : darkMode ? 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'}"
-								title={streamingEnabled ? 'Pause live streaming' : 'Resume live streaming'}
+								title={streamingEnabled ? '暂停实时推送' : '恢复实时推送'}
 							>
 								{#if streamingEnabled}
 									<Pause class="w-3 h-3" />
-									<span>Pause</span>
+									<span>暂停</span>
 								{:else}
 									<Play class="w-3 h-3" />
-									<span>Stream</span>
+									<span>推送</span>
 								{/if}
 							</button>
 							<button
 								onclick={() => { autoScroll = !autoScroll; saveState(); }}
 								class="flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors {autoScroll ? (darkMode ? 'bg-amber-500/20 ring-1 ring-amber-500/50 text-amber-400' : 'bg-amber-500/30 ring-1 ring-amber-600/50 text-amber-700') : darkMode ? 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'}"
-								title="Toggle auto-scroll"
+								title="切换自动滚动"
 							>
 								<ArrowDownToLine class="w-3 h-3" />
-								<span>Auto-scroll</span>
+								<span>自动滚动</span>
 							</button>
 							<Select.Root type="single" value={String(fontSize)} onValueChange={(v) => { fontSize = Number(v); saveState(); }}>
 								<Select.Trigger class="!h-5 !py-0 w-14 text-xs px-1.5 [&_svg]:size-3 {darkMode ? 'bg-zinc-800 border-zinc-700 text-zinc-300' : 'bg-white border-gray-300 text-gray-700'}">
@@ -1920,12 +1920,12 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 							<button
 								onclick={() => { wordWrap = !wordWrap; saveState(); }}
 								class="flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors {wordWrap ? (darkMode ? 'bg-amber-500/20 ring-1 ring-amber-500/50 text-amber-400' : 'bg-amber-500/30 ring-1 ring-amber-600/50 text-amber-700') : darkMode ? 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'}"
-								title="Toggle word wrap"
+								title="切换自动换行"
 							>
 								<WrapText class="w-3 h-3" />
-								<span>Wrap</span>
+								<span>换行</span>
 							</button>
-							<button onclick={toggleTheme} class="p-1 rounded transition-colors {darkMode ? 'hover:bg-zinc-800' : 'hover:bg-gray-200'}" title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}>
+							<button onclick={toggleTheme} class="p-1 rounded transition-colors {darkMode ? 'hover:bg-zinc-800' : 'hover:bg-gray-200'}" title={darkMode ? '切换浅色模式' : '切换深色模式'}>
 								{#if darkMode}
 									<Sun class="w-3 h-3 {darkMode ? 'text-zinc-500 hover:text-zinc-300' : 'text-gray-500 hover:text-gray-700'}" />
 								{:else}
@@ -1938,7 +1938,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 									<input
 										bind:this={logSearchInputRef}
 										type="text"
-										placeholder="Search..."
+										placeholder="搜索..."
 										bind:value={logSearchQuery}
 										onkeydown={handleLogSearchKeydown}
 										class="bg-transparent border-none outline-none text-xs w-28 {darkMode ? 'text-zinc-200 placeholder:text-zinc-500' : 'text-gray-800 placeholder:text-gray-400'}"
@@ -1948,28 +1948,28 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 									{:else if logSearchQuery}
 										<span class="text-xs {darkMode ? 'text-zinc-500' : 'text-gray-400'}">0/0</span>
 									{/if}
-									<button onclick={() => navigateMatch('prev')} class="p-0.5 rounded transition-colors {darkMode ? 'hover:bg-zinc-700' : 'hover:bg-gray-300'}" title="Previous match">
+									<button onclick={() => navigateMatch('prev')} class="p-0.5 rounded transition-colors {darkMode ? 'hover:bg-zinc-700' : 'hover:bg-gray-300'}" title="上一个匹配项">
 										<ChevronUp class="w-3 h-3 {darkMode ? 'text-zinc-400' : 'text-gray-500'}" />
 									</button>
-									<button onclick={() => navigateMatch('next')} class="p-0.5 rounded transition-colors {darkMode ? 'hover:bg-zinc-700' : 'hover:bg-gray-300'}" title="Next match">
+									<button onclick={() => navigateMatch('next')} class="p-0.5 rounded transition-colors {darkMode ? 'hover:bg-zinc-700' : 'hover:bg-gray-300'}" title="下一个匹配项">
 										<ChevronDown class="w-3 h-3 {darkMode ? 'text-zinc-400' : 'text-gray-500'}" />
 									</button>
-									<button onclick={closeLogSearch} class="p-0.5 rounded transition-colors {darkMode ? 'hover:bg-zinc-700' : 'hover:bg-gray-300'}" title="Close search">
+									<button onclick={closeLogSearch} class="p-0.5 rounded transition-colors {darkMode ? 'hover:bg-zinc-700' : 'hover:bg-gray-300'}" title="关闭搜索">
 										<X class="w-3 h-3 {darkMode ? 'text-zinc-400' : 'text-gray-500'}" />
 									</button>
 								</div>
 							{:else}
-								<button onclick={toggleLogSearch} class="p-1 rounded transition-colors {darkMode ? 'hover:bg-zinc-800' : 'hover:bg-gray-200'}" title="Search logs">
+								<button onclick={toggleLogSearch} class="p-1 rounded transition-colors {darkMode ? 'hover:bg-zinc-800' : 'hover:bg-gray-200'}" title="搜索日志">
 									<Search class="w-3 h-3 {darkMode ? 'text-zinc-500 hover:text-zinc-300' : 'text-gray-500 hover:text-gray-700'}" />
 								</button>
 							{/if}
-							<button onclick={copyLogs} class="p-1 rounded transition-colors {darkMode ? 'hover:bg-zinc-800' : 'hover:bg-gray-200'}" title="Copy logs">
+							<button onclick={copyLogs} class="p-1 rounded transition-colors {darkMode ? 'hover:bg-zinc-800' : 'hover:bg-gray-200'}" title="复制日志">
 								<Copy class="w-3 h-3 {darkMode ? 'text-zinc-500 hover:text-zinc-300' : 'text-gray-500 hover:text-gray-700'}" />
 							</button>
-							<button onclick={downloadLogs} class="p-1 rounded transition-colors {darkMode ? 'hover:bg-zinc-800' : 'hover:bg-gray-200'}" title="Download logs">
+							<button onclick={downloadLogs} class="p-1 rounded transition-colors {darkMode ? 'hover:bg-zinc-800' : 'hover:bg-gray-200'}" title="下载日志">
 								<Download class="w-3 h-3 {darkMode ? 'text-zinc-500 hover:text-zinc-300' : 'text-gray-500 hover:text-gray-700'}" />
 							</button>
-							<button onclick={clearLogs} class="p-1 rounded transition-colors {darkMode ? 'hover:bg-zinc-800' : 'hover:bg-gray-200'}" title="Clear logs">
+							<button onclick={clearLogs} class="p-1 rounded transition-colors {darkMode ? 'hover:bg-zinc-800' : 'hover:bg-gray-200'}" title="清空日志">
 								<Eraser class="w-3 h-3 {darkMode ? 'text-zinc-500 hover:text-zinc-300' : 'text-gray-500 hover:text-gray-700'}" />
 							</button>
 						</div>
@@ -1989,7 +1989,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 				{/if}
 			{:else if !selectedContainer}
 				<div class="flex items-center justify-center h-full text-muted-foreground">
-					{layoutMode === 'multi' ? 'Select a container from the list' : 'Select a container to view logs'}
+					{layoutMode === 'multi' ? '从列表中选择一个容器' : '选择容器查看日志'}
 				</div>
 			{:else}
 			<!-- Header bar inside black area -->
@@ -1998,14 +1998,14 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 					<!-- Connection status indicator -->
 					{#if streamingEnabled}
 						{#if isConnected}
-							<div class="flex items-center gap-1.5 transition-opacity duration-300" title="Connected - Live streaming">
+							<div class="flex items-center gap-1.5 transition-opacity duration-300" title="已连接 - 实时推送">
 								<Wifi class="w-3.5 h-3.5 text-green-500" />
-								<span class="text-xs text-green-500 font-medium">Live</span>
+								<span class="text-xs text-green-500 font-medium">实时</span>
 							</div>
 						{:else if loading}
-							<div class="flex items-center gap-1.5 transition-opacity duration-300" title="Connecting...">
+							<div class="flex items-center gap-1.5 transition-opacity duration-300" title="正在连接...">
 								<RefreshCw class="w-3.5 h-3.5 animate-spin {darkMode ? 'text-amber-500' : 'text-amber-600'}" />
-								<span class="text-xs {darkMode ? 'text-amber-500' : 'text-amber-600'}">Connecting...</span>
+								<span class="text-xs {darkMode ? 'text-amber-500' : 'text-amber-600'}">正在连接...</span>
 							</div>
 						{:else if connectionError}
 							<button
@@ -2014,18 +2014,18 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 								title={connectionError}
 							>
 								<WifiOff class="w-3.5 h-3.5 {darkMode ? 'text-zinc-500' : 'text-gray-400'}" />
-								<span class="text-xs {darkMode ? 'text-zinc-500' : 'text-gray-400'}">Disconnected</span>
+								<span class="text-xs {darkMode ? 'text-zinc-500' : 'text-gray-400'}">已断开</span>
 							</button>
 						{:else}
-							<div class="flex items-center gap-1.5 transition-opacity duration-300" title="Disconnected">
+							<div class="flex items-center gap-1.5 transition-opacity duration-300" title="已断开">
 								<WifiOff class="w-3.5 h-3.5 {darkMode ? 'text-zinc-500' : 'text-gray-400'}" />
-								<span class="text-xs {darkMode ? 'text-zinc-500' : 'text-gray-400'}">Offline</span>
+								<span class="text-xs {darkMode ? 'text-zinc-500' : 'text-gray-400'}">离线</span>
 							</div>
 						{/if}
 					{:else}
-						<div class="flex items-center gap-1.5 transition-opacity duration-300" title="Streaming paused">
+						<div class="flex items-center gap-1.5 transition-opacity duration-300" title="已暂停推送">
 							<Pause class="w-3.5 h-3.5 {darkMode ? 'text-zinc-500' : 'text-gray-400'}" />
-							<span class="text-xs {darkMode ? 'text-zinc-500' : 'text-gray-400'}">Paused</span>
+							<span class="text-xs {darkMode ? 'text-zinc-500' : 'text-gray-400'}">已暂停</span>
 						</div>
 					{/if}
 					<!-- Container name -->
@@ -2040,23 +2040,23 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 					<button
 						onclick={toggleStreaming}
 						class="flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors {streamingEnabled ? (darkMode ? 'bg-amber-500/20 ring-1 ring-amber-500/50 text-amber-400' : 'bg-amber-500/30 ring-1 ring-amber-600/50 text-amber-700') : darkMode ? 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'}"
-						title={streamingEnabled ? 'Pause live streaming' : 'Resume live streaming'}
+						title={streamingEnabled ? '暂停实时推送' : '恢复实时推送'}
 					>
 						{#if streamingEnabled}
 							<Pause class="w-3 h-3" />
-							<span>Pause</span>
+							<span>暂停</span>
 						{:else}
 							<Play class="w-3 h-3" />
-							<span>Stream</span>
+							<span>推送</span>
 						{/if}
 					</button>
 					<button
 						onclick={() => { autoScroll = !autoScroll; saveState(); }}
 						class="flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors {autoScroll ? (darkMode ? 'bg-amber-500/20 ring-1 ring-amber-500/50 text-amber-400' : 'bg-amber-500/30 ring-1 ring-amber-600/50 text-amber-700') : darkMode ? 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'}"
-						title="Toggle auto-scroll"
+						title="自动滚动"
 					>
 						<ArrowDownToLine class="w-3 h-3" />
-						<span>Auto-scroll</span>
+						<span>自动滚动</span>
 					</button>
 					<Select.Root type="single" value={String(fontSize)} onValueChange={(v) => { fontSize = Number(v); saveState(); }}>
 						<Select.Trigger class="!h-5 !py-0 w-14 text-xs px-1.5 [&_svg]:size-3 {darkMode ? 'bg-zinc-800 border-zinc-700 text-zinc-300' : 'bg-white border-gray-300 text-gray-700'}">
@@ -2071,16 +2071,16 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 					<button
 						onclick={() => { wordWrap = !wordWrap; saveState(); }}
 						class="flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors {wordWrap ? (darkMode ? 'bg-amber-500/20 ring-1 ring-amber-500/50 text-amber-400' : 'bg-amber-500/30 ring-1 ring-amber-600/50 text-amber-700') : darkMode ? 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'}"
-						title="Toggle word wrap"
+						title="切换自动换行"
 					>
 						<WrapText class="w-3 h-3" />
-						<span>Wrap</span>
+						<span>换行</span>
 					</button>
 					<!-- Theme toggle -->
 					<button
 						onclick={toggleTheme}
 						class="p-1 rounded transition-colors {darkMode ? 'hover:bg-zinc-800' : 'hover:bg-gray-200'}"
-						title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+						title={darkMode ? '切换浅色模式' : '切换深色模式'}
 					>
 						{#if darkMode}
 							<Sun class="w-3 h-3 {darkMode ? 'text-zinc-500 hover:text-zinc-300' : 'text-gray-500 hover:text-gray-700'}" />
@@ -2094,7 +2094,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 							<input
 								bind:this={logSearchInputRef}
 								type="text"
-								placeholder="Search..."
+								placeholder="搜索..."
 								bind:value={logSearchQuery}
 								onkeydown={handleLogSearchKeydown}
 								class="bg-transparent border-none outline-none text-xs w-28 {darkMode ? 'text-zinc-200 placeholder:text-zinc-500' : 'text-gray-800 placeholder:text-gray-400'}"
@@ -2107,21 +2107,21 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 							<button
 								onclick={() => navigateMatch('prev')}
 								class="p-0.5 rounded transition-colors {darkMode ? 'hover:bg-zinc-700' : 'hover:bg-gray-300'}"
-								title="Previous match (Shift+Enter)"
+								title="上一个匹配项 (Shift+Enter)"
 							>
 								<ChevronUp class="w-3 h-3 {darkMode ? 'text-zinc-400' : 'text-gray-500'}" />
 							</button>
 							<button
 								onclick={() => navigateMatch('next')}
 								class="p-0.5 rounded transition-colors {darkMode ? 'hover:bg-zinc-700' : 'hover:bg-gray-300'}"
-								title="Next match (Enter)"
+								title="下一个匹配项 (Enter)"
 							>
 								<ChevronDown class="w-3 h-3 {darkMode ? 'text-zinc-400' : 'text-gray-500'}" />
 							</button>
 							<button
 								onclick={closeLogSearch}
 								class="p-0.5 rounded transition-colors {darkMode ? 'hover:bg-zinc-700' : 'hover:bg-gray-300'}"
-								title="Close search (Esc)"
+								title="关闭搜索 (Esc)"
 							>
 								<X class="w-3 h-3 {darkMode ? 'text-zinc-400' : 'text-gray-500'}" />
 							</button>
@@ -2130,7 +2130,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 						<button
 							onclick={toggleLogSearch}
 							class="p-1 rounded transition-colors {darkMode ? 'hover:bg-zinc-800' : 'hover:bg-gray-200'}"
-							title="Search logs (Ctrl+F)"
+							title="搜索日志 (Ctrl+F)"
 						>
 							<Search class="w-3 h-3 {darkMode ? 'text-zinc-500 hover:text-zinc-300' : 'text-gray-500 hover:text-gray-700'}" />
 						</button>
@@ -2138,28 +2138,28 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 					<button
 						onclick={copyLogs}
 						class="p-1 rounded transition-colors {darkMode ? 'hover:bg-zinc-800' : 'hover:bg-gray-200'}"
-						title="Copy logs"
+						title="复制日志"
 					>
 						<Copy class="w-3 h-3 {darkMode ? 'text-zinc-500 hover:text-zinc-300' : 'text-gray-500 hover:text-gray-700'}" />
 					</button>
 					<button
 						onclick={downloadLogs}
 						class="p-1 rounded transition-colors {darkMode ? 'hover:bg-zinc-800' : 'hover:bg-gray-200'}"
-						title="Download logs"
+						title="下载日志"
 					>
 						<Download class="w-3 h-3 {darkMode ? 'text-zinc-500 hover:text-zinc-300' : 'text-gray-500 hover:text-gray-700'}" />
 					</button>
 					<button
 						onclick={clearLogs}
 						class="p-1 rounded transition-colors {darkMode ? 'hover:bg-zinc-800' : 'hover:bg-gray-200'}"
-						title="Clear logs"
+						title="清空日志"
 					>
 						<Eraser class="w-3 h-3 {darkMode ? 'text-zinc-500 hover:text-zinc-300' : 'text-gray-500 hover:text-gray-700'}" />
 					</button>
 					<button
 						onclick={() => fetchLogs()}
 						class="p-1 rounded transition-colors {darkMode ? 'hover:bg-zinc-800' : 'hover:bg-gray-200'}"
-						title="Refresh logs"
+						title="刷新日志"
 					>
 						<RefreshCw class="w-3 h-3 {darkMode ? 'text-zinc-500 hover:text-zinc-300' : 'text-gray-500 hover:text-gray-700'}" />
 					</button>
@@ -2168,7 +2168,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 			{#if loading && !logs}
 				<div class="flex items-center justify-center flex-1 text-muted-foreground">
 					<RefreshCw class="w-5 h-5 animate-spin mr-2" />
-					Loading logs...
+					正在加载日志...
 				</div>
 			{:else}
 				<div bind:this={logsRef} class="flex-1 overflow-auto p-4">

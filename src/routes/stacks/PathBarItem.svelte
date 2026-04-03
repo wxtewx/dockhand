@@ -22,7 +22,7 @@
 		onCopy,
 		onBrowse,
 		onChangeLocation,
-		defaultText = 'Default location',
+		defaultText = '默认路径',
 		isSuggested = false,
 		copied = null,
 		sourceHint
@@ -61,7 +61,7 @@
 	<button
 		onclick={onBrowse}
 		class="p-1 rounded transition-colors shrink-0 hover:bg-zinc-200 dark:hover:bg-zinc-700"
-		title={`Browse for ${label.toLowerCase()}`}
+		title={`浏览选择 ${label.toLowerCase()}`}
 	>
 		<FolderOpen class="w-3.5 h-3.5" />
 	</button>
@@ -69,7 +69,7 @@
 		<button
 			onclick={onChangeLocation}
 			class="p-1 rounded transition-colors shrink-0 hover:bg-zinc-200 dark:hover:bg-zinc-700"
-			title="Change location"
+			title="更改路径"
 		>
 			<FolderSync class="w-3.5 h-3.5" />
 		</button>
@@ -77,7 +77,7 @@
 	<button
 		onclick={onCopy}
 		class="p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors shrink-0 {!path ? 'opacity-40 cursor-not-allowed' : ''}"
-		title="Copy path"
+		title="复制路径"
 		disabled={!path}
 	>
 		{#if copied === 'error'}
@@ -85,7 +85,7 @@
 				<Tooltip.Trigger>
 					<XCircle class="w-3.5 h-3.5 text-red-500" />
 				</Tooltip.Trigger>
-				<Tooltip.Content>Copy requires HTTPS</Tooltip.Content>
+				<Tooltip.Content>复制需要 HTTPS</Tooltip.Content>
 			</Tooltip.Root>
 		{:else if copied === 'ok'}
 			<Check class="w-3.5 h-3.5 text-green-500" />

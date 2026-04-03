@@ -208,21 +208,21 @@ export async function deleteEnvironment(id: number): Promise<boolean> {
 		await db.delete(hostMetrics).where(eq(hostMetrics.environmentId, id));
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		console.error('[DB] Failed to cleanup host metrics for environment:', errorMsg);
+		console.error('[数据库] 清理环境主机指标失败：', errorMsg);
 	}
 
 	try {
 		await db.delete(stackEvents).where(eq(stackEvents.environmentId, id));
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		console.error('[DB] Failed to cleanup stack events for environment:', errorMsg);
+		console.error('[数据库] 清理环境堆栈事件失败：', errorMsg);
 	}
 
 	try {
 		await db.delete(autoUpdateSettings).where(eq(autoUpdateSettings.environmentId, id));
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		console.error('[DB] Failed to cleanup auto-update schedules for environment:', errorMsg);
+		console.error('[数据库] 清理环境自动更新计划失败：', errorMsg);
 	}
 
 	await db.delete(environments).where(eq(environments.id, id));
@@ -760,55 +760,55 @@ export async function renameAutoUpdateSchedule(
 // Event scope: 'environment' = configurable per-environment, 'system' = global only (configured at channel level)
 export const NOTIFICATION_EVENT_TYPES = [
 	// Container lifecycle events (environment-scoped)
-	{ id: 'container_started', label: 'Container started', description: 'When a container starts running', group: 'container', scope: 'environment' },
-	{ id: 'container_stopped', label: 'Container stopped', description: 'When a container is stopped', group: 'container', scope: 'environment' },
-	{ id: 'container_restarted', label: 'Container restarted', description: 'When a container restarts (manual or automatic)', group: 'container', scope: 'environment' },
-	{ id: 'container_exited', label: 'Container exited', description: 'When a container exits unexpectedly', group: 'container', scope: 'environment' },
-	{ id: 'container_unhealthy', label: 'Container unhealthy', description: 'When a container health check fails', group: 'container', scope: 'environment' },
-	{ id: 'container_healthy', label: 'Container healthy', description: 'When a container health check recovers', group: 'container', scope: 'environment' },
-	{ id: 'container_oom', label: 'Out of memory', description: 'When a container is killed due to out of memory', group: 'container', scope: 'environment' },
-	{ id: 'container_updated', label: 'Container updated', description: 'When a container image is updated', group: 'container', scope: 'environment' },
-	{ id: 'image_pulled', label: 'Image pulled', description: 'When a new image is pulled', group: 'container', scope: 'environment' },
+	{ id: 'container_started', label: '容器已启动', description: '容器开始运行时', group: 'container', scope: 'environment' },
+	{ id: 'container_stopped', label: '容器已停止', description: '容器被停止时', group: 'container', scope: 'environment' },
+	{ id: 'container_restarted', label: '容器已重启', description: '容器重启时 (手动或自动)', group: 'container', scope: 'environment' },
+	{ id: 'container_exited', label: '容器已退出', description: '容器意外退出时', group: 'container', scope: 'environment' },
+	{ id: 'container_unhealthy', label: '容器状态异常', description: '容器健康检查失败时', group: 'container', scope: 'environment' },
+	{ id: 'container_healthy', label: '容器状态正常', description: '容器健康检查恢复时', group: 'container', scope: 'environment' },
+	{ id: 'container_oom', label: '内存溢出', description: '容器因内存溢出被终止时', group: 'container', scope: 'environment' },
+	{ id: 'container_updated', label: '容器已更新', description: '容器镜像被更新时', group: 'container', scope: 'environment' },
+	{ id: 'image_pulled', label: '镜像已拉取', description: '拉取新镜像时', group: 'container', scope: 'environment' },
 
 	// Auto-update events (environment-scoped)
-	{ id: 'auto_update_success', label: 'Auto-update success', description: 'Container successfully updated to new image', group: 'auto_update', scope: 'environment' },
-	{ id: 'auto_update_failed', label: 'Auto-update failed', description: 'Container auto-update failed (pull error, start error)', group: 'auto_update', scope: 'environment' },
-	{ id: 'auto_update_blocked', label: 'Auto-update blocked', description: 'Update blocked due to vulnerability criteria', group: 'auto_update', scope: 'environment' },
-	{ id: 'updates_detected', label: 'Updates detected', description: 'Container image updates are available (scheduled check)', group: 'auto_update', scope: 'environment' },
-	{ id: 'batch_update_success', label: 'Batch update completed', description: 'Scheduled container updates completed successfully', group: 'auto_update', scope: 'environment' },
+	{ id: 'auto_update_success', label: '自动更新成功', description: '容器成功更新到新镜像', group: 'auto_update', scope: 'environment' },
+	{ id: 'auto_update_failed', label: '自动更新失败', description: '容器自动更新失败 (拉取错误、启动错误)', group: 'auto_update', scope: 'environment' },
+	{ id: 'auto_update_blocked', label: '自动更新已阻止', description: '因漏洞检测规则阻止更新', group: 'auto_update', scope: 'environment' },
+	{ id: 'updates_detected', label: '检测到更新', description: '检测到容器镜像可用更新 (定时检查)', group: 'auto_update', scope: 'environment' },
+	{ id: 'batch_update_success', label: '批量更新完成', description: '定时容器更新任务执行成功', group: 'auto_update', scope: 'environment' },
 
 	// Git stack events (environment-scoped)
-	{ id: 'git_sync_success', label: 'Git sync success', description: 'Git stack synced and deployed successfully', group: 'git_stack', scope: 'environment' },
-	{ id: 'git_sync_failed', label: 'Git sync failed', description: 'Git stack sync or deploy failed', group: 'git_stack', scope: 'environment' },
-	{ id: 'git_sync_skipped', label: 'Git sync skipped', description: 'Git stack sync skipped (no changes)', group: 'git_stack', scope: 'environment' },
+	{ id: 'git_sync_success', label: 'Git 同步成功', description: 'Git 堆栈同步并部署成功', group: 'git_stack', scope: 'environment' },
+	{ id: 'git_sync_failed', label: 'Git 同步失败', description: 'Git 堆栈同步或部署失败', group: 'git_stack', scope: 'environment' },
+	{ id: 'git_sync_skipped', label: 'Git 同步已跳过', description: 'Git 堆栈同步已跳过 (无变更)', group: 'git_stack', scope: 'environment' },
 
 	// Stack events (environment-scoped)
-	{ id: 'stack_started', label: 'Stack started', description: 'When a compose stack starts', group: 'stack', scope: 'environment' },
-	{ id: 'stack_stopped', label: 'Stack stopped', description: 'When a compose stack stops', group: 'stack', scope: 'environment' },
-	{ id: 'stack_deployed', label: 'Stack deployed', description: 'Stack deployed (new or update)', group: 'stack', scope: 'environment' },
-	{ id: 'stack_deploy_failed', label: 'Stack deploy failed', description: 'Stack deployment failed', group: 'stack', scope: 'environment' },
+	{ id: 'stack_started', label: '堆栈已启动', description: '编排堆栈启动时', group: 'stack', scope: 'environment' },
+	{ id: 'stack_stopped', label: '堆栈已停止', description: '编排堆栈停止时', group: 'stack', scope: 'environment' },
+	{ id: 'stack_deployed', label: '堆栈已部署', description: '堆栈已部署 (新建或更新)', group: 'stack', scope: 'environment' },
+	{ id: 'stack_deploy_failed', label: '堆栈部署失败', description: '堆栈部署失败', group: 'stack', scope: 'environment' },
 
 	// Security events (environment-scoped)
-	{ id: 'vulnerability_critical', label: 'Critical vulnerabilities', description: 'Critical vulnerabilities found in image scan', group: 'security', scope: 'environment' },
-	{ id: 'vulnerability_high', label: 'High vulnerabilities', description: 'High severity vulnerabilities found in image scan', group: 'security', scope: 'environment' },
-	{ id: 'vulnerability_any', label: 'Any vulnerabilities', description: 'Any vulnerabilities found in image scan (medium/low)', group: 'security', scope: 'environment' },
+	{ id: 'vulnerability_critical', label: '严重漏洞', description: '镜像扫描发现严重漏洞', group: 'security', scope: 'environment' },
+	{ id: 'vulnerability_high', label: '高危漏洞', description: '镜像扫描发现高危漏洞', group: 'security', scope: 'environment' },
+	{ id: 'vulnerability_any', label: '任意漏洞', description: '镜像扫描发现任意漏洞 (中/低危)', group: 'security', scope: 'environment' },
 
 	// System events (global - configured at channel level, not per-environment)
-	{ id: 'environment_offline', label: 'Environment offline', description: 'Environment became unreachable', group: 'system', scope: 'environment' },
-	{ id: 'environment_online', label: 'Environment online', description: 'Environment came back online', group: 'system', scope: 'environment' },
-	{ id: 'disk_space_warning', label: 'Disk space warning', description: 'Docker disk usage exceeds threshold', group: 'system', scope: 'environment' },
-	{ id: 'image_prune_success', label: 'Image prune success', description: 'Scheduled image prune completed successfully', group: 'system', scope: 'environment' },
-	{ id: 'image_prune_failed', label: 'Image prune failed', description: 'Scheduled image prune failed', group: 'system', scope: 'environment' },
-	{ id: 'license_expiring', label: 'License expiring', description: 'Enterprise license expiring soon (global)', group: 'system', scope: 'system' }
+	{ id: 'environment_offline', label: '环境离线', description: '环境无法访问时', group: 'system', scope: 'environment' },
+	{ id: 'environment_online', label: '环境在线', description: '环境恢复连接时', group: 'system', scope: 'environment' },
+	{ id: 'disk_space_warning', label: '磁盘空间警告', description: 'Docker 磁盘使用率超过阈值', group: 'system', scope: 'environment' },
+	{ id: 'image_prune_success', label: '镜像清理成功', description: '定时镜像清理任务执行成功', group: 'system', scope: 'environment' },
+	{ id: 'image_prune_failed', label: '镜像清理失败', description: '定时镜像清理任务失败', group: 'system', scope: 'environment' },
+	{ id: 'license_expiring', label: '许可证即将过期', description: '企业版许可证即将过期 (全局)', group: 'system', scope: 'system' }
 ] as const;
 
 export const NOTIFICATION_EVENT_GROUPS = [
-	{ id: 'container', label: 'Container events' },
-	{ id: 'auto_update', label: 'Auto-update events' },
-	{ id: 'git_stack', label: 'Git stack events' },
-	{ id: 'stack', label: 'Stack events' },
-	{ id: 'security', label: 'Security events' },
-	{ id: 'system', label: 'System events' }
+	{ id: 'container', label: '容器事件' },
+	{ id: 'auto_update', label: '自动更新事件' },
+	{ id: 'git_stack', label: 'Git 堆栈事件' },
+	{ id: 'stack', label: '堆栈事件' },
+	{ id: 'security', label: '安全事件' },
+	{ id: 'system', label: '系统事件' }
 ] as const;
 
 // Helper to get system-only events (configured at channel level, not per-environment)

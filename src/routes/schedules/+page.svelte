@@ -51,6 +51,8 @@
 	import { vulnerabilityCriteriaIcons, vulnerabilityCriteriaLabels } from '$lib/utils/update-steps';
 	import type { VulnerabilityCriteria } from '$lib/server/db';
 	import cronstrue from 'cronstrue';
+	import 'cronstrue/locales/zh_CN'; 
+	import { getLabelText } from '$lib/types';
 
 	// Scanner result per scanner
 	interface ScannerResult {
@@ -312,7 +314,7 @@
 		connectionTimeoutId = setTimeout(() => {
 			if (loading && !receivedConnectedEvent) {
 				// Connection truly failed - no 'connected' event received
-				console.warn('Schedule stream timeout - connection failed');
+				console.warn('计划任务流超时 - 连接失败');
 				loading = false;
 				refreshing = false;
 			}
@@ -382,7 +384,7 @@
 				loading = false;
 				refreshing = false;
 			} catch (error) {
-				console.error('Failed to parse schedules data:', error);
+				console.error('解析计划任务数据失败:', error);
 			}
 		});
 
@@ -402,10 +404,10 @@
 			if (messageEvent.data) {
 				try {
 					const errorData = JSON.parse(messageEvent.data);
-					console.error('[Schedules] Server error:', errorData.error);
+					console.error('[计划任务] 服务器错误:', errorData.error);
 					if (errorData.fatal) {
 						// Fatal error - server couldn't get initial data after retries
-						toast.error('Failed to load schedules: ' + errorData.error);
+						toast.error('加载计划任务失败：' + errorData.error);
 					}
 				} catch {
 					// Not a JSON error event, treat as connection error
@@ -420,7 +422,7 @@
 			// Reconnect even if schedules is empty - the server might recover
 			const timeoutId = setTimeout(() => {
 				if (eventSource?.readyState === EventSource.CLOSED) {
-					console.log('[Schedules] Attempting to reconnect SSE...');
+					console.log('[计划任务] 正在尝试重新连接 SSE...');
 					connectToStream();
 				}
 			}, 5000);
@@ -443,7 +445,7 @@
 				refreshing = false;
 			}
 		} catch (error) {
-			console.error('Failed to refresh schedules from REST:', error);
+			console.error('通过 REST 刷新计划任务失败:', error);
 		}
 	}
 
@@ -460,7 +462,7 @@
 				environments = await res.json();
 			}
 		} catch (error) {
-			console.error('Failed to load environments:', error);
+			console.error('加载环境失败:', error);
 		}
 	}
 
@@ -472,7 +474,7 @@
 				hideSystemJobs = data.hideSystemJobs ?? false;
 			}
 		} catch (error) {
-			console.error('Failed to load settings:', error);
+			console.error('加载设置失败:', error);
 		}
 	}
 
@@ -490,7 +492,7 @@
 				body: JSON.stringify({ hideSystemJobs })
 			});
 		} catch (error) {
-			console.error('Failed to save hide system jobs preference:', error);
+			console.error('保存隐藏系统任务偏好失败:', error);
 		}
 	}
 
@@ -506,7 +508,7 @@
 			const res = await fetch(
 				`/api/schedules/executions?scheduleType=${schedule.type}&scheduleId=${schedule.id}&limit=${EXECUTIONS_BATCH_SIZE}&offset=${offset}`
 			);
-			if (!res.ok) throw new Error('Failed to load executions');
+			if (!res.ok) throw new Error('加载执行记录失败');
 			const data = await res.json();
 
 			const executions = data.executions || [];
@@ -522,7 +524,7 @@
 			newHasMoreMap.set(scheduleKey, executions.length === EXECUTIONS_BATCH_SIZE);
 			hasMoreExecutions = newHasMoreMap;
 		} catch (error: any) {
-			toast.error('Failed to load executions: ' + error.message);
+			toast.error('加载执行记录失败: ' + error.message);
 		} finally {
 			// Remove loading state - create new Set to trigger reactivity
 			const loadingSet = new Set(loadingMoreExecutions);
@@ -570,9 +572,9 @@
 			});
 			if (!res.ok) {
 				const data = await res.json();
-				throw new Error(data.error || 'Failed to trigger schedule');
+				throw new Error(data.error || '触发计划失败');
 			}
-			toast.success(`Triggered: ${schedule.name}`);
+			toast.success(`已触发: ${schedule.name}`);
 
 			// Refresh schedules from REST after a short delay to show running status
 			// This doesn't disrupt the SSE stream but ensures spinner appears quickly
@@ -610,7 +612,7 @@
 							}
 						}
 					} catch (error) {
-						console.error('Failed to refresh execution:', error);
+						console.error('刷新执行记录失败:', error);
 					}
 				}
 			}, 1000);
@@ -632,9 +634,9 @@
 			});
 			if (!res.ok) {
 				const data = await res.json();
-				throw new Error(data.error || 'Failed to toggle schedule');
+				throw new Error(data.error || '切换计划状态失败');
 			}
-			toast.success(`Schedule ${schedule.enabled ? 'paused' : 'resumed'}`);
+			toast.success(`计划已${schedule.enabled ? '暂停' : '恢复'}`);
 			loadSchedules();
 		} catch (error: any) {
 			toast.error(error.message);
@@ -648,9 +650,9 @@
 			});
 			if (!res.ok) {
 				const data = await res.json();
-				throw new Error(data.error || 'Failed to delete schedule');
+				throw new Error(data.error || '删除计划失败');
 			}
-			toast.success(`Schedule removed: ${entityName}`);
+			toast.success(`计划已移除: ${entityName}`);
 			confirmDeleteId = null;
 			loadSchedules();
 		} catch (error: any) {
@@ -662,11 +664,11 @@
 		loadingExecutionDetail = true;
 		try {
 			const res = await fetch(`/api/schedules/executions/${executionId}`);
-			if (!res.ok) throw new Error('Failed to load execution');
+			if (!res.ok) throw new Error('加载执行详情失败');
 			selectedExecution = await res.json();
 			showExecutionDialog = true;
 		} catch (error: any) {
-			toast.error('Failed to load execution: ' + error.message);
+			toast.error('F加载执行详情失败：' + error.message);
 		} finally {
 			loadingExecutionDetail = false;
 		}
@@ -679,10 +681,10 @@
 			});
 			if (!res.ok) {
 				const data = await res.json();
-				throw new Error(data.error || 'Failed to delete execution');
+				throw new Error(data.error || '删除执行记录失败');
 			}
 
-			toast.success('Execution deleted');
+			toast.success('执行记录已删除');
 
 			// Remove from the expanded executions list
 			const scheduleKey = schedule.type + '-' + schedule.id;
@@ -706,7 +708,7 @@
 			const executions = expandedExecutions.get(scheduleKey) || [];
 
 			if (executions.length === 0) {
-				toast.error('No executions to delete');
+				toast.error('无执行记录可删除');
 				return;
 			}
 
@@ -717,7 +719,7 @@
 
 			await Promise.all(deletePromises);
 
-			toast.success(`Deleted ${executions.length} execution(s)`);
+			toast.success(`已删除 ${executions.length} 条执行记录`);
 
 			// Clear from the expanded executions list
 			const newExecutionsMap = new Map(expandedExecutions);
@@ -732,7 +734,7 @@
 			// Refresh schedules to update the last execution badge
 			loadSchedules();
 		} catch (error: any) {
-			toast.error('Failed to delete executions: ' + error.message);
+			toast.error('删除执行记录失败: ' + error.message);
 		}
 	}
 
@@ -744,8 +746,8 @@
 	function formatDuration(ms: number | null): string {
 		if (ms === null) return '-';
 		if (ms < 1000) return `${ms}ms`;
-		if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
-		return `${Math.floor(ms / 60000)}m ${Math.floor((ms % 60000) / 1000)}s`;
+		if (ms < 60000) return `${(ms / 1000).toFixed(1)}秒`;
+		return `${Math.floor(ms / 60000)}分 ${Math.floor((ms % 60000) / 1000)}秒`;
 	}
 
 	function formatNextRun(iso: string | null): string {
@@ -754,10 +756,10 @@
 		const now = new Date();
 		const diff = date.getTime() - now.getTime();
 
-		if (diff < 0) return 'Overdue';
-		if (diff < 60000) return 'Less than 1 min';
-		if (diff < 3600000) return `In ${Math.floor(diff / 60000)} min`;
-		if (diff < 86400000) return `In ${Math.floor(diff / 3600000)} hours`;
+		if (diff < 0) return '已逾期';
+		if (diff < 60000) return '小于 1 分钟';
+		if (diff < 3600000) return `${Math.floor(diff / 60000)} 分钟后`;
+		if (diff < 86400000) return `${Math.floor(diff / 3600000)} 小时后`;
 		return formatTimestamp(iso);
 	}
 
@@ -790,7 +792,7 @@
 			// Some updated, some blocked
 			return {
 				status: 'partial',
-				label: 'Partially blocked',
+				label: '部分阻止',
 				icon: Bug,
 				class: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
 			};
@@ -798,7 +800,7 @@
 			// All blocked, none updated
 			return {
 				status: 'blocked',
-				label: 'Blocked',
+				label: '已阻止',
 				icon: Bug,
 				class: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
 			};
@@ -811,7 +813,7 @@
 			case 'cron':
 				return {
 					icon: Timer,
-					label: 'Scheduled',
+					label: '定时计划',
 					class: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400'
 				};
 			case 'webhook':
@@ -823,7 +825,7 @@
 			case 'manual':
 				return {
 					icon: Hand,
-					label: 'Manual',
+					label: '手动',
 					class: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400'
 				};
 			default:
@@ -889,19 +891,19 @@
 </script>
 
 <svelte:head>
-	<title>Schedules - Dockhand</title>
+	<title>计划任务 - Dockhand</title>
 </svelte:head>
 
 <div class="flex-1 min-h-0 flex flex-col gap-3 overflow-hidden">
 	<!-- Header with filters -->
 	<div class="shrink-0 flex flex-wrap justify-between items-center gap-3 min-h-8">
-		<PageHeader icon={Timer} title="Schedules" count={filteredSchedules.length} />
+		<PageHeader icon={Timer} title="计划任务" count={filteredSchedules.length} />
 		<div class="flex flex-wrap items-center gap-2">
 			<div class="relative">
 				<Search class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
 				<Input
 					type="text"
-					placeholder="Search schedules..."
+					placeholder="搜索计划任务..."
 					class="pl-9 w-48 h-8 text-sm"
 					bind:value={searchQuery}
 					onkeydown={(e) => e.key === 'Escape' && (searchQuery = '')}
@@ -913,21 +915,21 @@
 				<Select.Trigger size="sm" class="w-40 text-sm">
 					<span class="truncate">
 						{#if filterTypes.length === 0}
-							All types
+							全部类型
 						{:else if filterTypes.length === 1}
 							{#if filterTypes[0] === 'container_update'}
-								Container updates
+								容器更新
 							{:else if filterTypes[0] === 'git_stack_sync'}
-								Git stack syncs
+								Git 堆栈同步
 							{:else if filterTypes[0] === 'env_update_check'}
-								Env update checks
+								环境更新检查
 							{:else if filterTypes[0] === 'image_prune'}
-								Image prune
+								镜像清理
 							{:else}
-								System jobs
+								系统任务
 							{/if}
 						{:else}
-							{filterTypes.length} types
+							{filterTypes.length} 种类型
 						{/if}
 					</span>
 				</Select.Trigger>
@@ -938,29 +940,29 @@
 							class="w-full px-2 py-1 text-xs text-left text-muted-foreground/60 hover:text-muted-foreground"
 							onclick={() => filterTypes = []}
 						>
-							Clear
+							清空
 						</button>
 					{/if}
 					<Select.Item value="container_update">
 						<CircleArrowUp class="w-4 h-4 mr-2 inline text-green-500 drop-shadow-[0_0_3px_rgba(34,197,94,0.4)]" />
-						Container updates
+						容器更新
 					</Select.Item>
 					<Select.Item value="git_stack_sync">
 						<GitBranch class="w-4 h-4 mr-2 inline text-purple-500 drop-shadow-[0_0_3px_rgba(168,85,247,0.4)]" />
-						Git stack syncs
+						Git 堆栈同步
 					</Select.Item>
 					<Select.Item value="env_update_check">
 						<CircleFadingArrowUp class="w-4 h-4 mr-2 inline text-green-500/50 drop-shadow-[0_0_3px_rgba(34,197,94,0.3)]" />
-						Env update checks
+						环境更新检查
 					</Select.Item>
 					<Select.Item value="image_prune">
 						<Trash2 class="w-4 h-4 mr-2 inline text-amber-500 drop-shadow-[0_0_3px_rgba(245,158,11,0.4)]" />
-						Image prune
+						镜像清理
 					</Select.Item>
 					{#if !hideSystemJobs}
 						<Select.Item value="system_cleanup">
 							<Wrench class="w-4 h-4 mr-2 inline text-amber-500 drop-shadow-[0_0_3px_rgba(245,158,11,0.4)]" />
-							System jobs
+							系统任务
 						</Select.Item>
 					{/if}
 				</Select.Content>
@@ -972,11 +974,11 @@
 					<Server class="w-3.5 h-3.5 mr-2 shrink-0" />
 					<span class="truncate">
 						{#if filterEnvironments.length === 0}
-							All envs
+							全部环境
 						{:else if filterEnvironments.length === 1}
-							{environments.find(e => String(e.id) === filterEnvironments[0])?.name || 'Environment'}
+							{environments.find(e => String(e.id) === filterEnvironments[0])?.name || '环境'}
 						{:else}
-							{filterEnvironments.length} envs
+							{filterEnvironments.length} 个环境
 						{/if}
 					</span>
 				</Select.Trigger>
@@ -987,7 +989,7 @@
 							class="w-full px-2 py-1 text-xs text-left text-muted-foreground/60 hover:text-muted-foreground"
 							onclick={() => filterEnvironments = []}
 						>
-							Clear
+							清空
 						</button>
 					{/if}
 					{#each environments as env}
@@ -1004,21 +1006,21 @@
 				<Select.Trigger size="sm" class="w-36 text-sm">
 					<span class="truncate">
 						{#if filterStatuses.length === 0}
-							All statuses
+							全部状态
 						{:else if filterStatuses.length === 1}
 							{#if filterStatuses[0] === 'success'}
-								Success
+								成功
 							{:else if filterStatuses[0] === 'failed'}
-								Failed
+								失败
 							{:else if filterStatuses[0] === 'skipped'}
-								Up-to-date
+								已是最新
 							{:else if filterStatuses[0] === 'running'}
-								Running
+								运行中
 							{:else}
 								{filterStatuses[0]}
 							{/if}
 						{:else}
-							{filterStatuses.length} statuses
+							{filterStatuses.length} 种状态
 						{/if}
 					</span>
 				</Select.Trigger>
@@ -1029,24 +1031,24 @@
 							class="w-full px-2 py-1 text-xs text-left text-muted-foreground/60 hover:text-muted-foreground"
 							onclick={() => filterStatuses = []}
 						>
-							Clear
+							清空
 						</button>
 					{/if}
 					<Select.Item value="success">
 						<Check class="w-4 h-4 mr-2 inline text-green-500" />
-						Success
+						成功
 					</Select.Item>
 					<Select.Item value="failed">
 						<X class="w-4 h-4 mr-2 inline text-red-500" />
-						Failed
+						失败
 					</Select.Item>
 					<Select.Item value="skipped">
 						<CheckCheck class="w-4 h-4 mr-2 inline text-green-500" />
-						Up-to-date
+						已是最新
 					</Select.Item>
 					<Select.Item value="running">
 						<Loader2 class="w-4 h-4 mr-2 inline text-sky-500 animate-spin" />
-						Running
+						运行中
 					</Select.Item>
 				</Select.Content>
 			</Select.Root>
@@ -1061,10 +1063,10 @@
 				>
 					{#if hideSystemJobs}
 						<Eye class="w-3.5 h-3.5" />
-						Show system ({systemJobCount})
+						显示系统任务 ({systemJobCount})
 					{:else}
 						<EyeOff class="w-3.5 h-3.5" />
-						Hide system
+						隐藏系统任务
 					{/if}
 				</Button>
 			{/if}
@@ -1076,7 +1078,7 @@
 				class="h-8 px-2"
 				onclick={clearFilters}
 				disabled={!hasActiveFilters}
-				title="Clear all filters"
+				title="清空所有筛选条件"
 			>
 				<X class="w-3.5 h-3.5" />
 			</Button>
@@ -1145,7 +1147,7 @@
 						<div class="font-medium flex items-center gap-2 truncate">
 							<span class="truncate">{schedule.name}</span>
 							{#if schedule.isSystem}
-								<Badge variant="outline" class="text-xs shrink-0">System</Badge>
+								<Badge variant="outline" class="text-xs shrink-0">系统</Badge>
 							{/if}
 						</div>
 						<div class="text-xs text-muted-foreground flex items-center gap-1 truncate">
@@ -1157,12 +1159,12 @@
 									<span class="cursor-default shrink-0" title={icon.title}>
 										<IconComponent class={icon.class} />
 									</span>
-									Check, scan & auto-update
+									检查、扫描并自动更新
 								{:else}
-									Check & auto-update
+									检查并自动更新
 								{/if}
 							{:else if schedule.type === 'git_stack_sync'}
-								Git sync
+								Git 同步
 							{:else if schedule.type === 'env_update_check'}
 								{#if schedule.autoUpdate && schedule.envHasScanning && schedule.vulnerabilityCriteria}
 									{@const criteria = schedule.vulnerabilityCriteria as VulnerabilityCriteria}
@@ -1172,11 +1174,11 @@
 										<IconComponent class={icon.class} />
 									</span>
 								{/if}
-								<span class="truncate">{schedule.description || 'Env update check'}</span>
+								<span class="truncate">{schedule.description || '环境更新检查'}</span>
 							{:else if schedule.type === 'image_prune'}
-								<span class="truncate">{schedule.description || 'Prune unused images'}</span>
+								<span class="truncate">{schedule.description || '清理未使用镜像'}</span>
 							{:else}
-								<span class="truncate">{schedule.description || 'System job'}</span>
+								<span class="truncate">{schedule.description || '系统任务'}</span>
 							{/if}
 						</div>
 					</div>
@@ -1201,7 +1203,7 @@
 									return cronstrue.toString(schedule.cronExpression, {
 										use24HourTimeFormat: !is12Hour,
 										throwExceptionOnParseError: true,
-										locale: 'en'
+										locale: 'zh_CN'
 									});
 								} catch {
 									return schedule.cronExpression;
@@ -1222,7 +1224,7 @@
 						</div>
 					{/if}
 				{:else}
-					<span class="text-muted-foreground text-xs">Never</span>
+					<span class="text-muted-foreground text-xs">从未执行</span>
 				{/if}
 			{:else if column.id === 'nextRun'}
 				<span class="text-xs">{formatNextRun(schedule.nextRun)}</span>
@@ -1254,11 +1256,11 @@
 								{#if envUpdateStatus}
 									{envUpdateStatus.label}
 								{:else if isBlockedByVuln}
-									Update blocked due to vulnerabilities
+									因漏洞阻止更新
 								{:else if schedule.lastExecution.status === 'skipped'}
-									Up-to-date
+									已是最新
 								{:else}
-									<span class="capitalize">{schedule.lastExecution.status}</span>
+									{getLabelText(schedule.lastExecution.status)}
 								{/if}
 							</p>
 						</Tooltip.Content>
@@ -1271,7 +1273,7 @@
 							</Badge>
 						</Tooltip.Trigger>
 						<Tooltip.Content>
-							<p class="whitespace-nowrap">No runs</p>
+							<p class="whitespace-nowrap">暂无执行记录</p>
 						</Tooltip.Content>
 					</Tooltip.Root>
 				{/if}
@@ -1281,7 +1283,7 @@
 						<button
 							type="button"
 							onclick={(e) => { e.stopPropagation(); loadExecutionDetail(schedule.lastExecution!.id); }}
-							title="View last execution logs"
+							title="查看最近执行日志"
 							class="p-0.5 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
 						>
 							<FileText class="w-3 h-3 text-muted-foreground hover:text-blue-500" />
@@ -1290,7 +1292,7 @@
 					<button
 						type="button"
 						onclick={(e) => { e.stopPropagation(); toggleScheduleEnabled(schedule); }}
-						title={schedule.enabled ? 'Pause schedule' : 'Resume schedule'}
+						title={schedule.enabled ? '暂停计划' : '恢复计划'}
 						class="p-0.5 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
 					>
 						{#if schedule.enabled}
@@ -1302,7 +1304,7 @@
 					<button
 						type="button"
 						onclick={(e) => { e.stopPropagation(); triggerSchedule(schedule); }}
-						title="Run now"
+						title="立即运行"
 						class="p-0.5 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
 					>
 						<Play class="w-3 h-3 text-muted-foreground hover:text-green-500" />
@@ -1311,10 +1313,10 @@
 						{@const scheduleKey = getScheduleKey(schedule)}
 						<ConfirmPopover
 							open={confirmDeleteId === scheduleKey}
-							action="Remove"
-							itemType="schedule"
+							action="移除"
+							itemType="计划"
 							itemName={schedule.entityName}
-							title="Remove schedule"
+							title="移除计划"
 							onConfirm={() => deleteSchedule(schedule.type, schedule.id, schedule.entityName)}
 							onOpenChange={(open) => confirmDeleteId = open ? scheduleKey : null}
 						>
@@ -1334,16 +1336,16 @@
 			{@const canLoadMore = hasMoreExecutions.get(scheduleKey) ?? false}
 			<div class="p-4 pl-12 shadow-inner bg-muted isolate sticky left-0 max-w-[calc(100vw-18rem)]">
 				<div class="flex items-center justify-between mb-2">
-					<h4 class="text-xs font-medium">Execution history</h4>
+					<h4 class="text-xs font-medium">执行历史</h4>
 					{#if executions.length > 0}
 						<button
 							type="button"
 							onclick={() => deleteAllExecutions(schedule)}
-							title="Remove all executions"
+							title="删除所有执行记录"
 							class="text-xs text-muted-foreground hover:text-red-500 transition-colors flex items-center gap-1"
 						>
 							<Trash2 class="w-3 h-3" />
-							Remove all
+							全部删除
 						</button>
 					{/if}
 				</div>
@@ -1352,11 +1354,11 @@
 						<table class="w-full table-fixed">
 							<thead class="sticky top-0 bg-muted z-20">
 								<tr class="text-xs text-muted-foreground">
-									<th class="text-left px-2 py-1 w-36">Triggered</th>
-									<th class="text-center px-2 py-1 w-20">Trigger</th>
-									<th class="text-left px-2 py-1 w-20">Duration</th>
-									<th class="text-center px-2 py-1 w-14">Status</th>
-									<th class="text-left px-2 py-1">Error</th>
+									<th class="text-left px-2 py-1 w-36">触发时间</th>
+									<th class="text-center px-2 py-1 w-20">触发方式</th>
+									<th class="text-left px-2 py-1 w-20">耗时</th>
+									<th class="text-center px-2 py-1 w-14">状态</th>
+									<th class="text-left px-2 py-1">错误</th>
 									<th class="text-left px-2 py-1 w-14"></th>
 								</tr>
 							</thead>
@@ -1395,7 +1397,7 @@
 													{/if}
 												</Tooltip.Trigger>
 												<Tooltip.Content side="left">
-													<p class="whitespace-nowrap">{exec.details?.reason === 'vulnerabilities_found' ? 'Update blocked due to vulnerabilities' : (exec.status === 'skipped' ? 'Up-to-date' : exec.status)}</p>
+													<p class="whitespace-nowrap">{exec.details?.reason === 'vulnerabilities_found' ? '因漏洞阻止更新' : (exec.status === 'skipped' ? '已是最新' : getLabelText(exec.status))}</p>
 												</Tooltip.Content>
 											</Tooltip.Root>
 										</td>
@@ -1407,7 +1409,7 @@
 												<button
 													type="button"
 													onclick={() => loadExecutionDetail(exec.id)}
-													title="View logs"
+													title="查看日志"
 													class="p-0.5 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
 												>
 													<FileText class="w-3 h-3 text-muted-foreground hover:text-blue-500" />
@@ -1415,7 +1417,7 @@
 												<button
 													type="button"
 													onclick={() => deleteExecution(schedule, exec.id)}
-													title="Delete execution"
+													title="删除执行记录"
 													class="p-0.5 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
 												>
 													<Trash2 class="w-3 h-3 text-muted-foreground hover:text-red-500" />
@@ -1436,9 +1438,9 @@
 								>
 									{#if isLoading}
 										<Loader2 class="w-4 h-4 mr-2 animate-spin" />
-										Loading...
+										加载中...
 									{:else}
-										Load more
+										加载更多
 									{/if}
 								</Button>
 							</div>
@@ -1449,7 +1451,7 @@
 						<Loader2 class="w-6 h-6 animate-spin text-muted-foreground" />
 					</div>
 				{:else}
-					<p class="text-xs text-muted-foreground py-4">No executions found</p>
+					<p class="text-xs text-muted-foreground py-4">未找到执行记录</p>
 				{/if}
 			</div>
 		{/snippet}
@@ -1457,8 +1459,8 @@
 		{#snippet emptyState()}
 			<div class="flex flex-col items-center justify-center py-16 text-muted-foreground gap-2">
 				<Calendar class="w-12 h-12" />
-				<p>No schedules found</p>
-				<p class="text-xs">Enable auto-update on containers or auto-sync on git stacks to see them here</p>
+				<p>未找到计划任务</p>
+				<p class="text-xs">启用容器自动更新或 Git 堆栈自动同步后将在此处显示</p>
 			</div>
 		{/snippet}
 	</DataGrid>
@@ -1482,10 +1484,10 @@
 				{:else}
 					<Wrench class="w-5 h-5 text-amber-500 drop-shadow-[0_0_3px_rgba(245,158,11,0.4)]" />
 				{/if}
-				Execution details
+				执行详情
 				{#if selectedExecution}
 					<span class="text-muted-foreground font-normal">
-						({#if selectedExecution.scheduleType === 'container_update'}Container update{:else if selectedExecution.scheduleType === 'env_update_check'}Environment update{:else if selectedExecution.scheduleType === 'git_stack_sync'}Git stack sync{:else}System job{/if})
+						({#if selectedExecution.scheduleType === 'container_update'}容器更新{:else if selectedExecution.scheduleType === 'env_update_check'}环境更新{:else if selectedExecution.scheduleType === 'git_stack_sync'}Git 堆栈同步{:else}系统任务{/if})
 					</span>
 				{/if}
 			</Dialog.Title>
@@ -1515,7 +1517,7 @@
 				<!-- Blocked containers list (scrollable) -->
 				{#if selectedExecution.details?.blockedContainers?.length > 0}
 					<div class="shrink-0">
-						<div class="text-xs text-muted-foreground mb-1.5">Blocked containers</div>
+						<div class="text-xs text-muted-foreground mb-1.5">已阻止容器</div>
 						<div class="bg-amber-500/5 border border-amber-500/20 rounded-lg max-h-48 overflow-auto">
 							<div class="divide-y divide-amber-500/10">
 								{#each selectedExecution.details.blockedContainers as bc}
@@ -1538,7 +1540,7 @@
 				<!-- Execution info -->
 				<div class="flex flex-wrap items-center gap-4 text-xs shrink-0">
 					<div class="flex flex-wrap items-center gap-2">
-						<span class="text-muted-foreground">Status</span>
+						<span class="text-muted-foreground">状态</span>
 						{#if selectedExecution.status}
 							{@const badge = getStatusBadge(selectedExecution.status)}
 							{@const envUpdateStatus = getEnvUpdateStatus(selectedExecution)}
@@ -1552,19 +1554,19 @@
 							{:else if isBlockedByVuln}
 								<Badge variant="default" class="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
 									<Bug class="w-3 h-3 mr-1" />
-									<span>Blocked</span>
+									<span>已阻止</span>
 								</Badge>
 							{:else}
 								{@const SelBadgeIcon = badge.icon}
 								<Badge variant={badge.variant} class={badge.class}>
 									<SelBadgeIcon class="w-3 h-3 mr-1" />
-									<span class="capitalize">{selectedExecution.status === 'skipped' ? 'Up-to-date' : selectedExecution.status}</span>
+									<span>{getLabelText(selectedExecution.status)}</span>
 								</Badge>
 							{/if}
 						{/if}
 					</div>
 					<div class="flex flex-wrap items-center gap-2">
-						<span class="text-muted-foreground">Trigger</span>
+						<span class="text-muted-foreground">触发方式</span>
 						{#if selectedExecution.triggeredBy}
 							{@const trigger = getTriggerBadge(selectedExecution.triggeredBy)}
 							{@const SelTriggerIcon = trigger.icon}
@@ -1576,7 +1578,7 @@
 					</div>
 					{#if selectedExecution.details?.vulnerabilityCriteria}
 						<div class="flex flex-wrap items-center gap-2">
-							<span class="text-muted-foreground">Update block criteria</span>
+							<span class="text-muted-foreground">更新阻止条件</span>
 							<VulnerabilityCriteriaBadge criteria={selectedExecution.details.vulnerabilityCriteria} showLabel />
 						</div>
 					{/if}
@@ -1585,10 +1587,10 @@
 				<!-- Block reason if update was blocked due to vulnerabilities -->
 				{#if selectedExecution.details?.reason === 'vulnerabilities_found'}
 					<div class="shrink-0">
-						<div class="text-xs text-muted-foreground mb-1">Block reason</div>
+						<div class="text-xs text-muted-foreground mb-1">阻止原因</div>
 						<div class="bg-amber-500/10 border border-amber-500/30 rounded p-3 text-xs text-amber-600 dark:text-amber-400 flex items-center gap-2">
 							<Bug class="w-4 h-4 shrink-0" />
-							<span>{selectedExecution.details.blockReason || 'Update blocked due to vulnerabilities'}</span>
+							<span>{selectedExecution.details.blockReason || '因漏洞阻止更新'}</span>
 						</div>
 					</div>
 				{/if}
@@ -1598,13 +1600,13 @@
 					{@const summary = selectedExecution.details.scanResult.summary}
 					{@const scannerResults = selectedExecution.details.scanResult.scannerResults}
 					<div class="shrink-0">
-						<div class="text-xs text-muted-foreground mb-1">Vulnerability scan results</div>
+						<div class="text-xs text-muted-foreground mb-1">漏洞扫描结果</div>
 						<div class="border border-muted-foreground/20 rounded p-3">
 							<div class="mb-2">
 								<ScannerSeverityPills results={scannerResults ?? []} />
 							</div>
 							<div class="text-xs text-muted-foreground">
-								Scanned with {selectedExecution.details.scanResult.scanners?.join(', ') || 'scanner'}
+								使用 {selectedExecution.details.scanResult.scanners?.join(', ') || '扫描器'} 扫描
 								{#if selectedExecution.details.scanResult.scannedAt}
 									at {formatDateTime(selectedExecution.details.scanResult.scannedAt)}
 								{/if}
@@ -1616,7 +1618,7 @@
 				<!-- Error message -->
 				{#if selectedExecution.errorMessage}
 					<div class="shrink-0">
-						<div class="text-xs text-muted-foreground mb-1">Error</div>
+						<div class="text-xs text-muted-foreground mb-1">错误信息</div>
 						<div class="bg-destructive/10 border border-destructive/20 rounded p-3 text-xs text-destructive">
 							{selectedExecution.errorMessage}
 						</div>
@@ -1635,7 +1637,7 @@
 			</div>
 		{/if}
 		<Dialog.Footer class="flex justify-end border-t pt-4">
-			<Button onclick={() => showExecutionDialog = false}>OK</Button>
+			<Button onclick={() => showExecutionDialog = false}>确定</Button>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>

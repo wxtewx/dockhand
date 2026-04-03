@@ -54,11 +54,11 @@
 		<Dialog.Header>
 			<Dialog.Title class="flex items-center gap-2">
 				<HardDrive class="w-5 h-5" />
-				<span>Browse volume - {volumeName}</span>
+				<span>浏览数据卷 - {volumeName}</span>
 				{#if isInUse}
 					<Badge variant="secondary" class="flex items-center gap-1 ml-2">
 						<Lock class="w-3 h-3" />
-						<span>Read-only</span>
+						<span>只读</span>
 					</Badge>
 				{/if}
 			</Dialog.Title>
@@ -66,7 +66,7 @@
 				{#if isInUse}
 					<span class="flex items-center gap-1.5 flex-wrap">
 						<Lock class="w-3.5 h-3.5 text-muted-foreground inline" />
-						<span>Volume is in use by:</span>
+						<span>数据卷正在被以下容器使用：</span>
 						{#each volumeUsage as container, i}
 							<span class="inline-flex items-center gap-1 text-foreground font-medium">
 								<Container class="w-3 h-3" />
@@ -74,10 +74,10 @@
 								<span class="text-muted-foreground">({container.state})</span>{#if i < volumeUsage.length - 1}<span>,</span>{/if}
 							</span>
 						{/each}
-						<span class="text-muted-foreground">- editing disabled</span>
+						<span class="text-muted-foreground">- 编辑功能已禁用</span>
 					</span>
 				{:else}
-					Browse, edit, and manage files in the volume.
+					浏览、编辑和管理数据卷中的文件。
 				{/if}
 			</Dialog.Description>
 		</Dialog.Header>

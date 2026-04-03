@@ -1,5 +1,5 @@
 <svelte:head>
-	<title>Dashboard - Dockhand</title>
+	<title>控制台 - Dockhand</title>
 </svelte:head>
 
 <script lang="ts">
@@ -64,9 +64,9 @@
 	let listConnectionFilter = $state<string[]>([]);
 	const connectionOptions = [
 		{ value: 'socket', label: 'Socket' },
-		{ value: 'direct', label: 'Direct', icon: Plug },
-		{ value: 'hawser-standard', label: 'Standard', icon: Route },
-		{ value: 'hawser-edge', label: 'Edge', icon: UndoDot }
+		{ value: 'direct', label: '直连', icon: Plug },
+		{ value: 'hawser-standard', label: '标准', icon: Route },
+		{ value: 'hawser-edge', label: '边缘', icon: UndoDot }
 	];
 
 	// Count of list-filtered results (for header display)
@@ -335,7 +335,7 @@
 		}
 
 		if (streamReconnectAttempts >= MAX_STREAM_RECONNECT_ATTEMPTS) {
-			streamError = 'Connection failed - click refresh to retry';
+			streamError = '连接失败 - 点击刷新重试';
 			return;
 		}
 
@@ -578,7 +578,7 @@
 									dashboardData.setInitialized(true);
 								}
 							} catch (e) {
-								console.error('Failed to parse SSE data:', e);
+								console.error('解析 SSE 数据失败:', e);
 							}
 						}
 						eventType = '';
@@ -598,23 +598,23 @@
 			if (error instanceof Error && error.name === 'AbortError') {
 				// Check if this was a timeout (from timeoutController) vs intentional abort
 				if (timeoutController.signal.aborted) {
-					streamError = 'Connection timed out';
+					streamError = '连接超时';
 					scheduleStreamReconnect();
 				}
 				return;
 			}
 
-			console.error('Failed to fetch dashboard stats:', error);
+			console.error('获取控制台统计数据失败:', error);
 			// Convert technical errors to user-friendly messages
 			const rawError = error instanceof Error ? error.message : 'Connection failed';
 			if (rawError.includes('typo') || rawError.includes('verbose')) {
-				streamError = 'Connection failed';
+				streamError = '连接失败';
 			} else if (rawError.includes('FailedToOpenSocket') || rawError.includes('ECONNREFUSED')) {
-				streamError = 'Docker not accessible';
+				streamError = 'Docker 不可访问';
 			} else if (rawError.includes('ECONNRESET') || rawError.includes('closed')) {
-				streamError = 'Connection lost';
+				streamError = '连接已断开';
 			} else {
-				streamError = 'Connection failed';
+				streamError = '连接失败';
 			}
 			scheduleStreamReconnect();
 		} finally {
@@ -827,7 +827,7 @@
 		eventSource.addEventListener('open', () => {
 			// Show reconnection success toast if we were reconnecting
 			if (eventReconnectAttempts > 0) {
-				toast.success('Live updates reconnected');
+				toast.success('实时更新已重新连接');
 			}
 			eventReconnectAttempts = 0; // Reset backoff on successful connection
 		});
@@ -876,14 +876,14 @@
 			if (eventReconnectAttempts < MAX_EVENT_RECONNECT_ATTEMPTS) {
 				// Show toast only on first disconnect
 				if (eventReconnectAttempts === 0) {
-					toast.warning('Live updates disconnected, reconnecting...');
+					toast.warning('实时更新已断开，正在重新连接...');
 				}
 
 				const delay = Math.min(BASE_EVENT_RECONNECT_DELAY * Math.pow(2, eventReconnectAttempts), 60000);
 				eventReconnectAttempts++;
 				eventReconnectTimer = setTimeout(connectEventStream, delay);
 			} else {
-				toast.error('Live updates failed - refresh page to retry');
+				toast.error('实时更新连接失败 - 刷新页面重试');
 			}
 		};
 	}
@@ -999,7 +999,7 @@
 	<!-- Header -->
 	<div class="shrink-0 flex flex-wrap justify-between items-center gap-3 min-h-8">
 		<div class="flex items-center gap-4">
-			<PageHeader icon={LayoutGrid} title="Environments" count={tiles.length} />
+			<PageHeader icon={LayoutGrid} title="环境" count={tiles.length} />
 
 			<!-- Label filter toggles (only show if there are labels) -->
 			{#if allLabels.length > 0}
@@ -1011,7 +1011,7 @@
 							: 'bg-muted text-muted-foreground hover:bg-muted/80'}"
 						onclick={() => filterLabels = []}
 					>
-						All
+						全部
 					</button>
 					{#each allLabels as label}
 						{@const isSelected = filterLabels.includes(label)}
@@ -1038,7 +1038,7 @@
 						<Search class="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
 						<Input
 							type="text"
-							placeholder="Search environments..."
+							placeholder="搜索环境..."
 							bind:value={listSearchQuery}
 							onkeydown={(e) => e.key === 'Escape' && (listSearchQuery = '')}
 							class="pl-8 h-8 w-52 text-sm"
@@ -1047,8 +1047,8 @@
 					<MultiSelectFilter
 						bind:value={listConnectionFilter}
 						options={connectionOptions}
-						placeholder="All connections"
-						pluralLabel="connections"
+						placeholder="全部连接方式"
+						pluralLabel="连接"
 						width="w-48"
 						defaultIcon={Plug}
 					/>
@@ -1062,7 +1062,7 @@
 			<button
 				onclick={() => goto('/settings?tab=environments&new=true')}
 				class="p-1.5 rounded hover:bg-muted transition-colors"
-				title="Add environment"
+				title="添加环境"
 			>
 				<Plus class="w-4 h-4" />
 			</button>
@@ -1072,7 +1072,7 @@
 				<button
 					onclick={toggleLocked}
 					class="p-1.5 rounded hover:bg-muted transition-colors"
-					title={locked ? 'Unlock tiles' : 'Lock tiles'}
+					title={locked ? '解锁卡片' : '锁定卡片'}
 				>
 					{#if locked}
 						<Lock class="w-4 h-4 text-primary" />
@@ -1089,7 +1089,7 @@
 						<button
 							{...props}
 							class="p-1.5 rounded hover:bg-muted transition-colors"
-							title="Layout options"
+							title="布局选项"
 						>
 							<LayoutTemplate class="w-4 h-4" />
 						</button>
@@ -1098,24 +1098,24 @@
 				<DropdownMenu.Content align="end" class="w-36">
 					<DropdownMenu.Item onclick={() => applyAutoLayout(1, 1)} class="flex items-center gap-2 cursor-pointer">
 						<Square class="w-4 h-4" />
-						<span>Compact</span>
+						<span>紧凑</span>
 					</DropdownMenu.Item>
 					<DropdownMenu.Item onclick={() => applyAutoLayout(1, 2)} class="flex items-center gap-2 cursor-pointer">
 						<RectangleVertical class="w-4 h-4" />
-						<span>Standard</span>
+						<span>标准</span>
 					</DropdownMenu.Item>
 					<DropdownMenu.Item onclick={() => applyAutoLayout(1, 4)} class="flex items-center gap-2 cursor-pointer">
 						<Rows3 class="w-4 h-4" />
-						<span>Detailed</span>
+						<span>详细</span>
 					</DropdownMenu.Item>
 					<DropdownMenu.Item onclick={() => applyAutoLayout(2, 4)} class="flex items-center gap-2 cursor-pointer">
 						<Maximize2 class="w-4 h-4" />
-						<span>Full</span>
+						<span>全屏</span>
 					</DropdownMenu.Item>
 					<DropdownMenu.Separator />
 					<DropdownMenu.Item onclick={switchToListView} class="flex items-center gap-2 cursor-pointer">
 						<List class="w-4 h-4" />
-						<span>List</span>
+						<span>列表</span>
 					</DropdownMenu.Item>
 				</DropdownMenu.Content>
 			</DropdownMenu.Root>
@@ -1124,7 +1124,7 @@
 			<button
 				onclick={() => fetchStatsStreaming(true)}
 				class="p-1.5 rounded hover:bg-muted transition-colors"
-				title="Refresh"
+				title="刷新"
 				disabled={refreshing}
 			>
 				<RefreshCw class="w-4 h-4 {refreshing ? 'animate-spin' : ''}" />
@@ -1136,7 +1136,7 @@
 	{#if !environmentsLoaded && tiles.length === 0}
 		<div class="flex items-center justify-center gap-2 text-muted-foreground py-8">
 			<Loader2 class="w-5 h-5 animate-spin text-primary" />
-			<span class="text-sm">Loading environments...</span>
+			<span class="text-sm">正在加载环境...</span>
 		</div>
 	{:else if tiles.length === 0 && environmentsLoaded && $environments.length === 0}
 		<!-- No environments - only shown after we've confirmed there are none -->
@@ -1144,10 +1144,10 @@
 			<div class="w-16 h-16 mb-4 rounded-2xl border-2 border-dashed border-muted-foreground/30 flex items-center justify-center">
 				<Server class="w-8 h-8 opacity-40" />
 			</div>
-			<p class="text-lg font-medium text-foreground/70">No environments configured</p>
-			<p class="text-sm text-muted-foreground mb-4">Add an environment to start managing your Docker hosts</p>
+			<p class="text-lg font-medium text-foreground/70">未配置任何环境</p>
+			<p class="text-sm text-muted-foreground mb-4">添加环境以开始管理你的 Docker 主机</p>
 			<Button variant="outline" size="sm" onclick={() => goto('/settings?tab=environments')}>
-				Go to Settings
+				前往设置
 			</Button>
 		</div>
 	{:else if viewMode === 'list'}
@@ -1164,10 +1164,10 @@
 			<div class="w-16 h-16 mb-4 rounded-2xl border-2 border-dashed border-muted-foreground/30 flex items-center justify-center">
 				<Tags class="w-8 h-8 opacity-40" />
 			</div>
-			<p class="text-lg font-medium text-foreground/70">No matching environments</p>
-			<p class="text-sm text-muted-foreground mb-4">No environments match the selected label filters</p>
+			<p class="text-lg font-medium text-foreground/70">无匹配的环境</p>
+			<p class="text-sm text-muted-foreground mb-4">没有环境符合所选的标签筛选条件</p>
 			<Button variant="outline" size="sm" onclick={() => filterLabels = []}>
-				Clear filters
+				清除筛选
 			</Button>
 		</div>
 	{:else}

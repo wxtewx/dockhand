@@ -32,7 +32,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
 
 		return json({ hideSystemJobs });
 	} catch (error: any) {
-		console.error('Failed to get schedule settings:', error);
+		console.error('获取定时任务设置失败:', error);
 		return json({ error: error.message }, { status: 500 });
 	}
 };
@@ -47,7 +47,7 @@ export const PUT: RequestHandler = async ({ request, cookies }) => {
 
 		if (hideSystemJobs !== undefined) {
 			if (typeof hideSystemJobs !== 'boolean') {
-				return json({ error: 'Invalid hideSystemJobs (must be boolean)' }, { status: 400 });
+				return json({ error: 'hideSystemJobs 无效 (必须为布尔值)' }, { status: 400 });
 			}
 			// Save user-specific preference
 			await setSetting(getHideSystemJobsKey(userId), hideSystemJobs);
@@ -55,7 +55,7 @@ export const PUT: RequestHandler = async ({ request, cookies }) => {
 
 		return json({ success: true, hideSystemJobs });
 	} catch (error: any) {
-		console.error('Failed to update schedule settings:', error);
+		console.error('更新定时任务设置失败:', error);
 		return json({ error: error.message }, { status: 500 });
 	}
 };

@@ -23,7 +23,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 	const auth = await authorize(cookies);
 
 	if (auth.authEnabled && !await auth.can('stacks', 'edit')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -31,28 +31,28 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		const path = body.path;
 
 		if (!path || typeof path !== 'string') {
-			return json({ error: 'Path is required' }, { status: 400 });
+			return json({ error: '路径为必填项' }, { status: 400 });
 		}
 
 		if (!isAbsolute(path)) {
-			return json({ error: 'Path must be absolute' }, { status: 400 });
+			return json({ error: '路径必须为绝对路径' }, { status: 400 });
 		}
 
 		if (path.includes('..')) {
-			return json({ error: 'Path must not contain ..' }, { status: 400 });
+			return json({ error: '路径不能包含 ..' }, { status: 400 });
 		}
 
 		if (existsSync(path)) {
-			return json({ error: 'Path already exists' }, { status: 409 });
+			return json({ error: '路径已存在' }, { status: 409 });
 		}
 
 		mkdirSync(path, { recursive: true });
 
 		return json({ success: true, path });
 	} catch (error) {
-		console.error('Error creating directory:', error);
-		const message = error instanceof Error ? error.message : 'Unknown error';
-		return json({ error: `Failed to create directory: ${message}` }, { status: 500 });
+		console.error('创建目录时出错：', error);
+		const message = error instanceof Error ? error.message : '未知错误';
+		return json({ error: `创建目录失败：${message}` }, { status: 500 });
 	}
 };
 
@@ -67,19 +67,19 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 	const auth = await authorize(cookies);
 
 	if (auth.authEnabled && !await auth.can('stacks', 'edit')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const path = url.searchParams.get('path') || '/';
 
 	try {
 		if (!existsSync(path)) {
-			return json({ error: `Path not found: ${path}` }, { status: 404 });
+			return json({ error: `路径不存在：${path}` }, { status: 404 });
 		}
 
 		const stat = statSync(path);
 		if (!stat.isDirectory()) {
-			return json({ error: `Not a directory: ${path}` }, { status: 400 });
+			return json({ error: `不是目录：${path}` }, { status: 400 });
 		}
 
 		const entries: FileEntry[] = [];
@@ -116,8 +116,8 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 			entries
 		});
 	} catch (error) {
-		console.error('Error listing directory:', error);
-		const message = error instanceof Error ? error.message : 'Unknown error';
-		return json({ error: `Failed to list directory: ${message}` }, { status: 500 });
+		console.error('列出目录时出错：', error);
+		const message = error instanceof Error ? error.message : '未知错误';
+		return json({ error: `列出目录失败：${message}` }, { status: 500 });
 	}
 };

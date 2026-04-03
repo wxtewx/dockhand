@@ -14,7 +14,7 @@
 
 	// System-only events (configured at channel level, not per-environment)
 	const SYSTEM_EVENTS = [
-		{ id: 'license_expiring', label: 'License expiring', description: 'Enterprise license expiring soon' }
+		{ id: 'license_expiring', label: '许可证即将过期', description: '企业版许可证即将过期' }
 	] as const;
 
 	export interface NotificationSetting {
@@ -155,11 +155,11 @@
 		const config = getFormConfig();
 		if (formType === 'smtp') {
 			if (!config.host || !config.from_email || !config.to_emails?.length) {
-				return 'Host, from email, and at least one recipient are required';
+				return '服务器地址、发件邮箱和至少一个收件人是必填项';
 			}
 		} else {
 			if (!config.urls?.length) {
-				return 'At least one Apprise URL is required';
+				return '至少需要一个 Apprise URL';
 			}
 		}
 		return null;
@@ -204,16 +204,16 @@
 
 			if (data.success) {
 				testResult = 'success';
-				toast.success('Test notification sent successfully');
+				toast.success('测试通知发送成功');
 				setTimeout(() => { testResult = 'idle'; }, 3000);
 			} else {
 				testResult = 'error';
-				formError = data.error || 'Failed to send test notification';
+				formError = data.error || '发送测试通知失败';
 				setTimeout(() => { testResult = 'idle'; }, 3000);
 			}
 		} catch {
 			testResult = 'error';
-			formError = 'Failed to test notification';
+			formError = '测试通知失败';
 			setTimeout(() => { testResult = 'idle'; }, 3000);
 		} finally {
 			formTesting = false;
@@ -222,19 +222,19 @@
 
 	async function save() {
 		if (!formName.trim()) {
-			formError = 'Name is required';
+			formError = '名称为必填项';
 			return;
 		}
 
 		const config = getFormConfig();
 		if (formType === 'smtp') {
 			if (!config.host || !config.from_email || !config.to_emails?.length) {
-				formError = 'Host, from email, and at least one recipient are required';
+				formError = '服务器地址、发件邮箱和至少一个收件人是必填项';
 				return;
 			}
 		} else {
 			if (!config.urls?.length) {
-				formError = 'At least one Apprise URL is required';
+				formError = '至少需要一个 Apprise URL';
 				return;
 			}
 		}
@@ -269,10 +269,10 @@
 				onSaved();
 			} else {
 				const data = await response.json();
-				formError = data.error || `Failed to ${isEditing ? 'update' : 'create'} notification`;
+				formError = data.error || `${isEditing ? '更新' : '创建'}通知失败`;
 			}
 		} catch {
-			formError = `Failed to ${isEditing ? 'update' : 'create'} notification`;
+			formError = `${isEditing ? '更新' : '创建'}通知失败`;
 		} finally {
 			formSaving = false;
 		}
@@ -295,7 +295,7 @@
 <Dialog.Root bind:open onOpenChange={(o) => { if (o) { formError = ''; focusFirstInput(); } }}>
 	<Dialog.Content class="max-w-3xl max-h-[90vh] overflow-y-auto">
 		<Dialog.Header>
-			<Dialog.Title>{isEditing ? 'Edit' : 'Add'} notification channel</Dialog.Title>
+			<Dialog.Title>{isEditing ? '编辑' : '添加'}通知渠道</Dialog.Title>
 		</Dialog.Header>
 		<div class="space-y-4">
 			{#if formError}
@@ -304,11 +304,11 @@
 
 			<div class="grid grid-cols-2 gap-4">
 				<div class="space-y-2">
-					<Label for="notif-name">Name *</Label>
-					<Input id="notif-name" bind:value={formName} placeholder="My notification channel" />
+					<Label for="notif-name">名称 *</Label>
+					<Input id="notif-name" bind:value={formName} placeholder="我的通知渠道" />
 				</div>
 				<div class="space-y-2">
-					<Label>Type</Label>
+					<Label>类型</Label>
 					{#if isEditing}
 						<Badge variant="secondary" class="h-9 flex items-center justify-center">
 							{formType === 'smtp' ? 'SMTP (Email)' : 'Apprise (Webhooks)'}
@@ -322,7 +322,7 @@
 							<Select.Trigger class="w-full">
 								<span class="flex items-center gap-2">
 									{#if formType === 'smtp'}
-										<Mail class="w-4 h-4" />SMTP (Email)
+										<Mail class="w-4 h-4" />SMTP (邮件)
 									{:else}
 										<Zap class="w-4 h-4" />Apprise (Webhooks)
 									{/if}
@@ -330,7 +330,7 @@
 							</Select.Trigger>
 							<Select.Content>
 								<Select.Item value="smtp">
-									<span class="flex items-center gap-2"><Mail class="w-4 h-4" />SMTP (Email)</span>
+									<span class="flex items-center gap-2"><Mail class="w-4 h-4" />SMTP (邮件)</span>
 								</Select.Item>
 								<Select.Item value="apprise">
 									<span class="flex items-center gap-2"><Zap class="w-4 h-4" />Apprise (Webhooks)</span>
@@ -342,76 +342,76 @@
 			</div>
 
 			<div class="flex items-center gap-2">
-				<Label>Status</Label>
-				<TogglePill bind:checked={formEnabled} onLabel="Enabled" offLabel="Disabled" />
+				<Label>状态</Label>
+				<TogglePill bind:checked={formEnabled} onLabel="启用" offLabel="禁用" />
 			</div>
 
 			{#if formType === 'smtp'}
 				<div class="space-y-4 border-t pt-4 min-h-[380px]">
 					<div class="flex items-center gap-2">
-						<p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">SMTP configuration</p>
+						<p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">SMTP 配置</p>
 						<Tooltip.Root>
 							<Tooltip.Trigger>
 								<HelpCircle class="w-3.5 h-3.5 text-muted-foreground hover:text-foreground cursor-help" />
 							</Tooltip.Trigger>
 							<Tooltip.Portal>
 								<Tooltip.Content side="right" class="w-80">
-									<p class="text-xs"><span class="font-semibold">Gmail:</span> smtp.gmail.com, port 587, TLS/SSL off. Use an App Password.</p>
-									<p class="text-xs mt-1"><span class="font-semibold">Outlook:</span> smtp.office365.com, port 587, TLS/SSL off.</p>
+									<p class="text-xs"><span class="font-semibold">Gmail：</span>smtp.gmail.com，端口 587，关闭 TLS/SSL。使用应用专用密码。</p>
+									<p class="text-xs mt-1"><span class="font-semibold">Outlook：</span>smtp.office365.com，端口 587，关闭 TLS/SSL。</p>
 								</Tooltip.Content>
 							</Tooltip.Portal>
 						</Tooltip.Root>
 					</div>
 					<div class="grid grid-cols-3 gap-4">
 						<div class="space-y-2 col-span-2">
-							<Label for="notif-smtp-host">SMTP host *</Label>
+							<Label for="notif-smtp-host">SMTP 服务器 *</Label>
 							<Input id="notif-smtp-host" bind:value={formSmtpHost} placeholder="smtp.gmail.com" />
 						</div>
 						<div class="space-y-2">
-							<Label for="notif-smtp-port">Port *</Label>
+							<Label for="notif-smtp-port">端口 *</Label>
 							<Input id="notif-smtp-port" type="number" bind:value={formSmtpPort} />
 						</div>
 					</div>
 					<div class="flex items-center gap-4">
 						<div class="flex items-center gap-2">
 							<Label>TLS/SSL</Label>
-							<TogglePill bind:checked={formSmtpSecure} onLabel="Yes" offLabel="No" />
+							<TogglePill bind:checked={formSmtpSecure} onLabel="开启" offLabel="关闭" />
 						</div>
 						<div class="flex items-center gap-2">
-							<Label class="text-muted-foreground">Skip TLS verify</Label>
-							<TogglePill bind:checked={formSmtpSkipTlsVerify} onLabel="Yes" offLabel="No" />
+							<Label class="text-muted-foreground">跳过 TLS 验证</Label>
+							<TogglePill bind:checked={formSmtpSkipTlsVerify} onLabel="开启" offLabel="关闭" />
 						</div>
 					</div>
 					<div class="grid grid-cols-2 gap-4">
 						<div class="space-y-2">
-							<Label for="notif-smtp-username">Username</Label>
+							<Label for="notif-smtp-username">用户名</Label>
 							<Input id="notif-smtp-username" bind:value={formSmtpUsername} placeholder="user@example.com" />
 						</div>
 						<div class="space-y-2">
-							<Label for="notif-smtp-password">Password</Label>
-							<Input id="notif-smtp-password" type="password" bind:value={formSmtpPassword} placeholder={isEditing ? 'Leave blank to keep existing' : 'App password or token'} />
+							<Label for="notif-smtp-password">密码</Label>
+							<Input id="notif-smtp-password" type="password" bind:value={formSmtpPassword} placeholder={isEditing ? '留空以保留现有密码' : '应用密码或令牌'} />
 						</div>
 					</div>
 					<div class="grid grid-cols-2 gap-4">
 						<div class="space-y-2">
-							<Label for="notif-smtp-from-email">From email *</Label>
+							<Label for="notif-smtp-from-email">发件邮箱 *</Label>
 							<Input id="notif-smtp-from-email" bind:value={formSmtpFromEmail} placeholder="alerts@example.com" />
 						</div>
 						<div class="space-y-2">
-							<Label for="notif-smtp-from-name">From name</Label>
-							<Input id="notif-smtp-from-name" bind:value={formSmtpFromName} placeholder="Dockhand Alerts" />
+							<Label for="notif-smtp-from-name">发件人名称</Label>
+							<Input id="notif-smtp-from-name" bind:value={formSmtpFromName} placeholder="系统通知" />
 						</div>
 					</div>
 					<div class="space-y-2">
-						<Label for="notif-smtp-to">Recipients * (comma-separated)</Label>
+						<Label for="notif-smtp-to">收件人 * (英文逗号分隔)</Label>
 						<Input id="notif-smtp-to" bind:value={formSmtpToEmails} placeholder="admin@example.com, ops@example.com" />
 					</div>
 				</div>
 			{:else}
 				<div class="space-y-4 border-t pt-4 min-h-[380px]">
-					<p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Apprise configuration</p>
+					<p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Apprise 配置</p>
 					<div class="space-y-2">
-						<Label for="notif-apprise-urls">Apprise URLs * (one per line)</Label>
+						<Label for="notif-apprise-urls">Apprise URLs * (每行一个)</Label>
 						<textarea
 							id="notif-apprise-urls"
 							bind:value={formAppriseUrls}
@@ -426,7 +426,7 @@ jsons://hostname/webhook/path"
 						class="flex min-h-[220px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
 					></textarea>
 					<p class="text-xs text-muted-foreground">
-						Supports Gotify (gotify:// or gotifys:// for HTTPS), Discord, Slack, Mattermost (mmost:// or mmosts://), Telegram, ntfy, Pushover, and generic JSON webhooks.
+						支持 Gotify (HTTPS 使用 gotifys://)、Discord、Slack、Mattermost (mmost:// 或 mmosts://)、Telegram、ntfy、Pushover 和通用 JSON Webhook。
 						</p>
 					</div>
 				</div>
@@ -441,14 +441,14 @@ jsons://hostname/webhook/path"
 				>
 					<div class="flex items-center gap-2">
 						<Key class="w-4 h-4 text-muted-foreground" />
-						<span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Global system events</span>
+						<span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">全局系统事件</span>
 					</div>
 					<ChevronDown class="w-4 h-4 text-muted-foreground transition-transform {showSystemEvents ? 'rotate-180' : ''}" />
 				</button>
 				{#if showSystemEvents}
 					<div class="mt-3 space-y-2">
 						<p class="text-xs text-muted-foreground mb-3">
-							These events are not tied to specific environments and are configured globally here.
+							这些事件与特定环境无关，在此全局配置。
 						</p>
 						{#each SYSTEM_EVENTS as event}
 							<label class="flex items-start gap-3 p-2 rounded hover:bg-muted/50 cursor-pointer">
@@ -470,7 +470,7 @@ jsons://hostname/webhook/path"
 			<div class="border-t pt-4">
 				<div class="text-xs text-muted-foreground bg-muted/50 rounded-md p-3 flex items-start gap-2">
 					<Info class="w-4 h-4 mt-0.5 shrink-0" />
-					<span>Environment-specific events (containers, stacks, auto-updates) are configured in each environment's settings.</span>
+					<span>环境专属事件 (容器、堆栈、自动更新) 在每个环境的设置中配置。</span>
 				</div>
 			</div>
 		</div>
@@ -478,20 +478,20 @@ jsons://hostname/webhook/path"
 			<Button variant="outline" onclick={testConfig} disabled={formTesting || formSaving}>
 				{#if formTesting}
 					<RefreshCw class="w-4 h-4 mr-1 animate-spin" />
-					Testing...
+					测试中...
 				{:else if testResult === 'success'}
 					<CheckCircle2 class="w-4 h-4 mr-1 text-green-500" />
-					Sent!
+					已发送！
 				{:else if testResult === 'error'}
 					<XCircle class="w-4 h-4 mr-1 text-destructive" />
-					Failed
+					失败
 				{:else}
 					<Send class="w-4 h-4" />
-					Test
+					测试
 				{/if}
 			</Button>
 			<div class="flex gap-2">
-				<Button variant="outline" onclick={handleClose}>Cancel</Button>
+				<Button variant="outline" onclick={handleClose}>取消</Button>
 				<Button onclick={save} disabled={formSaving || formTesting}>
 					{#if formSaving}
 						<RefreshCw class="w-4 h-4 mr-1 animate-spin" />
@@ -500,7 +500,7 @@ jsons://hostname/webhook/path"
 					{:else}
 						<Plus class="w-4 h-4" />
 					{/if}
-					{isEditing ? 'Save' : 'Add'}
+					{isEditing ? '保存' : '添加'}
 				</Button>
 			</div>
 		</Dialog.Footer>

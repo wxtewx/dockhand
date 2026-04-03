@@ -12,10 +12,10 @@ export const GET: RequestHandler = async ({ cookies }) => {
 	// When auth is enabled, require authentication first, then settings:view permission
 	if (auth.authEnabled) {
 		if (!auth.isAuthenticated) {
-			return json({ error: 'Authentication required' }, { status: 401 });
+			return json({ error: '需要身份验证' }, { status: 401 });
 		}
 		if (!await auth.can('settings', 'view')) {
-			return json({ error: 'Permission denied' }, { status: 403 });
+			return json({ error: '权限不足' }, { status: 403 });
 		}
 	}
 
@@ -23,8 +23,8 @@ export const GET: RequestHandler = async ({ cookies }) => {
 		const settings = await getAuthSettings();
 		return json(settings);
 	} catch (error) {
-		console.error('Failed to get auth settings:', error);
-		return json({ error: 'Failed to get auth settings' }, { status: 500 });
+		console.error('获取身份验证设置失败:', error);
+		return json({ error: '获取身份验证设置失败' }, { status: 500 });
 	}
 };
 
@@ -36,10 +36,10 @@ export const PUT: RequestHandler = async ({ request, cookies }) => {
 	// When auth is enabled, require authentication first, then settings:edit permission
 	if (auth.authEnabled) {
 		if (!auth.isAuthenticated) {
-			return json({ error: 'Authentication required' }, { status: 401 });
+			return json({ error: '需要身份验证' }, { status: 401 });
 		}
 		if (!await auth.can('settings', 'edit')) {
-			return json({ error: 'Permission denied' }, { status: 403 });
+			return json({ error: '权限不足' }, { status: 403 });
 		}
 	}
 
@@ -53,8 +53,8 @@ export const PUT: RequestHandler = async ({ request, cookies }) => {
 			if (Number(userCount) === 0) {
 				const enterprise = await isEnterprise();
 				const errorMessage = enterprise
-					? 'Cannot enable authentication without an admin user. Create a user and assign them the Admin role first.'
-					: 'Cannot enable authentication without any users. Create a user first.';
+					? '无法启用身份验证，缺少管理员用户。请先创建一个用户并为其分配管理员角色。'
+					: '无法启用身份验证，未创建任何用户。请先创建用户。';
 				return json({
 					error: errorMessage,
 					requiresUser: true
@@ -70,7 +70,7 @@ export const PUT: RequestHandler = async ({ request, cookies }) => {
 		const settings = await updateAuthSettings(data);
 		return json(settings);
 	} catch (error) {
-		console.error('Failed to update auth settings:', error);
-		return json({ error: 'Failed to update auth settings' }, { status: 500 });
+		console.error('更新身份验证设置失败:', error);
+		return json({ error: '更新身份验证设置失败' }, { status: 500 });
 	}
 };

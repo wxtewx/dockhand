@@ -40,8 +40,8 @@
 			const response = await fetch('/api/git/repositories');
 			repositories = await response.json();
 		} catch (error) {
-			console.error('Failed to fetch git repositories:', error);
-			toast.error('Failed to fetch git repositories');
+			console.error('获取 Git 仓库失败:', error);
+			toast.error('获取 Git 仓库失败');
 		} finally {
 			loading = false;
 		}
@@ -52,8 +52,8 @@
 			const response = await fetch('/api/git/credentials');
 			credentials = await response.json();
 		} catch (error) {
-			console.error('Failed to fetch git credentials:', error);
-			toast.error('Failed to fetch git credentials');
+			console.error('获取 Git 凭据失败:', error);
+			toast.error('获取 Git 凭据失败');
 		}
 	}
 
@@ -76,13 +76,13 @@
 			const response = await fetch(`/api/git/repositories/${id}`, { method: 'DELETE' });
 			if (response.ok) {
 				await fetchRepositories();
-				toast.success('Repository deleted');
+				toast.success('仓库已删除');
 			} else {
-				toast.error('Failed to delete repository');
+				toast.error('删除仓库失败');
 			}
 		} catch (error) {
-			console.error('Failed to delete repository:', error);
-			toast.error('Failed to delete repository');
+			console.error('删除仓库失败:', error);
+			toast.error('删除仓库失败');
 		}
 	}
 
@@ -96,16 +96,16 @@
 				testResult = {
 					id,
 					success: true,
-					message: `Connected! Branch: ${data.branch}, Last commit: ${data.lastCommit}`
+					message: `连接成功！分支：${data.branch}，最新提交：${data.lastCommit}`
 				};
-				toast.success('Repository connection successful');
+				toast.success('仓库连接测试成功');
 			} else {
 				testResult = {
 					id,
 					success: false,
-					message: data.error || 'Connection failed'
+					message: data.error || '连接失败'
 				};
-				toast.error(`Connection failed: ${data.error || 'Unknown error'}`);
+				toast.error(`连接失败：${data.error || '未知错误'}`);
 			}
 			// Auto-clear after 5 seconds
 			setTimeout(() => {
@@ -117,9 +117,9 @@
 			testResult = {
 				id,
 				success: false,
-				message: 'Failed to test connection'
+				message: '测试连接失败'
 			};
-			toast.error('Failed to test repository connection');
+			toast.error('测试仓库连接失败');
 		} finally {
 			testingId = null;
 		}
@@ -134,26 +134,26 @@
 <div class="space-y-4">
 	<div class="flex justify-between items-center">
 		<div>
-			<h3 class="text-lg font-medium">Git repositories</h3>
-			<p class="text-sm text-muted-foreground">Manage Git repositories that can be used to deploy stacks</p>
+			<h3 class="text-lg font-medium">Git 仓库</h3>
+			<p class="text-sm text-muted-foreground">管理可用于部署堆栈的 Git 仓库</p>
 		</div>
 		{#if $canAccess('settings', 'edit')}
 			<Button size="sm" onclick={() => openModal()}>
 				<Plus class="w-4 h-4" />
-				Add repository
+				添加仓库
 			</Button>
 		{/if}
 	</div>
 
 	{#if loading}
-		<p class="text-sm text-muted-foreground">Loading repositories...</p>
+		<p class="text-sm text-muted-foreground">正在加载仓库...</p>
 	{:else if repositories.length === 0}
 		<Card.Root>
 			<Card.Content>
 				<EmptyState
 					icon={FolderGit2}
-					title="No Git repositories configured"
-					description="Add a repository to use it when deploying stacks from Git"
+					title="未配置任何 Git 仓库"
+					description="添加仓库后，可从 Git 部署堆栈"
 				/>
 			</Card.Content>
 		</Card.Root>
@@ -182,14 +182,14 @@
 							</span>
 						{/if}
 						{#if repo.credentialName}
-							<span class="flex items-center gap-1 text-xs text-muted-foreground" title="Using credential: {repo.credentialName}">
+							<span class="flex items-center gap-1 text-xs text-muted-foreground" title="使用凭据：{repo.credentialName}">
 								<Lock class="w-3 h-3" />
 								<span class="hidden sm:inline">{repo.credentialName}</span>
 							</span>
 						{:else}
-							<span class="flex items-center gap-1 text-xs text-muted-foreground" title="Public repository">
+							<span class="flex items-center gap-1 text-xs text-muted-foreground" title="公共仓库">
 								<Globe class="w-3 h-3" />
-								<span class="hidden sm:inline">Public</span>
+								<span class="hidden sm:inline">公共</span>
 							</span>
 						{/if}
 						<Badge variant="outline" class="text-xs flex items-center gap-1">
@@ -202,7 +202,7 @@
 							class="h-7 w-7"
 							onclick={() => testRepository(repo.id)}
 							disabled={testingId === repo.id}
-							title="Test connection"
+							title="测试连接"
 						>
 							{#if testingId === repo.id}
 								<Loader2 class="w-3.5 h-3.5 animate-spin" />
@@ -211,15 +211,15 @@
 							{/if}
 						</Button>
 						{#if $canAccess('settings', 'edit')}
-							<Button variant="ghost" size="icon" class="h-7 w-7" onclick={() => openModal(repo)} title="Edit repository">
+							<Button variant="ghost" size="icon" class="h-7 w-7" onclick={() => openModal(repo)} title="编辑仓库">
 								<Pencil class="w-3.5 h-3.5" />
 							</Button>
 							<ConfirmPopover
 								open={confirmDeleteId === repo.id}
-								action="Delete"
-								itemType="repository"
+								action="删除"
+								itemType="仓库"
 								itemName={repo.name}
-								title="Delete"
+								title="删除"
 								onConfirm={() => deleteRepository(repo.id)}
 								onOpenChange={(open) => confirmDeleteId = open ? repo.id : null}
 							>
