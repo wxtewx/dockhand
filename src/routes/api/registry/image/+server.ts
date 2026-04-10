@@ -10,6 +10,14 @@ function isDockerHub(url: string): boolean {
 		   lower.includes('registry.hub.docker.com');
 }
 
+// Manifest types in priority order: single-platform first, then multi-arch
+const MANIFEST_TYPES = [
+	'application/vnd.docker.distribution.manifest.v2+json',
+	'application/vnd.oci.image.manifest.v1+json',
+	'application/vnd.docker.distribution.manifest.list.v2+json',
+	'application/vnd.oci.image.index.v1+json'
+];
+
 export const DELETE: RequestHandler = async ({ url }) => {
 	try {
 		const registryId = url.searchParams.get('registry');
@@ -39,43 +47,41 @@ export const DELETE: RequestHandler = async ({ url }) => {
 		}
 
 		const { baseUrl, authHeader } = await getRegistryAuth(registry, `repository:${imageName}:pull,push,delete`);
-		// Note: orgPath is not used here because imageName already contains the full repo path
 
-		const headers: HeadersInit = {
-			'Accept': 'application/vnd.docker.distribution.manifest.v2+json'
-		};
-
-		if (authHeader) {
-			headers['Authorization'] = authHeader;
-		}
-
-		// Step 1: Get the manifest digest
+		// Step 1: Resolve manifest digest. Try each type individually because
+		// the registry may only serve certain types, and DELETE requires the
+		// Accept header to match the stored manifest type.
 		const manifestUrl = `${baseUrl}/v2/${imageName}/manifests/${tag}`;
-		const headResponse = await fetch(manifestUrl, {
-			method: 'HEAD',
-			headers
-		});
+		let digest: string | null = null;
+		let matchedType: string | null = null;
 
-		if (!headResponse.ok) {
+		for (const mediaType of MANIFEST_TYPES) {
+			const headers: HeadersInit = { 'Accept': mediaType };
+			if (authHeader) headers['Authorization'] = authHeader;
+
+			const headResponse = await fetch(manifestUrl, { method: 'HEAD', headers });
+			if (headResponse.ok) {
+				digest = headResponse.headers.get('Docker-Content-Digest');
+				matchedType = mediaType;
+				break;
+			}
 			if (headResponse.status === 401) {
 				return json({ error: '认证失败' }, { status: 401 });
 			}
-			if (headResponse.status === 404) {
-				return json({ error: '未找到镜像或标签' }, { status: 404 });
-			}
-			return json({ error: `获取清单失败：${headResponse.status}` }, { status: headResponse.status });
 		}
 
-		const digest = headResponse.headers.get('Docker-Content-Digest');
-		if (!digest) {
-			return json({ error: '无法获取镜像摘要，镜像仓库可能不支持删除操作' }, { status: 400 });
+		if (!digest || !matchedType) {
+			return json({ error: '镜像或标签未找到' }, { status: 404 });
 		}
 
-		// Step 2: Delete the manifest by digest
+		// Step 2: Delete the manifest by digest using the matched type
+		const deleteHeaders: HeadersInit = { 'Accept': matchedType };
+		if (authHeader) deleteHeaders['Authorization'] = authHeader;
+
 		const deleteUrl = `${baseUrl}/v2/${imageName}/manifests/${digest}`;
 		const deleteResponse = await fetch(deleteUrl, {
 			method: 'DELETE',
-			headers
+			headers: deleteHeaders
 		});
 
 		if (!deleteResponse.ok) {

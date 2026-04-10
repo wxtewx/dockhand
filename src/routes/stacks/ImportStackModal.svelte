@@ -3,7 +3,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Checkbox } from '$lib/components/ui/checkbox';
-	import { Import, Loader2, Play, Info } from 'lucide-svelte';
+	import { Import, Loader2, Play, Info, ServerCog } from 'lucide-svelte';
 	import FilesystemBrowser, { type FileEntry } from './FilesystemBrowser.svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import yaml from 'js-yaml';
@@ -56,6 +56,11 @@
 	// Look up the icon from the environments list since currentEnvironment doesn't store it
 	const currentEnvData = $derived($environments.find(e => e.id === envId));
 	const envIcon = $derived(currentEnvData?.icon || 'globe');
+	const isRemoteEnv = $derived(
+		currentEnvData?.connectionType === 'hawser-standard' ||
+		currentEnvData?.connectionType === 'hawser-edge' ||
+		(currentEnvData?.connectionType === 'direct' && !!currentEnvData?.host)
+	);
 
 	// Reset when modal closes
 	$effect(() => {
@@ -299,8 +304,15 @@
 
 	// Browser title with environment info
 	const browserTitle = $derived.by(() => {
-		const envPart = envName ? ` · ${envName}` : '';
-		return `纳入堆栈管理 ${envPart}`;
+		const envPart = envName ? ` 到 ${envName}` : '';
+		return `接管堆栈${envPart}`;
+	});
+
+	const browserDescription = $derived.by(() => {
+		if (isRemoteEnv) {
+			return `浏览 Dockhand 主机文件系统以查找 Compose 文件。文件在本地管理 —— Hawser 仅代理 Docker API 调用，不代理文件系统访问。`;
+		}
+		return '浏览至 Compose 文件或扫描目录以查找堆栈。';
 	});
 </script>
 
@@ -311,7 +323,7 @@
 		bind:open
 		title={browserTitle}
 		icon={Import}
-		description="浏览至 Compose 文件或扫描目录查找堆栈。"
+		description={browserDescription}
 		selectMode="adopt"
 		highlightFilter={/\.ya?ml$/i}
 		onFilePreview={handleFilePreview}
@@ -327,8 +339,7 @@
 			<Dialog.Header class="px-6 py-4 border-b shrink-0">
 				<Dialog.Title class="flex items-center gap-2">
 					<Import class="w-5 h-5" />
-					选择要纳入管理的堆栈
-					<span class="text-muted-foreground">·</span>
+					选择要接管的堆栈
 					<EnvironmentIcon icon={envIcon} envId={envId} class="w-4 h-4 text-muted-foreground" />
 					<span class="text-muted-foreground font-normal">{envName}</span>
 				</Dialog.Title>
@@ -381,7 +392,13 @@
 					</div>
 				</div>
 				<!-- Adopt info -->
-				<div class="px-4 py-3 border-t shrink-0">
+				<div class="px-4 py-3 border-t shrink-0 space-y-2">
+					{#if isRemoteEnv}
+						<div class="flex items-start gap-2.5 text-xs bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md px-3 py-2.5">
+							<ServerCog class="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+							<span class="text-blue-700 dark:text-blue-300">These compose files are on the <span class="font-medium">Dockhand host</span>, not on {envName}. Docker commands will be sent to {envName} via Hawser, but the files are managed locally.</span>
+						</div>
+					{/if}
 					<div class="flex items-start gap-2.5 text-xs bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-md px-3 py-2.5">
 						<Info class="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
 						<span><span class="font-medium text-amber-600 dark:text-amber-400">纳入管理后会发生什么：</span> <span class="text-zinc-600 dark:text-zinc-400">Dockhand 将跟踪这些 compose 文件，您可以在界面中编辑、启动和停止堆栈。文件将保留在当前位置。</span></span>
@@ -475,7 +492,13 @@
 				</div>
 
 				<!-- Adopt info -->
-				<div class="px-5 py-3 border-t shrink-0">
+				<div class="px-5 py-3 border-t shrink-0 space-y-2">
+					{#if isRemoteEnv}
+						<div class="flex items-start gap-2.5 text-xs bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md px-3 py-2.5">
+							<ServerCog class="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+							<span class="text-blue-700 dark:text-blue-300">This compose file is on the <span class="font-medium">Dockhand host</span>, not on {envName}. Docker commands will be sent to {envName} via Hawser, but the file is managed locally.</span>
+						</div>
+					{/if}
 					<div class="flex items-start gap-2.5 text-xs bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-md px-3 py-2.5">
 						<Info class="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
 						<span><span class="font-medium text-amber-600 dark:text-amber-400">纳入管理后会发生什么：</span> <span class="text-zinc-600 dark:text-zinc-400">Dockhand 将跟踪此 compose 文件，您可以在界面中编辑、启动和停止堆栈。文件将保留在当前位置。</span></span>
