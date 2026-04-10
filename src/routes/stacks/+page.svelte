@@ -1931,7 +1931,7 @@
 										<Box class="w-4 h-4 shrink-0 {container.state === 'running' ? 'text-emerald-500' : 'text-muted-foreground'}" />
 										<span class="font-medium truncate flex-1" title={container.name}>{container.service}</span>
 										{#if container.health}
-											title={getLabelText(container.health)}>
+											<span title={getLabelText(container.health)}>
 												{#if container.health === 'healthy'}
 													<HeartPulse class="w-3.5 h-3.5 {getHealthClasses(container.health)}" />
 												{:else if container.health === 'unhealthy'}
