@@ -940,7 +940,7 @@ export async function deployGitStack(stackId: number, options?: { force?: boolea
 	// forceRedeploy setting overrides the skip logic for webhooks/scheduled syncs
 	const shouldDeploy = force || gitStack.forceRedeploy || syncResult.updated;
 	if (!shouldDeploy) {
-		console.log(`${logPrefix} No changes detected and force=false, forceRedeploy=false, skipping redeploy`);
+		console.log(`${logPrefix} 未检测到变更，且 force=false、forceRedeploy=false，跳过重新部署`);
 		return {
 			success: true,
 			output: '未检测到变更，跳过重新部署',
@@ -949,10 +949,10 @@ export async function deployGitStack(stackId: number, options?: { force?: boolea
 	}
 
 	const forceRecreate = syncResult.updated;
-	console.log(`${logPrefix} Will force recreate:`, forceRecreate, `(updated=${syncResult.updated})`);
-	console.log(`${logPrefix} Build on deploy:`, gitStack.buildOnDeploy);
-	console.log(`${logPrefix} Re-pull images:`, gitStack.repullImages);
-	console.log(`${logPrefix} Force redeploy setting:`, gitStack.forceRedeploy);
+	console.log(`${logPrefix} 将强制重新创建：`, forceRecreate, `(updated=${syncResult.updated})`);
+	console.log(`${logPrefix} 部署时构建：`, gitStack.buildOnDeploy);
+	console.log(`${logPrefix} 重新拉取镜像：`, gitStack.repullImages);
+	console.log(`${logPrefix} 强制重新部署设置：`, gitStack.forceRedeploy);
 
 	// Deploy using unified function - handles both new and existing stacks
 	// Uses `docker compose up -d --remove-orphans` which only recreates changed services
