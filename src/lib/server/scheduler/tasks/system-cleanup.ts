@@ -216,7 +216,7 @@ export async function runScannerCacheCleanupJob(
 		scheduleType: 'system_cleanup',
 		scheduleId: SYSTEM_SCANNER_CLEANUP_ID,
 		environmentId: null,
-		entityName: 'Scanner cache cleanup',
+		entityName: '扫描器缓存清理',
 		triggeredBy,
 		status: 'running'
 	});
@@ -226,12 +226,12 @@ export async function runScannerCacheCleanupJob(
 	});
 
 	const log = async (message: string) => {
-		console.log(`[Scanner Cache Cleanup] ${message}`);
+		console.log(`[扫描器缓存清理] ${message}`);
 		await appendScheduleExecutionLog(execution.id, `[${new Date().toISOString()}] ${message}`);
 	};
 
 	try {
-		await log('Starting scanner cache cleanup');
+		await log('开始执行扫描器缓存清理');
 
 		let result: { volumes: string[]; dirs: string[] };
 		if (cleanupFn) {
@@ -242,12 +242,12 @@ export async function runScannerCacheCleanupJob(
 		}
 
 		if (result.volumes.length > 0) {
-			await log(`Removed volumes: ${result.volumes.join(', ')}`);
+			await log(`已移除数据卷：${result.volumes.join(', ')}`);
 		}
 		if (result.dirs.length > 0) {
-			await log(`Removed directories: ${result.dirs.join(', ')}`);
+			await log(`已移除目录：${result.dirs.join(', ')}`);
 		}
-		await log(`Cleanup complete: ${result.volumes.length} volumes, ${result.dirs.length} directories removed`);
+		await log(`清理完成：已移除 ${result.volumes.length} 个数据卷，${result.dirs.length} 个目录`);
 		await updateScheduleExecution(execution.id, {
 			status: 'success',
 			completedAt: new Date().toISOString(),
@@ -255,7 +255,7 @@ export async function runScannerCacheCleanupJob(
 			details: { removedVolumes: result.volumes, removedDirs: result.dirs }
 		});
 	} catch (error: any) {
-		await log(`Error: ${error.message}`);
+		await log(`错误：${error.message}`);
 		await updateScheduleExecution(execution.id, {
 			status: 'failed',
 			completedAt: new Date().toISOString(),

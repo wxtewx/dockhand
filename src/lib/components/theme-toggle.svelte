@@ -48,7 +48,7 @@
 	}
 </script>
 
-<Button variant="ghost" size="icon" onclick={cycleTheme} class="h-9 w-9" title={mode === 'system' ? 'Theme: system' : mode === 'dark' ? 'Theme: dark' : 'Theme: light'}>
+<Button variant="ghost" size="icon" onclick={cycleTheme} class="h-9 w-9" title={mode === 'system' ? '主题：跟随系统' : mode === 'dark' ? '主题：深色' : '主题：浅色'}>
 	{#if mode === 'dark'}
 		<Moon class="h-4 w-4" />
 	{:else if mode === 'light'}

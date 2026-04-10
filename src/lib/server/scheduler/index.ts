@@ -149,7 +149,7 @@ export async function startScheduler(): Promise<void> {
 				localResult.volumes.push(...envResult.volumes);
 			} catch (error) {
 				const msg = error instanceof Error ? error.message : String(error);
-				console.log(`[Scanner] Skipping cache cleanup for env "${env.name}" (id=${env.id}): ${msg}`);
+				console.log(`[扫描器] 跳过环境 "${env.name}" (id=${env.id}) 的缓存清理：${msg}`);
 			}
 		}
 
@@ -749,8 +749,8 @@ export async function getSystemSchedules(): Promise<SystemScheduleInfo[]> {
 		{
 			id: SYSTEM_SCANNER_CLEANUP_ID,
 			type: 'system_cleanup' as const,
-			name: 'Scanner cache cleanup',
-			description: 'Removes scanner vulnerability database cache to reclaim disk space',
+			name: '扫描器缓存清理',
+			description: '移除扫描器漏洞库缓存以释放磁盘空间',
 			cronExpression: '0 3 * * 0',
 			nextRun: getNextRun('0 3 * * 0')?.toISOString() ?? null,
 			isSystem: true,

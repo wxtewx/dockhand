@@ -955,31 +955,6 @@
 		}
 	}
 
-	async function redeployStack(name: string, options: { pull: boolean; build: boolean; forceRecreate: boolean }) {
-		operationError = null;
-		stackActionLoading = name;
-		try {
-			const response = await fetch(appendEnvParam(`/api/stacks/${encodeURIComponent(name)}/deploy`, envId), {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(options)
-			});
-			const data = await readJobResponse(response);
-			if (!data.success) {
-				showErrorDialog(`Failed to redeploy ${name}`, data.error || 'Failed to redeploy stack');
-				return;
-			}
-			toast.success(`Redeployed ${name}`);
-			await fetchStacks();
-		} catch (error) {
-			console.error('Failed to redeploy stack:', error);
-			const errorMsg = error instanceof Error ? error.message : 'Failed to redeploy stack';
-			showErrorDialog(`Failed to redeploy ${name}`, errorMsg);
-		} finally {
-			stackActionLoading = null;
-		}
-	}
-
 	async function downStack(name: string) {
 		operationError = null;
 		stackActionLoading = name;

@@ -50,15 +50,15 @@
 			if (res.ok && data.success) {
 				const total = (data.removedVolumes?.length || 0) + (data.removedDirs?.length || 0);
 				if (total > 0) {
-					toast.success(`Scanner cache cleared (${total} items removed)`);
+					toast.success(`扫描器缓存已清理 (已移除 ${total} 项)`);
 				} else {
-					toast.info('Scanner cache was already empty');
+					toast.info('扫描器缓存早已为空');
 				}
 			} else {
-				toast.error(data.error || 'Failed to clear scanner cache');
+				toast.error(data.error || '清理扫描器缓存失败');
 			}
 		} catch {
-			toast.error('Failed to clear scanner cache');
+			toast.error('清理扫描器缓存失败');
 		} finally {
 			clearingCache = false;
 		}
@@ -482,8 +482,8 @@
 					<div class="pt-2 border-t">
 						<div class="flex items-center justify-between">
 							<div>
-								<p class="text-sm font-medium">Scanner cache</p>
-								<p class="text-xs text-muted-foreground">Remove cached vulnerability databases to free disk space. Next scan will re-download fresh data (~200MB).</p>
+								<p class="text-sm font-medium">扫描器缓存</p>
+								<p class="text-xs text-muted-foreground">移除缓存的漏洞数据库以释放磁盘空间。下次扫描将重新下载最新数据 (约 200MB)。</p>
 							</div>
 							<Button
 								variant="outline"
@@ -492,9 +492,9 @@
 								onclick={clearScannerCache}
 							>
 								{#if clearingCache}
-									Clearing...
+									正在清理...
 								{:else}
-									Clear cache
+									清理缓存
 								{/if}
 							</Button>
 						</div>

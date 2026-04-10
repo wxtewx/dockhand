@@ -3,31 +3,31 @@
     "version": "1.0.24",
     "date": "2026-04-03",
     "changes": [
-      { "type": "fix", "text": "browsing HTTP registries fails with SSL error (#868)" },
-      { "type": "fix", "text": "git stack deploy options (build, re-pull, force redeploy) not persisted in edit dialog" }
+        { "type": "fix", "text": "浏览 HTTP 仓库时因 SSL 错误失败（#868）" },
+        { "type": "fix", "text": "Git 堆栈部署选项（构建、重新拉取、强制重新部署）在编辑对话框中未保存" }
     ],
     "imageTag": "fnsys/dockhand:v1.0.24"
-  },
-  {
+},
+{
     "version": "1.0.23",
     "date": "2026-04-03",
     "changes": [
-      { "type": "feature", "text": "theme toggle with system option — auto-follows OS light/dark preference (#803)" },
-      { "type": "feature", "text": "custom user option for terminal shell sessions, persisted per container (#830)" },
-      { "type": "feature", "text": "redeploy button for internal stacks with pull/build/force-recreate options (#152)" },
-      { "type": "feature", "text": "build, re-pull images and force redeployment options for git stacks (#792, #472)" },
-      { "type": "fix", "text": "allow underscores in hostname validation (#790)" },
-      { "type": "fix", "text": "HTTPS git repos with self-signed CA certificates fail to clone/pull (#842)" },
-      { "type": "fix", "text": "stack restart fails for containers using network_mode: service:<container> — added recreate option (#844)" },
-      { "type": "fix", "text": "git stack sync deletes data in relative volume paths (#831)" },
-      { "type": "fix", "text": "batch update skips Hawser containers (#485)" },
-      { "type": "fix", "text": "registry delete fails for multi-arch/OCI manifest images" },
-      { "type": "fix", "text": "scanner cache cleanup to prevent volume bloat (#808)" },
-      { "type": "fix", "text": "negotiate Docker API version for scanner/updater sidecar containers (#759)" },
-      { "type": "fix", "text": "scan vulnerability counts mismatch with displayed list (#705)" }
+        { "type": "feature", "text": "主题切换支持跟随系统选项——自动跟随操作系统浅色/深色偏好（#803）" },
+        { "type": "feature", "text": "支持为终端会话自定义用户，按容器持久化保存（#830）" },
+        { "type": "feature", "text": "内部堆栈新增重新部署按钮，支持拉取/构建/强制重新创建选项（#152）" },
+        { "type": "feature", "text": "Git 堆栈支持构建、重新拉取镜像和强制重新部署选项（#792、#472）" },
+        { "type": "fix", "text": "主机名校验允许使用下划线（#790）" },
+        { "type": "fix", "text": "使用自签名 CA 证书的 HTTPS Git 仓库无法克隆/拉取（#842）" },
+        { "type": "fix", "text": "使用 network_mode: service:<容器> 的堆栈重启失败——新增重新创建选项（#844）" },
+        { "type": "fix", "text": "Git 堆栈同步会删除相对路径数据卷中的数据（#831）" },
+        { "type": "fix", "text": "批量更新跳过 Hawser 容器（#485）" },
+        { "type": "fix", "text": "多架构/OCI 清单镜像的仓库删除失败" },
+        { "type": "fix", "text": "扫描器缓存清理，防止数据卷膨胀（#808）" },
+        { "type": "fix", "text": "为扫描器/更新器边车容器协商 Docker API 版本（#759）" },
+        { "type": "fix", "text": "扫描漏洞数量与显示列表不匹配（#705）" }
     ],
     "imageTag": "fnsys/dockhand:v1.0.23"
-  },
+},
   {
     "version": "1.0.22",
     "date": "2026-03-21",
