@@ -13,6 +13,7 @@
 	import UpdateSummaryStats from '$lib/components/UpdateSummaryStats.svelte';
 	import ScannerSeverityPills from '$lib/components/ScannerSeverityPills.svelte';
 	import { watchJob } from '$lib/utils/sse-fetch';
+	import { getLabelText } from '$lib/types';
 
 	interface Props {
 		open: boolean;
@@ -555,7 +556,7 @@ const severityOrder: Record<string, number> = { critical: 0, high: 1, medium: 2,
 															</td>
 															<td class="py-1 pr-2">
 																<span class="inline-block px-1.5 py-0 rounded text-[10px] font-medium {severityColor(vuln.severity)}">
-																	{vuln.severity}
+																	{getLabelText(vuln.severity)}
 																</span>
 															</td>
 															<td class="py-1 pr-2 font-mono truncate max-w-[150px]">{vuln.package}</td>

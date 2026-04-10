@@ -322,6 +322,14 @@ const LabelMaps = {
     skipped: '已是最新',
     unknown: '未知',
   },
+  severity: {
+    critical: '严重',
+    high: '高危',
+    medium: '中危',
+    low: '低危',
+    negligible: '可忽略',
+    unknown: '未知',
+  },
 } as const;
 
 const FlatLabelMap: Record<string, string> = (Object as any).values(LabelMaps).reduce(
