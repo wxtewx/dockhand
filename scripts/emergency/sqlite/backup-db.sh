@@ -15,7 +15,7 @@
 set -e
 
 echo "========================================"
-echo "  Dockhand - Backup Database (SQLite)"
+echo "  Dockhand - 备份数据库 (SQLite)"
 echo "========================================"
 echo ""
 
@@ -30,8 +30,8 @@ if [ ! -f "$DB_PATH" ] && [ -f "./data/db/dockhand.db" ]; then
 fi
 
 if [ ! -f "$DB_PATH" ]; then
-    echo "Error: Database not found at $DB_PATH"
-    echo "Set DOCKHAND_DB environment variable to specify the database path"
+    echo "错误：未在路径 $DB_PATH 找到数据库"
+    echo "请设置 DOCKHAND_DB 环境变量以指定数据库路径"
     exit 1
 fi
 
@@ -42,19 +42,19 @@ BACKUP_FILE="$OUTPUT_DIR/dockhand_backup_$TIMESTAMP.db"
 # Get database size
 DB_SIZE=$(ls -lh "$DB_PATH" | awk '{print $5}')
 
-echo "This script will create a backup of the database."
+echo "本脚本将创建数据库备份。"
 echo ""
-echo "Source: $DB_PATH ($DB_SIZE)"
-echo "Backup: $BACKUP_FILE"
+echo "源文件：$DB_PATH ($DB_SIZE)"
+echo "备份文件：$BACKUP_FILE"
 echo ""
-printf "Continue? [y/N]: "
+printf "是否继续？[y/N]："
 read CONFIRM
 
 case "$CONFIRM" in
     [yY]|[yY][eE][sS])
         ;;
     *)
-        echo "Aborted."
+        echo "已取消。"
         exit 0
         ;;
 esac
@@ -64,7 +64,7 @@ echo ""
 # Create output directory if needed
 mkdir -p "$OUTPUT_DIR"
 
-echo "Creating database backup..."
+echo "正在创建数据库备份..."
 
 # Use sqlite3 backup command for safe backup (handles WAL mode)
 if command -v sqlite3 >/dev/null 2>&1; then
@@ -77,12 +77,12 @@ fi
 if [ $? -eq 0 ] && [ -f "$BACKUP_FILE" ]; then
     SIZE=$(ls -lh "$BACKUP_FILE" | awk '{print $5}')
     echo ""
-    echo "Backup created successfully!"
-    echo "Size: $SIZE"
+    echo "备份创建成功！"
+    echo "文件大小：$SIZE"
     echo ""
-    echo "To copy from Docker container to host:"
+    echo "从 Docker 容器复制到主机的命令："
     echo "  docker cp dockhand:$BACKUP_FILE ./dockhand_backup_$TIMESTAMP.db"
 else
-    echo "Error: Failed to create backup"
+    echo "错误：创建备份失败"
     exit 1
 fi
