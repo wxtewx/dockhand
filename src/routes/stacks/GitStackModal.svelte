@@ -917,7 +917,6 @@
 				<p class="text-xs text-muted-foreground">
 					部署前始终拉取最新镜像，即使 compose 文件未发生更改。适用于使用 <code class="text-xs bg-muted px-1 rounded">:latest</code> 等静态标签的 CI/CD 工作流。
 				</p>
-				</p>
 				<div class="flex items-center gap-3">
 					<div class="flex items-center gap-2 flex-1">
 						<Zap class="w-4 h-4 text-muted-foreground" />
