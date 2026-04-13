@@ -399,7 +399,7 @@
 									type="button"
 									class="p-1 mr-1 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
 									onclick={(e) => { e.stopPropagation(); e.preventDefault(); removeCustomUser(cu); customUsers = getCustomUsers(); if (selectedUser === cu) { selectedUser = 'root'; commitUser('root'); } }}
-									title="Remove user"
+									title="移除用户"
 								>
 									<Trash2 class="w-3 h-3" />
 								</button>
@@ -411,7 +411,7 @@
 					<div class="px-2 py-1">
 						<Input
 							class="h-7 text-xs"
-							placeholder="Add user... (Enter)"
+							placeholder="添加用户... (按 Enter)"
 							bind:value={customUserInput}
 							onkeydown={onCustomUserKeydown}
 							onclick={(e) => e.stopPropagation()}
