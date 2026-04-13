@@ -803,7 +803,7 @@
 			<div class="flex items-center gap-3">
 				<div class="flex items-center gap-2 flex-1">
 					<Webhook class="w-4 h-4 text-muted-foreground" />
-					<Label class="text-sm font-normal">Enable webhook</Label>
+					<Label class="text-sm font-normal">启用 webhook</Label>
 				</div>
 				<TogglePill bind:checked={formWebhookEnabled} />
 			</div>
@@ -896,36 +896,37 @@
 
 			<!-- Deploy options section -->
 			<div class="space-y-3 p-3 bg-muted/50 rounded-md">
-				<p class="text-xs font-medium text-muted-foreground uppercase tracking-wider">Deploy options</p>
+				<p class="text-xs font-medium text-muted-foreground uppercase tracking-wider">部署选项</p>
 				<div class="flex items-center gap-3">
 					<div class="flex items-center gap-2 flex-1">
 						<Hammer class="w-4 h-4 text-muted-foreground" />
-						<Label class="text-sm font-normal">Build images on deploy</Label>
+						<Label class="text-sm font-normal">部署时构建镜像</Label>
 					</div>
 					<TogglePill bind:checked={formBuildOnDeploy} />
 				</div>
 				<p class="text-xs text-muted-foreground">
-					Run <code class="text-xs bg-muted px-1 rounded">--build</code> to build images from Dockerfiles before starting containers.
+					运行 <code class="text-xs bg-muted px-1 rounded">--build</code> 以在启动容器前从 Dockerfile 构建镜像。
 				</p>
 				<div class="flex items-center gap-3">
 					<div class="flex items-center gap-2 flex-1">
 						<ArrowDownToLine class="w-4 h-4 text-muted-foreground" />
-						<Label class="text-sm font-normal">Re-pull images</Label>
+						<Label class="text-sm font-normal">重新拉取镜像</Label>
 					</div>
 					<TogglePill bind:checked={formRepullImages} />
 				</div>
 				<p class="text-xs text-muted-foreground">
-					Always pull latest images before deploying, even if the compose file hasn't changed. Useful for CI/CD workflows with static tags like <code class="text-xs bg-muted px-1 rounded">:latest</code>.
+					部署前始终拉取最新镜像，即使 compose 文件未发生更改。适用于使用 <code class="text-xs bg-muted px-1 rounded">:latest</code> 等静态标签的 CI/CD 工作流。
+				</p>
 				</p>
 				<div class="flex items-center gap-3">
 					<div class="flex items-center gap-2 flex-1">
 						<Zap class="w-4 h-4 text-muted-foreground" />
-						<Label class="text-sm font-normal">Force redeployment</Label>
+						<Label class="text-sm font-normal">强制重新部署</Label>
 					</div>
 					<TogglePill bind:checked={formForceRedeploy} />
 				</div>
 				<p class="text-xs text-muted-foreground">
-					Always redeploy the stack on webhook or scheduled sync, even if no git changes are detected.
+					无论是否检测到 git 变更，始终通过 Webhook 或定时同步重新部署堆栈。
 				</p>
 			</div>
 
