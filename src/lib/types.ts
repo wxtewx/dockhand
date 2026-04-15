@@ -201,6 +201,7 @@ const LabelMaps = {
     created: '已创建',
     dead: '已失效',
     partial: '部分运行',
+    stopped: '已停止',
     unknown: '未知',
   },
   health: {
