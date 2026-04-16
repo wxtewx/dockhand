@@ -918,7 +918,7 @@
 				{:else}
 					<div class="space-y-1">
 						<div class="grid grid-cols-[1fr_auto_auto_auto] gap-2 text-2xs font-medium text-muted-foreground px-2 py-1 border-b">
-							<div>Package</div>
+							<div>软件包</div>
 							<div class="w-20 text-center">版本</div>
 							<div class="w-24 text-center">许可协议</div>
 							<div class="w-8"></div>
