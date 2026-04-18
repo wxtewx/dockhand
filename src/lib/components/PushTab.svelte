@@ -3,6 +3,7 @@
 	import { CheckCircle2, XCircle, Loader2, AlertCircle, Terminal, Sun, Moon, Upload } from 'lucide-svelte';
 	import { appendEnvParam } from '$lib/stores/environment';
 	import { watchJob } from '$lib/utils/sse-fetch';
+	import { getLabelText } from '$lib/types';
 
 	type PushStatus = 'idle' | 'pushing' | 'complete' | 'error';
 
@@ -255,15 +256,15 @@
 						<div class="whitespace-pre-wrap break-all leading-relaxed flex items-start gap-1.5">
 							{#if line.startsWith('[push]')}
 								<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-blue-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">推送</span>
-								<span>{line.slice(7)}</span>
+								<span>{getLabelText(line.slice(7))}</span>
 							{:else if line.startsWith('[layer')}
-								<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-violet-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">层</span>
-								<span>{line.slice(line.indexOf(']') + 2)}</span>
+								<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-violet-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">分层</span>
+								<span>{getLabelText(line.slice(line.indexOf(']') + 2))}</span>
 							{:else if line.startsWith('[error]')}
 								<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-red-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">错误</span>
-								<span class="text-red-400">{line.slice(8)}</span>
+								<span class="text-red-400">{getLabelText(line.slice(8))}</span>
 							{:else}
-								<span>{line}</span>
+								<span>{getLabelText(line)}</span>
 							{/if}
 						</div>
 					{/each}

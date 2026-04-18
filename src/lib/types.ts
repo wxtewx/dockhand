@@ -315,6 +315,46 @@ const LabelMaps = {
     Operator: '操作员',
     Viewer: '查看员',
   },
+  pull: {
+  Pulling: '拉取中',
+  Waiting: '等待中',
+  Downloading: '下载中',
+  Extracting: '解压中',
+  Extracted: '已解压',
+  Download: '下载',
+  complete: '完成',
+  idle: '空闲',
+  error: '错误',
+  failed: '失败',
+  timeout: '超时',
+  unknown: '未知',
+  unauthorized: '未授权',
+  Forbidden: '禁止访问',
+  Pushing: '推送中',
+  Pushed: '已推送',
+  Tagging: '标记中',
+  Tagged: '已标记',
+  Digest: '摘要',
+  Status: '状态',
+  from: '来自',
+  library: '官方库',
+  layer: '分层',
+  fs: '文件系统',
+  'fs layer': '文件分层',
+  'Pull complete': '拉取完成',
+  'Download complete': '下载完成',
+  'Downloaded newer image for': '已下载适用于',
+  'Pulling from': '从仓库拉取',
+  'already exists': '镜像已存在',
+  'Already exists': '镜像已存在',
+  'Verifying Checksum': '校验完整性',
+  'manifest unknown': '镜像清单不存在',
+  'not found': '不存在',
+  'connection refused': '连接拒绝',
+  'no such host': '找不到主机',
+  'invalid reference': '无效镜像地址',
+  'Downloaded newer image': '已下载新版本镜像'
+  },
   execution: {
     success: '成功',
     failed: '失败',
@@ -349,6 +389,16 @@ export function getLabelText(
   if (!value) return value ?? '';
   let text = value;
   const actions = LabelMaps.action;
+
+  if (FlatLabelMap[text]) {
+    return FlatLabelMap[text];
+  }
+
+  const pullEntries = Object.entries(LabelMaps.pull).sort((a,b) => b[0].length - a[0].length);
+  for (const [en, cn] of pullEntries) {
+    const reg = new RegExp(en.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+    text = text.replace(reg, cn);
+  }
   
   for (const key in actions) {
     if (Object.prototype.hasOwnProperty.call(actions, key)) {
@@ -356,5 +406,5 @@ export function getLabelText(
       text = text.replace(reg, actions[key as keyof typeof actions]);
     }
   }
-  return FlatLabelMap[text] || text;
+  return text;
 }

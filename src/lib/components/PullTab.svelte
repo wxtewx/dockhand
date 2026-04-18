@@ -9,6 +9,7 @@
 	import { onMount } from 'svelte';
 	import { appendEnvParam } from '$lib/stores/environment';
 	import { watchJob } from '$lib/utils/sse-fetch';
+	import { getLabelText } from '$lib/types';
 
 	interface LayerProgress {
 		id: string;
@@ -156,7 +157,7 @@
 		status = 'pulling';
 		startTime = Date.now();
 
-		addOutputLine(`[pull] Starting pull for ${image}`);
+		addOutputLine(`[pull] 开始拉取镜像 ${image}`);
 
 		try {
 			const response = await fetch(appendEnvParam('/api/images/pull', envId), {
@@ -166,7 +167,7 @@
 			});
 
 			if (!response.ok) {
-				throw new Error('Failed to start pull');
+				throw new Error('开始拉取失败');
 			}
 
 			const { jobId } = await response.json();
@@ -177,13 +178,13 @@
 			if (status === 'pulling') {
 				duration = Date.now() - startTime;
 				status = 'complete';
-				addOutputLine(`[pull] Pull completed in ${formatDuration(duration)}`);
+				addOutputLine(`[pull] 拉取完成，耗时 ${formatDuration(duration)}`);
 				onComplete?.();
 			}
 		} catch (error: any) {
 			duration = Date.now() - startTime;
 			status = 'error';
-			errorMessage = error.message || 'Failed to pull image';
+			errorMessage = error.message || '拉取镜像失败';
 			addOutputLine(`[error] ${errorMessage}`);
 			onError?.(errorMessage);
 		}
@@ -198,12 +199,12 @@
 		if (data.status === 'complete') {
 			duration = Date.now() - startTime;
 			status = 'complete';
-			addOutputLine(`[pull] Pull completed in ${formatDuration(duration)}`);
+			addOutputLine(`[pull] 拉取完成，耗时 ${formatDuration(duration)}`);
 			onComplete?.();
 		} else if (data.status === 'error') {
 			duration = Date.now() - startTime;
 			status = 'error';
-			errorMessage = data.error || 'Unknown error occurred';
+			errorMessage = data.error || '发生未知错误';
 			addOutputLine(`[error] ${errorMessage}`);
 			onError?.(errorMessage);
 		} else if (data.id) {
@@ -413,7 +414,7 @@
 											<Loader2 class="w-3 h-3 text-muted-foreground animate-spin shrink-0" />
 										{/if}
 										<span class={isComplete ? 'text-green-600' : isDownloading ? 'text-blue-600' : isExtracting ? 'text-amber-600' : 'text-muted-foreground'}>
-											{layer.status}
+											{getLabelText(layer.status)}
 										</span>
 									</div>
 								</td>
@@ -463,14 +464,14 @@
 				{#each outputLines as line}
 					<div class="whitespace-pre-wrap break-all leading-relaxed flex items-start gap-1.5">
 						{#if line.startsWith('[pull]')}
-							<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-blue-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">pull</span>
-							<span>{line.slice(7)}</span>
+							<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-blue-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">拉取</span>
+							<span>{getLabelText(line.slice(7))}</span>
 						{:else if line.startsWith('[layer]')}
-							<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-green-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">layer</span>
-							<span>{line.slice(8)}</span>
+							<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-green-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">分层</span>
+							<span>{getLabelText(line.slice(8))}</span>
 						{:else if line.startsWith('[error]')}
-							<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-red-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">error</span>
-							<span class="text-red-400">{line.slice(8)}</span>
+							<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-red-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">错误</span>
+							<span class="text-red-400">{getLabelText(line.slice(8))}</span>
 						{:else}
 							<span>{line}</span>
 						{/if}

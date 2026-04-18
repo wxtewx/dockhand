@@ -319,7 +319,7 @@
 									</div>
 								{:else}
 									<span class="text-2xs {getStatusColor(layer.status)} truncate block">
-										{layer.status}
+										{getLabelText(layer.status)}
 									</span>
 								{/if}
 							</div>
