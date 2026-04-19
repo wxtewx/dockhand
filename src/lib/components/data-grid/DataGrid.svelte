@@ -331,9 +331,11 @@
 
 	// Sort persistence
 	const SORT_STORAGE_KEY = `dockhand-${gridId}-sort`;
+	let sortInitialized = false;
 
-	// Restore saved sort on init (only if parent didn't provide explicit initial sort via sortState)
-	if (onSortChange && sortState) {
+	// Restore saved sort on mount
+	onMount(() => {
+		if (!onSortChange) return;
 		try {
 			const saved = localStorage.getItem(SORT_STORAGE_KEY);
 			if (saved) {
@@ -343,11 +345,14 @@
 				}
 			}
 		} catch {}
-	}
+		sortInitialized = true;
+	});
 
-	function saveSortState(state: DataGridSortState) {
-		try { localStorage.setItem(SORT_STORAGE_KEY, JSON.stringify(state)); } catch {}
-	}
+	// Persist sort state whenever it changes (after init)
+	$effect(() => {
+		if (!sortInitialized || !sortState) return;
+		try { localStorage.setItem(SORT_STORAGE_KEY, JSON.stringify(sortState)); } catch {}
+	});
 
 	// Sort helpers
 	function toggleSort(field: string) {
@@ -357,7 +362,6 @@
 			? { field, direction: sortState.direction === 'asc' ? 'desc' : 'asc' }
 			: { field, direction: 'asc' };
 
-		saveSortState(newState);
 		onSortChange(newState);
 	}
 
