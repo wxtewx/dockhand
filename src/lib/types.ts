@@ -202,6 +202,8 @@ const LabelMaps = {
     dead: '已失效',
     partial: '部分运行',
     stopped: '已停止',
+    starting: '启动中',
+    started: '已启动',
     unknown: '未知',
   },
   health: {
@@ -311,17 +313,17 @@ const LabelMaps = {
 	  deploy: '部署',
   },
   role: {
-    Admin: '管理员',
-    Operator: '操作员',
-    Viewer: '查看员',
+    admin: '管理员',
+    operator: '操作员',
+    viewer: '查看员',
   },
   pull: {
-  Pulling: '拉取中',
+  pulling: '拉取中',
   Waiting: '等待中',
   Downloading: '下载中',
   Extracting: '解压中',
   Extracted: '已解压',
-  Download: '下载',
+  download: '下载',
   complete: '完成',
   idle: '空闲',
   error: '错误',
@@ -329,17 +331,19 @@ const LabelMaps = {
   timeout: '超时',
   unknown: '未知',
   unauthorized: '未授权',
-  Forbidden: '禁止访问',
-  Pushing: '推送中',
-  Pushed: '已推送',
-  Tagging: '标记中',
-  Tagged: '已标记',
-  Digest: '摘要',
-  Status: '状态',
+  forbidden: '禁止访问',
+  pushing: '推送中',
+  pushed: '已推送',
+  tagging: '标记中',
+  tagged: '已标记',
+  digest: '摘要',
+  status: '状态',
   from: '来自',
   library: '官方库',
   layer: '分层',
   fs: '文件系统',
+  image: '镜像',
+  validating: '正在校验',
   'fs layer': '文件分层',
   'Pull complete': '拉取完成',
   'Download complete': '下载完成',
@@ -353,7 +357,52 @@ const LabelMaps = {
   'connection refused': '连接拒绝',
   'no such host': '找不到主机',
   'invalid reference': '无效镜像地址',
-  'Downloaded newer image': '已下载新版本镜像'
+  'Downloaded newer image': '已下载新版本镜像',
+  'Error response from daemon': '守护进程错误',
+  'failed to set up container networking': '容器网络配置失败',
+  'driver failed programming external connectivity': '网络驱动配置外部连接失败',
+  'Bind for': '端口绑定',
+  'failed: port is already allocated': '失败：端口已被占用',
+  'port is already allocated': '端口已被占用',
+  'endpoint': '端点',
+  ' on ': '在',
+  'exit code': '退出码',
+  'permission denied': '权限不足',
+  'no such container': '容器不存在',
+  'container not found': '容器未找到',
+  'network not found': '网络不存在',
+  'volume not found': '数据卷不存在',
+  'failed to create task for container': '为容器创建任务失败',
+  'failed to create shim task': '创建运行环境任务失败',
+  'OCI runtime create failed': 'OCI 运行时创建失败',
+  'runc create failed': 'runc 创建失败',
+  'unable to start container process': '无法启动容器进程',
+  'error during container init': '容器初始化时出错',
+  'error mounting': '挂载出错',
+  'to rootfs at': '到 root 文件系统路径：',
+  'not a directory': '不是一个目录',
+  'Are you trying to mount a directory onto a file (or vice-versa)?': '你可能将目录挂载到了文件，或文件挂载到了目录 (格式不匹配)？',
+  'Check if the specified host path exists and is the expected type': '请检查主机路径是否存在，且类型正确',
+  'mount src=': '源路径=',
+  'dst=': '目标路径=',
+  'flags=': '挂载标记=',
+  'failed to resolve reference': '解析镜像引用失败',
+  'unexpected status from HEAD request': 'HEAD 请求返回异常状态码',
+  '403 Forbidden': '403 禁止访问',
+  'invalid restart policy': '无效的重启策略',
+  'unknown policy': '未知策略',
+  'use one of': '请使用以下值之一',
+  'additional properties': '存在不允许的额外属性',
+  'not allowed': '不允许使用',
+  'failed to parse': '解析失败',
+  'yaml: line': 'YAML 文件第',
+  'mapping values are not allowed in this context': '此位置不允许使用映射格式 (YAML 语法错误)',
+  'service ': '服务 ',
+  '" refers to undefined network ': '" 引用了未定义的网络 ',
+  '" refers to undefined volume ': '" 引用了未定义的数据卷 ',
+  '" depends on undefined service ': '" 依赖了未定义的服务 ',
+  ': invalid compose project': '：无效的 Compose 项目',
+  
   },
   execution: {
     success: '成功',
@@ -378,20 +427,20 @@ export function getLabelText(
 ): string {
   if (type === 'health') {
     if (!value) return '未知';
-    return FlatLabelMap[value] || '启动中';
+    return FlatLabelMap[value.toLowerCase()] || '启动中';
   }
 
   if (type === 'restartPolicy') {
     if (!value) return '无';
-    return FlatLabelMap[value] || '无';
+    return FlatLabelMap[value.toLowerCase()] || '无';
   }
 
   if (!value) return value ?? '';
   let text = value;
   const actions = LabelMaps.action;
 
-  if (FlatLabelMap[text]) {
-    return FlatLabelMap[text];
+  if (FlatLabelMap[text.toLowerCase()]) {
+    return FlatLabelMap[text.toLowerCase()];
   }
 
   const pullEntries = Object.entries(LabelMaps.pull).sort((a,b) => b[0].length - a[0].length);

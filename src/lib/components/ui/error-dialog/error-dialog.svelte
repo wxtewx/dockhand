@@ -4,6 +4,7 @@
 	import { AlertCircle, Copy, Check, XCircle, AlertTriangle, CheckCircle2 } from 'lucide-svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { copyToClipboard } from '$lib/utils/clipboard';
+	import { getLabelText } from '$lib/types';
 
 	interface Props {
 		open: boolean;
@@ -52,7 +53,7 @@
 					const [, type, name, status] = stepMatch;
 					const normalizedStatus = status.toLowerCase() as any;
 					result.steps.push({
-						action: `${type} ${name}`,
+						action: `${getLabelText(type)} ${name}`,
 						status: normalizedStatus
 					});
 					result.parsed = true;
@@ -134,7 +135,7 @@
 									<div class="w-3.5 h-3.5 rounded-full border-2 border-zinc-400"></div>
 								{/if}
 								<span class="text-zinc-600 dark:text-zinc-300">{step.action}</span>
-								<span class="text-zinc-400 dark:text-zinc-500 capitalize">{step.status}</span>
+								<span class="text-zinc-400 dark:text-zinc-500 capitalize">{getLabelText(step.status)}</span>
 							</div>
 						{/each}
 					</div>
@@ -160,7 +161,7 @@
 								<Copy class="w-3.5 h-3.5" />
 							{/if}
 						</button>
-						<pre class="text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap break-words font-mono pr-6">{parsed.error}</pre>
+						<pre class="text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap break-words font-mono pr-6">{getLabelText(parsed.error)}</pre>
 					</div>
 				{/if}
 			{:else}
@@ -177,12 +178,12 @@
 							<Copy class="w-3.5 h-3.5" />
 						{/if}
 					</button>
-					<pre class="text-sm whitespace-pre-wrap font-sans pr-6">{message}</pre>
+					<pre class="text-sm whitespace-pre-wrap font-sans pr-6">{getLabelText(message)}</pre>
 				</div>
 			{/if}
 
 			{#if details}
-				<pre class="text-xs bg-zinc-100 dark:bg-zinc-800 p-3 rounded-md overflow-auto max-h-64 whitespace-pre-wrap break-all">{details}</pre>
+				<pre class="text-xs bg-zinc-100 dark:bg-zinc-800 p-3 rounded-md overflow-auto max-h-64 whitespace-pre-wrap break-all">{getLabelText(details)}</pre>
 			{/if}
 		</div>
 		<Dialog.Footer class="flex gap-2 sm:justify-end">
