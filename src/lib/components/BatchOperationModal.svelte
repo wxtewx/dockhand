@@ -14,11 +14,11 @@
 	}
 
 	const progressText: Record<string, string> = {
-		remove: 'removing',
-		start: 'starting',
-		stop: 'stopping',
-		restart: 'restarting',
-		down: 'stopping'
+		remove: '正在删除',
+		start: '正在启动',
+		stop: '正在停止',
+		restart: '正在重启',
+		down: '正在停止'
 	};
 
 	// Local type definitions (matching server types)
@@ -152,7 +152,7 @@
 				cancelledCount = cancelCount;
 			}
 		} catch (error: any) {
-			console.error('Batch operation error:', error);
+			console.error('批量操作错误:', error);
 		} finally {
 			isRunning = false;
 			isComplete = true;
@@ -184,7 +184,7 @@
 	function handleClose() {
 		if (isRunning) {
 			// Confirm before closing during operation
-			if (!confirm('Operation is still running. Cancel and close?')) {
+			if (!confirm('操作仍在运行中，是否取消并关闭？')) {
 				return;
 			}
 			handleCancel();
@@ -222,11 +222,11 @@
 			<Dialog.Title>{title}</Dialog.Title>
 			<Dialog.Description>
 				{#if isRunning}
-					Processing {items.length} {entityType}...
+					正在处理 {items.length} {entityType}...
 				{:else if isComplete}
-					Completed: {successCount} succeeded{#if failCount > 0}, {failCount} failed{/if}{#if cancelledCount > 0}, {cancelledCount} cancelled{/if}{#if totalSize && successCount > 0} ({formatBytes(totalSize)}){/if}
+					已完成: {successCount} 成功{#if failCount > 0}, {failCount} 失败{/if}{#if cancelledCount > 0}, {cancelledCount} 已取消{/if}{#if totalSize && successCount > 0} ({formatBytes(totalSize)}){/if}
 				{:else}
-					Preparing to {operation} {items.length} {entityType}...
+					准备 {operation} {items.length} {entityType}...
 				{/if}
 			</Dialog.Description>
 		</Dialog.Header>
@@ -267,15 +267,15 @@
 						<!-- Status text -->
 						<span class="text-xs text-muted-foreground flex-shrink-0">
 							{#if item.status === 'pending'}
-								pending
+								等待中
 							{:else if item.status === 'processing'}
 								{progressText[operation] ?? operation}...
 							{:else if item.status === 'success'}
-								done
+								完成
 							{:else if item.status === 'error'}
-								<span class="text-red-500">failed</span>
+								<span class="text-red-500">失败</span>
 							{:else if item.status === 'cancelled'}
-								<span class="text-amber-500">cancelled</span>
+								<span class="text-amber-500">已取消</span>
 							{/if}
 						</span>
 					</div>
@@ -292,30 +292,30 @@
 		<!-- Footer: Summary + Button in one row -->
 		<div class="flex items-center justify-between pt-2">
 			<div class="flex items-center gap-3 text-sm">
-				<div class="flex items-center gap-1" title="Succeeded">
+				<div class="flex items-center gap-1" title="成功">
 					<Check class="w-4 h-4 text-green-500" />
 					<span class="tabular-nums">{successCount}</span>
 				</div>
-				<div class="flex items-center gap-1" title="Failed">
+				<div class="flex items-center gap-1" title="失败">
 					<X class="w-4 h-4 text-red-500" />
 					<span class="tabular-nums">{failCount}</span>
 				</div>
-				<div class="flex items-center gap-1" title="Cancelled">
+				<div class="flex items-center gap-1" title="已取消">
 					<Ban class="w-4 h-4 text-amber-500" />
 					<span class="tabular-nums">{cancelledCount}</span>
 				</div>
-				<div class="flex items-center gap-1 text-muted-foreground" title="Pending">
+				<div class="flex items-center gap-1 text-muted-foreground" title="等待中">
 					<Circle class="w-4 h-4" />
 					<span class="tabular-nums">{items.length - successCount - failCount - cancelledCount}</span>
 				</div>
 			</div>
 			{#if isRunning}
 				<Button variant="outline" size="sm" onclick={handleCancel}>
-					Cancel
+					取消
 				</Button>
 			{:else}
 				<Button size="sm" onclick={handleOk}>
-					OK
+					确定
 				</Button>
 			{/if}
 		</div>

@@ -16,11 +16,11 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 
 	// Allow viewing roles when auth is disabled (setup mode) or with enterprise license
 	if (auth.authEnabled && !auth.isEnterprise) {
-		return json({ error: 'Enterprise license required' }, { status: 403 });
+		return json({ error: '需要企业版授权' }, { status: 403 });
 	}
 
 	if (!params.id) {
-		return json({ error: 'Role ID is required' }, { status: 400 });
+		return json({ error: '必须提供角色 ID' }, { status: 400 });
 	}
 
 	try {
@@ -28,13 +28,13 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 		const role = await getRole(id);
 
 		if (!role) {
-			return json({ error: 'Role not found' }, { status: 404 });
+			return json({ error: '未找到角色' }, { status: 404 });
 		}
 
 		return json(role);
 	} catch (error) {
-		console.error('Failed to get role:', error);
-		return json({ error: 'Failed to get role' }, { status: 500 });
+		console.error('获取角色失败:', error);
+		return json({ error: '获取角色失败' }, { status: 500 });
 	}
 };
 
@@ -45,17 +45,17 @@ export const PUT: RequestHandler = async (event) => {
 
 	// Check enterprise license
 	if (!auth.isEnterprise) {
-		return json({ error: 'Enterprise license required' }, { status: 403 });
+		return json({ error: '需要企业版授权' }, { status: 403 });
 	}
 
 	// When auth is disabled, allow all operations (setup mode)
 	// When auth is enabled, require admin access
 	if (auth.authEnabled && !auth.isAdmin) {
-		return json({ error: 'Admin access required' }, { status: 403 });
+		return json({ error: '需要管理员权限' }, { status: 403 });
 	}
 
 	if (!params.id) {
-		return json({ error: 'Role ID is required' }, { status: 400 });
+		return json({ error: '必须提供角色 ID' }, { status: 400 });
 	}
 
 	try {
@@ -64,16 +64,16 @@ export const PUT: RequestHandler = async (event) => {
 
 		const existingRole = await getRole(id);
 		if (!existingRole) {
-			return json({ error: 'Role not found' }, { status: 404 });
+			return json({ error: '未找到角色' }, { status: 404 });
 		}
 
 		if (existingRole.isSystem) {
-			return json({ error: 'Cannot modify system roles' }, { status: 400 });
+			return json({ error: '无法修改系统角色' }, { status: 400 });
 		}
 
 		const role = await dbUpdateRole(id, data);
 		if (!role) {
-			return json({ error: 'Failed to update role' }, { status: 500 });
+			return json({ error: '更新角色失败' }, { status: 500 });
 		}
 
 		// Clear token cache — any cached user with this role has stale permissions
@@ -87,11 +87,11 @@ export const PUT: RequestHandler = async (event) => {
 
 		return json(role);
 	} catch (error: any) {
-		console.error('Failed to update role:', error);
+		console.error('更新角色失败:', error);
 		if (error.message?.includes('UNIQUE constraint failed')) {
-			return json({ error: 'Role name already exists' }, { status: 409 });
+			return json({ error: '角色名称已存在' }, { status: 409 });
 		}
-		return json({ error: 'Failed to update role' }, { status: 500 });
+		return json({ error: '更新角色失败' }, { status: 500 });
 	}
 };
 
@@ -102,17 +102,17 @@ export const DELETE: RequestHandler = async (event) => {
 
 	// Check enterprise license
 	if (!auth.isEnterprise) {
-		return json({ error: 'Enterprise license required' }, { status: 403 });
+		return json({ error: '需要企业版授权' }, { status: 403 });
 	}
 
 	// When auth is disabled, allow all operations (setup mode)
 	// When auth is enabled, require admin access
 	if (auth.authEnabled && !auth.isAdmin) {
-		return json({ error: 'Admin access required' }, { status: 403 });
+		return json({ error: '需要管理员权限' }, { status: 403 });
 	}
 
 	if (!params.id) {
-		return json({ error: 'Role ID is required' }, { status: 400 });
+		return json({ error: '必须提供角色 ID' }, { status: 400 });
 	}
 
 	try {
@@ -120,16 +120,16 @@ export const DELETE: RequestHandler = async (event) => {
 		const role = await getRole(id);
 
 		if (!role) {
-			return json({ error: 'Role not found' }, { status: 404 });
+			return json({ error: '未找到角色' }, { status: 404 });
 		}
 
 		if (role.isSystem) {
-			return json({ error: 'Cannot delete system roles' }, { status: 400 });
+			return json({ error: '无法删除系统角色' }, { status: 400 });
 		}
 
 		const deleted = await dbDeleteRole(id);
 		if (!deleted) {
-			return json({ error: 'Failed to delete role' }, { status: 500 });
+			return json({ error: '删除角色失败' }, { status: 500 });
 		}
 
 		// Clear token cache — users with this role may have stale cached permissions
@@ -140,7 +140,7 @@ export const DELETE: RequestHandler = async (event) => {
 
 		return json({ success: true });
 	} catch (error) {
-		console.error('Failed to delete role:', error);
-		return json({ error: 'Failed to delete role' }, { status: 500 });
+		console.error('删除角色失败:', error);
+		return json({ error: '删除角色失败' }, { status: 500 });
 	}
 };

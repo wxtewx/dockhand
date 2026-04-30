@@ -18,7 +18,7 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('volumes', 'inspect', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -64,14 +64,14 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 
 		return new Response(body, { headers });
 	} catch (error: any) {
-		console.error('Failed to export volume:', error);
+		console.error('导出数据卷失败：', error);
 
 		if (error.message?.includes('No such file or directory')) {
-			return json({ error: 'Path not found' }, { status: 404 });
+			return json({ error: '路径不存在' }, { status: 404 });
 		}
 
 		return json({
-			error: 'Failed to export volume',
+			error: '导出数据卷失败',
 			details: error.message || String(error)
 		}, { status: 500 });
 	}

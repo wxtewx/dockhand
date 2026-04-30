@@ -68,7 +68,7 @@ function checkNeedsFallback(): boolean {
 
 	const oldKernel = isOldKernel();
 	if (oldKernel) {
-		console.log(`[Crypto] Detected old Linux kernel (${os.release()}), using /dev/urandom fallback`);
+		console.log(`[加密] 检测到旧版 Linux 内核 (${os.release()})，使用 /dev/urandom 兼容方案`);
 		needsFallback = true;
 	} else {
 		needsFallback = false;
@@ -103,28 +103,28 @@ export function initCryptoFallback(): boolean {
 	const useFallback = checkNeedsFallback();
 
 	if (useFallback) {
-		console.log(`[Crypto] Kernel: ${release} (old kernel detected, using /dev/urandom fallback)`);
+		console.log(`[加密] 内核版本：${release} (检测到旧内核，启用 /dev/urandom 兼容方案)`);
 
 		// Verify /dev/urandom exists
 		if (!existsSync('/dev/urandom')) {
-			console.error('[Crypto] FATAL: /dev/urandom not found, cannot provide entropy');
-			throw new Error('/dev/urandom not available');
+			console.error('[加密] 致命错误：未找到 /dev/urandom，无法生成随机数');
+			throw new Error('/dev/urandom 不可用');
 		}
 
 		// Test that we can read from it
 		try {
 			const testBytes = readFromUrandom(8);
 			if (testBytes.length !== 8) {
-				throw new Error('Failed to read expected bytes');
+				throw new Error('读取随机数失败');
 			}
-			console.log('[Crypto] /dev/urandom fallback initialized successfully');
+			console.log('[加密] /dev/urandom 兼容方案初始化成功');
 		} catch (err) {
 			const errorMsg = err instanceof Error ? err.message : String(err);
-			console.error('[Crypto] FATAL: Failed to read from /dev/urandom:', errorMsg);
+			console.error('[加密] 致命错误：无法读取 /dev/urandom:', errorMsg);
 			throw err;
 		}
 	} else {
-		console.log(`[Crypto] Kernel: ${platform === 'linux' ? release : platform} (using native crypto)`);
+		console.log(`[加密] Kernel: ${platform === 'linux' ? release : platform} (使用原生加密模块)`);
 	}
 
 	fallbackInitialized = true;

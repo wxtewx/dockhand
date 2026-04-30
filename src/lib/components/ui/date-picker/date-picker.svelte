@@ -14,7 +14,7 @@
 		class?: string;
 	}
 
-	let { value = $bindable(''), placeholder = 'Pick a date', class: className = '' }: Props = $props();
+	let { value = $bindable(''), placeholder = '选择日期', class: className = '' }: Props = $props();
 
 	let open = $state(false);
 
@@ -68,6 +68,7 @@
 			value={dateValue}
 			onValueChange={onSelect}
 			initialFocus
+			locale="zh-CN"
 		/>
 	</Popover.Content>
 </Popover.Root>

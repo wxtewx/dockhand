@@ -17,7 +17,7 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('containers', 'inspect', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -44,7 +44,7 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 
 		return json(containerData);
 	} catch (error) {
-		console.error('Failed to inspect container:', error);
-		return json({ error: 'Failed to inspect container' }, { status: 500 });
+		console.error('检查容器失败:', error);
+		return json({ error: '检查容器失败' }, { status: 500 });
 	}
 };

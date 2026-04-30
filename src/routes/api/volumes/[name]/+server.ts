@@ -16,22 +16,21 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('volumes', 'inspect', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Environment access check (enterprise only)
 	if (envIdNum && auth.isEnterprise && !await auth.canAccessEnvironment(envIdNum)) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问该环境' }, { status: 403 });
 	}
 
 	try {
-
 		const volume = await inspectVolume(params.name, envIdNum);
 		return json(volume);
 	} catch (error: any) {
 		const status = error.statusCode ?? 500;
-		console.error(`Failed to inspect volume ${params.name}: ${error.message}`);
-		return json({ error: 'Failed to inspect volume' }, { status });
+		console.error(`查看数据卷 ${params.name} 失败：${error.message}`);
+		return json({ error: '查看数据卷失败' }, { status });
 	}
 };
 
@@ -48,16 +47,15 @@ export const DELETE: RequestHandler = async (event) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('volumes', 'remove', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Environment access check (enterprise only)
 	if (envIdNum && auth.isEnterprise && !await auth.canAccessEnvironment(envIdNum)) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问该环境' }, { status: 403 });
 	}
 
 	try {
-
 		await removeVolume(params.name, force, envIdNum);
 
 		// Audit log
@@ -67,10 +65,10 @@ export const DELETE: RequestHandler = async (event) => {
 	} catch (error: any) {
 		const status = error.statusCode ?? 500;
 		if (status === 404) {
-			console.warn(`Failed to remove volume ${params.name}: ${error.message}`);
+			console.warn(`删除数据卷 ${params.name} 失败：${error.message}`);
 		} else {
-			console.error(`Failed to remove volume ${params.name}: ${error.message}`);
+			console.error(`删除数据卷 ${params.name} 失败：${error.message}`);
 		}
-		return json({ error: 'Failed to remove volume', details: error.message }, { status });
+		return json({ error: '删除数据卷失败', details: error.message }, { status });
 	}
 };

@@ -18,25 +18,25 @@
 		{#if checked !== undefined}
 			<div class="flex items-center gap-1.5">
 				<span class="font-bold">{checked}</span>
-				<span class="text-muted-foreground">Checked</span>
+				<span class="text-muted-foreground">已检查</span>
 			</div>
 		{/if}
 		{#if updated > 0}
 			<div class="flex items-center gap-1.5 text-green-600">
 				<CheckCircle2 class="w-4 h-4" />
-				<span>{updated} updated</span>
+				<span>{updated} 已更新</span>
 			</div>
 		{/if}
 		{#if blocked > 0}
 			<div class="flex items-center gap-1.5 text-amber-600">
 				<ShieldAlert class="w-4 h-4" />
-				<span>{blocked} blocked</span>
+				<span>{blocked} 已拦截</span>
 			</div>
 		{/if}
 		{#if failed > 0}
 			<div class="flex items-center gap-1.5 text-red-600">
 				<XCircle class="w-4 h-4" />
-				<span>{failed} failed</span>
+				<span>{failed} 失败</span>
 			</div>
 		{/if}
 	</div>
@@ -47,23 +47,23 @@
 			<div class="flex items-center gap-1.5">
 				<Search class="w-4 h-4 text-muted-foreground" />
 				<span class="font-bold">{checked}</span>
-				<span class="text-muted-foreground">Checked</span>
+				<span class="text-muted-foreground">已检查</span>
 			</div>
 		{/if}
 		<div class="flex items-center gap-1.5">
 			<CheckCircle2 class="w-4 h-4 text-green-500" />
 			<span class="font-bold text-green-500">{updated}</span>
-			<span class="text-muted-foreground">Updated</span>
+			<span class="text-muted-foreground">已更新</span>
 		</div>
 		<div class="flex items-center gap-1.5">
 			<ShieldAlert class="w-4 h-4 text-amber-500" />
 			<span class="font-bold text-amber-500">{blocked}</span>
-			<span class="text-muted-foreground">Blocked</span>
+			<span class="text-muted-foreground">已拦截</span>
 		</div>
 		<div class="flex items-center gap-1.5">
 			<XCircle class="w-4 h-4 text-red-500" />
 			<span class="font-bold text-red-500">{failed}</span>
-			<span class="text-muted-foreground">Failed</span>
+			<span class="text-muted-foreground">失败</span>
 		</div>
 	</div>
 {/if}

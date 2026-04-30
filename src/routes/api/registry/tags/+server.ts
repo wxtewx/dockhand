@@ -47,9 +47,9 @@ async function fetchDockerHubTags(imageName: string, page: number = 1, pageSize:
 
 	if (!response.ok) {
 		if (response.status === 404) {
-			throw new Error('Image not found on Docker Hub');
+			throw new Error('Docker Hub 上未找到该镜像');
 		}
-		const err = new Error(`Docker Hub returned error: ${response.status}`) as any;
+		const err = new Error(`Docker Hub 返回错误：${response.status}`) as any;
 		err.statusCode = response.status;
 		throw err;
 	}
@@ -94,12 +94,12 @@ async function fetchRegistryTags(registry: any, imageName: string): Promise<TagI
 
 	if (!response.ok) {
 		if (response.status === 401) {
-			throw new Error('Authentication failed');
+			throw new Error('认证失败');
 		}
 		if (response.status === 404) {
-			throw new Error('Image not found in registry');
+			throw new Error('镜像仓库中未找到该镜像');
 		}
-		throw new Error(`Registry returned error: ${response.status}`);
+		throw new Error(`镜像仓库返回错误：${response.status}`);
 	}
 
 	const data = await response.json();
@@ -124,7 +124,7 @@ export const GET: RequestHandler = async ({ url }) => {
 		const pageSize = parseInt(url.searchParams.get('pageSize') || '20');
 
 		if (!imageName) {
-			return json({ error: 'Image name is required' }, { status: 400 });
+			return json({ error: '必须提供镜像名称' }, { status: 400 });
 		}
 
 		let result: PaginatedTags;
@@ -135,7 +135,7 @@ export const GET: RequestHandler = async ({ url }) => {
 		} else {
 			const registry = await getRegistry(parseInt(registryId));
 			if (!registry) {
-				return json({ error: 'Registry not found' }, { status: 404 });
+				return json({ error: '未找到镜像仓库' }, { status: 404 });
 			}
 
 			if (isDockerHub(registry.url)) {
@@ -156,18 +156,21 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		return json(result);
 	} catch (error: any) {
-		console.error('Error fetching tags:', error);
+		console.error('获取标签失败:', error);
 
 		if (error.code === 'ECONNREFUSED') {
-			return json({ error: 'Could not connect to registry' }, { status: 503 });
+			return json({ error: '无法连接到镜像仓库' }, { status: 503 });
 		}
 		if (error.code === 'ENOTFOUND') {
-			return json({ error: 'Registry host not found' }, { status: 503 });
+			return json({ error: '未找到镜像仓库主机' }, { status: 503 });
+		}
+		if (error.statusCode) {
+			return json({ error: error.message || '获取标签失败' }, { status: error.statusCode });
 		}
 		if (error.statusCode) {
 			return json({ error: error.message || 'Failed to fetch tags' }, { status: error.statusCode });
 		}
 
-		return json({ error: error.message || 'Failed to fetch tags' }, { status: 500 });
+		return json({ error: error.message || '获取标签失败' }, { status: 500 });
 	}
 };

@@ -17,7 +17,7 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('containers', 'view', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -31,9 +31,9 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 		return json(result);
 	} catch (error: any) {
 		if (error?.statusCode === 404) {
-			return json({ error: error.json?.message || 'Container not found' }, { status: 404 });
+			return json({ error: error.json?.message || '容器未找到' }, { status: 404 });
 		}
-		console.error('Error listing container directory:', error?.message || error);
-		return json({ error: error.message || 'Failed to list directory' }, { status: 500 });
+		console.error('列出容器目录错误:', error?.message || error);
+		return json({ error: error.message || '列出目录失败' }, { status: 500 });
 	}
 };

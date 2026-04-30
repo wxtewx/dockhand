@@ -31,17 +31,17 @@
 
 	async function changePassword() {
 		if (!currentPassword || !newPassword) {
-			error = 'All fields are required';
+			error = '所有字段均为必填项';
 			return;
 		}
 
 		if (newPassword !== newPasswordRepeat) {
-			error = 'Passwords do not match';
+			error = '两次输入的密码不一致';
 			return;
 		}
 
 		if (newPassword.length < 8) {
-			error = 'Password must be at least 8 characters';
+			error = '密码长度至少为 8 位';
 			return;
 		}
 
@@ -59,14 +59,14 @@
 			});
 
 			if (response.ok) {
-				onSuccess('Password changed successfully');
+				onSuccess('密码修改成功');
 				onClose();
 			} else {
 				const data = await response.json();
-				error = data.error || 'Failed to change password';
+				error = data.error || '修改密码失败';
 			}
 		} catch (e) {
-			error = 'Failed to change password';
+			error = '修改密码失败';
 		} finally {
 			saving = false;
 		}
@@ -79,7 +79,7 @@
 		<Dialog.Header>
 			<Dialog.Title class="flex items-center gap-2">
 				<Key class="w-5 h-5" />
-				Change password
+				修改密码
 			</Dialog.Title>
 		</Dialog.Header>
 		<div class="space-y-4">
@@ -90,43 +90,43 @@
 				</Alert.Root>
 			{/if}
 			<div class="space-y-2">
-				<Label>Current password</Label>
+				<Label>当前密码</Label>
 				<Input
 					type="password"
 					bind:value={currentPassword}
-					placeholder="Enter current password"
+					placeholder="输入当前密码"
 					autocomplete="current-password"
 				/>
 			</div>
 			<div class="space-y-2">
-				<Label>New password</Label>
+				<Label>新密码</Label>
 				<Input
 					type="password"
 					bind:value={newPassword}
-					placeholder="Enter new password"
+					placeholder="输入新密码"
 					autocomplete="new-password"
 				/>
 				<PasswordStrengthIndicator password={newPassword} />
 			</div>
 			<div class="space-y-2">
-				<Label>Repeat new password</Label>
+				<Label>确认新密码</Label>
 				<Input
 					type="password"
 					bind:value={newPasswordRepeat}
-					placeholder="Repeat new password"
+					placeholder="再次输入新密码"
 					autocomplete="new-password"
 				/>
 			</div>
 		</div>
 		<Dialog.Footer>
-			<Button variant="outline" onclick={onClose}>Cancel</Button>
+			<Button variant="outline" onclick={onClose}>取消</Button>
 			<Button onclick={changePassword} disabled={saving}>
 				{#if saving}
 					<RefreshCw class="w-4 h-4 animate-spin" />
 				{:else}
 					<Check class="w-4 h-4" />
 				{/if}
-				Change password
+				修改密码
 			</Button>
 		</Dialog.Footer>
 	</Dialog.Content>

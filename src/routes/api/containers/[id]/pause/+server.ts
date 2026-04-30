@@ -17,7 +17,7 @@ export const POST: RequestHandler = async (event) => {
 
 	// Permission check with environment context (pause/unpause uses 'stop' permission)
 	if (auth.authEnabled && !await auth.can('containers', 'stop', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -30,7 +30,7 @@ export const POST: RequestHandler = async (event) => {
 
 		return json({ success: true });
 	} catch (error) {
-		console.error('Failed to pause container:', error);
-		return json({ error: 'Failed to pause container' }, { status: 500 });
+		console.error('暂停容器失败:', error);
+		return json({ error: '暂停容器失败' }, { status: 500 });
 	}
 };

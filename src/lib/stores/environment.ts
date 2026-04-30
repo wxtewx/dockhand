@@ -68,7 +68,7 @@ export function clearStaleEnvironment(envId: number) {
 		const current = get(currentEnvironment);
 		// Use Number() for type-safe comparison
 		if (current && Number(current.id) === Number(envId)) {
-			console.warn(`Environment ${envId} no longer exists, clearing from localStorage`);
+			console.warn(`环境 ${envId} 已不存在，正在从本地存储中清除`);
 			currentEnvironment.set(null);
 		}
 	}
@@ -108,15 +108,15 @@ function createEnvironmentsStore() {
 				const currentId = current ? Number(current.id) : null;
 				const currentExists = currentId !== null && data.some((e) => Number(e.id) === currentId);
 
-				console.log(`[EnvStore] refresh: current=${currentId}, exists=${currentExists}, envCount=${data.length}`);
+				console.log(`[环境存储] 刷新中：当前=${currentId}，是否存在=${currentExists}，环境数量=${data.length}`);
 
 				if (data.length === 0) {
 					// No environments left - clear selection
-					console.log('[EnvStore] No environments, clearing selection');
+					console.log('[环境存储] 无可用环境，清除选中状态');
 					currentEnvironment.set(null);
 				} else if (!current) {
 					// No selection - select first
-					console.log(`[EnvStore] No current env, selecting first: ${data[0].name}`);
+					console.log(`[环境存储] 未选中环境，正在选中第一个：${data[0].name}`);
 					const firstEnv = data[0];
 					currentEnvironment.set({
 						id: firstEnv.id,
@@ -124,14 +124,14 @@ function createEnvironmentsStore() {
 					});
 				} else if (!currentExists) {
 					// Current env was deleted - select first
-					console.warn(`[EnvStore] Environment ${currentId} no longer exists in list, selecting first: ${data[0].name}`);
+					console.warn(`[环境存储] 环境 ${currentId} 已不存在于列表中，正在选中第一个：${data[0].name}`);
 					const firstEnv = data[0];
 					currentEnvironment.set({
 						id: firstEnv.id,
 						name: firstEnv.name
 					});
 				} else {
-					console.log(`[EnvStore] Current env ${currentId} still exists, keeping selection`);
+					console.log(`[环境存储] 当前环境 ${currentId} 仍存在，保持选中状态`);
 				}
 			} else {
 				// Clear environments on permission denied or other errors
@@ -142,7 +142,7 @@ function createEnvironmentsStore() {
 				currentEnvironment.set(null);
 			}
 		} catch (error) {
-			console.error('Failed to fetch environments:', error);
+			console.error('获取环境列表失败：', error);
 			set([]);
 			loaded.set(true); // Mark as loaded even on error - we've completed the fetch
 			localStorage.removeItem(STORAGE_KEY);

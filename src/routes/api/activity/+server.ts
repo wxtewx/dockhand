@@ -14,7 +14,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('activity', 'view', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -64,8 +64,8 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 		const result = await getContainerEvents(filters);
 		return json(result);
 	} catch (error) {
-		console.error('Error fetching container events:', error);
-		return json({ error: 'Failed to fetch container events' }, { status: 500 });
+		console.error('获取容器事件失败:', error);
+		return json({ error: '获取容器事件失败' }, { status: 500 });
 	}
 };
 
@@ -75,14 +75,14 @@ export const DELETE: RequestHandler = async ({ cookies }) => {
 	// Check permission - admins or users with activity delete permission
 	// In free edition, all authenticated users can delete
 	if (auth.authEnabled && !await auth.can('activity', 'delete')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		await clearContainerEvents();
 		return json({ success: true });
 	} catch (error) {
-		console.error('Error clearing container events:', error);
-		return json({ error: 'Failed to clear container events' }, { status: 500 });
+		console.error('清空容器事件失败:', error);
+		return json({ error: '清空容器事件失败' }, { status: 500 });
 	}
 };

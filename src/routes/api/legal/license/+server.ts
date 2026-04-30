@@ -17,7 +17,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		return json({ content });
 	} catch (error) {
-		console.error('Failed to read LICENSE.txt:', error);
-		return json({ error: 'License file not found' }, { status: 404 });
+		console.error('读取 LICENSE.txt 失败:', error);
+		return json({ error: '未找到许可证文件' }, { status: 404 });
 	}
 };

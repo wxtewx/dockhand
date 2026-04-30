@@ -69,7 +69,7 @@ export const GET: RequestHandler = async () => {
 				return {
 					id: setting.id,
 					type: 'container_update' as const,
-					name: `Update container: ${setting.containerName}`,
+					name: `更新容器：${setting.containerName}`,
 					entityName: setting.containerName,
 					environmentId: setting.environmentId ?? null,
 					environmentName: env?.name ?? null,
@@ -103,7 +103,7 @@ export const GET: RequestHandler = async () => {
 				return {
 					id: stack.id,
 					type: 'git_stack_sync' as const,
-					name: `Git sync: ${stack.stackName}`,
+					name: `Git 同步：${stack.stackName}`,
 					entityName: stack.stackName,
 					environmentId: stack.environmentId ?? null,
 					environmentName: env?.name ?? null,
@@ -137,16 +137,16 @@ export const GET: RequestHandler = async () => {
 				// Build description based on autoUpdate and scanning status
 				let description: string;
 				if (settings.autoUpdate) {
-					description = envHasScanning ? 'Check, scan & auto-update containers' : 'Check & auto-update containers';
+					description = envHasScanning ? '检查、扫描并自动更新容器' : '检查并自动更新容器';
 				} else {
-					description = 'Check containers for updates (notify only)';
+					description = '检查容器更新 (仅通知)';
 				}
 
 				return {
 					id: envId,
 					type: 'env_update_check' as const,
-					name: `Update environment: ${env?.name || 'Unknown'}`,
-					entityName: env?.name || 'Unknown',
+					name: `更新环境：${env?.name || '未知'}`,
+					entityName: env?.name || '未知',
 					description,
 					environmentId: envId,
 					environmentName: env?.name ?? null,
@@ -180,14 +180,14 @@ export const GET: RequestHandler = async () => {
 
 				// Build description based on prune mode
 				const description = settings.pruneMode === 'all'
-					? 'Prune all unused images'
-					: 'Prune dangling images only';
+					? '清理所有未使用的镜像'
+					: '仅清理悬空镜像';
 
 				return {
 					id: envId,
 					type: 'image_prune' as const,
-					name: `Prune images: ${env?.name || 'Unknown'}`,
-					entityName: env?.name || 'Unknown',
+					name: `清理镜像：${env?.name || '未知'}`,
+					entityName: env?.name || '未知',
 					description,
 					environmentId: envId,
 					environmentName: env?.name ?? null,
@@ -241,7 +241,7 @@ export const GET: RequestHandler = async () => {
 
 		return json({ schedules });
 	} catch (error: any) {
-		console.error('Failed to get schedules:', error);
+		console.error('获取定时任务失败:', error);
 		return json({ error: error.message }, { status: 500 });
 	}
 };

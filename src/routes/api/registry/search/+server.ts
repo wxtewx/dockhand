@@ -29,7 +29,7 @@ async function searchDockerHub(term: string, limit: number): Promise<SearchResul
 	});
 
 	if (!response.ok) {
-		throw new Error(`Docker Hub search failed: ${response.status}`);
+		throw new Error(`Docker Hub 搜索失败：${response.status}`);
 	}
 
 	const data = await response.json();
@@ -137,9 +137,9 @@ async function searchCatalog(registry: any, term: string, limit: number): Promis
 
 		if (!response.ok) {
 			if (response.status === 401) {
-				throw new Error('Authentication failed');
+				throw new Error('认证失败');
 			}
-			throw new Error(`Registry returned error: ${response.status}`);
+			throw new Error(`镜像仓库返回错误：${response.status}`);
 		}
 
 		const data = await response.json();
@@ -182,7 +182,7 @@ export const GET: RequestHandler = async ({ url }) => {
 	const registryId = url.searchParams.get('registry');
 
 	if (!term) {
-		return json({ error: 'Search term is required' }, { status: 400 });
+		return json({ error: '搜索关键词不能为空' }, { status: 400 });
 	}
 
 	try {
@@ -194,7 +194,7 @@ export const GET: RequestHandler = async ({ url }) => {
 		} else {
 			const registry = await getRegistry(parseInt(registryId));
 			if (!registry) {
-				return json({ error: 'Registry not found' }, { status: 404 });
+				return json({ error: '未找到镜像仓库' }, { status: 404 });
 			}
 
 			if (isDockerHub(registry.url)) {
@@ -206,15 +206,15 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		return json(results);
 	} catch (error: any) {
-		console.error('Failed to search images:', error);
+		console.error('搜索镜像失败:', error);
 
 		if (error.code === 'ECONNREFUSED') {
-			return json({ error: 'Could not connect to registry' }, { status: 503 });
+			return json({ error: '无法连接到镜像仓库' }, { status: 503 });
 		}
 		if (error.code === 'ENOTFOUND') {
-			return json({ error: 'Registry host not found' }, { status: 503 });
+			return json({ error: '未找到镜像仓库主机' }, { status: 503 });
 		}
 
-		return json({ error: error.message || 'Failed to search images' }, { status: 500 });
+		return json({ error: error.message || '搜索镜像失败' }, { status: 500 });
 	}
 };

@@ -18,18 +18,18 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 		const id = parseInt(params.id);
 		const gitStack = await getGitStack(id);
 		if (!gitStack) {
-			return json({ error: 'Git stack not found' }, { status: 404 });
+			return json({ error: 'Git 堆栈不存在' }, { status: 404 });
 		}
 
 		// Permission check with environment context
 		if (auth.authEnabled && !await auth.can('stacks', 'view', gitStack.environmentId || undefined)) {
-			return json({ error: 'Permission denied' }, { status: 403 });
+			return json({ error: '权限不足' }, { status: 403 });
 		}
 
 		return json(gitStack);
 	} catch (error) {
-		console.error('Failed to get git stack:', error);
-		return json({ error: 'Failed to get git stack' }, { status: 500 });
+		console.error('获取 Git 堆栈失败:', error);
+		return json({ error: '获取 Git 堆栈失败' }, { status: 500 });
 	}
 };
 
@@ -41,12 +41,12 @@ export const PUT: RequestHandler = async (event) => {
 		const id = parseInt(params.id);
 		const existing = await getGitStack(id);
 		if (!existing) {
-			return json({ error: 'Git stack not found' }, { status: 404 });
+			return json({ error: 'Git 堆栈不存在' }, { status: 404 });
 		}
 
 		// Permission check with environment context
 		if (auth.authEnabled && !await auth.can('stacks', 'edit', existing.environmentId || undefined)) {
-			return json({ error: 'Permission denied' }, { status: 403 });
+			return json({ error: '权限不足' }, { status: 403 });
 		}
 
 		const data = await request.json();
@@ -55,10 +55,10 @@ export const PUT: RequestHandler = async (event) => {
 		if (data.stackName !== undefined) {
 			const trimmedStackName = data.stackName.trim();
 			if (!trimmedStackName) {
-				return json({ error: 'Stack name is required' }, { status: 400 });
+				return json({ error: '堆栈名称为必填项' }, { status: 400 });
 			}
 			if (!STACK_NAME_REGEX.test(trimmedStackName)) {
-				return json({ error: 'Stack name must start with a letter or number, and contain only letters, numbers, hyphens, and underscores' }, { status: 400 });
+				return json({ error: '堆栈名称必须以字母或数字开头，仅允许包含字母、数字、连字符和下划线' }, { status: 400 });
 			}
 			data.stackName = trimmedStackName;
 		}
@@ -146,10 +146,10 @@ export const PUT: RequestHandler = async (event) => {
 						deployResult
 					});
 				} catch (error) {
-					console.error('Failed to deploy git stack:', error);
+					console.error('部署 Git 堆栈失败:', error);
 					send('result', {
 						...updated,
-						deployResult: { success: false, error: 'Failed to deploy git stack' }
+						deployResult: { success: false, error: '部署 Git 堆栈失败' }
 					});
 				}
 			}, request);
@@ -157,14 +157,14 @@ export const PUT: RequestHandler = async (event) => {
 
 		return json(updated);
 	} catch (error: any) {
-		console.error('Failed to update git stack:', error);
+		console.error('更新 Git 堆栈失败:', error);
 		if (error.message?.includes('UNIQUE constraint failed')) {
 			if (error.message?.includes('stack_environment_variables')) {
-				return json({ error: 'Duplicate environment variable keys detected' }, { status: 400 });
+				return json({ error: '检测到重复的环境变量键' }, { status: 400 });
 			}
-			return json({ error: 'A git stack with this name already exists for this environment' }, { status: 400 });
+			return json({ error: '该环境下已存在同名 Git 堆栈' }, { status: 400 });
 		}
-		return json({ error: 'Failed to update git stack' }, { status: 500 });
+		return json({ error: '更新 Git 堆栈失败' }, { status: 500 });
 	}
 };
 
@@ -176,12 +176,12 @@ export const DELETE: RequestHandler = async (event) => {
 		const id = parseInt(params.id);
 		const existing = await getGitStack(id);
 		if (!existing) {
-			return json({ error: 'Git stack not found' }, { status: 404 });
+			return json({ error: 'Git 堆栈不存在' }, { status: 404 });
 		}
 
 		// Permission check with environment context
 		if (auth.authEnabled && !await auth.can('stacks', 'remove', existing.environmentId || undefined)) {
-			return json({ error: 'Permission denied' }, { status: 403 });
+			return json({ error: '权限不足' }, { status: 403 });
 		}
 
 		// Unregister schedule from croner
@@ -204,7 +204,7 @@ export const DELETE: RequestHandler = async (event) => {
 
 		return json({ success: true });
 	} catch (error) {
-		console.error('Failed to delete git stack:', error);
-		return json({ error: 'Failed to delete git stack' }, { status: 500 });
+		console.error('删除 Git 堆栈失败:', error);
+		return json({ error: '删除 Git 堆栈失败' }, { status: 500 });
 	}
 };

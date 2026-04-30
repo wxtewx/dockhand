@@ -67,14 +67,14 @@
 	<!-- No metrics available -->
 	<div class="pt-2 border-t border-border/50">
 		<div class="text-xs text-muted-foreground text-center py-1">
-			No metrics available
+			暂无可用指标
 		</div>
 	</div>
 {:else}
 	<div class="pt-2 border-t border-border/50">
 		<div class="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
 			<Cpu class="w-3 h-3" />
-			<span class="font-medium">CPU & Memory history</span>
+			<span class="font-medium">CPU & 内存历史</span>
 		</div>
 
 		<!-- CPU chart -->
@@ -111,7 +111,7 @@
 		<!-- Memory chart -->
 		<div class="mb-3">
 			<div class="flex items-center justify-between text-xs mb-1">
-				<span class="text-muted-foreground">Memory</span>
+				<span class="text-muted-foreground">内存</span>
 				<span class="font-medium">{memoryPercent.toFixed(1)}% ({formatBytes(memoryUsed)})</span>
 			</div>
 			{#if hasHistory}

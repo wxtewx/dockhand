@@ -15,10 +15,10 @@ export const GET: RequestHandler = async ({ cookies }) => {
 	// When auth is enabled, require authentication and settings:view permission
 	if (auth.authEnabled) {
 		if (!auth.isAuthenticated) {
-			return json({ error: 'Authentication required' }, { status: 401 });
+			return json({ error: '需要身份验证' }, { status: 401 });
 		}
 		if (!await auth.can('settings', 'view')) {
-			return json({ error: 'Permission denied' }, { status: 403 });
+			return json({ error: '权限不足' }, { status: 403 });
 		}
 	}
 
@@ -31,8 +31,8 @@ export const GET: RequestHandler = async ({ cookies }) => {
 		}));
 		return json(sanitized);
 	} catch (error) {
-		console.error('Failed to get OIDC configs:', error);
-		return json({ error: 'Failed to get OIDC configurations' }, { status: 500 });
+		console.error('获取 OIDC 配置失败:', error);
+		return json({ error: '获取 OIDC 配置失败' }, { status: 500 });
 	}
 };
 
@@ -44,10 +44,10 @@ export const POST: RequestHandler = async (event) => {
 	// When auth is enabled, require authentication and settings:edit permission
 	if (auth.authEnabled) {
 		if (!auth.isAuthenticated) {
-			return json({ error: 'Authentication required' }, { status: 401 });
+			return json({ error: '需要身份验证' }, { status: 401 });
 		}
 		if (!await auth.can('settings', 'edit')) {
-			return json({ error: 'Permission denied' }, { status: 403 });
+			return json({ error: '权限不足' }, { status: 403 });
 		}
 	}
 
@@ -58,7 +58,7 @@ export const POST: RequestHandler = async (event) => {
 		const required = ['name', 'issuerUrl', 'clientId', 'clientSecret', 'redirectUri'];
 		for (const field of required) {
 			if (!data[field]) {
-				return json({ error: `Missing required field: ${field}` }, { status: 400 });
+				return json({ error: `缺少必填字段：${field}` }, { status: 400 });
 			}
 		}
 
@@ -87,7 +87,7 @@ export const POST: RequestHandler = async (event) => {
 			clientSecret: '********'
 		}, { status: 201 });
 	} catch (error: any) {
-		console.error('Failed to create OIDC config:', error);
-		return json({ error: error.message || 'Failed to create OIDC configuration' }, { status: 500 });
+		console.error('创建 OIDC 配置失败:', error);
+		return json({ error: error.message || '创建 OIDC 配置失败' }, { status: 500 });
 	}
 };

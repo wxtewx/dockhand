@@ -10,8 +10,8 @@
 
 	// Auth type options with icons
 	const authTypeOptions = [
-		{ value: 'password', label: 'Password/Token', icon: Lock },
-		{ value: 'ssh', label: 'SSH Key', icon: KeyRound }
+		{ value: 'password', label: '密码/令牌', icon: Lock },
+		{ value: 'ssh', label: 'SSH 密钥', icon: KeyRound }
 	];
 
 	interface GitCredential {
@@ -85,17 +85,17 @@
 		let hasErrors = false;
 
 		if (!formName.trim()) {
-			errors.name = 'Name is required';
+			errors.name = '名称为必填项';
 			hasErrors = true;
 		}
 
 		if (formAuthType === 'password' && !formPassword.trim() && !credential?.hasPassword) {
-			errors.password = 'Password is required';
+			errors.password = '密码为必填项';
 			hasErrors = true;
 		}
 
 		if (formAuthType === 'ssh' && !formSshKey.trim() && !credential?.hasSshKey) {
-			errors.sshKey = 'SSH private key is required';
+			errors.sshKey = 'SSH 私钥为必填项';
 			hasErrors = true;
 		}
 
@@ -134,17 +134,17 @@
 			const data = await response.json();
 
 			if (!response.ok) {
-				formError = data.error || 'Failed to save credential';
+				formError = data.error || '保存凭据失败';
 				toast.error(formError);
 				return;
 			}
 
 			onSaved();
 			onClose();
-			toast.success(credential ? 'Credential updated' : 'Credential created');
+			toast.success(credential ? '凭据已更新' : '凭据已创建');
 		} catch (error) {
-			formError = 'Failed to save credential';
-			toast.error('Failed to save credential');
+			formError = '保存凭据失败';
+			toast.error('保存凭据失败');
 		} finally {
 			formSaving = false;
 		}
@@ -157,32 +157,32 @@
 		<Dialog.Header>
 			<Dialog.Title class="flex items-center gap-2">
 				<Key class="w-5 h-5" />
-				{isEditing ? 'Edit' : 'Add'} Git credential
+				{isEditing ? '编辑' : '添加'} Git 凭据
 			</Dialog.Title>
 			<Dialog.Description>
-				{isEditing ? 'Update credential settings' : 'Create a new credential for accessing Git repositories'}
+				{isEditing ? '更新凭据设置' : '创建用于访问 Git 仓库的新凭据'}
 			</Dialog.Description>
 		</Dialog.Header>
 
 		<form onsubmit={(e) => { e.preventDefault(); saveCredential(); }} class="space-y-4">
 			<div class="space-y-2">
-				<Label for="cred-name">Name</Label>
+				<Label for="cred-name">名称</Label>
 				<Input
 					id="cred-name"
 					bind:value={formName}
-					placeholder="e.g., GitHub Personal"
+					placeholder="例如：个人 GitHub 账号"
 					class={errors.name ? 'border-destructive focus-visible:ring-destructive' : ''}
 					oninput={() => errors.name = undefined}
 				/>
 				{#if errors.name}
 					<p class="text-xs text-destructive">{errors.name}</p>
 				{:else if !isEditing}
-					<p class="text-xs text-muted-foreground">A friendly name to identify this credential</p>
+					<p class="text-xs text-muted-foreground">用于标识该凭据的友好名称</p>
 				{/if}
 			</div>
 
 			<div class="space-y-2">
-				<Label>Authentication type</Label>
+				<Label>认证类型</Label>
 				<ToggleGroup
 					value={formAuthType}
 					options={authTypeOptions}
@@ -194,28 +194,28 @@
 			<div class="min-h-[220px] space-y-4">
 				{#if formAuthType === 'password'}
 					<div class="space-y-2">
-						<Label for="cred-username">Username</Label>
-						<Input id="cred-username" bind:value={formUsername} placeholder="Username or email" />
+						<Label for="cred-username">用户名</Label>
+						<Input id="cred-username" bind:value={formUsername} placeholder="用户名或邮箱" />
 					</div>
 					<div class="space-y-2">
-						<Label for="cred-password">Password or token</Label>
+						<Label for="cred-password">密码或令牌</Label>
 						<Input
 							id="cred-password"
 							type="password"
 							bind:value={formPassword}
-							placeholder={isEditing ? 'Leave empty to keep current' : 'Password or personal access token'}
+							placeholder={isEditing ? '留空以保留当前密码' : '密码或个人访问令牌'}
 							class={errors.password ? 'border-destructive focus-visible:ring-destructive' : ''}
 							oninput={() => errors.password = undefined}
 						/>
 						{#if errors.password}
 							<p class="text-xs text-destructive">{errors.password}</p>
 						{:else if isEditing && credential?.hasPassword}
-							<p class="text-xs text-muted-foreground">Current password is set. Leave empty to keep it.</p>
+							<p class="text-xs text-muted-foreground">当前密码已设置，留空即可保留。</p>
 						{/if}
 					</div>
 				{:else if formAuthType === 'ssh'}
 					<div class="space-y-2">
-						<Label for="cred-ssh-key">SSH private key</Label>
+						<Label for="cred-ssh-key">SSH 私钥</Label>
 						<textarea
 							id="cred-ssh-key"
 							bind:value={formSshKey}
@@ -226,12 +226,12 @@
 						{#if errors.sshKey}
 							<p class="text-xs text-destructive">{errors.sshKey}</p>
 						{:else if isEditing && credential?.hasSshKey}
-							<p class="text-xs text-muted-foreground">Current SSH key is set. Leave empty to keep it.</p>
+							<p class="text-xs text-muted-foreground">当前 SSH 密钥已设置，留空即可保留。</p>
 						{/if}
 					</div>
 					<div class="space-y-2">
-						<Label for="cred-ssh-passphrase">SSH passphrase (optional)</Label>
-						<Input id="cred-ssh-passphrase" type="password" bind:value={formSshPassphrase} placeholder="Passphrase for encrypted key" />
+						<Label for="cred-ssh-passphrase">SSH 密码 (可选)</Label>
+						<Input id="cred-ssh-passphrase" type="password" bind:value={formSshPassphrase} placeholder="加密密钥的密码" />
 					</div>
 				{/if}
 			</div>
@@ -241,9 +241,9 @@
 			{/if}
 
 			<Dialog.Footer>
-				<Button variant="outline" type="button" onclick={onClose}>Cancel</Button>
+				<Button variant="outline" type="button" onclick={onClose}>取消</Button>
 				<Button type="submit" disabled={formSaving}>
-					{formSaving ? 'Saving...' : (isEditing ? 'Save changes' : 'Add credential')}
+					{formSaving ? '保存中...' : (isEditing ? '保存更改' : '添加凭据')}
 				</Button>
 			</Dialog.Footer>
 		</form>

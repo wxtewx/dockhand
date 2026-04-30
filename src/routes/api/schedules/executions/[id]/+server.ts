@@ -14,17 +14,17 @@ export const GET: RequestHandler = async ({ params }) => {
 	try {
 		const id = parseInt(params.id, 10);
 		if (isNaN(id)) {
-			return json({ error: 'Invalid execution ID' }, { status: 400 });
+			return json({ error: '无效的执行 ID' }, { status: 400 });
 		}
 
 		const execution = await getScheduleExecution(id);
 		if (!execution) {
-			return json({ error: 'Execution not found' }, { status: 404 });
+			return json({ error: '未找到执行记录' }, { status: 404 });
 		}
 
 		return json(execution);
 	} catch (error: any) {
-		console.error('Failed to get schedule execution:', error);
+		console.error('获取定时任务执行记录失败:', error);
 		return json({ error: error.message }, { status: 500 });
 	}
 };
@@ -38,14 +38,14 @@ export const DELETE: RequestHandler = async ({ params, cookies }) => {
 	try {
 		const id = parseInt(params.id, 10);
 		if (isNaN(id)) {
-			return json({ error: 'Invalid execution ID' }, { status: 400 });
+			return json({ error: '无效的执行 ID' }, { status: 400 });
 		}
 
 		await deleteScheduleExecution(id);
 
 		return json({ success: true });
 	} catch (error: any) {
-		console.error('Failed to delete schedule execution:', error);
+		console.error('删除定时任务执行记录失败:', error);
 		return json({ error: error.message }, { status: 500 });
 	}
 };

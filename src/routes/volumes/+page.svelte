@@ -1,5 +1,5 @@
 <svelte:head>
-	<title>Volumes - Dockhand</title>
+	<title>数据卷 - Dockhand</title>
 </svelte:head>
 
 <script lang="ts">
@@ -19,6 +19,7 @@
 	import ContainerInspectModal from '../containers/ContainerInspectModal.svelte';
 	import { appSettings } from '$lib/stores/settings';
 	import type { VolumeInfo } from '$lib/types';
+	import { getLabelText } from '$lib/types';
 	import { currentEnvironment, environments, appendEnvParam, clearStaleEnvironment } from '$lib/stores/environment';
 	import MultiSelectFilter from '$lib/components/MultiSelectFilter.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -67,8 +68,8 @@
 
 	// Usage filter options (static)
 	const usageOptions = [
-		{ value: 'in-use', label: 'In use', icon: CircleDot, color: 'text-emerald-500' },
-		{ value: 'unused', label: 'Unused', icon: Circle, color: 'text-muted-foreground' }
+		{ value: 'in-use', label: '使用中', icon: CircleDot, color: 'text-emerald-500' },
+		{ value: 'unused', label: '未使用', icon: Circle, color: 'text-muted-foreground' }
 	];
 
 	// Confirmation popover state
@@ -109,7 +110,7 @@
 	}
 
 	function bulkRemove() {
-		batchOpTitle = `Removing ${selectedInFilter.length} volume${selectedInFilter.length !== 1 ? 's' : ''}`;
+		batchOpTitle = `正在删除 ${selectedInFilter.length} 个数据卷`;
 		batchOpOperation = 'remove';
 		batchOpItems = selectedInFilter.map(v => ({ id: v.name, name: v.name }));
 		showBatchOpModal = true;
@@ -251,8 +252,8 @@
 			}
 			volumes = await response.json();
 		} catch (error) {
-			console.error('Failed to fetch volumes:', error);
-			toast.error('Failed to load volumes');
+			console.error('获取数据卷失败：', error);
+			toast.error('加载数据卷失败');
 		} finally {
 			loading = false;
 		}
@@ -264,20 +265,20 @@
 			const response = await fetch(appendEnvParam(`/api/volumes/${encodeURIComponent(name)}?force=true`, envId), { method: 'DELETE' });
 			if (!response.ok) {
 				const data = await response.json();
-				deleteError = { name, message: data.details || data.error || 'Failed to remove volume' };
-				toast.error(`Failed to remove ${name}`);
+				deleteError = { name, message: data.details || data.error || '删除数据卷失败' };
+				toast.error(`删除 ${name} 失败`);
 				// Auto-hide error after 5 seconds
 				pendingTimeouts.push(setTimeout(() => {
 					if (deleteError?.name === name) deleteError = null;
 				}, 5000));
 				return;
 			}
-			toast.success(`Removed ${name}`);
+			toast.success(`已删除 ${name}`);
 			await fetchVolumes();
 		} catch (error) {
-			console.error('Failed to remove volume:', error);
-			deleteError = { name, message: 'Failed to remove volume' };
-			toast.error(`Failed to remove ${name}`);
+			console.error('删除数据卷失败：', error);
+			deleteError = { name, message: '删除数据卷失败' };
+			toast.error(`删除 ${name} 失败`);
 			pendingTimeouts.push(setTimeout(() => {
 				if (deleteError?.name === name) deleteError = null;
 			}, 5000));
@@ -326,10 +327,10 @@
 			link.click();
 			document.body.removeChild(link);
 
-			toast.success(`Exporting ${volumeName}...`);
+			toast.success(`正在导出 ${volumeName}...`);
 		} catch (err) {
-			console.error('Failed to export volume:', err);
-			toast.error(`Failed to export ${volumeName}`);
+			console.error('导出数据卷失败：', err);
+			toast.error(`导出 ${volumeName} 失败`);
 		} finally {
 			pendingTimeouts.push(setTimeout(() => {
 				if (exportingVolume === volumeName) exportingVolume = null;
@@ -346,15 +347,15 @@
 			});
 			if (response.ok) {
 				pruneStatus = 'success';
-				toast.success('Unused volumes pruned');
+				toast.success('已清理未使用的数据卷');
 				await fetchVolumes();
 			} else {
 				pruneStatus = 'error';
-				toast.error('Failed to prune volumes');
+				toast.error('清理数据卷失败');
 			}
 		} catch (error) {
 			pruneStatus = 'error';
-			toast.error('Failed to prune volumes');
+			toast.error('清理数据卷失败');
 		}
 		pendingTimeouts.push(setTimeout(() => {
 			pruneStatus = 'idle';
@@ -413,13 +414,13 @@
 
 <div class="flex-1 min-h-0 flex flex-col gap-3 overflow-hidden">
 	<div class="shrink-0 flex flex-wrap justify-between items-center gap-3 min-h-8">
-		<PageHeader icon={HardDrive} title="Volumes" count={volumes.length} />
+		<PageHeader icon={HardDrive} title="数据卷" count={volumes.length} />
 		<div class="flex flex-wrap items-center gap-2">
 			<div class="relative">
 				<Search class="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
 				<Input
 					type="text"
-					placeholder="Search volumes..."
+					placeholder="搜索数据卷..."
 					bind:value={searchInput}
 					onkeydown={(e) => e.key === 'Escape' && (searchInput = '')}
 					class="pl-8 h-8 w-48 text-sm"
@@ -428,25 +429,25 @@
 			<MultiSelectFilter
 				bind:value={driverFilter}
 				options={driverOptions}
-				placeholder="Driver"
-				pluralLabel="drivers"
+				placeholder="驱动"
+				pluralLabel="驱动"
 				width="w-28"
 				defaultIcon={Database}
 			/>
 			<MultiSelectFilter
 				bind:value={usageFilter}
 				options={usageOptions}
-				placeholder="Usage"
-				pluralLabel="usages"
+				placeholder="使用状态"
+				pluralLabel="使用状态"
 				width="w-28"
 				defaultIcon={CircleDot}
 			/>
 			{#if $canAccess('volumes', 'remove')}
 			<ConfirmPopover
 				open={confirmPrune}
-				action="Prune"
-				itemType="unused volumes"
-				title="Prune volumes"
+				action="清理"
+				itemType="未使用的数据卷"
+				title="清理数据卷"
 				position="left"
 				onConfirm={pruneVolumes}
 				onOpenChange={(open) => confirmPrune = open}
@@ -463,16 +464,16 @@
 						{:else}
 							<Icon iconNode={broom} class="w-3.5 h-3.5" />
 						{/if}
-						Prune
+						清理
 					</span>
 				{/snippet}
 			</ConfirmPopover>
 			{/if}
-			<Button size="sm" variant="outline" onclick={fetchVolumes}>Refresh</Button>
+			<Button size="sm" variant="outline" onclick={fetchVolumes}>刷新</Button>
 			{#if $canAccess('volumes', 'create')}
 			<Button size="sm" variant="secondary" onclick={() => showCreateModal = true}>
 				<Plus class="w-3.5 h-3.5" />
-				Create
+				创建
 			</Button>
 			{/if}
 		</div>
@@ -482,20 +483,20 @@
 	<div class="h-4 shrink-0">
 		{#if selectedVolumes.size > 0}
 			<div class="flex items-center gap-1 text-xs text-muted-foreground h-full">
-			<span>{selectedInFilter.length} selected</span>
+			<span>已选择 {selectedInFilter.length} 项</span>
 			<button
 				type="button"
 				class="inline-flex items-center gap-1 px-1.5 py-0 rounded border border-border hover:border-foreground/30 hover:shadow transition-all"
 				onclick={selectNone}
 			>
-				Clear
+				清空选择
 			</button>
 			{#if $canAccess('volumes', 'remove')}
 			<ConfirmPopover
 				open={confirmBulkRemove}
-				action="Delete"
-				itemType="{selectedInFilter.length} volume{selectedInFilter.length !== 1 ? 's' : ''}"
-				title="Delete {selectedInFilter.length}"
+				action="删除"
+				itemType="{selectedInFilter.length} 个数据卷"
+				title="删除 {selectedInFilter.length} 项"
 				unstyled
 				onConfirm={bulkRemove}
 				onOpenChange={(open) => confirmBulkRemove = open}
@@ -503,7 +504,7 @@
 				{#snippet children({ open })}
 					<span class="inline-flex items-center gap-1 px-1.5 py-0 rounded border border-border hover:text-destructive hover:border-destructive/40 hover:shadow transition-all cursor-pointer">
 						<Trash2 class="w-3 h-3" />
-						Delete
+						删除
 					</span>
 				{/snippet}
 			</ConfirmPopover>
@@ -517,8 +518,8 @@
 	{:else if !loading && volumes.length === 0}
 		<EmptyState
 			icon={HardDrive}
-			title="No volumes found"
-			description="Create a volume to persist container data"
+			title="未找到数据卷"
+			description="创建数据卷以持久化容器数据"
 		/>
 	{:else}
 		<DataGrid
@@ -538,9 +539,9 @@
 				{#if column.id === 'name'}
 					<code class="text-xs truncate block" title={volume.name}>{volume.name}</code>
 				{:else if column.id === 'driver'}
-					<Badge variant="outline" class="text-xs py-0 px-1.5 shadow-sm rounded-sm">{volume.driver}</Badge>
+					<Badge variant="outline" class="text-xs py-0 px-1.5 shadow-sm rounded-sm">{getLabelText(volume.driver)}</Badge>
 				{:else if column.id === 'scope'}
-					<span class="text-xs">{volume.scope}</span>
+					<span class="text-xs">{getLabelText(volume.scope)}</span>
 				{:else if column.id === 'stack'}
 					{#if stack}
 						<Badge variant="secondary" class="text-xs py-0 px-1.5 shadow-sm rounded-sm">{stack}</Badge>
@@ -575,7 +576,7 @@
 						<button
 							type="button"
 							onclick={() => inspectVolume(volume.name)}
-							title="View details"
+							title="查看详情"
 							class="p-1 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
 						>
 							<Eye class="w-3 h-3 text-muted-foreground hover:text-foreground" />
@@ -583,7 +584,7 @@
 						<button
 							type="button"
 							onclick={() => browseVolume(volume.name)}
-							title="Browse files"
+							title="浏览文件"
 							class="p-1 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
 						>
 							<FolderOpen class="w-3 h-3 text-muted-foreground hover:text-foreground" />
@@ -591,7 +592,7 @@
 						<button
 							type="button"
 							onclick={() => exportVolume(volume.name)}
-							title="Export volume as {$appSettings.downloadFormat || 'tar'}"
+							title="导出数据卷为 {$appSettings.downloadFormat || 'tar'}"
 							class="p-1 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer {exportingVolume === volume.name ? 'animate-pulse' : ''}"
 							disabled={exportingVolume === volume.name}
 						>
@@ -602,7 +603,7 @@
 						<button
 							type="button"
 							onclick={() => cloneVolume(volume.name)}
-							title="Clone volume"
+							title="克隆数据卷"
 							class="p-1 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
 						>
 							<Stamp class="w-3 h-3 text-muted-foreground hover:text-foreground" />
@@ -612,10 +613,10 @@
 						<div class="relative">
 							<ConfirmPopover
 								open={confirmDeleteName === volume.name}
-								action="Delete"
-								itemType="volume"
+								action="删除"
+								itemType="数据卷"
 								itemName={volume.name}
-								title="Remove"
+								title="删除"
 								onConfirm={() => removeVolume(volume.name)}
 								onOpenChange={(open) => confirmDeleteName = open ? volume.name : null}
 							>

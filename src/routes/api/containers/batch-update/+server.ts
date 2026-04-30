@@ -28,7 +28,7 @@ export const POST: RequestHandler = async (event) => {
 
 	// Need create permission to recreate containers
 	if (auth.authEnabled && !await auth.can('containers', 'create', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -36,7 +36,7 @@ export const POST: RequestHandler = async (event) => {
 		const { containerIds } = body as { containerIds: string[] };
 
 		if (!containerIds || !Array.isArray(containerIds) || containerIds.length === 0) {
-			return json({ error: 'containerIds array is required' }, { status: 400 });
+			return json({ error: '必须提供 containerIds 数组' }, { status: 400 });
 		}
 
 		const results: BatchUpdateResult[] = [];
@@ -52,7 +52,7 @@ export const POST: RequestHandler = async (event) => {
 						containerId,
 						containerName: 'unknown',
 						success: false,
-						error: 'Container not found'
+						error: '容器未找到'
 					});
 					continue;
 				}
@@ -82,7 +82,7 @@ export const POST: RequestHandler = async (event) => {
 						containerId,
 						containerName,
 						success: false,
-						error: `Pull failed: ${pullError.message}`
+						error: `拉取失败: ${pullError.message}`
 					});
 					continue;
 				}
@@ -103,7 +103,7 @@ export const POST: RequestHandler = async (event) => {
 						containerId,
 						containerName,
 						success: false,
-						error: recreateResult.error || 'Container recreation failed'
+						error: recreateResult.error || '重建容器失败'
 					});
 					continue;
 				}
@@ -139,7 +139,7 @@ export const POST: RequestHandler = async (event) => {
 			}
 		});
 	} catch (error: any) {
-		console.error('Error in batch update:', error);
-		return json({ error: 'Failed to batch update containers', details: error.message }, { status: 500 });
+		console.error('批量更新错误:', error);
+		return json({ error: '批量更新容器失败', details: error.message }, { status: 500 });
 	}
 };

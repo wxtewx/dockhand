@@ -47,73 +47,73 @@
 	const NOTIFICATION_EVENT_GROUPS: EventGroup[] = [
 		{
 			id: 'container',
-			label: 'Container events',
+			label: '容器事件',
 			icon: Box,
 			events: [
-				{ id: 'container_started', label: 'Container started', description: 'When a container starts running' },
-				{ id: 'container_stopped', label: 'Container stopped', description: 'When a container is stopped' },
-				{ id: 'container_restarted', label: 'Container restarted', description: 'When a container restarts' },
-				{ id: 'container_exited', label: 'Container exited', description: 'When a container exits unexpectedly' },
-				{ id: 'container_unhealthy', label: 'Container unhealthy', description: 'When a container health check fails' },
-				{ id: 'container_healthy', label: 'Container healthy', description: 'When a container health check recovers' },
-				{ id: 'container_oom', label: 'Container OOM killed', description: 'When a container is killed due to out of memory' },
-				{ id: 'container_updated', label: 'Container updated', description: 'When a container image is updated' }
+				{ id: 'container_started', label: '容器已启动', description: '容器开始运行时触发' },
+				{ id: 'container_stopped', label: '容器已停止', description: '容器被停止时触发' },
+				{ id: 'container_restarted', label: '容器已重启', description: '容器重启时触发' },
+				{ id: 'container_exited', label: '容器异常退出', description: '容器意外退出时触发' },
+				{ id: 'container_unhealthy', label: '容器状态异常', description: '容器健康检查失败时触发' },
+				{ id: 'container_healthy', label: '容器状态恢复', description: '容器健康检查恢复正常时触发' },
+				{ id: 'container_oom', label: '容器内存溢出终止', description: '容器因内存不足被杀死时触发' },
+				{ id: 'container_updated', label: '容器已更新', description: '容器镜像被更新时触发' }
 			]
 		},
 		{
 			id: 'auto_update',
-			label: 'Auto-update events',
+			label: '自动更新事件',
 			icon: RefreshCw,
 			events: [
-				{ id: 'auto_update_success', label: 'Update succeeded', description: 'Container successfully updated to new image' },
-				{ id: 'auto_update_failed', label: 'Update failed', description: 'Container auto-update failed' },
-				{ id: 'auto_update_blocked', label: 'Update blocked', description: 'Update blocked due to vulnerability criteria' },
-				{ id: 'updates_detected', label: 'Updates detected', description: 'Container image updates are available' },
-				{ id: 'batch_update_success', label: 'Batch update completed', description: 'Scheduled container updates completed' }
+				{ id: 'auto_update_success', label: '更新成功', description: '容器已成功更新到新镜像' },
+				{ id: 'auto_update_failed', label: '更新失败', description: '容器自动更新失败' },
+				{ id: 'auto_update_blocked', label: '更新已阻止', description: '因漏洞检测规则阻止更新' },
+				{ id: 'updates_detected', label: '检测到更新', description: '检测到容器镜像有可用更新' },
+				{ id: 'batch_update_success', label: '批量更新完成', description: '计划的容器批量更新已完成' }
 			]
 		},
 		{
 			id: 'git_stack',
-			label: 'Git stack events',
+			label: 'Git 堆栈事件',
 			icon: GitBranch,
 			events: [
-				{ id: 'git_sync_success', label: 'Git sync succeeded', description: 'Git stack synced and deployed successfully' },
-				{ id: 'git_sync_failed', label: 'Git sync failed', description: 'Git stack sync or deploy failed' },
-				{ id: 'git_sync_skipped', label: 'Git sync skipped', description: 'Git stack sync skipped (no changes)' }
+				{ id: 'git_sync_success', label: 'Git 同步成功', description: 'Git 堆栈同步并部署成功' },
+				{ id: 'git_sync_failed', label: 'Git 同步失败', description: 'Git 堆栈同步或部署失败' },
+				{ id: 'git_sync_skipped', label: 'Git 同步已跳过', description: 'Git 堆栈同步已跳过 (无变更)' }
 			]
 		},
 		{
 			id: 'stack',
-			label: 'Stack events',
+			label: '堆栈事件',
 			icon: Layers,
 			events: [
-				{ id: 'stack_started', label: 'Stack started', description: 'When a compose stack starts' },
-				{ id: 'stack_stopped', label: 'Stack stopped', description: 'When a compose stack stops' },
-				{ id: 'stack_deployed', label: 'Stack deployed', description: 'Stack deployed (new or update)' },
-				{ id: 'stack_deploy_failed', label: 'Stack deploy failed', description: 'Stack deployment failed' }
+				{ id: 'stack_started', label: '堆栈已启动', description: 'Compose 堆栈启动时触发' },
+				{ id: 'stack_stopped', label: '堆栈已停止', description: 'Compose 堆栈停止时触发' },
+				{ id: 'stack_deployed', label: '堆栈已部署', description: '堆栈已部署 (新建或更新)' },
+				{ id: 'stack_deploy_failed', label: '堆栈部署失败', description: '堆栈部署操作失败' }
 			]
 		},
 		{
 			id: 'security',
-			label: 'Security events',
+			label: '安全事件',
 			icon: Shield,
 			events: [
-				{ id: 'vulnerability_critical', label: 'Critical vulns found', description: 'Critical vulnerabilities found in image scan' },
-				{ id: 'vulnerability_high', label: 'High vulns found', description: 'High severity vulnerabilities found' },
-				{ id: 'vulnerability_any', label: 'Any vulns found', description: 'Any vulnerabilities found (medium/low)' }
+				{ id: 'vulnerability_critical', label: '发现严重漏洞', description: '镜像扫描发现严重级别漏洞' },
+				{ id: 'vulnerability_high', label: '发现高危漏洞', description: '发现高风险级别漏洞' },
+				{ id: 'vulnerability_any', label: '发现任何漏洞', description: '发现任何漏洞 (中/低风险)' }
 			]
 		},
 		{
 			id: 'system',
-			label: 'System events',
+			label: '系统事件',
 			icon: HardDrive,
 			events: [
-				{ id: 'image_pulled', label: 'Image pulled', description: 'When a new image is pulled' },
-				{ id: 'image_prune_success', label: 'Image prune completed', description: 'Scheduled image prune completed successfully' },
-				{ id: 'image_prune_failed', label: 'Image prune failed', description: 'Scheduled image prune failed' },
-				{ id: 'environment_offline', label: 'Environment offline', description: 'Environment became unreachable' },
-				{ id: 'environment_online', label: 'Environment online', description: 'Environment came back online' },
-				{ id: 'disk_space_warning', label: 'Disk space warning', description: 'Docker disk usage exceeds threshold' }
+				{ id: 'image_pulled', label: '镜像已拉取', description: '拉取新镜像时触发' },
+				{ id: 'image_prune_success', label: '镜像清理完成', description: '计划的镜像清理任务成功完成' },
+				{ id: 'image_prune_failed', label: '镜像清理失败', description: '计划的镜像清理任务失败' },
+				{ id: 'environment_offline', label: '环境离线', description: '环境无法访问时触发' },
+				{ id: 'environment_online', label: '环境在线', description: '环境恢复连接时触发' },
+				{ id: 'disk_space_warning', label: '磁盘空间警告', description: 'Docker 磁盘使用率超过阈值' }
 			]
 		}
 	];
@@ -185,7 +185,7 @@
 					onclick={(e) => { e.stopPropagation(); toggleGroupAll(group); }}
 					{disabled}
 				>
-					{allSelected ? 'All' : someSelected ? 'Some' : 'None'}
+					{allSelected ? '全部' : someSelected ? '部分' : '无'}
 				</button>
 			</div>
 

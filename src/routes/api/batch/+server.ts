@@ -140,7 +140,7 @@ export const POST: RequestHandler = async ({ url, cookies, request }) => {
 	try {
 		body = await request.json();
 	} catch {
-		return json({ error: 'Invalid JSON body' }, { status: 400 });
+		return json({ error: '无效的JSON请求体' }, { status: 400 });
 	}
 
 	const { operation, entityType, items, options = {} } = body;
@@ -148,7 +148,7 @@ export const POST: RequestHandler = async ({ url, cookies, request }) => {
 	// Validate entity type
 	if (!ENTITY_OPERATIONS[entityType]) {
 		return json(
-			{ error: `Invalid entity type: ${entityType}. Supported: ${Object.keys(ENTITY_OPERATIONS).join(', ')}` },
+			{ error: `无效的实体类型：${entityType}。支持的类型：${Object.keys(ENTITY_OPERATIONS).join(', ')}` },
 			{ status: 400 }
 		);
 	}
@@ -156,25 +156,25 @@ export const POST: RequestHandler = async ({ url, cookies, request }) => {
 	// Validate operation for entity type
 	if (!ENTITY_OPERATIONS[entityType].includes(operation)) {
 		return json(
-			{ error: `Invalid operation '${operation}' for ${entityType}. Supported: ${ENTITY_OPERATIONS[entityType].join(', ')}` },
+			{ error: `无效的操作'${operation}'，适用于${entityType}。支持的操作：${ENTITY_OPERATIONS[entityType].join(', ')}` },
 			{ status: 400 }
 		);
 	}
 
 	// Validate items
 	if (!items || !Array.isArray(items) || items.length === 0) {
-		return json({ error: 'items array is required and must not be empty' }, { status: 400 });
+		return json({ error: 'items数组为必填项且不能为空' }, { status: 400 });
 	}
 
 	// Permission check
 	const permissionAction = PERMISSION_MAP[entityType][operation];
 	if (auth.authEnabled && !(await auth.can(entityType as any, permissionAction, envIdNum))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Environment access check (enterprise only)
 	if (envIdNum && auth.isEnterprise && !(await auth.canAccessEnvironment(envIdNum))) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '拒绝访问此环境' }, { status: 403 });
 	}
 
 	// Check if audit is needed (enterprise only)
@@ -230,7 +230,7 @@ export const POST: RequestHandler = async ({ url, cookies, request }) => {
 						id,
 						name,
 						status: 'error',
-						error: error.message || 'Unknown error',
+						error: error.message || '未知错误',
 						current: index + 1,
 						total: items.length
 					}
@@ -271,16 +271,16 @@ async function executeOperation(
 			await executeImageOperation(operation, id, envIdNum, options);
 			break;
 		case 'volumes':
-			await executeVolumeOperation(operation, id, envIdNum, options);
+			await executeVolumeOperation(operation, name, envIdNum, options);
 			break;
 		case 'networks':
 			await executeNetworkOperation(operation, id, envIdNum);
 			break;
 		case 'stacks':
-			await executeStackOperation(operation, id, envIdNum, options);
+			await executeStackOperation(operation, name, envIdNum, options);
 			break;
 		default:
-			throw new Error(`Unsupported entity type: ${entityType}`);
+			throw new Error(`不支持的实体类型：${entityType}`);
 	}
 }
 
@@ -334,7 +334,7 @@ async function executeContainerOperation(
 			}
 			break;
 		default:
-			throw new Error(`Unsupported container operation: ${operation}`);
+			throw new Error(`不支持的容器操作：${operation}`);
 	}
 }
 
@@ -349,7 +349,7 @@ async function executeImageOperation(
 			await removeImage(id, options.force ?? false, envIdNum);
 			break;
 		default:
-			throw new Error(`Unsupported image operation: ${operation}`);
+			throw new Error(`不支持的镜像操作：${operation}`);
 	}
 }
 
@@ -364,7 +364,7 @@ async function executeVolumeOperation(
 			await removeVolume(name, options.force ?? false, envIdNum);
 			break;
 		default:
-			throw new Error(`Unsupported volume operation: ${operation}`);
+			throw new Error(`不支持的数据卷操作：${operation}`);
 	}
 }
 
@@ -378,7 +378,7 @@ async function executeNetworkOperation(
 			await removeNetwork(id, envIdNum);
 			break;
 		default:
-			throw new Error(`Unsupported network operation: ${operation}`);
+			throw new Error(`不支持的网络操作：${operation}`);
 	}
 }
 
@@ -391,30 +391,30 @@ async function executeStackOperation(
 	switch (operation) {
 		case 'start': {
 			const result = await startStack(name, envIdNum);
-			if (!result.success) throw new Error(result.error || 'Failed to start stack');
+			if (!result.success) throw new Error(result.error || '启动堆栈失败');
 			break;
 		}
 		case 'stop': {
 			const result = await stopStack(name, envIdNum);
-			if (!result.success) throw new Error(result.error || 'Failed to stop stack');
+			if (!result.success) throw new Error(result.error || '停止堆栈失败');
 			break;
 		}
 		case 'restart': {
 			const result = await restartStack(name, envIdNum);
-			if (!result.success) throw new Error(result.error || 'Failed to restart stack');
+			if (!result.success) throw new Error(result.error || '重启堆栈失败');
 			break;
 		}
 		case 'down': {
 			const result = await downStack(name, envIdNum, options.removeVolumes ?? false);
-			if (!result.success) throw new Error(result.error || 'Failed to down stack');
+			if (!result.success) throw new Error(result.error || '关闭堆栈失败');
 			break;
 		}
 		case 'remove': {
 			const result = await removeStack(name, envIdNum, options.force ?? false);
-			if (!result.success) throw new Error(result.error || 'Failed to remove stack');
+			if (!result.success) throw new Error(result.error || '删除堆栈失败');
 			break;
 		}
 		default:
-			throw new Error(`Unsupported stack operation: ${operation}`);
+			throw new Error(`不支持的堆栈操作：${operation}`);
 	}
 }

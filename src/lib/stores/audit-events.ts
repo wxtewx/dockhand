@@ -47,7 +47,7 @@ function notifyListeners(event: AuditLogEntry) {
 		try {
 			callback(event);
 		} catch (e) {
-			console.error('Audit event listener error:', e);
+			console.error('审计事件监听器错误：', e);
 		}
 	});
 }
@@ -61,7 +61,7 @@ export function connectAuditSSE() {
 		eventSource = new EventSource('/api/audit/events');
 
 		eventSource.addEventListener('connected', (e) => {
-			console.log('Audit SSE connected');
+			console.log('审计 SSE 已连接');
 			auditSseConnected.set(true);
 			auditSseError.set(null);
 			reconnectAttempts = 0;
@@ -72,7 +72,7 @@ export function connectAuditSSE() {
 				const event: AuditLogEntry = JSON.parse(e.data);
 				notifyListeners(event);
 			} catch (err) {
-				console.error('Failed to parse audit event:', err);
+				console.error('解析审计事件失败：', err);
 			}
 		});
 
@@ -81,18 +81,18 @@ export function connectAuditSSE() {
 		});
 
 		eventSource.addEventListener('error', (e) => {
-			console.error('Audit SSE error:', e);
+			console.error('审计 SSE 错误：', e);
 			auditSseConnected.set(false);
 
 			// Attempt reconnection
 			if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
 				reconnectAttempts++;
-				auditSseError.set(`Connection lost. Reconnecting (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
+				auditSseError.set(`连接已断开，正在重新连接 (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
 				reconnectTimeout = setTimeout(() => {
 					connectAuditSSE();
 				}, RECONNECT_DELAY);
 			} else {
-				auditSseError.set('Connection failed. Refresh the page to retry.');
+				auditSseError.set('连接失败，请刷新页面重试。');
 			}
 		});
 
@@ -101,8 +101,8 @@ export function connectAuditSSE() {
 		};
 
 	} catch (error: any) {
-		console.error('Failed to create Audit EventSource:', error);
-		auditSseError.set(error.message || 'Failed to connect');
+		console.error('创建审计事件源失败：', error);
+		auditSseError.set(error.message || '连接失败');
 		auditSseConnected.set(false);
 	}
 }

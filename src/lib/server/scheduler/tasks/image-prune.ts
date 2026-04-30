@@ -33,14 +33,14 @@ export async function runImagePrune(
 	// Get environment info for logging
 	const env = await getEnvironment(envId);
 	if (!env) {
-		console.error(`[Image Prune] Environment ${envId} not found`);
+		console.error(`[镜像清理] 未找到环境 ${envId}`);
 		return;
 	}
 
 	// Get prune settings
 	const settings = await getImagePruneSettings(envId);
 	if (!settings) {
-		console.error(`[Image Prune] No settings found for environment ${envId}`);
+		console.error(`[镜像清理] 未找到环境 ${envId} 的配置`);
 		return;
 	}
 
@@ -49,7 +49,7 @@ export async function runImagePrune(
 		scheduleType: 'image_prune',
 		scheduleId: envId,
 		environmentId: envId,
-		entityName: `Image prune: ${env.name}`,
+		entityName: `镜像清理：${env.name}`,
 		triggeredBy,
 		status: 'running'
 	});
@@ -59,7 +59,7 @@ export async function runImagePrune(
 	});
 
 	const log = async (message: string) => {
-		console.log(`[Image Prune] [${env.name}] ${message}`);
+		console.log(`[镜像清理] [${env.name}] ${message}`);
 		await appendScheduleExecutionLog(execution.id, `[${new Date().toISOString()}] ${message}`);
 	};
 
@@ -67,7 +67,7 @@ export async function runImagePrune(
 		const pruneMode = settings.pruneMode || 'dangling';
 		const dangling = pruneMode === 'dangling';
 
-		await log(`Starting image prune (mode: ${pruneMode})`);
+		await log(`开始清理镜像 (模式：${pruneMode})`);
 
 		// Execute prune
 		const result = await pruneImages(dangling, envId);
@@ -95,7 +95,7 @@ export async function runImagePrune(
 			return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 		};
 
-		await log(`Prune completed: ${imagesRemoved} images removed, ${formatBytes(spaceReclaimed)} reclaimed`);
+		await log(`清理完成：已移除 ${imagesRemoved} 个镜像，回收空间 ${formatBytes(spaceReclaimed)}`);
 
 		// Update settings with last prune info
 		const updatedSettings: ImagePruneSettings = {
@@ -124,14 +124,14 @@ export async function runImagePrune(
 		// Send success notification only when something was actually cleaned up
 		if (imagesRemoved > 0) {
 			await sendEventNotification('image_prune_success', {
-				title: `Image prune completed — ${env.name}`,
-				message: `${imagesRemoved} unused images removed, ${formatBytes(spaceReclaimed)} disk space reclaimed`,
+				title: '镜像清理完成',
+				message: `已移除 ${imagesRemoved} 个未使用镜像，回收磁盘空间 ${formatBytes(spaceReclaimed)}`,
 				type: 'success'
 			}, envId);
 		}
 
 	} catch (error: any) {
-		await log(`Error: ${error.message}`);
+		await log(`错误：${error.message}`);
 
 		await updateScheduleExecution(execution.id, {
 			status: 'failed',
@@ -142,8 +142,8 @@ export async function runImagePrune(
 
 		// Send failure notification
 		await sendEventNotification('image_prune_failed', {
-			title: `Image prune failed — ${env.name}`,
-			message: `Failed to prune images: ${error.message}`,
+			title: '镜像清理失败',
+			message: `清理镜像失败：${error.message}`,
 			type: 'error'
 		}, envId);
 	}

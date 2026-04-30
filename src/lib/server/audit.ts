@@ -88,7 +88,7 @@ export async function audit(
 	} catch (error) {
 		// Don't let audit logging errors break the main operation
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		console.error('[Audit] Failed to log event:', errorMsg);
+		console.error('[审计] 记录事件失败：', errorMsg);
 	}
 }
 
@@ -107,7 +107,7 @@ export async function auditContainer(
 		entityId: containerId,
 		entityName: containerName,
 		environmentId,
-		description: `Container ${containerName} ${action}`,
+		description: `容器 ${containerName} ${action}`,
 		details
 	});
 }
@@ -127,7 +127,7 @@ export async function auditImage(
 		entityId: imageId,
 		entityName: imageName,
 		environmentId,
-		description: `Image ${imageName} ${action}`,
+		description: `镜像 ${imageName} ${action}`,
 		details
 	});
 }
@@ -146,7 +146,7 @@ export async function auditStack(
 		entityId: stackName,
 		entityName: stackName,
 		environmentId,
-		description: `Stack ${stackName} ${action}`,
+		description: `堆栈 ${stackName} ${action}`,
 		details
 	});
 }
@@ -166,7 +166,7 @@ export async function auditVolume(
 		entityId: volumeId,
 		entityName: volumeName,
 		environmentId,
-		description: `Volume ${volumeName} ${action}`,
+		description: `数据卷 ${volumeName} ${action}`,
 		details
 	});
 }
@@ -186,7 +186,7 @@ export async function auditNetwork(
 		entityId: networkId,
 		entityName: networkName,
 		environmentId,
-		description: `Network ${networkName} ${action}`,
+		description: `网络 ${networkName} ${action}`,
 		details
 	});
 }
@@ -204,7 +204,25 @@ export async function auditUser(
 	await audit(event, action, 'user', {
 		entityId: String(userId),
 		entityName: username,
-		description: `User ${username} ${action}`,
+		description: `用户 ${username} ${action}`,
+		details
+	});
+}
+
+/**
+ * Helper for role actions
+ */
+export async function auditRole(
+	event: RequestEvent,
+	action: AuditAction,
+	roleId: number,
+	roleName: string,
+	details?: any
+): Promise<void> {
+	await audit(event, action, 'role', {
+		entityId: String(roleId),
+		entityName: roleName,
+		description: `角色 ${roleName} ${action}`,
 		details
 	});
 }
@@ -239,7 +257,7 @@ export async function auditSettings(
 	await audit(event, action, 'settings', {
 		entityId: settingName,
 		entityName: settingName,
-		description: `Settings ${settingName} ${action}`,
+		description: `设置 ${settingName} ${action}`,
 		details
 	});
 }
@@ -258,7 +276,7 @@ export async function auditEnvironment(
 		entityId: String(environmentId),
 		entityName: environmentName,
 		environmentId,
-		description: `Environment ${environmentName} ${action}`,
+		description: `环境 ${environmentName} ${action}`,
 		details
 	});
 }
@@ -276,7 +294,135 @@ export async function auditRegistry(
 	await audit(event, action, 'registry', {
 		entityId: String(registryId),
 		entityName: registryName,
-		description: `Registry ${registryName} ${action}`,
+		description: `镜像仓库 ${registryName} ${action}`,
+		details
+	});
+}
+
+/**
+ * Helper for git repository actions
+ */
+export async function auditGitRepository(
+	event: RequestEvent,
+	action: AuditAction,
+	repositoryId: number,
+	repositoryName: string,
+	details?: any
+): Promise<void> {
+	await audit(event, action, 'git_repository', {
+		entityId: String(repositoryId),
+		entityName: repositoryName,
+		description: `Git 仓库 ${repositoryName} ${action}`,
+		details
+	});
+}
+
+/**
+ * Helper for git credential actions
+ */
+export async function auditGitCredential(
+	event: RequestEvent,
+	action: AuditAction,
+	credentialId: number,
+	credentialName: string,
+	details?: any
+): Promise<void> {
+	await audit(event, action, 'git_credential', {
+		entityId: String(credentialId),
+		entityName: credentialName,
+		description: `Git 凭据 ${credentialName} ${action}`,
+		details
+	});
+}
+
+/**
+ * Helper for config set actions
+ */
+export async function auditConfigSet(
+	event: RequestEvent,
+	action: AuditAction,
+	configSetId: number,
+	configSetName: string,
+	details?: any
+): Promise<void> {
+	await audit(event, action, 'config_set', {
+		entityId: String(configSetId),
+		entityName: configSetName,
+		description: `配置集 ${configSetName} ${action}`,
+		details
+	});
+}
+
+/**
+ * Helper for notification channel actions
+ */
+export async function auditNotification(
+	event: RequestEvent,
+	action: AuditAction,
+	notificationId: number,
+	notificationName: string,
+	details?: any
+): Promise<void> {
+	await audit(event, action, 'notification', {
+		entityId: String(notificationId),
+		entityName: notificationName,
+		description: `通知通道 ${notificationName} ${action}`,
+		details
+	});
+}
+
+/**
+ * Helper for OIDC provider actions
+ */
+export async function auditOidcProvider(
+	event: RequestEvent,
+	action: AuditAction,
+	providerId: number,
+	providerName: string,
+	details?: any
+): Promise<void> {
+	await audit(event, action, 'oidc_provider', {
+		entityId: String(providerId),
+		entityName: providerName,
+		description: `OIDC 提供商 ${providerName} ${action}`,
+		details
+	});
+}
+
+/**
+ * Helper for LDAP config actions
+ */
+export async function auditLdapConfig(
+	event: RequestEvent,
+	action: AuditAction,
+	configId: number,
+	configName: string,
+	details?: any
+): Promise<void> {
+	await audit(event, action, 'ldap_config', {
+		entityId: String(configId),
+		entityName: configName,
+		description: `LDAP 配置 ${configName} ${action}`,
+		details
+	});
+}
+
+/**
+ * Helper for git stack actions
+ */
+export async function auditGitStack(
+	event: RequestEvent,
+	action: AuditAction,
+	stackId: number,
+	stackName: string,
+	environmentId?: number | null,
+	details?: any
+): Promise<void> {
+	await audit(event, action, 'git_stack', {
+		entityId: String(stackId),
+		entityName: stackName,
+		environmentId,
+		description: `Git 堆栈 ${stackName} ${action}`,
 		details
 	});
 }
@@ -442,7 +588,7 @@ export async function auditAuth(
 		entityId: null,
 		entityName: username,
 		environmentId: null,
-		description: `User ${username} ${action}`,
+		description: `用户 ${username} ${action}`,
 		details,
 		ipAddress: ipAddress,
 		userAgent: userAgent
@@ -452,6 +598,6 @@ export async function auditAuth(
 		await logAuditEvent(data);
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		console.error('[Audit] Failed to log event:', errorMsg);
+		console.error('[审计] 记录事件失败：', errorMsg);
 	}
 }

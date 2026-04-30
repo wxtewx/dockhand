@@ -1,5 +1,5 @@
 <svelte:head>
-	<title>Networks - Dockhand</title>
+	<title>网络 - Dockhand</title>
 </svelte:head>
 
 <script lang="ts">
@@ -26,6 +26,7 @@
 	import { DataGrid } from '$lib/components/data-grid';
 	import { ipToNumber } from '$lib/utils/ip';
 	import NetworkGraphModal from './NetworkGraphModal.svelte';
+	import { getLabelText } from '$lib/types';
 
 	type SortField = 'name' | 'driver' | 'containers' | 'subnet' | 'gateway';
 	type SortDirection = 'asc' | 'desc';
@@ -267,8 +268,8 @@
 			}
 			networks = await response.json();
 		} catch (error) {
-			console.error('Failed to fetch networks:', error);
-			toast.error('Failed to load networks');
+			console.error('获取网络失败:', error);
+			toast.error('加载网络失败');
 		} finally {
 			loading = false;
 		}
@@ -277,8 +278,8 @@
 	async function removeNetwork(id: string, name: string) {
 		deleteError = null;
 		if (protectedNetworks.includes(name)) {
-			deleteError = { id, message: `Cannot remove built-in network "${name}"` };
-			toast.error(`Cannot remove built-in network "${name}"`);
+			deleteError = { id, message: `无法删除内置网络 "${name}"` };
+			toast.error(`无法删除内置网络 "${name}"`);
 			clearErrorAfterDelay(id);
 			return;
 		}
@@ -286,17 +287,17 @@
 			const response = await fetch(appendEnvParam(`/api/networks/${id}`, envId), { method: 'DELETE' });
 			if (!response.ok) {
 				const data = await response.json();
-				deleteError = { id, message: data.details || 'Failed to remove network' };
-				toast.error(`Failed to remove ${name}`);
+				deleteError = { id, message: data.details || '删除网络失败' };
+				toast.error(`删除 ${name} 失败`);
 				clearErrorAfterDelay(id);
 				return;
 			}
-			toast.success(`Removed ${name}`);
+			toast.success(`已删除 ${name}`);
 			await fetchNetworks();
 		} catch (error) {
-			console.error('Failed to remove network:', error);
-			deleteError = { id, message: 'Failed to remove network' };
-			toast.error(`Failed to remove ${name}`);
+			console.error('删除网络失败:', error);
+			deleteError = { id, message: '删除网络失败' };
+			toast.error(`删除 ${name} 失败`);
 			clearErrorAfterDelay(id);
 		}
 	}
@@ -366,15 +367,15 @@
 				body: JSON.stringify({ containerId, containerName })
 			});
 			if (response.ok) {
-				toast.success(`Disconnected ${containerName} from ${networkName}`);
+				toast.success(`已将 ${containerName} 从 ${networkName} 断开`);
 				await fetchNetworks();
 			} else {
 				const data = await response.json();
-				toast.error(data.details || 'Failed to disconnect container');
+				toast.error(data.details || '断开容器失败');
 			}
 		} catch (error) {
-			console.error('Failed to disconnect container:', error);
-			toast.error('Failed to disconnect container');
+			console.error('断开容器失败:', error);
+			toast.error('断开容器失败');
 		} finally {
 			disconnectingContainerId = null;
 			confirmDisconnectId = null;
@@ -384,9 +385,9 @@
 	async function copyNetworkId(id: string) {
 		const ok = await copyToClipboard(id);
 		if (ok) {
-			toast.success('Network ID copied to clipboard');
+			toast.success('网络 ID 已复制到剪贴板');
 		} else {
-			toast.error('Failed to copy ID');
+			toast.error('复制 ID 失败');
 		}
 	}
 
@@ -416,15 +417,15 @@
 			});
 
 			if (response.ok) {
-				toast.success(`Created ${newName}`);
+				toast.success(`已创建 ${newName}`);
 				await fetchNetworks();
 			} else {
 				const data = await response.json();
-				toast.error(data.details || 'Failed to duplicate network');
+				toast.error(data.details || '复制网络失败');
 			}
 		} catch (error) {
-			console.error('Failed to duplicate network:', error);
-			toast.error('Failed to duplicate network');
+			console.error('复制网络失败:', error);
+			toast.error('复制网络失败');
 		}
 	}
 
@@ -437,15 +438,15 @@
 			});
 			if (response.ok) {
 				pruneStatus = 'success';
-				toast.success('Unused networks pruned');
+				toast.success('已清理未使用的网络');
 				await fetchNetworks();
 			} else {
 				pruneStatus = 'error';
-				toast.error('Failed to prune networks');
+				toast.error('清理网络失败');
 			}
 		} catch (error) {
 			pruneStatus = 'error';
-			toast.error('Failed to prune networks');
+			toast.error('清理网络失败');
 		}
 		pendingTimeouts.push(setTimeout(() => {
 			pruneStatus = 'idle';
@@ -503,13 +504,13 @@
 
 <div class="flex-1 min-h-0 flex flex-col gap-3 overflow-hidden">
 	<div class="shrink-0 flex flex-wrap justify-between items-center gap-3 min-h-8">
-		<PageHeader icon={Network} title="Networks" count={networks.length} />
+		<PageHeader icon={Network} title="网络" count={networks.length} />
 		<div class="flex flex-wrap items-center gap-2">
 			<div class="relative">
 				<Search class="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
 				<Input
 					type="text"
-					placeholder="Search networks..."
+					placeholder="搜索网络..."
 					bind:value={searchInput}
 					onkeydown={(e) => e.key === 'Escape' && (searchInput = '')}
 					class="pl-8 h-8 w-48 text-sm"
@@ -519,22 +520,22 @@
 			<MultiSelectFilter
 				bind:value={selectedDrivers}
 				options={driverOptions}
-				placeholder="Driver"
-				pluralLabel="drivers"
+				placeholder="驱动"
+				pluralLabel="驱动"
 			/>
 			<!-- Scope filter -->
 			<MultiSelectFilter
 				bind:value={selectedScopes}
 				options={scopeOptions}
-				placeholder="Scope"
-				pluralLabel="scopes"
+				placeholder="作用域"
+				pluralLabel="作用域"
 			/>
 			{#if $canAccess('networks', 'remove')}
 			<ConfirmPopover
 				open={confirmPrune}
-				action="Prune"
-				itemType="unused networks"
-				title="Prune networks"
+				action="清理"
+				itemType="未使用网络"
+				title="清理网络"
 				position="left"
 				onConfirm={pruneNetworks}
 				onOpenChange={(open) => confirmPrune = open}
@@ -551,23 +552,23 @@
 						{:else}
 							<Icon iconNode={broom} class="w-3.5 h-3.5" />
 						{/if}
-						Prune
+						清理
 					</span>
 				{/snippet}
 			</ConfirmPopover>
 			{/if}
 			<Button size="sm" variant="outline" onclick={fetchNetworks}>
 				<RefreshCw class="w-3.5 h-3.5" />
-				Refresh
+				刷新
 			</Button>
 			<Button size="sm" variant="outline" onclick={openGraphModal}>
 				<GitGraph class="w-3.5 h-3.5" />
 				View Graph
 			</Button>
 			{#if $canAccess('networks', 'create')}
-			<Button size="sm" variant="outline" onclick={() => showCreateModal = true}>
+			<Button size="sm" variant="secondary" onclick={() => showCreateModal = true}>
 				<Plus class="w-3.5 h-3.5" />
-				Create
+				创建
 			</Button>
 			{/if}
 		</div>
@@ -577,20 +578,20 @@
 	<div class="h-4 shrink-0">
 		{#if selectedNetworks.size > 0}
 			<div class="flex items-center gap-1 text-xs text-muted-foreground h-full">
-			<span>{selectedInFilter.length} selected</span>
+			<span>已选择 {selectedInFilter.length} 项</span>
 			<button
 				type="button"
 				class="inline-flex items-center gap-1 px-1.5 py-0 rounded border border-border hover:border-foreground/30 hover:shadow transition-all"
 				onclick={selectNone}
 			>
-				Clear
+				清除
 			</button>
 			{#if $canAccess('networks', 'remove')}
 			<ConfirmPopover
 				open={confirmBulkRemove}
-				action="Delete"
-				itemType="{selectedInFilter.length} network{selectedInFilter.length !== 1 ? 's' : ''}"
-				title="Delete {selectedInFilter.length}"
+				action="删除"
+				itemType="{selectedInFilter.length} 个网络}"
+				title="删除 {selectedInFilter.length} 项"
 				unstyled
 				onConfirm={bulkRemove}
 				onOpenChange={(open) => confirmBulkRemove = open}
@@ -598,7 +599,7 @@
 				{#snippet children({ open })}
 					<span class="inline-flex items-center gap-1 px-1.5 py-0 rounded border border-border hover:text-destructive hover:border-destructive/40 hover:shadow transition-all cursor-pointer">
 						<Trash2 class="w-3 h-3" />
-						Delete
+						删除
 					</span>
 				{/snippet}
 			</ConfirmPopover>
@@ -612,8 +613,8 @@
 	{:else if !loading && networks.length === 0}
 		<EmptyState
 			icon={Network}
-			title="No networks found"
-			description="Create a network to connect containers"
+			title="未找到任何网络"
+			description="创建网络以连接容器"
 		/>
 	{:else}
 		<DataGrid
@@ -636,16 +637,16 @@
 					<div class="flex items-center gap-2 min-w-0">
 						<span class="text-xs truncate" title={network.name}>{network.name}</span>
 						{#if isProtected}
-							<span class="text-2xs py-0 px-1.5 rounded-sm bg-muted text-muted-foreground shadow-sm shrink-0">built-in</span>
+							<span class="text-2xs py-0 px-1.5 rounded-sm bg-muted text-muted-foreground shadow-sm shrink-0">内置</span>
 						{/if}
 						{#if network.internal}
-							<Badge variant="outline" class="text-xs py-0 px-1.5 shrink-0">internal</Badge>
+							<Badge variant="outline" class="text-xs py-0 px-1.5 shrink-0">内部</Badge>
 						{/if}
 					</div>
 				{:else if column.id === 'driver'}
-					<span class={getDriverClasses(network.driver)}>{network.driver}</span>
+					<span class={getDriverClasses(network.driver)}>{getLabelText(network.driver)}</span>
 				{:else if column.id === 'scope'}
-					<span class="text-xs">{network.scope}</span>
+					<span class="text-xs">{getLabelText(network.scope)}</span>
 				{:else if column.id === 'subnet'}
 					<code class="text-xs">{getSubnet(network)}</code>
 				{:else if column.id === 'gateway'}
@@ -667,7 +668,7 @@
 						<button
 							type="button"
 							onclick={() => inspectNetwork(network)}
-							title="View details"
+							title="查看详情"
 							class="p-1 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
 						>
 							<Eye class="w-3 h-3 text-muted-foreground hover:text-foreground" />
@@ -677,7 +678,7 @@
 						<button
 							type="button"
 							onclick={() => openConnectModal(network)}
-							title="Connect container"
+							title="连接容器"
 							class="p-1 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
 						>
 							<Link class="w-3 h-3 text-muted-foreground hover:text-green-600" />
@@ -686,7 +687,7 @@
 						<button
 							type="button"
 							onclick={() => copyNetworkId(network.id)}
-							title="Copy network ID"
+							title="复制网络 ID"
 							class="p-1 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
 						>
 							<Copy class="w-3 h-3 text-muted-foreground hover:text-foreground" />
@@ -695,7 +696,7 @@
 						<button
 							type="button"
 							onclick={() => duplicateNetwork(network)}
-							title="Duplicate network"
+							title="复制网络"
 							class="p-1 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
 						>
 							<CopyPlus class="w-3 h-3 text-muted-foreground hover:text-foreground" />
@@ -704,10 +705,10 @@
 						{#if !isProtected && $canAccess('networks', 'remove')}
 						<ConfirmPopover
 							open={confirmDeleteId === network.id}
-							action="Delete"
-							itemType="network"
+							action="删除"
+							itemType="网络"
 							itemName={network.name}
-							title="Remove"
+							title="删除"
 							onConfirm={() => removeNetwork(network.id, network.name)}
 							onOpenChange={(open) => confirmDeleteId = open ? network.id : null}
 						>

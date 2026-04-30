@@ -9,7 +9,7 @@ export const GET: RequestHandler = async ({ params }) => {
 	const buffer = getEnvironmentIconBuffer(id);
 
 	if (!buffer) {
-		return json({ error: 'No custom icon' }, { status: 404 });
+		return json({ error: '未找到自定义图标' }, { status: 404 });
 	}
 
 	return new Response(new Uint8Array(buffer), {
@@ -23,23 +23,23 @@ export const GET: RequestHandler = async ({ params }) => {
 export const POST: RequestHandler = async ({ params, request, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('environments', 'edit')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const id = parseInt(params.id);
 	const env = await getEnvironment(id);
 	if (!env) {
-		return json({ error: 'Environment not found' }, { status: 404 });
+		return json({ error: '环境不存在' }, { status: 404 });
 	}
 
 	const data = await request.json();
 	if (!data.image || typeof data.image !== 'string') {
-		return json({ error: 'Missing image data' }, { status: 400 });
+		return json({ error: '缺少图片数据' }, { status: 400 });
 	}
 
 	// Validate size (~200KB base64 limit)
 	if (data.image.length > 300_000) {
-		return json({ error: 'Image too large' }, { status: 400 });
+		return json({ error: '图片过大' }, { status: 400 });
 	}
 
 	saveEnvironmentIcon(id, data.image);
@@ -52,13 +52,13 @@ export const POST: RequestHandler = async ({ params, request, cookies }) => {
 export const DELETE: RequestHandler = async ({ params, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('environments', 'edit')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const id = parseInt(params.id);
 	const env = await getEnvironment(id);
 	if (!env) {
-		return json({ error: 'Environment not found' }, { status: 404 });
+		return json({ error: '环境不存在' }, { status: 404 });
 	}
 
 	deleteEnvironmentIcon(id);

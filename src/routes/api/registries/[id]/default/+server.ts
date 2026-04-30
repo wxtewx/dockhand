@@ -6,18 +6,18 @@ export const POST: RequestHandler = async ({ params }) => {
 	try {
 		const id = parseInt(params.id);
 		if (isNaN(id)) {
-			return json({ error: 'Invalid registry ID' }, { status: 400 });
+			return json({ error: '无效的镜像仓库 ID' }, { status: 400 });
 		}
 
 		const registry = await getRegistry(id);
 		if (!registry) {
-			return json({ error: 'Registry not found' }, { status: 404 });
+			return json({ error: '未找到镜像仓库' }, { status: 404 });
 		}
 
 		await setDefaultRegistry(id);
 		return json({ success: true });
 	} catch (error) {
-		console.error('Error setting default registry:', error);
-		return json({ error: 'Failed to set default registry' }, { status: 500 });
+		console.error('设置默认镜像仓库失败:', error);
+		return json({ error: '设置默认镜像仓库失败' }, { status: 500 });
 	}
 };

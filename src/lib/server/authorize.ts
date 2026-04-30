@@ -242,13 +242,13 @@ export async function authorize(cookies: Cookies): Promise<AuthorizationContext>
  * Helper to create a standard 401 response
  */
 export function unauthorized() {
-	return { error: 'Authentication required', status: 401 };
+	return { error: '需要登录认证', status: 401 };
 }
 
 /**
  * Helper to create a standard 403 response
  */
-export function forbidden(reason: string = 'Permission denied') {
+export function forbidden(reason: string = '权限不足') {
 	return { error: reason, status: 403 };
 }
 
@@ -256,5 +256,5 @@ export function forbidden(reason: string = 'Permission denied') {
  * Helper to create enterprise required response
  */
 export function enterpriseRequired() {
-	return { error: 'Enterprise license required', status: 403 };
+	return { error: '需要企业版许可证', status: 403 };
 }

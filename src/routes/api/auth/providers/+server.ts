@@ -50,7 +50,7 @@ export const GET: RequestHandler = async () => {
 			defaultProvider: settings.defaultProvider || 'local'
 		});
 	} catch (error) {
-		console.error('Failed to get auth providers:', error);
+		console.error('获取身份验证提供商失败:', error);
 		const fallbackProviders = process.env.DISABLE_LOCAL_LOGIN === 'true'
 			? []
 			: [{ id: 'local', name: 'Local', type: 'local' }];

@@ -13,12 +13,12 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 	const envIdNum = envId ? parseInt(envId) : undefined;
 
 	if (!envIdNum) {
-		return json({ error: 'Environment ID required' }, { status: 400 });
+		return json({ error: '环境 ID 为必填项' }, { status: 400 });
 	}
 
 	// Need at least view permission
 	if (auth.authEnabled && !await auth.can('containers', 'view', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -33,8 +33,8 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 			}))
 		});
 	} catch (error: any) {
-		console.error('Error getting pending updates:', error);
-		return json({ error: 'Failed to get pending updates', details: error.message }, { status: 500 });
+		console.error('获取待处理更新失败:', error);
+		return json({ error: '获取待处理更新失败', details: error.message }, { status: 500 });
 	}
 };
 
@@ -49,19 +49,19 @@ export const DELETE: RequestHandler = async ({ url, cookies }) => {
 	const envIdNum = envId ? parseInt(envId) : undefined;
 
 	if (!envIdNum || !containerId) {
-		return json({ error: 'Environment ID and container ID required' }, { status: 400 });
+		return json({ error: '环境 ID 和容器 ID 为必填项' }, { status: 400 });
 	}
 
 	// Need manage permission to delete
 	if (auth.authEnabled && !await auth.can('containers', 'manage', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		await removePendingContainerUpdate(envIdNum, containerId);
 		return json({ success: true });
 	} catch (error: any) {
-		console.error('Error removing pending update:', error);
-		return json({ error: 'Failed to remove pending update', details: error.message }, { status: 500 });
+		console.error('移除待处理更新失败:', error);
+		return json({ error: '移除待处理更新失败', details: error.message }, { status: 500 });
 	}
 };

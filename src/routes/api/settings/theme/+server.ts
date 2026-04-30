@@ -46,7 +46,7 @@ export const GET: RequestHandler = async () => {
 			editorFont: editorFont ?? DEFAULT_THEME_SETTINGS.editorFont
 		});
 	} catch (error) {
-		console.error('Failed to get theme settings:', error);
+		console.error('获取主题设置失败：', error);
 		// Return defaults on error
 		return json(DEFAULT_THEME_SETTINGS);
 	}

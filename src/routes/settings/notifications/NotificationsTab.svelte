@@ -40,8 +40,8 @@
 			const response = await fetch('/api/notifications');
 			notifications = await response.json();
 		} catch (error) {
-			console.error('Failed to fetch notifications:', error);
-			toast.error('Failed to fetch notification channels');
+			console.error('获取通知配置失败:', error);
+			toast.error('获取通知渠道失败');
 		} finally {
 			notifLoading = false;
 		}
@@ -60,13 +60,13 @@
 
 			if (response.ok) {
 				await fetchNotifications();
-				toast.success('Notification channel deleted');
+				toast.success('通知渠道已删除');
 			} else {
 				const data = await response.json();
-				toast.error(data.error || 'Failed to delete notification channel');
+				toast.error(data.error || '删除通知渠道失败');
 			}
 		} catch (error) {
-			toast.error('Failed to delete notification channel');
+			toast.error('删除通知渠道失败');
 		}
 	}
 
@@ -79,13 +79,13 @@
 			});
 			if (response.ok) {
 				await fetchNotifications();
-				toast.success(`Channel ${notif.enabled ? 'disabled' : 'enabled'}`);
+				toast.success(`渠道已${notif.enabled ? '禁用' : '启用'}`);
 			} else {
-				toast.error('Failed to toggle notification channel');
+				toast.error('切换通知渠道状态失败');
 			}
 		} catch (error) {
-			console.error('Failed to toggle notification:', error);
-			toast.error('Failed to toggle notification channel');
+			console.error('切换通知状态失败:', error);
+			toast.error('切换通知渠道状态失败');
 		}
 	}
 
@@ -100,13 +100,13 @@
 			});
 			testResult = await response.json();
 			if (testResult?.success) {
-				toast.success('Test notification sent successfully');
+				toast.success('测试通知发送成功');
 			} else {
-				toast.error(`Test failed: ${testResult?.error || 'Unknown error'}`);
+				toast.error(`测试失败：${testResult?.error || '未知错误'}`);
 			}
 		} catch (error) {
-			testResult = { success: false, error: 'Failed to test notification' };
-			toast.error('Failed to test notification');
+			testResult = { success: false, error: '测试通知失败' };
+			toast.error('测试通知失败');
 		}
 
 		// Store which notification was tested, clear testing state
@@ -131,13 +131,13 @@
 			<div class="flex items-start gap-3">
 				<Bell class="w-5 h-5 text-muted-foreground mt-0.5" />
 				<div>
-					<p class="text-sm font-medium">Notification channels</p>
+					<p class="text-sm font-medium">通知渠道</p>
 					<p class="text-xs text-muted-foreground mt-1">
-						Configure notification channels to receive alerts about Docker events. Supports SMTP email and Apprise URLs (Discord, Slack, Telegram, ntfy, and more).
+						配置通知渠道以接收 Docker 事件告警。支持 SMTP 邮件和 Apprise URL (Discord、Slack、Telegram、ntfy 等)。
 					</p>
 					<p class="text-xs text-amber-600 dark:text-amber-500 mt-2 flex items-center gap-1">
 						<Info class="w-3 h-3" />
-						Detailed notification settings (event types, enable/disable) are configured per environment in Environment settings.
+						详细的通知设置 (事件类型、启用/禁用) 在环境设置中按环境单独配置。
 					</p>
 				</div>
 			</div>
@@ -146,26 +146,26 @@
 
 	<div class="flex justify-between items-center">
 		<div class="flex items-center gap-3">
-			<Badge variant="secondary" class="text-xs">{notifications.length} channels</Badge>
+			<Badge variant="secondary" class="text-xs">{notifications.length} 个渠道</Badge>
 		</div>
 		<div class="flex gap-2">
 			{#if $canAccess('notifications', 'create')}
 				<Button size="sm" onclick={() => openNotifModal()}>
 					<Plus class="w-4 h-4" />
-					Add channel
+					添加渠道
 				</Button>
 			{/if}
-			<Button size="sm" variant="outline" onclick={fetchNotifications}>Refresh</Button>
+			<Button size="sm" variant="outline" onclick={fetchNotifications}>刷新</Button>
 		</div>
 	</div>
 
 	{#if notifLoading && notifications.length === 0}
-		<p class="text-muted-foreground text-sm">Loading notification channels...</p>
+		<p class="text-muted-foreground text-sm">正在加载通知渠道...</p>
 	{:else if notifications.length === 0}
 		<EmptyState
 			icon={Bell}
-			title="No notification channels configured"
-			description="Add a channel to start receiving alerts about Docker events"
+			title="未配置任何通知渠道"
+			description="添加渠道以开始接收 Docker 事件告警"
 		/>
 	{:else}
 		<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -189,7 +189,7 @@
 								/>
 							{:else}
 								<Badge variant={notif.enabled ? 'default' : 'secondary'} class="text-xs">
-									{notif.enabled ? 'Enabled' : 'Disabled'}
+									{notif.enabled ? '已启用' : '已禁用'}
 								</Badge>
 							{/if}
 						</div>
@@ -199,23 +199,23 @@
 							{#if notif.type === 'smtp'}
 								<span>SMTP: {notif.config.host}:{notif.config.port}</span>
 							{:else}
-								<span>Apprise: {notif.config.urls?.length || 0} URLs</span>
+								<span>Apprise: {notif.config.urls?.length || 0} 个 URL</span>
 							{/if}
 						</div>
 
 						{#if testingNotif === notif.id}
 							<div class="text-xs text-muted-foreground flex items-center gap-1">
 								<RefreshCw class="w-3 h-3 animate-spin" />
-								Sending test...
+								正在发送测试...
 							</div>
 						{:else if testResult && testedNotifId === notif.id}
 							<div class="text-xs flex items-center gap-1 {testResult.success ? 'text-green-600' : 'text-destructive'}">
 								{#if testResult.success}
 									<CheckCircle2 class="w-3 h-3" />
-									Test sent successfully
+									测试发送成功
 								{:else}
 									<XCircle class="w-3 h-3" />
-									{testResult.error || 'Test failed'}
+									{testResult.error || '测试失败'}
 								{/if}
 							</div>
 						{/if}
@@ -228,7 +228,7 @@
 								disabled={testingNotif !== null}
 							>
 								<Send class="w-3 h-3" />
-								Test
+								测试
 							</Button>
 							{#if $canAccess('notifications', 'edit')}
 								<Button
@@ -242,10 +242,10 @@
 							{#if $canAccess('notifications', 'delete')}
 								<ConfirmPopover
 									open={confirmDeleteNotificationId === notif.id}
-									action="Delete"
-									itemType="channel"
+									action="删除"
+									itemType="渠道"
 									itemName={notif.name}
-									title="Remove"
+									title="移除"
 									position="left"
 									onConfirm={() => deleteNotification(notif.id)}
 									onOpenChange={(open) => confirmDeleteNotificationId = open ? notif.id : null}

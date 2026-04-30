@@ -15,7 +15,7 @@ export const POST: RequestHandler = async (event) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('images', 'remove', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	return createJobResponse(async (send) => {
@@ -25,14 +25,14 @@ export const POST: RequestHandler = async (event) => {
 			// Audit log
 			await audit(event, 'prune', 'image', {
 				environmentId: envIdNum,
-				description: `Pruned ${danglingOnly ? 'dangling' : 'unused'} images`,
+				description: `已清理 ${danglingOnly ? '悬空' : '未使用'} 镜像`,
 				details: { danglingOnly, result }
 			});
 
 			send('result', { success: true, result });
 		} catch (error) {
-			console.error('Error pruning images:', error);
-			send('result', { success: false, error: 'Failed to prune images' });
+			console.error('清理镜像失败:', error);
+			send('result', { success: false, error: '清理镜像失败' });
 		}
 	}, event.request);
 };

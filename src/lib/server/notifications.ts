@@ -58,7 +58,7 @@ async function sendSmtpNotification(config: SmtpConfig, payload: NotificationPay
 				<h2 style="margin: 0 0 10px 0;">${payload.title}${envBadge}</h2>
 				<p style="margin: 0; white-space: pre-wrap;">${payload.message}</p>
 				<hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
-				<p style="margin: 0; font-size: 12px; color: #666;">Sent by Dockhand</p>
+				<p style="margin: 0; font-size: 12px; color: #666;">由 Dockhand 发送</p>
 			</div>
 		`;
 
@@ -73,7 +73,7 @@ async function sendSmtpNotification(config: SmtpConfig, payload: NotificationPay
 		return { success: true };
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		return { success: false, error: `SMTP error: ${errorMsg}` };
+		return { success: false, error: `SMTP 错误: ${errorMsg}` };
 	}
 }
 
@@ -89,7 +89,7 @@ async function sendAppriseNotification(config: AppriseConfig, payload: Notificat
 			}
 		} catch (error) {
 			const errorMsg = error instanceof Error ? error.message : String(error);
-			errors.push(`Failed to send: ${errorMsg}`);
+			errors.push(`发送失败：${errorMsg}`);
 		}
 	}
 
@@ -106,7 +106,7 @@ async function sendToAppriseUrl(url: string, payload: NotificationPayload): Prom
 		// Note: Can't use new URL() because custom schemes like 'tgram://' are not valid URLs
 		const protocolMatch = url.match(/^([a-z]+):\/\//i);
 		if (!protocolMatch) {
-			return { success: false, error: 'Invalid Apprise URL format - missing protocol' };
+			return { success: false, error: 'Apprise URL 格式无效 - 缺少协议' };
 		}
 		const protocol = protocolMatch[1].toLowerCase();
 
@@ -137,11 +137,11 @@ async function sendToAppriseUrl(url: string, payload: NotificationPayload): Prom
 			case 'workflows':
 				return await sendWorkflows(url, payload);
 			default:
-				return { success: false, error: `Unsupported Apprise protocol: ${protocol}` };
+				return { success: false, error: `不支持的 Apprise 协议: ${protocol}` };
 		}
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		return { success: false, error: `Failed to parse Apprise URL: ${errorMsg}` };
+		return { success: false, error: `解析 Apprise URL 失败: ${errorMsg}` };
 	}
 }
 
@@ -161,7 +161,7 @@ async function sendDiscord(appriseUrl: string, payload: NotificationPayload): Pr
 					description: payload.message,
 					color: payload.type === 'error' ? 0xff0000 : payload.type === 'warning' ? 0xffaa00 : payload.type === 'success' ? 0x00ff00 : 0x0099ff,
 					...(payload.environmentName && {
-						footer: { text: `Environment: ${payload.environmentName}` }
+						footer: { text: `环境：${payload.environmentName}` }
 					})
 				}]
 			})
@@ -169,12 +169,12 @@ async function sendDiscord(appriseUrl: string, payload: NotificationPayload): Pr
 
 		if (!response.ok) {
 			const text = await response.text().catch(() => '');
-			return { success: false, error: `Discord error ${response.status}: ${text || response.statusText}` };
+			return { success: false, error: `Discord 错误 ${response.status}: ${text || response.statusText}` };
 		}
 		await drainResponse(response);
 		return { success: true };
 	} catch (error) {
-		return { success: false, error: `Discord connection failed: ${error instanceof Error ? error.message : String(error)}` };
+		return { success: false, error: `Discord 连接失败：${error instanceof Error ? error.message : String(error)}` };
 	}
 }
 
@@ -202,12 +202,12 @@ async function sendSlack(appriseUrl: string, payload: NotificationPayload): Prom
 
 		if (!response.ok) {
 			const text = await response.text().catch(() => '');
-			return { success: false, error: `Slack error ${response.status}: ${text || response.statusText}` };
+			return { success: false, error: `Slack 错误 ${response.status}: ${text || response.statusText}` };
 		}
 		await drainResponse(response);
 		return { success: true };
 	} catch (error) {
-		return { success: false, error: `Slack connection failed: ${error instanceof Error ? error.message : String(error)}` };
+		return { success: false, error: `Slack 连接失败：${error instanceof Error ? error.message : String(error)}` };
 	}
 }
 
@@ -231,7 +231,7 @@ async function sendMattermost(appriseUrl: string, payload: NotificationPayload):
 	// The token is the last segment, everything else is hostname[:port][/path]
 	const lastSlashIndex = urlPart.lastIndexOf('/');
 	if (lastSlashIndex === -1) {
-		return { success: false, error: 'Invalid Mattermost URL format. Expected: mmost://[botname@]hostname[:port][/path]/token' };
+		return { success: false, error: 'Mattermost URL 格式无效。格式应为：mmost://[botname@]hostname[:port][/path]/token' };
 	}
 
 	const token = urlPart.substring(lastSlashIndex + 1);
@@ -258,12 +258,12 @@ async function sendMattermost(appriseUrl: string, payload: NotificationPayload):
 
 		if (!response.ok) {
 			const text = await response.text().catch(() => '');
-			return { success: false, error: `Mattermost error ${response.status}: ${text || response.statusText}` };
+			return { success: false, error: `Mattermost 错误 ${response.status}: ${text || response.statusText}` };
 		}
 		await drainResponse(response);
 		return { success: true };
 	} catch (error) {
-		return { success: false, error: `Mattermost connection failed: ${error instanceof Error ? error.message : String(error)}` };
+		return { success: false, error: `Mattermost 连接失败：${error instanceof Error ? error.message : String(error)}` };
 	}
 }
 
@@ -271,7 +271,7 @@ async function sendMattermost(appriseUrl: string, payload: NotificationPayload):
 async function sendTelegram(appriseUrl: string, payload: NotificationPayload): Promise<NotificationResult> {
 	const parsed = parseTelegramUrl(appriseUrl);
 	if (!parsed) {
-		return { success: false, error: 'Invalid Telegram URL format. Expected: tgram://bot_token/chat_id or tgram://bot_token/chat_id:topic_id' };
+		return { success: false, error: 'Telegram URL 格式无效。期望格式：tgram://bot_token/chat_id 或 tgram://bot_token/chat_id:topic_id' };
 	}
 
 	const { botToken, chatId, topicId } = parsed;
@@ -300,12 +300,12 @@ async function sendTelegram(appriseUrl: string, payload: NotificationPayload): P
 		if (!response.ok) {
 			const errorData = await response.json().catch(() => ({})) as { description?: string };
 			const errorMsg = errorData.description || response.statusText;
-			return { success: false, error: `Telegram error ${response.status}: ${errorMsg}` };
+			return { success: false, error: `Telegram 错误 ${response.status}: ${errorMsg}` };
 		}
 		await drainResponse(response);
 		return { success: true };
 	} catch (error) {
-		return { success: false, error: `Telegram connection failed: ${error instanceof Error ? error.message : String(error)}` };
+		return { success: false, error: `Telegram 连接失败：${error instanceof Error ? error.message : String(error)}` };
 	}
 }
 
@@ -313,7 +313,7 @@ async function sendTelegram(appriseUrl: string, payload: NotificationPayload): P
 async function sendGotify(appriseUrl: string, payload: NotificationPayload): Promise<NotificationResult> {
 	const url = buildGotifyUrl(appriseUrl);
 	if (!url) {
-		return { success: false, error: 'Invalid Gotify URL format. Expected: gotify://hostname/token' };
+		return { success: false, error: 'Gotify URL 格式无效。期望格式：gotify://hostname/token' };
 	}
 
 	const titleWithEnv = payload.environmentName ? `${payload.title} [${payload.environmentName}]` : payload.title;
@@ -331,12 +331,12 @@ async function sendGotify(appriseUrl: string, payload: NotificationPayload): Pro
 
 		if (!response.ok) {
 			const text = await response.text().catch(() => '');
-			return { success: false, error: `Gotify error ${response.status}: ${text || response.statusText}` };
+			return { success: false, error: `Gotify 错误 ${response.status}: ${text || response.statusText}` };
 		}
 		await drainResponse(response);
 		return { success: true };
 	} catch (error) {
-		return { success: false, error: `Gotify connection failed: ${error instanceof Error ? error.message : String(error)}` };
+		return { success: false, error: `Gotify 连接失败：${error instanceof Error ? error.message : String(error)}` };
 	}
 }
 
@@ -399,12 +399,12 @@ async function sendNtfy(appriseUrl: string, payload: NotificationPayload): Promi
 
 		if (!response.ok) {
 			const text = await response.text().catch(() => '');
-			return { success: false, error: `ntfy error ${response.status}: ${text || response.statusText}` };
+			return { success: false, error: `ntfy 错误 ${response.status}: ${text || response.statusText}` };
 		}
 		await drainResponse(response);
 		return { success: true };
 	} catch (error) {
-		return { success: false, error: `ntfy connection failed: ${error instanceof Error ? error.message : String(error)}` };
+		return { success: false, error: `ntfy 连接失败：${error instanceof Error ? error.message : String(error)}` };
 	}
 }
 
@@ -413,7 +413,7 @@ async function sendPushover(appriseUrl: string, payload: NotificationPayload): P
 	// pushover://user_key/api_token
 	const match = appriseUrl.match(/^pushover:\/\/([^/]+)\/(.+)/);
 	if (!match) {
-		return { success: false, error: 'Invalid Pushover URL format. Expected: pushover://user_key/api_token' };
+		return { success: false, error: 'Pushover URL 格式无效。格式应为：pushover://user_key/api_token' };
 	}
 
 	const [, userKey, apiToken] = match;
@@ -435,12 +435,12 @@ async function sendPushover(appriseUrl: string, payload: NotificationPayload): P
 
 		if (!response.ok) {
 			const text = await response.text().catch(() => '');
-			return { success: false, error: `Pushover error ${response.status}: ${text || response.statusText}` };
+			return { success: false, error: `Pushover 错误 ${response.status}: ${text || response.statusText}` };
 		}
 		await drainResponse(response);
 		return { success: true };
 	} catch (error) {
-		return { success: false, error: `Pushover connection failed: ${error instanceof Error ? error.message : String(error)}` };
+		return { success: false, error: `Pushover 连接失败：${error instanceof Error ? error.message : String(error)}` };
 	}
 }
 
@@ -464,19 +464,19 @@ async function sendGenericWebhook(appriseUrl: string, payload: NotificationPaylo
 
 		if (!response.ok) {
 			const text = await response.text().catch(() => '');
-			return { success: false, error: `Webhook error ${response.status}: ${text || response.statusText}` };
+			return { success: false, error: `Webhook 错误 ${response.status}: ${text || response.statusText}` };
 		}
 		await drainResponse(response);
 		return { success: true };
 	} catch (error) {
-		return { success: false, error: `Webhook connection failed: ${error instanceof Error ? error.message : String(error)}` };
+		return { success: false, error: `Webhook 连接失败: ${error instanceof Error ? error.message : String(error)}` };
 	}
 }
 // Microsoft Power Automate Workflows, for e.g. Microsoft Teams
 async function sendWorkflows(appriseUrl: string, payload: NotificationPayload): Promise<NotificationResult> {
 	const parsed = parseWorkflowsUrl(appriseUrl);
 	if (!parsed) {
-		return { success: false, error: 'Invalid Workflows URL format. Expected: workflows://hostname/workflow/signature' };
+		return { success: false, error: 'Workflows URL 格式无效。期望格式：workflows://hostname/workflow/signature' };
 	}
 
 	const url = buildWorkflowsHttpUrl(parsed.hostname, parsed.workflow, parsed.signature);
@@ -517,12 +517,12 @@ async function sendWorkflows(appriseUrl: string, payload: NotificationPayload): 
 
 		if (!response.ok) {
 			const text = await response.text().catch(() => '');
-			return { success: false, error: `Workflows error ${response.status}: ${text || response.statusText}` };
+			return { success: false, error: `Workflows 错误 ${response.status}: ${text || response.statusText}` };
 		}
 		await drainResponse(response);
 		return { success: true };
 	} catch (error) {
-		return { success: false, error: `Workflows connection failed: ${error instanceof Error ? error.message : String(error)}` };
+		return { success: false, error: `Workflows 连接失败: ${error instanceof Error ? error.message : String(error)}` };
 	}
 }
 
@@ -552,8 +552,8 @@ export async function sendNotification(payload: NotificationPayload): Promise<{ 
 // Test a specific notification setting
 export async function testNotification(setting: NotificationSettingData): Promise<NotificationResult> {
 	const payload: NotificationPayload = {
-		title: 'Dockhand Test Notification',
-		message: 'This is a test notification from Dockhand. If you receive this, your notification settings are configured correctly.',
+		title: 'Dockhand 通知测试',
+		message: '这是来自 Dockhand 的测试通知。如果你收到此消息，说明你的通知配置正确。',
 		type: 'info'
 	};
 
@@ -563,7 +563,7 @@ export async function testNotification(setting: NotificationSettingData): Promis
 		return await sendAppriseNotification(setting.config as AppriseConfig, payload);
 	}
 
-	return { success: false, error: 'Unknown notification type' };
+	return { success: false, error: '未知的通知类型' };
 }
 
 // Map Docker action to notification event type
@@ -650,7 +650,7 @@ export async function sendEnvironmentNotification(
 			else allSuccess = false;
 		} catch (error) {
 			const errorMsg = error instanceof Error ? error.message : String(error);
-			console.error(`[Notifications] Failed to send to channel ${notif.channelName}:`, errorMsg);
+			console.error(`[通知] 向通道 ${notif.channelName} 发送失败：`, errorMsg);
 			allSuccess = false;
 		}
 	}
@@ -723,7 +723,7 @@ export async function sendEventNotification(
 			else allSuccess = false;
 		} catch (error) {
 			const errorMsg = error instanceof Error ? error.message : String(error);
-			console.error(`[Notifications] Failed to send to channel ${channel.channel_name}:`, errorMsg);
+			console.error(`[通知] 向通道 ${channel.channel_name} 发送失败：`, errorMsg);
 			allSuccess = false;
 		}
 	}

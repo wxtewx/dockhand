@@ -181,7 +181,7 @@
 		} catch (error) {
 			// Ignore abort errors
 			if (error instanceof Error && error.name !== 'AbortError') {
-				console.error('Failed to fetch host info:', error);
+				console.error('获取主机信息失败:', error);
 			}
 		}
 	}
@@ -203,7 +203,7 @@
 		} catch (error) {
 			// Ignore abort errors
 			if (error instanceof Error && error.name !== 'AbortError') {
-				console.error('Failed to fetch disk usage:', error);
+				console.error('获取磁盘使用率失败:', error);
 			}
 			diskUsage = null;
 		} finally {
@@ -246,7 +246,7 @@
 		diskUsageLoading = false;
 
 		const targetEnv = envList.find((e: Environment) => Number(e.id) === Number(envId));
-		const envName = targetEnv?.name || `Environment ${envId}`;
+		const envName = targetEnv?.name || `环境 ${envId}`;
 
 		// Mark as switching and create new abort controller
 		switchingEnvId = envId;
@@ -261,7 +261,7 @@
 			if (!response.ok) {
 				offlineEnvIds.add(envId);
 				offlineEnvIds = new Set(offlineEnvIds);
-				toast.error(`Cannot switch to "${envName}" - environment is offline`);
+				toast.error(`无法切换到 "${envName}" - 环境离线`);
 				return;
 			}
 
@@ -270,7 +270,7 @@
 			if (newHostInfo.error) {
 				offlineEnvIds.add(envId);
 				offlineEnvIds = new Set(offlineEnvIds);
-				toast.error(`Cannot switch to "${envName}" - ${newHostInfo.error}`);
+				toast.error(`无法切换到 "${envName}" - ${newHostInfo.error}`);
 				return;
 			}
 
@@ -299,7 +299,7 @@
 			}
 			offlineEnvIds.add(envId);
 			offlineEnvIds = new Set(offlineEnvIds);
-			toast.error(`Cannot switch to "${envName}" - connection failed`);
+			toast.error(`无法切换到 "${envName}" - 连接失败`);
 		} finally {
 			switchingEnvId = null;
 		}
@@ -314,9 +314,9 @@
 		const days = Math.floor(seconds / 86400);
 		const hours = Math.floor((seconds % 86400) / 3600);
 		if (days > 0) {
-			return `${days}d ${hours}h`;
+			return `${days}天 ${hours}小时`;
 		}
-		return `${hours}h`;
+		return `${hours}小时`;
 	}
 
 	let memoryPercent = $derived(
@@ -376,11 +376,11 @@
 					<span class="font-medium text-foreground">{currentEnv.name}</span>
 				{:else}
 					<Globe class="{iconSizeLargeClass()} text-muted-foreground" />
-					<span class="font-medium text-foreground">Select environment</span>
+					<span class="font-medium text-foreground">选择环境</span>
 				{/if}
 			{:else}
 				<Globe class="{iconSizeLargeClass()} text-muted-foreground" />
-				<span class="font-medium text-foreground">No environments</span>
+				<span class="font-medium text-foreground">无环境</span>
 			{/if}
 			<ChevronDown class="{iconSizeClass()}" />
 		</button>
@@ -395,7 +395,7 @@
 								bind:this={searchInputRef}
 								bind:value={searchTerm}
 								type="text"
-								placeholder="Search environments..."
+								placeholder="搜索环境..."
 								class="w-full pl-7 pr-7 py-1 text-sm bg-transparent border rounded focus:outline-none focus:ring-1 focus:ring-ring"
 								onclick={(e) => e.stopPropagation()}
 								onkeydown={(e) => {
@@ -438,14 +438,14 @@
 							{/if}
 							<span class="flex-1 whitespace-nowrap" class:text-muted-foreground={isOffline}>{env.name}</span>
 							{#if isOffline && !isSwitching}
-								<span class="text-xs text-destructive">offline</span>
+								<span class="text-xs text-destructive">离线</span>
 							{:else if Number(env.id) === Number(currentEnvId)}
 								<Check class="{iconSizeLargeClass()} text-primary shrink-0" />
 							{/if}
 						</button>
 					{:else}
 						<div class="px-3 py-2 text-sm text-muted-foreground">
-							No matching environments
+							未找到匹配的环境
 						</div>
 					{/each}
 				</div>
@@ -470,10 +470,10 @@
 		<div class="hidden md:flex items-center gap-1">
 			{#if hostInfo.environment?.connectionType === 'hawser-standard'}
 				<Route class="{iconSizeClass()}" />
-				<span>Hawser (standard){hostInfo.environment.hawserVersion ? ` ${hostInfo.environment.hawserVersion}` : ''}</span>
+				<span>Hawser (标准){hostInfo.environment.hawserVersion ? ` ${hostInfo.environment.hawserVersion}` : ''}</span>
 			{:else if hostInfo.environment?.connectionType === 'hawser-edge'}
 				<UndoDot class="{iconSizeClass()}" />
-				<span>Hawser (edge){hostInfo.environment.hawserVersion ? ` ${hostInfo.environment.hawserVersion}` : ''}</span>
+				<span>Hawser (边缘){hostInfo.environment.hawserVersion ? ` ${hostInfo.environment.hawserVersion}` : ''}</span>
 			{:else}
 				<Icon iconNode={whale} class="{iconSizeClass()}" />
 				<span>Socket</span>
@@ -484,13 +484,13 @@
 
 		<!-- CPU cores -->
 		{#if hostInfo.cpus > 0}
-			<span class="hidden lg:inline">{hostInfo.cpus} cores</span>
+			<span class="hidden lg:inline">{hostInfo.cpus} 核</span>
 			<span class="hidden lg:inline text-border">|</span>
 		{/if}
 
 		<!-- Memory -->
 		{#if hostInfo.totalMemory > 0}
-			<span class="hidden lg:inline">{formatBytes(hostInfo.totalMemory)} RAM</span>
+			<span class="hidden lg:inline">{formatBytes(hostInfo.totalMemory)} 内存</span>
 			<span class="hidden lg:inline text-border">|</span>
 		{/if}
 
@@ -515,12 +515,12 @@
 		<!-- Live indicator with timestamp -->
 		<div
 			class="flex items-center gap-2 {isConnected ? 'text-emerald-500' : 'text-muted-foreground'}"
-			title={isConnected ? 'Live updates connected' : 'Live updates disconnected'}
+			title={isConnected ? '实时更新已连接' : '实时更新已断开'}
 		>
 			<span class="text-muted-foreground" title={currentTimezone}>{formatLastUpdated(lastUpdated, currentTimezone)}</span>
 			{#if isConnected}
 				<Wifi class="{iconSizeLargeClass()}" />
-				<span class="font-medium">Live</span>
+				<span class="font-medium">实时</span>
 			{:else}
 				<WifiOff class="{iconSizeLargeClass()}" />
 			{/if}

@@ -104,19 +104,19 @@ export function initializeEdgeManager(): void {
 				const pendingCount = conn.pendingRequests.size;
 				const streamCount = conn.pendingStreamRequests.size;
 				console.log(
-					`[Hawser] Connection timeout for environment ${envId}. ` +
-					`Rejecting ${pendingCount} pending requests and ${streamCount} stream requests.`
+					`[Hawser] 环境 ${envId} 连接超时。` +
+					`正在拒绝 ${pendingCount} 个待处理请求和 ${streamCount} 个流请求。`
 				);
 
 				// Reject all pending requests before closing
 				for (const [requestId, pending] of conn.pendingRequests) {
-					console.log(`[Hawser] Rejecting pending request ${requestId} due to connection timeout`);
+					console.log(`[Hawser] 由于连接超时，拒绝待处理请求 ${requestId}`);
 					clearTimeout(pending.timeout);
-					pending.reject(new Error('Connection timeout'));
+					pending.reject(new Error('连接超时'));
 				}
 				for (const [requestId, pending] of conn.pendingStreamRequests) {
-					console.log(`[Hawser] Ending stream request ${requestId} due to connection timeout`);
-					pending.onEnd?.('Connection timeout');
+					console.log(`[Hawser] 由于连接超时，结束流请求 ${requestId}`);
+					pending.onEnd?.('连接超时');
 				}
 				conn.pendingRequests.clear();
 				conn.pendingStreamRequests.clear();
@@ -126,7 +126,7 @@ export function initializeEdgeManager(): void {
 					conn.pingInterval = undefined;
 				}
 
-				conn.ws.close(1001, 'Connection timeout');
+				conn.ws.close(1001, '连接超时');
 				edgeConnections.delete(envId);
 				updateEnvironmentStatus(envId, null);
 			}
@@ -176,7 +176,7 @@ export async function handleEdgeContainerEvent(
 ): Promise<void> {
 	try {
 		// Log the event
-		console.log(`[Hawser] Container event from env ${environmentId}: ${event.action} ${event.containerName || event.containerId}`);
+		console.log(`[Hawser] 来自环境 ${environmentId} 的容器事件：${event.action} ${event.containerName || event.containerId}`);
 
 		// Save to database
 		const savedEvent = await logContainerEvent({
@@ -206,15 +206,15 @@ export async function handleEdgeContainerEvent(
 							? 'success'
 							: 'info';
 
-			await sendEnvironmentNotification(environmentId, event.action as ContainerEventAction, {
-				title: `Container ${actionLabel}`,
-				message: `Container "${containerLabel}" ${event.action}${event.image ? ` (${event.image})` : ''}`,
-				type: notificationType as 'success' | 'error' | 'warning' | 'info'
-			}, event.image);
-		}
+		// Send notification
+		await sendEnvironmentNotification(environmentId, event.action as ContainerEventAction, {
+			title: `容器 ${actionLabel}`,
+			message: `容器 "${containerLabel}" ${event.action}${event.image ? ` (${event.image})` : ''}`,
+			type: notificationType as 'success' | 'error' | 'warning' | 'info'
+		}, event.image);
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		console.error('[Hawser] Error handling container event:', errorMsg);
+		console.error('[Hawser] 处理容器事件时出错：', errorMsg);
 	}
 }
 
@@ -310,8 +310,8 @@ export async function generateHawserToken(
 	// This forces the agent to reconnect with the new token
 	const existingConnection = edgeConnections.get(environmentId);
 	if (existingConnection) {
-		console.log(`[Hawser] Closing existing connection for env ${environmentId} due to new token generation`);
-		existingConnection.ws.close(1000, 'Token regenerated');
+		console.log(`[Hawser] 由于生成新令牌，关闭环境 ${environmentId} 的现有连接`);
+		existingConnection.ws.close(1000, '令牌已重新生成');
 		edgeConnections.delete(environmentId);
 	}
 
@@ -373,15 +373,15 @@ export async function revokeHawserToken(tokenId: number): Promise<void> {
 export function closeEdgeConnection(environmentId: number): void {
 	const connection = edgeConnections.get(environmentId);
 	if (!connection) {
-		console.log(`[Hawser] No Edge connection to close for environment ${environmentId}`);
+		console.log(`[Hawser] 环境 ${environmentId} 无可关闭的边缘连接`);
 		return;
 	}
 
 	const pendingCount = connection.pendingRequests.size;
 	const streamCount = connection.pendingStreamRequests.size;
 	console.log(
-		`[Hawser] Closing Edge connection for deleted environment ${environmentId}. ` +
-		`Rejecting ${pendingCount} pending requests and ${streamCount} stream requests.`
+		`[Hawser] 正在关闭已删除环境 ${environmentId} 的边缘连接。` +
+		`正在拒绝 ${pendingCount} 个待处理请求和 ${streamCount} 个流请求。`
 	);
 
 	// Clear ping interval
@@ -392,27 +392,27 @@ export function closeEdgeConnection(environmentId: number): void {
 
 	// Reject all pending requests
 	for (const [requestId, pending] of connection.pendingRequests) {
-		console.log(`[Hawser] Rejecting pending request ${requestId} due to environment deletion`);
+		console.log(`[Hawser] 因环境已删除，拒绝待处理请求 ${requestId}`);
 		clearTimeout(pending.timeout);
-		pending.reject(new Error('Environment deleted'));
+		pending.reject(new Error('环境已删除'));
 	}
 	for (const [requestId, pending] of connection.pendingStreamRequests) {
-		console.log(`[Hawser] Ending stream request ${requestId} due to environment deletion`);
-		pending.onEnd?.('Environment deleted');
+		console.log(`[Hawser] 因环境已删除，结束流请求 ${requestId}`);
+		pending.onEnd?.('环境已删除');
 	}
 	connection.pendingRequests.clear();
 	connection.pendingStreamRequests.clear();
 
 	// Close the WebSocket
 	try {
-		connection.ws.close(1000, 'Environment deleted');
+		connection.ws.close(1000, '环境已删除');
 	} catch (e) {
 		const errorMsg = e instanceof Error ? e.message : String(e);
-		console.error(`[Hawser] Error closing WebSocket for environment ${environmentId}:`, errorMsg);
+		console.error(`[Hawser] 关闭环境 ${environmentId} 的 WebSocket 时出错：`, errorMsg);
 	}
 
 	edgeConnections.delete(environmentId);
-	console.log(`[Hawser] Edge connection closed for environment ${environmentId}`);
+	console.log(`[Hawser] 已关闭环境 ${environmentId} 的边缘连接`);
 }
 
 /**
@@ -429,19 +429,19 @@ export function handleEdgeConnection(
 		const pendingCount = existing.pendingRequests.size;
 		const streamCount = existing.pendingStreamRequests.size;
 		console.log(
-			`[Hawser] Replacing existing connection for environment ${environmentId}. ` +
-			`Rejecting ${pendingCount} pending requests and ${streamCount} stream requests.`
+			`[Hawser] 正在替换环境 ${environmentId} 的现有连接。` +
+			`正在拒绝 ${pendingCount} 个待处理请求和 ${streamCount} 个流请求。`
 		);
 
 		// Reject all pending requests before closing
 		for (const [requestId, pending] of existing.pendingRequests) {
-			console.log(`[Hawser] Rejecting pending request ${requestId} due to connection replacement`);
+			console.log(`[Hawser] 因连接被替换，拒绝待处理请求 ${requestId}`);
 			clearTimeout(pending.timeout);
-			pending.reject(new Error('Connection replaced by new agent'));
+			pending.reject(new Error('连接已被新代理替换'));
 		}
 		for (const [requestId, pending] of existing.pendingStreamRequests) {
-			console.log(`[Hawser] Ending stream request ${requestId} due to connection replacement`);
-			pending.onEnd?.('Connection replaced by new agent');
+			console.log(`[Hawser] 因连接被替换，结束流请求 ${requestId}`);
+			pending.onEnd?.('连接已被新代理替换');
 		}
 		existing.pendingRequests.clear();
 		existing.pendingStreamRequests.clear();
@@ -456,7 +456,7 @@ export function handleEdgeConnection(
 		if (typeof existing.ws.terminate === 'function') {
 			existing.ws.terminate();
 		} else {
-			existing.ws.close(1000, 'Replaced by new connection');
+			existing.ws.close(1000, '已被新连接替换');
 		}
 	}
 
@@ -774,13 +774,13 @@ export function sendEdgeStreamRequest(
 export function handleEdgeStreamData(environmentId: number, message: StreamMessage): void {
 	const connection = edgeConnections.get(environmentId);
 	if (!connection) {
-		console.warn(`[Hawser] Stream data for unknown environment ${environmentId}, requestId=${message.requestId}`);
+		console.warn(`[Hawser] 收到未知环境 ${environmentId} 的流数据，请求ID=${message.requestId}`);
 		return;
 	}
 
 	const pending = connection.pendingStreamRequests.get(message.requestId);
 	if (!pending) {
-		console.warn(`[Hawser] Stream data for unknown request ${message.requestId} on env ${environmentId}`);
+		console.warn(`[Hawser] 环境 ${environmentId} 收到未知请求 ${message.requestId} 的流数据`);
 		return;
 	}
 
@@ -793,13 +793,13 @@ export function handleEdgeStreamData(environmentId: number, message: StreamMessa
 export function handleEdgeStreamEnd(environmentId: number, message: StreamEndMessage): void {
 	const connection = edgeConnections.get(environmentId);
 	if (!connection) {
-		console.warn(`[Hawser] Stream end for unknown environment ${environmentId}, requestId=${message.requestId}`);
+		console.warn(`[Hawser] 收到未知环境 ${environmentId} 的流结束信号，请求ID=${message.requestId}`);
 		return;
 	}
 
 	const pending = connection.pendingStreamRequests.get(message.requestId);
 	if (!pending) {
-		console.warn(`[Hawser] Stream end for unknown request ${message.requestId} on env ${environmentId}`);
+		console.warn(`[Hawser] 环境 ${environmentId} 收到未知请求 ${message.requestId} 的流结束信号`);
 		return;
 	}
 
@@ -813,13 +813,13 @@ export function handleEdgeStreamEnd(environmentId: number, message: StreamEndMes
 export function handleEdgeResponse(environmentId: number, response: ResponseMessage): void {
 	const connection = edgeConnections.get(environmentId);
 	if (!connection) {
-		console.warn(`[Hawser] Response for unknown environment ${environmentId}, requestId=${response.requestId}`);
+		console.warn(`[Hawser] 收到未知环境 ${environmentId} 的响应，请求ID=${response.requestId}`);
 		return;
 	}
 
 	const pending = connection.pendingRequests.get(response.requestId);
 	if (!pending) {
-		console.warn(`[Hawser] Response for unknown request ${response.requestId} on env ${environmentId}`);
+		console.warn(`[Hawser] 环境 ${environmentId} 收到未知请求 ${response.requestId} 的响应`);
 		return;
 	}
 
@@ -1109,9 +1109,9 @@ function recordReconnection(envId: number): { allowed: true } | { allowed: false
 		entry.cooldownLevel = Math.min(entry.cooldownLevel + 1, COOLDOWN_LEVELS_SECS.length - 1);
 
 		console.warn(
-			`[Hawser WS] Reconnection storm detected for env ${envId}: ` +
-			`${entry.timestamps.length} connections in ${RECONNECT_WINDOW_MS / 1000}s. ` +
-			`Cooldown ${cooldownSecs}s (level ${level})`
+			`[Hawser WS] 检测到环境 ${envId} 发生重连风暴：` +
+			`${RECONNECT_WINDOW_MS / 1000}秒内尝试连接 ${entry.timestamps.length} 次。` +
+			`冷却 ${cooldownSecs}秒 (等级 ${level})`
 		);
 
 		return { allowed: false, retryAfter: cooldownSecs };
@@ -1134,38 +1134,38 @@ async function handleHawserWsMessage(ws: any, msg: any, connId: string, remoteIp
 		// Rate limit auth failures by remote IP (not connId which is unique per connection)
 		const lastFail = hawserAuthFailCache.get(rateLimitKey);
 		if (lastFail && Date.now() - lastFail < HAWSER_AUTH_FAIL_COOLDOWN_MS) {
-			console.log(`[Hawser WS] Rate limited ${connId} (IP: ${rateLimitKey}) — ${Math.round((Date.now() - lastFail) / 1000)}s since last fail`);
-			ws.send(JSON.stringify({ type: 'error', message: 'Too many failed attempts' }));
-			ws.close(1008, 'Rate limited');
+			console.log(`[Hawser WS] 已限流 ${connId}（IP：${rateLimitKey}）— 距离上次失败已过 ${Math.round((Date.now() - lastFail) / 1000)}秒`);
+			ws.send(JSON.stringify({ type: 'error', message: '失败次数过多' }));
+			ws.close(1008, '已限流');
 			return;
 		}
 
 		if (!msg.token) {
-			ws.send(JSON.stringify({ type: 'error', message: 'No token provided' }));
-			ws.close(1008, 'Missing token');
+			ws.send(JSON.stringify({ type: 'error', message: '未提供令牌' }));
+			ws.close(1008, '缺少令牌');
 			return;
 		}
 
 		try {
 			const result = await validateHawserToken(msg.token);
 			if (!result.valid || !result.environmentId) {
-				console.log(`[Hawser WS] Authentication failed for connection ${connId} (IP: ${rateLimitKey})`);
+				console.log(`[Hawser WS] 连接 ${connId} 认证失败 (IP: ${rateLimitKey})`);
 				hawserAuthFailCache.set(rateLimitKey, Date.now());
-				ws.send(JSON.stringify({ type: 'error', message: 'Invalid token' }));
-				ws.close(1008, 'Invalid token');
+				ws.send(JSON.stringify({ type: 'error', message: '无效令牌' }));
+				ws.close(1008, '无效令牌');
 				return;
 			}
 
 			// Throttle reconnection storms (successful auth but broken Docker = rapid reconnect loop)
 			const throttle = recordReconnection(result.environmentId);
 			if (!throttle.allowed) {
-				console.log(`[Hawser WS] Throttling reconnection for env ${result.environmentId}: retry after ${throttle.retryAfter}s`);
+				console.log(`[Hawser WS] 限流环境 ${result.environmentId} 重连：${throttle.retryAfter} 秒后重试`);
 				ws.send(JSON.stringify({
 					type: 'error',
-					message: `Reconnection throttled. Retry after ${throttle.retryAfter}s.`,
+					message: `重连已限流。${throttle.retryAfter} 秒后重试。`,
 					retryAfter: throttle.retryAfter
 				}));
-				ws.close(1008, 'Reconnection throttled');
+				ws.close(1008, '重连已限流');
 				return;
 			}
 
@@ -1180,11 +1180,11 @@ async function handleHawserWsMessage(ws: any, msg: any, connId: string, remoteIp
 				version: HAWSER_PROTOCOL_VERSION
 			}));
 
-			console.log(`[Hawser WS] Agent authenticated: env=${result.environmentId} agent=${msg.agentName || msg.agentId}`);
+			console.log(`[Hawser WS] 代理认证成功：环境=${result.environmentId} 代理=${msg.agentName || msg.agentId}`);
 		} catch (error: any) {
-			console.error('[Hawser WS] Auth error:', error.message);
-			ws.send(JSON.stringify({ type: 'error', message: 'Authentication failed' }));
-			ws.close(1011, 'Auth error');
+			console.error('[Hawser WS] 认证错误：', error.message);
+			ws.send(JSON.stringify({ type: 'error', message: '认证失败' }));
+			ws.close(1011, '认证错误');
 		}
 		return;
 	}
@@ -1192,7 +1192,7 @@ async function handleHawserWsMessage(ws: any, msg: any, connId: string, remoteIp
 	// All other messages require an authenticated connection
 	const envId = wsToEnvId.get(ws);
 	if (!envId) {
-		ws.send(JSON.stringify({ type: 'error', message: 'Not authenticated' }));
+		ws.send(JSON.stringify({ type: 'error', message: '未认证' }));
 		return;
 	}
 
@@ -1264,7 +1264,7 @@ async function handleHawserWsMessage(ws: any, msg: any, connId: string, remoteIp
 			break;
 
 		case 'error':
-			console.error(`[Hawser WS] Agent error (env ${envId}): ${msg.message}`);
+			console.error(`[Hawser WS] 代理错误 (环境 ${envId}): ${msg.message}`);
 			// Forward exec-related errors (identified by requestId) to terminal handler
 			if (msg.requestId && globalThis.__terminalHandleExecMessage) {
 				globalThis.__terminalHandleExecMessage(msg);
@@ -1286,14 +1286,14 @@ function handleHawserWsDisconnect(disconnectedWs: any, connId: string): void {
 
 	const connection = edgeConnections.get(envId);
 	if (connection && connection.ws === disconnectedWs) {
-		console.log(`[Hawser WS] Agent disconnected: env=${envId}`);
+		console.log(`[Hawser WS] 代理已断开连接：环境=${envId}`);
 
 		for (const [, pending] of connection.pendingRequests) {
 			clearTimeout(pending.timeout);
-			pending.reject(new Error('Agent disconnected'));
+			pending.reject(new Error('代理已断开连接'));
 		}
 		for (const [, pending] of connection.pendingStreamRequests) {
-			pending.onEnd?.('Agent disconnected');
+			pending.onEnd?.('代理已断开连接');
 		}
 		connection.pendingRequests.clear();
 		connection.pendingStreamRequests.clear();

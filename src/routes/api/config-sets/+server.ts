@@ -7,15 +7,15 @@ import { auditConfigSet } from '$lib/server/audit';
 export const GET: RequestHandler = async ({ cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('configsets', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const configSets = await getConfigSets();
 		return json(configSets);
 	} catch (error) {
-		console.error('Failed to fetch config sets:', error);
-		return json({ error: 'Failed to fetch config sets' }, { status: 500 });
+		console.error('获取配置集失败:', error);
+		return json({ error: '获取配置集失败' }, { status: 500 });
 	}
 };
 
@@ -23,14 +23,14 @@ export const POST: RequestHandler = async (event) => {
 	const { request, cookies } = event;
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('configsets', 'create')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const body = await request.json();
 
 		if (!body.name?.trim()) {
-			return json({ error: 'Name is required' }, { status: 400 });
+			return json({ error: '名称为必填项' }, { status: 400 });
 		}
 
 		const configSet = await createConfigSet({
@@ -49,10 +49,10 @@ export const POST: RequestHandler = async (event) => {
 
 		return json(configSet, { status: 201 });
 	} catch (error: any) {
-		console.error('Failed to create config set:', error);
+		console.error('创建配置集失败:', error);
 		if (error.message?.includes('UNIQUE constraint')) {
-			return json({ error: 'A config set with this name already exists' }, { status: 400 });
+			return json({ error: '该名称的配置集已存在' }, { status: 400 });
 		}
-		return json({ error: 'Failed to create config set' }, { status: 500 });
+		return json({ error: '创建配置集失败' }, { status: 500 });
 	}
 };

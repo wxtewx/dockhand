@@ -14,15 +14,15 @@ export const GET: RequestHandler = async ({ cookies }) => {
 	// Allow viewing roles when auth is disabled (setup mode) or with enterprise license
 	// This lets users see built-in roles before activating auth/enterprise
 	if (auth.authEnabled && !auth.isEnterprise) {
-		return json({ error: 'Enterprise license required' }, { status: 403 });
+		return json({ error: '需要企业版许可证' }, { status: 403 });
 	}
 
 	try {
 		const roles = await getRoles();
 		return json(roles);
 	} catch (error) {
-		console.error('Failed to get roles:', error);
-		return json({ error: 'Failed to get roles' }, { status: 500 });
+		console.error('获取角色列表失败:', error);
+		return json({ error: '获取角色列表失败' }, { status: 500 });
 	}
 };
 
@@ -33,20 +33,20 @@ export const POST: RequestHandler = async (event) => {
 
 	// Check enterprise license
 	if (!auth.isEnterprise) {
-		return json({ error: 'Enterprise license required' }, { status: 403 });
+		return json({ error: '需要企业版许可证' }, { status: 403 });
 	}
 
 	// When auth is disabled, allow all operations (setup mode)
 	// When auth is enabled, require admin access
 	if (auth.authEnabled && !auth.isAdmin) {
-		return json({ error: 'Admin access required' }, { status: 403 });
+		return json({ error: '需要管理员权限' }, { status: 403 });
 	}
 
 	try {
 		const { name, description, permissions, environmentIds } = await request.json();
 
 		if (!name || !permissions) {
-			return json({ error: 'Name and permissions are required' }, { status: 400 });
+			return json({ error: '名称和权限为必填项' }, { status: 400 });
 		}
 
 		const role = await dbCreateRole({
@@ -61,10 +61,10 @@ export const POST: RequestHandler = async (event) => {
 
 		return json(role, { status: 201 });
 	} catch (error: any) {
-		console.error('Failed to create role:', error);
+		console.error('创建角色失败:', error);
 		if (error.message?.includes('UNIQUE constraint failed')) {
-			return json({ error: 'Role name already exists' }, { status: 409 });
+			return json({ error: '角色名称已存在' }, { status: 409 });
 		}
-		return json({ error: 'Failed to create role' }, { status: 500 });
+		return json({ error: '创建角色失败' }, { status: 500 });
 	}
 };

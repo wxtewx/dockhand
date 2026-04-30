@@ -28,22 +28,22 @@
 
 <div class="flex items-start gap-3">
 	<div class="flex-1">
-		<Label>Collect container activity</Label>
-		<p class="text-xs text-muted-foreground">Track container events (start, stop, restart, etc.) from this environment in real-time</p>
+		<Label>收集容器活动</Label>
+		<p class="text-xs text-muted-foreground">实时跟踪该环境中的容器事件 (启动、停止、重启等)</p>
 	</div>
 	<TogglePill bind:checked={collectActivity} />
 </div>
 <div class="flex items-start gap-3">
 	<div class="flex-1">
-		<Label>Collect system metrics</Label>
-		<p class="text-xs text-muted-foreground">Collect CPU and memory usage statistics from this environment</p>
+		<Label>收集系统指标</Label>
+		<p class="text-xs text-muted-foreground">收集该环境的 CPU 和内存使用统计数据</p>
 	</div>
 	<TogglePill bind:checked={collectMetrics} />
 </div>
 <div class="flex items-start gap-3">
 	<div class="flex-1">
-		<Label>Highlight value changes</Label>
-		<p class="text-xs text-muted-foreground">Show amber glow when container values change in the containers list</p>
+		<Label>高亮显示值变化</Label>
+		<p class="text-xs text-muted-foreground">当容器列表中的容器值发生变化时显示琥珀色高亮效果</p>
 	</div>
 	<TogglePill bind:checked={highlightChanges} />
 </div>
@@ -51,8 +51,8 @@
 <div class="border-t pt-4 mt-2 space-y-3">
 	<div class="flex items-start gap-3">
 		<div class="flex-1">
-			<Label>Disk space warnings</Label>
-			<p class="text-xs text-muted-foreground">Send notifications when Docker disk usage exceeds the threshold</p>
+			<Label>磁盘空间警告</Label>
+			<p class="text-xs text-muted-foreground">当 Docker 磁盘使用率超过阈值时发送通知</p>
 		</div>
 		<TogglePill bind:checked={diskWarningEnabled} />
 	</div>
@@ -64,10 +64,10 @@
 					<div class="flex items-center gap-2">
 						{#if diskWarningMode === 'percentage'}
 							<Percent class="w-3.5 h-3.5" />
-							<span>Percentage</span>
+							<span>百分比</span>
 						{:else}
 							<HardDrive class="w-3.5 h-3.5" />
-							<span>Absolute (GB)</span>
+							<span>绝对值 (GB)</span>
 						{/if}
 					</div>
 				</Select.Trigger>
@@ -75,13 +75,13 @@
 					<Select.Item value="percentage">
 						<div class="flex items-center gap-2">
 							<Percent class="w-3.5 h-3.5" />
-							Percentage
+							百分比
 						</div>
 					</Select.Item>
 					<Select.Item value="absolute">
 						<div class="flex items-center gap-2">
 							<HardDrive class="w-3.5 h-3.5" />
-							Absolute (GB)
+							绝对值 (GB)
 						</div>
 					</Select.Item>
 				</Select.Content>

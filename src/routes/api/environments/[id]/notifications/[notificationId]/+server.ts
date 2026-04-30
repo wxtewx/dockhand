@@ -13,29 +13,29 @@ import type { RequestHandler } from './$types';
 export const GET: RequestHandler = async ({ params, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('notifications', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const envId = parseInt(params.id);
 	const notifId = parseInt(params.notificationId);
 	if (isNaN(envId) || isNaN(notifId)) {
-		return json({ error: 'Invalid ID' }, { status: 400 });
+		return json({ error: '无效的 ID' }, { status: 400 });
 	}
 
 	const env = await getEnvironment(envId);
 	if (!env) {
-		return json({ error: 'Environment not found' }, { status: 404 });
+		return json({ error: '环境不存在' }, { status: 404 });
 	}
 
 	try {
 		const notification = await getEnvironmentNotification(envId, notifId);
 		if (!notification) {
-			return json({ error: 'Environment notification not found' }, { status: 404 });
+			return json({ error: '环境通知不存在' }, { status: 404 });
 		}
 		return json(notification);
 	} catch (error) {
-		console.error('Error fetching environment notification:', error);
-		return json({ error: 'Failed to fetch environment notification' }, { status: 500 });
+		console.error('获取环境通知失败:', error);
+		return json({ error: '获取环境通知失败' }, { status: 500 });
 	}
 };
 
@@ -43,18 +43,18 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 export const PUT: RequestHandler = async ({ params, request, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('notifications', 'edit')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const envId = parseInt(params.id);
 	const notifId = parseInt(params.notificationId);
 	if (isNaN(envId) || isNaN(notifId)) {
-		return json({ error: 'Invalid ID' }, { status: 400 });
+		return json({ error: '无效的 ID' }, { status: 400 });
 	}
 
 	const env = await getEnvironment(envId);
 	if (!env) {
-		return json({ error: 'Environment not found' }, { status: 404 });
+		return json({ error: '环境不存在' }, { status: 404 });
 	}
 
 	try {
@@ -67,13 +67,13 @@ export const PUT: RequestHandler = async ({ params, request, cookies }) => {
 		});
 
 		if (!notification) {
-			return json({ error: 'Environment notification not found' }, { status: 404 });
+			return json({ error: '环境通知不存在' }, { status: 404 });
 		}
 
 		return json(notification);
 	} catch (error: any) {
-		console.error('Error updating environment notification:', error);
-		return json({ error: error.message || 'Failed to update environment notification' }, { status: 500 });
+		console.error('更新环境通知失败:', error);
+		return json({ error: error.message || '更新环境通知失败' }, { status: 500 });
 	}
 };
 
@@ -81,23 +81,23 @@ export const PUT: RequestHandler = async ({ params, request, cookies }) => {
 export const DELETE: RequestHandler = async ({ params, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('notifications', 'delete')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const envId = parseInt(params.id);
 	const notifId = parseInt(params.notificationId);
 	if (isNaN(envId) || isNaN(notifId)) {
-		return json({ error: 'Invalid ID' }, { status: 400 });
+		return json({ error: '无效的 ID' }, { status: 400 });
 	}
 
 	try {
 		const deleted = await deleteEnvironmentNotification(envId, notifId);
 		if (!deleted) {
-			return json({ error: 'Environment notification not found' }, { status: 404 });
+			return json({ error: '环境通知不存在' }, { status: 404 });
 		}
 		return json({ success: true });
 	} catch (error: any) {
-		console.error('Error deleting environment notification:', error);
-		return json({ error: error.message || 'Failed to delete environment notification' }, { status: 500 });
+		console.error('删除环境通知失败:', error);
+		return json({ error: error.message || '删除环境通知失败' }, { status: 500 });
 	}
 };

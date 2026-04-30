@@ -11,7 +11,7 @@ import { cleanPem } from '$lib/utils/pem';
 export const GET: RequestHandler = async ({ cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('environments', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -56,8 +56,8 @@ export const GET: RequestHandler = async ({ cookies }) => {
 
 		return json(envWithParsedLabels);
 	} catch (error) {
-		console.error('Failed to get environments:', error);
-		return json({ error: 'Failed to get environments' }, { status: 500 });
+		console.error('获取环境列表失败:', error);
+		return json({ error: '获取环境列表失败' }, { status: 500 });
 	}
 };
 
@@ -65,32 +65,45 @@ export const POST: RequestHandler = async (event) => {
 	const { request, cookies } = event;
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('environments', 'create')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const data = await request.json();
 
 		if (!data.name) {
-			return json({ error: 'Name is required' }, { status: 400 });
+			return json({ error: '名称为必填项' }, { status: 400 });
 		}
 
 		// Check if environment with this name already exists
 		const existing = await getEnvironmentByName(data.name);
 		if (existing) {
-			return json({ error: 'An environment with this name already exists' }, { status: 409 });
+			return json({ error: '同名环境已存在' }, { status: 409 });
 		}
 
 		// Validate connection type
 		const validConnectionTypes = ['socket', 'direct', 'hawser-standard', 'hawser-edge'];
 		const connectionType = data.connectionType || 'socket';
 		if (!validConnectionTypes.includes(connectionType)) {
-			return json({ error: `Invalid connection type: ${connectionType}` }, { status: 400 });
+			return json({ error: `无效的连接类型：${connectionType}` }, { status: 400 });
+		}
+
+		// Check if environment with this name already exists
+		const existing = await getEnvironmentByName(data.name);
+		if (existing) {
+			return json({ error: '该名称的环境已存在' }, { status: 409 });
+		}
+
+		// Validate connection type
+		const validConnectionTypes = ['socket', 'direct', 'hawser-standard', 'hawser-edge'];
+		const connectionType = data.connectionType || 'socket';
+		if (!validConnectionTypes.includes(connectionType)) {
+			return json({ error: `无效的连接类型：${connectionType}` }, { status: 400 });
 		}
 
 		// Host is required for direct and hawser-standard connections
 		if ((connectionType === 'direct' || connectionType === 'hawser-standard') && !data.host) {
-			return json({ error: 'Host is required for this connection type' }, { status: 400 });
+			return json({ error: '该连接类型需要填写主机地址' }, { status: 400 });
 		}
 
 		// Validate labels
@@ -135,7 +148,7 @@ export const POST: RequestHandler = async (event) => {
 					}
 				} catch (roleError) {
 					// Log but don't fail - environment was created successfully
-					console.error(`Failed to auto-assign Admin role to user ${user.id} for environment ${env.id}:`, roleError);
+					console.error(`无法自动为用户 ${user.id} 分配环境 ${env.id} 的管理员角色：`, roleError);
 				}
 			}
 		}
@@ -145,7 +158,7 @@ export const POST: RequestHandler = async (event) => {
 
 		return json(env);
 	} catch (error) {
-		console.error('Failed to create environment:', error);
-		return json({ error: 'Failed to create environment' }, { status: 500 });
+		console.error('创建环境失败:', error);
+		return json({ error: '创建环境失败' }, { status: 500 });
 	}
 };

@@ -145,7 +145,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
 	// UI preferences (time format, date format) should be available to all authenticated users
 	// This doesn't expose sensitive data and is needed for proper UI rendering
 	if (auth.authEnabled && !auth.isAuthenticated) {
-		return json({ error: 'Authentication required' }, { status: 401 });
+		return json({ error: '需要身份验证' }, { status: 401 });
 	}
 
 	try {
@@ -261,15 +261,15 @@ export const GET: RequestHandler = async ({ cookies }) => {
 
 		return json(settings);
 	} catch (error) {
-		console.error('Failed to get general settings:', error);
-		return json({ error: 'Failed to get general settings' }, { status: 500 });
+		console.error('获取常规设置失败：', error);
+		return json({ error: '获取常规设置失败' }, { status: 500 });
 	}
 };
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('settings', 'edit')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -512,7 +512,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 		return json(settings);
 	} catch (error) {
-		console.error('Failed to save general settings:', error);
-		return json({ error: 'Failed to save general settings' }, { status: 500 });
+		console.error('保存常规设置失败：', error);
+		return json({ error: '保存常规设置失败' }, { status: 500 });
 	}
 };

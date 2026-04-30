@@ -29,7 +29,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('settings', 'view', parsedEnvId)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -74,8 +74,8 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 			defaults: globalDefaults
 		});
 	} catch (error) {
-		console.error('Failed to get scanner settings:', error);
-		return json({ error: 'Failed to get scanner settings' }, { status: 500 });
+		console.error('获取扫描器设置失败：', error);
+		return json({ error: '获取扫描器设置失败' }, { status: 500 });
 	}
 };
 
@@ -89,13 +89,13 @@ export const POST: RequestHandler = async ({ request, url, cookies }) => {
 
 		// Permission check with environment context
 		if (auth.authEnabled && !await auth.can('settings', 'edit', parsedEnvId)) {
-			return json({ error: 'Permission denied' }, { status: 403 });
+			return json({ error: '权限不足' }, { status: 403 });
 		}
 
 		// Validate scanner type
 		const validScanners: ScannerType[] = ['none', 'grype', 'trivy', 'both'];
 		if (scanner && !validScanners.includes(scanner)) {
-			return json({ error: 'Invalid scanner type' }, { status: 400 });
+			return json({ error: '无效的扫描器类型' }, { status: 400 });
 		}
 
 		// Save environment-specific settings
@@ -129,8 +129,8 @@ export const POST: RequestHandler = async ({ request, url, cookies }) => {
 			}
 		});
 	} catch (error) {
-		console.error('Failed to save scanner settings:', error);
-		return json({ error: 'Failed to save scanner settings' }, { status: 500 });
+		console.error('保存扫描器设置失败：', error);
+		return json({ error: '保存扫描器设置失败' }, { status: 500 });
 	}
 };
 
@@ -144,21 +144,21 @@ export const DELETE: RequestHandler = async ({ url, cookies }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('settings', 'edit', parsedEnvId)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 
 		if (!removeImagesFlag) {
-			return json({ error: 'removeImages parameter required' }, { status: 400 });
+			return json({ error: '必须提供 removeImages 参数' }, { status: 400 });
 		}
 
 		if (!parsedEnvId) {
-			return json({ error: 'Environment ID required' }, { status: 400 });
+			return json({ error: '环境 ID 为必填项' }, { status: 400 });
 		}
 		const env = await getEnvironment(parsedEnvId);
 		if (!env) {
-			return json({ error: 'Environment not found' }, { status: 404 });
+			return json({ error: '未找到该环境' }, { status: 404 });
 		}
 
 		const images = await listImages(parsedEnvId);
@@ -189,8 +189,8 @@ export const DELETE: RequestHandler = async ({ url, cookies }) => {
 					removed.push(scannerType);
 				} catch (err) {
 					const errMsg = err instanceof Error ? err.message : String(err);
-					console.error(`Failed to remove ${scannerType} image:`, err);
-					errors.push(`${scannerType}: ${errMsg}`);
+					console.error(`移除 ${scannerType} 镜像失败：`, err);
+					errors.push(`${scannerType}：${errMsg}`);
 				}
 			}
 		}
@@ -204,7 +204,7 @@ export const DELETE: RequestHandler = async ({ url, cookies }) => {
 			errors: errors.length > 0 ? errors : undefined
 		});
 	} catch (error) {
-		console.error('Failed to remove scanner images:', error);
-		return json({ error: 'Failed to remove scanner images' }, { status: 500 });
+		console.error('移除扫描器镜像失败：', error);
+		return json({ error: '移除扫描器镜像失败' }, { status: 500 });
 	}
 };

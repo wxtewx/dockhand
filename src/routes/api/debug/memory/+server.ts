@@ -20,14 +20,14 @@ const startupRss = process.memoryUsage().rss;
 
 export const GET: RequestHandler = async ({ url }) => {
 	if (process.env.MEMORY_MONITOR !== 'true') {
-		return json({ error: 'Memory monitor not enabled. Set MEMORY_MONITOR=true.' }, { status: 403 });
+		return json({ error: '内存监控未启用，请设置 MEMORY_MONITOR=true。' }, { status: 403 });
 	}
 
 	// Trigger manual heap snapshot
 	if (url.searchParams.has('snapshot')) {
 		const filename = dumpHeapSnapshot();
 		return json({
-			snapshot: filename ? { filename, message: 'Heap snapshot saved' } : { error: 'Failed to save snapshot' }
+			snapshot: filename ? { filename, message: '堆快照已保存' } : { error: '保存快照失败' }
 		});
 	}
 
@@ -114,8 +114,8 @@ function formatUptime(ms: number): string {
 	const minutes = Math.floor(seconds / 60);
 	const hours = Math.floor(minutes / 60);
 	const days = Math.floor(hours / 24);
-	if (days > 0) return `${days}d ${hours % 24}h ${minutes % 60}m`;
-	if (hours > 0) return `${hours}h ${minutes % 60}m`;
-	if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
-	return `${seconds}s`;
+	if (days > 0) return `${days}天 ${hours % 24}小时 ${minutes % 60}分钟`;
+	if (hours > 0) return `${hours}小时 ${minutes % 60}分钟`;
+	if (minutes > 0) return `${minutes}分钟 ${seconds % 60}秒`;
+	return `${seconds}秒`;
 }

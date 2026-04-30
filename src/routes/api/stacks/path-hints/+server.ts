@@ -9,14 +9,14 @@ import { authorize } from '$lib/server/authorize';
 export const GET: RequestHandler = async ({ url, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !auth.isAuthenticated) {
-		return json({ error: 'Unauthorized' }, { status: 401 });
+		return json({ error: '未授权' }, { status: 401 });
 	}
 
 	const stackName = url.searchParams.get('name');
 	const envId = url.searchParams.get('env');
 
 	if (!stackName) {
-		return json({ error: 'Stack name is required' }, { status: 400 });
+		return json({ error: '堆栈名称为必填项' }, { status: 400 });
 	}
 
 	try {
@@ -28,9 +28,9 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 			configFiles: hints.configFiles
 		});
 	} catch (error) {
-		console.error('Failed to get stack path hints:', error);
+		console.error('获取堆栈路径提示失败：', error);
 		return json(
-			{ error: error instanceof Error ? error.message : 'Failed to get path hints' },
+			{ error: error instanceof Error ? error.message : '获取路径提示失败' },
 			{ status: 500 }
 		);
 	}

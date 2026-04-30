@@ -96,7 +96,7 @@ const hasProxy = process.env.HTTP_PROXY || process.env.HTTPS_PROXY ||
 if (hasProxy) {
 	const proxyUrl = process.env.HTTPS_PROXY || process.env.https_proxy ||
 		process.env.HTTP_PROXY || process.env.http_proxy;
-	console.log(`[DNS] HTTP proxy detected (${proxyUrl}), using EnvHttpProxyAgent`);
+	console.log(`[DNS] 检测到 HTTP 代理 (${proxyUrl})，正在使用 EnvHttpProxyAgent`);
 	setGlobalDispatcher(new EnvHttpProxyAgent({ connect: connectOptions }));
 } else {
 	setGlobalDispatcher(new Agent({ connect: connectOptions }));

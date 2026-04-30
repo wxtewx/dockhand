@@ -127,7 +127,7 @@
 				envHasScanning = scanner !== 'none';
 			}
 		} catch (error) {
-			console.error('Failed to fetch scanner settings:', error);
+			console.error('获取扫描器设置失败:', error);
 		}
 	}
 
@@ -254,7 +254,7 @@
 				{:else}
 					<Copy class="w-5 h-5" />
 				{/if}
-				Copy to registry
+				复制到仓库
 				<code class="text-sm font-normal bg-muted px-1.5 py-0.5 rounded ml-1">{imageName}</code>
 			</Dialog.Title>
 		</Dialog.Header>
@@ -267,7 +267,7 @@
 				disabled={isProcessing}
 			>
 				<Settings2 class="w-3.5 h-3.5 inline mr-1.5" />
-				Configure
+				配置
 			</button>
 			<ArrowBigRight class="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
 			<button
@@ -276,7 +276,7 @@
 				disabled={isProcessing || pullStatus === 'idle'}
 			>
 				<Download class="w-3.5 h-3.5 inline mr-1.5" />
-				Pull
+				拉取
 				{#if pullStatus === 'complete'}
 					<CheckCircle2 class="w-3.5 h-3.5 inline ml-1 text-green-500" />
 				{:else if pullStatus === 'error'}
@@ -303,7 +303,7 @@
 					{:else}
 						<ShieldCheck class="w-3.5 h-3.5 inline mr-1.5" />
 					{/if}
-					Scan
+					扫描
 					{#if scanStatus === 'complete'}
 						<CheckCircle2 class="w-3.5 h-3.5 inline ml-1 text-green-500" />
 					{:else if scanStatus === 'error'}
@@ -320,7 +320,7 @@
 				disabled={isProcessing || pushStatus === 'idle'}
 			>
 				<Upload class="w-3.5 h-3.5 inline mr-1.5" />
-				Push
+				推送
 				{#if pushStatus === 'complete'}
 					<CheckCircle2 class="w-3.5 h-3.5 inline ml-1 text-green-500" />
 				{:else if pushStatus === 'error'}
@@ -335,14 +335,14 @@
 			<!-- Configuration Step -->
 			<div class="space-y-4 px-1" class:hidden={currentStep !== 'configure'}>
 					<div class="space-y-2">
-						<Label>Source image</Label>
+						<Label>源镜像</Label>
 						<div class="p-2 bg-muted rounded text-sm">
 							<code class="break-all">{imageName}:{sourceTag}</code>
 						</div>
 					</div>
 
 					<div class="space-y-2">
-						<Label>Target registry</Label>
+						<Label>目标仓库</Label>
 						<Select.Root type="single" value={targetRegistryId ? String(targetRegistryId) : undefined} onValueChange={(v) => targetRegistryId = Number(v)}>
 							<Select.Trigger class="w-full h-9 justify-start">
 								{#if targetRegistry}
@@ -351,9 +351,9 @@
 									{:else}
 										<Server class="w-4 h-4 mr-2 text-muted-foreground" />
 									{/if}
-									<span class="flex-1 text-left">{targetRegistry.name}{targetRegistry.hasCredentials ? ' (auth)' : ''}</span>
+									<span class="flex-1 text-left">{targetRegistry.name}{targetRegistry.hasCredentials ? ' (已认证)' : ''}</span>
 								{:else}
-									<span class="text-muted-foreground">Select registry</span>
+									<span class="text-muted-foreground">选择仓库</span>
 								{/if}
 							</Select.Trigger>
 							<Select.Content>
@@ -366,38 +366,38 @@
 										{/if}
 										{registry.name}
 										{#if registry.hasCredentials}
-											<Badge variant="outline" class="ml-2 text-xs">auth</Badge>
+											<Badge variant="outline" class="ml-2 text-xs">已认证</Badge>
 										{/if}
 									</Select.Item>
 								{/each}
 							</Select.Content>
 						</Select.Root>
 						{#if pushableRegistries.length === 0}
-							<p class="text-xs text-muted-foreground">No target registries available. Add a private registry in Settings.</p>
+							<p class="text-xs text-muted-foreground">暂无可用的目标仓库，请在设置中添加私有仓库。</p>
 						{/if}
 					</div>
 
 					<div class="space-y-2">
-						<Label>Image name/tag</Label>
+						<Label>镜像名称/标签</Label>
 						<Input
 							bind:value={customTag}
 							placeholder="myimage:latest"
 						/>
 						<p class="text-xs text-muted-foreground flex items-center gap-1">
-							<span>Will be pushed as:</span>
+							<span>将推送到：</span>
 							<code class="bg-muted px-1 py-0.5 rounded">{targetImageName()}</code>
 							<button
 								type="button"
 								onclick={copyTargetToClipboard}
 								class="p-0.5 rounded hover:bg-muted transition-colors cursor-pointer"
-								title="Copy to clipboard"
+								title="复制到剪贴板"
 							>
 								{#if copiedToClipboard === 'error'}
 									<Tooltip.Root open>
 										<Tooltip.Trigger>
 											<XCircle class="w-3 h-3 text-red-500" />
 										</Tooltip.Trigger>
-										<Tooltip.Content>Copy requires HTTPS</Tooltip.Content>
+										<Tooltip.Content>复制需要 HTTPS 环境</Tooltip.Content>
 									</Tooltip.Root>
 								{:else if copiedToClipboard === 'ok'}
 									<Check class="w-3 h-3 text-green-500" />
@@ -459,15 +459,15 @@
 			<div>
 				{#if currentStep === 'pull' && pullStatus === 'error'}
 					<Button variant="outline" onclick={() => pullTabRef?.startPull()}>
-						Retry pull
+						重试拉取
 					</Button>
 				{:else if currentStep === 'scan' && scanStatus === 'error'}
 					<Button variant="outline" onclick={() => scanTabRef?.startScan()}>
-						Retry scan
+						重试扫描
 					</Button>
 				{:else if currentStep === 'push' && pushStatus === 'error'}
 					<Button variant="outline" onclick={() => pushTabRef?.startPush()}>
-						Retry push
+						重试推送
 					</Button>
 				{/if}
 			</div>
@@ -477,7 +477,7 @@
 					onclick={handleClose}
 					disabled={isProcessing}
 				>
-					{pushStatus === 'complete' ? 'Done' : 'Cancel'}
+					{pushStatus === 'complete' ? '完成' : '取消'}
 				</Button>
 				{#if currentStep === 'configure'}
 					<Button
@@ -485,23 +485,23 @@
 						disabled={!targetRegistryId || pushableRegistries.length === 0}
 					>
 						<Copy class="w-4 h-4" />
-						Start copy
+						开始复制
 					</Button>
 				{:else if currentStep === 'scan' && scanStatus === 'complete'}
 					{#if hasCriticalOrHigh}
 						<div class="flex items-center gap-2 text-red-600 text-sm mr-2">
 							<ShieldX class="w-4 h-4" />
-							<span>Critical/high vulnerabilities found</span>
+							<span>发现严重/高危漏洞</span>
 						</div>
 					{:else if totalVulnerabilities > 0}
 						<div class="flex items-center gap-2 text-yellow-600 text-sm mr-2">
 							<ShieldAlert class="w-4 h-4" />
-							<span>{totalVulnerabilities} vulnerabilities found</span>
+							<span>发现 {totalVulnerabilities} 个漏洞</span>
 						</div>
 					{/if}
 					<Button onclick={proceedToPush} variant={hasCriticalOrHigh ? 'destructive' : 'default'}>
 						<Upload class="w-4 h-4" />
-						{hasCriticalOrHigh ? 'Push anyway' : 'Continue to push'}
+						{hasCriticalOrHigh ? '仍要推送' : '继续推送'}
 					</Button>
 				{/if}
 			</div>

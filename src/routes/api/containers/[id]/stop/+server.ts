@@ -17,12 +17,12 @@ export const POST: RequestHandler = async (event) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('containers', 'stop', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Environment access check (enterprise only)
 	if (envIdNum && auth.isEnterprise && !await auth.canAccessEnvironment(envIdNum)) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问此环境' }, { status: 403 });
 	}
 
 	try {
@@ -37,9 +37,9 @@ export const POST: RequestHandler = async (event) => {
 		return json({ success: true });
 	} catch (error: any) {
 		if (error?.statusCode === 404) {
-			return json({ error: error.json?.message || 'Container not found' }, { status: 404 });
+			return json({ error: error.json?.message || '容器未找到' }, { status: 404 });
 		}
-		console.error('Error stopping container:', error?.message || error);
-		return json({ error: 'Failed to stop container' }, { status: 500 });
+		console.error('停止容器错误:', error?.message || error);
+		return json({ error: '停止容器失败' }, { status: 500 });
 	}
 };

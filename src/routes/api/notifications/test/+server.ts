@@ -7,21 +7,21 @@ import type { RequestHandler } from './$types';
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('settings', 'edit')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const data = await request.json();
 
 		if (!data.type || !data.config) {
-			return json({ error: 'Type and config are required' }, { status: 400 });
+			return json({ error: '类型和配置为必填项' }, { status: 400 });
 		}
 
 		// Validate SMTP config
 		if (data.type === 'smtp') {
 			const config = data.config;
 			if (!config.host || !config.from_email || !config.to_emails?.length) {
-				return json({ error: 'Host, from email, and at least one recipient are required' }, { status: 400 });
+				return json({ error: '主机、发件邮箱和至少一个收件人为必填项' }, { status: 400 });
 			}
 		}
 
@@ -29,7 +29,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		if (data.type === 'apprise') {
 			const config = data.config;
 			if (!config.urls?.length) {
-				return json({ error: 'At least one Apprise URL is required' }, { status: 400 });
+				return json({ error: '至少需要一个 Apprise URL' }, { status: 400 });
 			}
 		}
 
@@ -49,14 +49,14 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 		return json({
 			success: result.success,
-			message: result.success ? 'Test notification sent successfully' : undefined,
-			error: result.error || (result.success ? undefined : 'Failed to send test notification')
+			message: result.success ? '测试通知发送成功' : undefined,
+			error: result.error || (result.success ? undefined : '发送测试通知失败')
 		});
 	} catch (error: any) {
-		console.error('Error testing notification:', error);
+		console.error('测试通知失败:', error);
 		return json({
 			success: false,
-			error: error.message || 'Failed to test notification'
+			error: error.message || '测试通知失败'
 		}, { status: 500 });
 	}
 };

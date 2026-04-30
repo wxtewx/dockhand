@@ -33,7 +33,7 @@ export const GET: RequestHandler = async () => {
 
 	return json({
 		status: 'ready',
-		message: 'Hawser Edge WebSocket endpoint. Connect via WebSocket.',
+		message: 'Hawser Edge WebSocket 端点。通过 WebSocket 连接。',
 		protocol: 'wss://<host>/api/hawser/connect',
 		activeConnections: connectionList.length,
 		connections: connectionList
@@ -48,12 +48,12 @@ export const GET: RequestHandler = async () => {
 export const POST: RequestHandler = async () => {
 	return json(
 		{
-			error: 'WebSocket required',
-			message: 'This endpoint requires a WebSocket connection. Use the ws:// or wss:// protocol.',
+			error: '需要 WebSocket 连接',
+			message: '此端点需要 WebSocket 连接。请使用 ws:// 或 wss:// 协议。',
 			instructions: [
-				'1. Generate a token in Settings > Environments > [Environment] > Hawser',
-				'2. Configure your Hawser agent with DOCKHAND_SERVER_URL and TOKEN',
-				'3. The agent will connect automatically'
+				'1. 在 设置 > 环境 > [环境] > Hawser 中生成令牌',
+				'2. 使用 DOCKHAND_SERVER_URL 和 TOKEN 配置你的 Hawser 代理',
+				'3. 代理将自动连接'
 			]
 		},
 		{ status: 426 }

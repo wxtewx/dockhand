@@ -16,11 +16,11 @@ import { invalidateTokenCacheForUser } from '$lib/server/api-tokens';
 export const GET: RequestHandler = async ({ params, cookies }) => {
 	// Check enterprise license
 	if (!(await isEnterprise())) {
-		return json({ error: 'Enterprise license required' }, { status: 403 });
+		return json({ error: '需要企业版许可证' }, { status: 403 });
 	}
 
 	if (!params.id) {
-		return json({ error: 'User ID is required' }, { status: 400 });
+		return json({ error: '用户 ID 为必填项' }, { status: 400 });
 	}
 
 	try {
@@ -28,14 +28,14 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 		const user = await getUser(userId);
 
 		if (!user) {
-			return json({ error: 'User not found' }, { status: 404 });
+			return json({ error: '用户不存在' }, { status: 404 });
 		}
 
 		const userRoles = await getUserRoles(userId);
 		return json(userRoles);
 	} catch (error) {
-		console.error('Failed to get user roles:', error);
-		return json({ error: 'Failed to get user roles' }, { status: 500 });
+		console.error('获取用户角色失败：', error);
+		return json({ error: '获取用户角色失败' }, { status: 500 });
 	}
 };
 
@@ -44,16 +44,16 @@ export const POST: RequestHandler = async (event) => {
 	const { params, request, cookies } = event;
 	// Check enterprise license
 	if (!(await isEnterprise())) {
-		return json({ error: 'Enterprise license required' }, { status: 403 });
+		return json({ error: '需要企业版许可证' }, { status: 403 });
 	}
 
 	const currentUser = await validateSession(cookies);
 	if (!currentUser || !currentUser.isAdmin) {
-		return json({ error: 'Admin access required' }, { status: 403 });
+		return json({ error: '需要管理员权限' }, { status: 403 });
 	}
 
 	if (!params.id) {
-		return json({ error: 'User ID is required' }, { status: 400 });
+		return json({ error: '用户 ID 为必填项' }, { status: 400 });
 	}
 
 	try {
@@ -61,12 +61,12 @@ export const POST: RequestHandler = async (event) => {
 		const { roleId, environmentId } = await request.json();
 
 		if (!roleId) {
-			return json({ error: 'Role ID is required' }, { status: 400 });
+			return json({ error: '角色ID为必填项' }, { status: 400 });
 		}
 
 		const user = await getUser(userId);
 		if (!user) {
-			return json({ error: 'User not found' }, { status: 404 });
+			return json({ error: '未找到用户' }, { status: 404 });
 		}
 
 		const userRole = await assignUserRole(userId, roleId, environmentId);
@@ -81,8 +81,8 @@ export const POST: RequestHandler = async (event) => {
 
 		return json(userRole, { status: 201 });
 	} catch (error) {
-		console.error('Failed to assign role:', error);
-		return json({ error: 'Failed to assign role' }, { status: 500 });
+		console.error('分配角色失败：', error);
+		return json({ error: '分配角色失败' }, { status: 500 });
 	}
 };
 
@@ -91,16 +91,16 @@ export const DELETE: RequestHandler = async (event) => {
 	const { params, request, cookies } = event;
 	// Check enterprise license
 	if (!(await isEnterprise())) {
-		return json({ error: 'Enterprise license required' }, { status: 403 });
+		return json({ error: '需要企业版许可证' }, { status: 403 });
 	}
 
 	const currentUser = await validateSession(cookies);
 	if (!currentUser || !currentUser.isAdmin) {
-		return json({ error: 'Admin access required' }, { status: 403 });
+		return json({ error: '需要管理员权限' }, { status: 403 });
 	}
 
 	if (!params.id) {
-		return json({ error: 'User ID is required' }, { status: 400 });
+		return json({ error: '用户 ID 为必填项' }, { status: 400 });
 	}
 
 	try {
@@ -108,7 +108,7 @@ export const DELETE: RequestHandler = async (event) => {
 		const { roleId, environmentId } = await request.json();
 
 		if (!roleId) {
-			return json({ error: 'Role ID is required' }, { status: 400 });
+			return json({ error: '角色 ID 为必填项' }, { status: 400 });
 		}
 
 		// Get user and role info before deletion for audit
@@ -117,7 +117,7 @@ export const DELETE: RequestHandler = async (event) => {
 
 		const deleted = await removeUserRole(userId, roleId, environmentId);
 		if (!deleted) {
-			return json({ error: 'Role assignment not found' }, { status: 404 });
+			return json({ error: '未找到角色分配' }, { status: 404 });
 		}
 		invalidateTokenCacheForUser(userId);
 
@@ -131,7 +131,7 @@ export const DELETE: RequestHandler = async (event) => {
 
 		return json({ success: true });
 	} catch (error) {
-		console.error('Failed to remove role:', error);
-		return json({ error: 'Failed to remove role' }, { status: 500 });
+		console.error('移除角色失败：', error);
+		return json({ error: '移除角色失败' }, { status: 500 });
 	}
 };

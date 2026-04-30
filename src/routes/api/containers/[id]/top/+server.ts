@@ -39,7 +39,7 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 
 	// Permission check with environment context (process list uses inspect permission)
 	if (auth.authEnabled && !await auth.can('containers', 'inspect', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -71,7 +71,7 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 		const top = await getContainerTop(params.id, envIdNum);
 		return json({ ...top, source: 'top' });
 	} catch (error: any) {
-		console.error('Failed to get container processes:', error);
-		return json({ error: error.message || 'Failed to get processes' }, { status: 500 });
+		console.error('获取容器进程失败:', error);
+		return json({ error: error.message || '获取进程失败' }, { status: 500 });
 	}
 };

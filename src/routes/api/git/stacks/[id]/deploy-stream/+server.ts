@@ -13,7 +13,7 @@ export const POST: RequestHandler = async ({ params, cookies, request }) => {
 	const gitStack = await getGitStack(id);
 
 	if (!gitStack) {
-		return new Response(JSON.stringify({ error: 'Git stack not found' }), {
+		return new Response(JSON.stringify({ error: 'Git 堆栈不存在' }), {
 			status: 404,
 			headers: { 'Content-Type': 'application/json' }
 		});
@@ -21,7 +21,7 @@ export const POST: RequestHandler = async ({ params, cookies, request }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('stacks', 'start', gitStack.environmentId || undefined)) {
-		return new Response(JSON.stringify({ error: 'Permission denied' }), {
+		return new Response(JSON.stringify({ error: '权限不足' }), {
 			status: 403,
 			headers: { 'Content-Type': 'application/json' }
 		});
@@ -38,7 +38,7 @@ export const POST: RequestHandler = async ({ params, cookies, request }) => {
 				try {
 					await deployGitStackWithProgress(id, sendEvent);
 				} catch (error: any) {
-					sendEvent({ status: 'error', error: error.message || 'Unknown error' });
+					sendEvent({ status: 'error', error: error.message || '未知错误' });
 				} finally {
 					controller.close();
 				}

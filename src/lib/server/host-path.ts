@@ -85,16 +85,17 @@ export async function detectHostDataDir(): Promise<string | null> {
 	// Check if user explicitly set HOST_DATA_DIR
 	if (process.env.HOST_DATA_DIR) {
 		cachedHostDataDir = process.env.HOST_DATA_DIR;
-		console.log(`[HostPath] Using HOST_DATA_DIR from environment: ${cachedHostDataDir}`);
+		console.log(`[主机路径] 使用环境变量中的 HOST_DATA_DIR：${cachedHostDataDir}`);
+		return cachedHostDataDir;
 	}
 
 	const containerId = getOwnContainerId();
 	if (!containerId) {
-		console.warn('[HostPath] Running in Docker but could not detect container ID; ExtraHosts will not be mirrored to sidecars');
+		console.warn('[主机路径] 正在 Docker 中运行，但无法检测容器 ID');
 		return null;
 	}
 
-	console.log(`[HostPath] Detected container ID: ${containerId.substring(0, 12)}`);
+	console.log(`[主机路径] 检测到容器 ID：${containerId.substring(0, 12)}`);
 
 	// Get DATA_DIR (inside container)
 	const dataDir = resolve(process.env.DATA_DIR || '/app/data');
@@ -121,10 +122,10 @@ export async function detectHostDataDir(): Promise<string | null> {
 						try {
 							resolvePromise(JSON.parse(Buffer.concat(chunks).toString('utf-8')));
 						} catch {
-							reject(new Error('Failed to parse container inspect response'));
+							reject(new Error('解析容器检查响应失败'));
 						}
 					} else {
-						reject(new Error(`Container inspect failed: ${res.statusCode}`));
+						reject(new Error(`容器检查失败：${res.statusCode}`));
 					}
 				});
 				res.on('error', reject);
@@ -153,7 +154,7 @@ export async function detectHostDataDir(): Promise<string | null> {
 			source: m.Source,
 			destination: m.Destination
 		}));
-		console.log(`[HostPath] Cached ${cachedMounts.length} mount(s)`);
+		console.log(`[主机路径] 已缓存 ${cachedMounts.length} 个挂载点`);
 
 		// Cache DOCKER_HOST from Dockhand's own env vars (if set)
 		// This tells us how Dockhand was configured to reach Docker
@@ -161,7 +162,7 @@ export async function detectHostDataDir(): Promise<string | null> {
 		for (const v of envVars) {
 			if (v.startsWith('DOCKER_HOST=')) {
 				cachedOwnDockerHost = v.substring('DOCKER_HOST='.length);
-				console.log(`[HostPath] Detected own DOCKER_HOST: ${cachedOwnDockerHost}`);
+				console.log(`[主机路径] 检测到自身 DOCKER_HOST：${cachedOwnDockerHost}`);
 				break;
 			}
 		}
@@ -175,7 +176,7 @@ export async function detectHostDataDir(): Promise<string | null> {
 			cachedOwnNetworkMode = custom.length > 0 ? custom[0]
 				: networks.bridge ? 'bridge' : null;
 			if (cachedOwnNetworkMode) {
-				console.log(`[HostPath] Detected own network: ${cachedOwnNetworkMode}`);
+				console.log(`[HostPath] 检测到自身网络：${cachedOwnNetworkMode}`);
 			}
 		}
 
@@ -183,7 +184,7 @@ export async function detectHostDataDir(): Promise<string | null> {
 			? [...containerInfo.HostConfig.ExtraHosts]
 			: null;
 		if (cachedOwnExtraHosts) {
-			console.log(`[HostPath] Detected own ExtraHosts: ${cachedOwnExtraHosts.join(', ')}`);
+			console.log(`[HostPath] 检测到自身 ExtraHosts：${cachedOwnExtraHosts.join(', ')}`);
 		}
 
 		// Explicit override wins for DATA_DIR path, but we still inspect to populate
@@ -197,7 +198,7 @@ export async function detectHostDataDir(): Promise<string | null> {
 
 		if (dataMount) {
 			cachedHostDataDir = dataMount.Source;
-			console.log(`[HostPath] Detected host path for ${dataDir}: ${cachedHostDataDir}`);
+			console.log(`[主机路径] 检测到 ${dataDir} 的主机路径：${cachedHostDataDir}`);
 			return cachedHostDataDir;
 		}
 
@@ -206,15 +207,15 @@ export async function detectHostDataDir(): Promise<string | null> {
 			if (dataDir.startsWith(mount.Destination + '/') || dataDir === mount.Destination) {
 				const relativePath = dataDir.substring(mount.Destination.length);
 				cachedHostDataDir = mount.Source + relativePath;
-				console.log(`[HostPath] Detected host path for ${dataDir} via parent mount: ${cachedHostDataDir}`);
+				console.log(`[主机路径] 通过父挂载点检测到 ${dataDir} 的主机路径：${cachedHostDataDir}`);
 				return cachedHostDataDir;
 			}
 		}
 
-		console.warn(`[HostPath] Could not find mount for ${dataDir} in container mounts`);
+		console.warn(`[主机路径] 在容器挂载点中未找到 ${dataDir} 的挂载`);
 		return null;
 	} catch (err) {
-		console.warn(`[HostPath] Failed to query Docker API: ${err}`);
+		console.warn(`[主机路径] 查询 Docker API 失败：${err}`);
 		return null;
 	}
 }
@@ -320,13 +321,13 @@ export function translateContainerPathViaMount(containerPath: string): string | 
 export function getHostDockerSocket(): string {
 	// Priority 1: Explicit environment variable override
 	if (process.env.HOST_DOCKER_SOCKET) {
-		console.log(`[HostPath] Using HOST_DOCKER_SOCKET from env: ${process.env.HOST_DOCKER_SOCKET}`);
+		console.log(`[主机路径] 使用环境变量中的 HOST_DOCKER_SOCKET：${process.env.HOST_DOCKER_SOCKET}`);
 		return process.env.HOST_DOCKER_SOCKET;
 	}
 
 	// Priority 2: Look up from cached mounts (populated by detectHostDataDir on startup)
 	if (cachedMounts && cachedMounts.length > 0) {
-		console.log(`[HostPath] Searching ${cachedMounts.length} cached mount(s) for Docker socket`);
+		console.log(`[主机路径] 正在搜索 ${cachedMounts.length} 个缓存挂载点以查找 Docker socket`);
 
 		// Find mount where destination is docker.sock
 		const socketMount = cachedMounts.find(m =>
@@ -336,21 +337,21 @@ export function getHostDockerSocket(): string {
 		);
 
 		if (socketMount) {
-			console.log(`[HostPath] Found Docker socket mount: ${socketMount.source} -> ${socketMount.destination}`);
+			console.log(`[主机路径] 找到 Docker socket 挂载：${socketMount.source} -> ${socketMount.destination}`);
 			return socketMount.source;
 		}
 
 		// Log available mounts for debugging
-		console.log(`[HostPath] No Docker socket mount found. Available mounts:`);
+		console.log(`[主机路径] 使用默认 Docker socket：`);
 		for (const m of cachedMounts) {
-			console.log(`[HostPath]   ${m.source} -> ${m.destination}`);
+			console.log(`[主机路径]   ${m.source} -> ${m.destination}`);
 		}
 	} else {
-		console.log(`[HostPath] No cached mounts available (not running in Docker or detectHostDataDir not called)`);
+		console.log(`[主机路径] 无可用缓存挂载点 (未在 Docker 中运行或未调用 detectHostDataDir)`);
 	}
 
 	// Priority 3: Default fallback (works for standard Docker setups)
-	console.log(`[HostPath] Using default Docker socket: /var/run/docker.sock`);
+	console.log(`[主机路径] 使用默认 Docker socket：/var/run/docker.sock`);
 	return '/var/run/docker.sock';
 }
 
@@ -365,7 +366,7 @@ export function extractUidFromSocketPath(socketPath: string): string | null {
 	// Match patterns like /run/user/1000/docker.sock or /var/run/user/1000/docker.sock
 	const match = socketPath.match(/\/user\/(\d+)\/docker\.sock$/);
 	if (match) {
-		console.log(`[HostPath] Extracted UID ${match[1]} from socket path: ${socketPath}`);
+		console.log(`[主机路径] 从 socket 路径中提取 UID ${match[1]}: ${socketPath}`);
 		return match[1];
 	}
 	return null;

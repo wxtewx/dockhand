@@ -11,7 +11,7 @@ import { auditGitRepository } from '$lib/server/audit';
 export const GET: RequestHandler = async ({ url, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('git', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -20,8 +20,8 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 		const repositories = await getGitRepositories();
 		return json(repositories);
 	} catch (error) {
-		console.error('Failed to get git repositories:', error);
-		return json({ error: 'Failed to get git repositories' }, { status: 500 });
+		console.error('获取 Git 仓库列表失败:', error);
+		return json({ error: '获取 Git 仓库列表失败' }, { status: 500 });
 	}
 };
 
@@ -29,18 +29,18 @@ export const POST: RequestHandler = async (event) => {
 	const { request, cookies } = event;
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('git', 'create')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const data = await request.json();
 
 		if (!data.name || typeof data.name !== 'string') {
-			return json({ error: 'Name is required' }, { status: 400 });
+			return json({ error: '名称为必填项' }, { status: 400 });
 		}
 
 		if (!data.url || typeof data.url !== 'string') {
-			return json({ error: 'Repository URL is required' }, { status: 400 });
+			return json({ error: '仓库 URL 为必填项' }, { status: 400 });
 		}
 
 		// Validate credential if provided
@@ -48,7 +48,7 @@ export const POST: RequestHandler = async (event) => {
 			const credentials = await getGitCredentials();
 			const credential = credentials.find(c => c.id === data.credentialId);
 			if (!credential) {
-				return json({ error: 'Invalid credential ID' }, { status: 400 });
+				return json({ error: '无效的凭据 ID' }, { status: 400 });
 			}
 		}
 
@@ -66,10 +66,10 @@ export const POST: RequestHandler = async (event) => {
 
 		return json(repository);
 	} catch (error: any) {
-		console.error('Failed to create git repository:', error);
+		console.error('创建 Git 仓库失败:', error);
 		if (error.message?.includes('UNIQUE constraint failed')) {
-			return json({ error: 'A repository with this name already exists' }, { status: 400 });
+			return json({ error: '同名仓库已存在' }, { status: 400 });
 		}
-		return json({ error: 'Failed to create git repository' }, { status: 500 });
+		return json({ error: '创建 Git 仓库失败' }, { status: 500 });
 	}
 };
