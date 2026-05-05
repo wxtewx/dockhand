@@ -586,19 +586,6 @@ function escapeLdapFilterValue(value: string): string {
 }
 
 /**
- * Escape special characters in an LDAP filter value (RFC 4515).
- * Prevents LDAP injection via wildcards or control characters.
- */
-function escapeLdapFilterValue(value: string): string {
-	return value
-		.replace(/\\/g, '\\5c')
-		.replace(/\*/g, '\\2a')
-		.replace(/\(/g, '\\28')
-		.replace(/\)/g, '\\29')
-		.replace(/\0/g, '\\00');
-}
-
-/**
  * Try authentication against a specific LDAP configuration
  */
 async function tryLdapAuth(

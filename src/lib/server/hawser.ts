@@ -206,12 +206,12 @@ export async function handleEdgeContainerEvent(
 							? 'success'
 							: 'info';
 
-		// Send notification
-		await sendEnvironmentNotification(environmentId, event.action as ContainerEventAction, {
-			title: `容器 ${actionLabel}`,
-			message: `容器 "${containerLabel}" ${event.action}${event.image ? ` (${event.image})` : ''}`,
-			type: notificationType as 'success' | 'error' | 'warning' | 'info'
-		}, event.image);
+			await sendEnvironmentNotification(environmentId, event.action as ContainerEventAction, {
+				title: `容器 ${actionLabel}`,
+				message: `容器 "${containerLabel}" ${event.action}${event.image ? ` (${event.image})` : ''}`,
+				type: notificationType as 'success' | 'error' | 'warning' | 'info'
+			}, event.image);
+		}
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
 		console.error('[Hawser] 处理容器事件时出错：', errorMsg);

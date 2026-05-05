@@ -2161,7 +2161,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 							<button
 								onclick={() => openTerminal(selectedContainer!.id, selectedContainer!.name, 'below')}
 								class="p-0.5 rounded transition-colors {terminalOpen && terminalLayout === 'below' && terminalContainerId === selectedContainer.id ? (darkMode ? 'bg-amber-500/20 ring-1 ring-amber-500/50' : 'bg-amber-500/30 ring-1 ring-amber-600/50') : darkMode ? 'hover:bg-zinc-800' : 'hover:bg-gray-200'}"
-								title="Terminal below"
+								title="下方终端"
 							>
 								<span class="inline-flex items-center gap-px">
 									<Terminal class="w-3.5 h-3.5 {terminalOpen && terminalLayout === 'below' && terminalContainerId === selectedContainer.id ? (darkMode ? 'text-amber-400' : 'text-amber-700') : darkMode ? 'text-zinc-500 hover:text-zinc-300' : 'text-gray-500 hover:text-gray-700'}" />
@@ -2171,7 +2171,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 							<button
 								onclick={() => openTerminal(selectedContainer!.id, selectedContainer!.name, 'right')}
 								class="p-0.5 rounded transition-colors {terminalOpen && terminalLayout === 'right' && terminalContainerId === selectedContainer.id ? (darkMode ? 'bg-amber-500/20 ring-1 ring-amber-500/50' : 'bg-amber-500/30 ring-1 ring-amber-600/50') : darkMode ? 'hover:bg-zinc-800' : 'hover:bg-gray-200'}"
-								title="Terminal on side"
+								title="右侧终端"
 							>
 								<span class="inline-flex items-center gap-px">
 									<Terminal class="w-3.5 h-3.5 {terminalOpen && terminalLayout === 'right' && terminalContainerId === selectedContainer.id ? (darkMode ? 'text-amber-400' : 'text-amber-700') : darkMode ? 'text-zinc-500 hover:text-zinc-300' : 'text-gray-500 hover:text-gray-700'}" />

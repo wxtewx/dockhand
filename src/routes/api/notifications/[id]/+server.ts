@@ -141,12 +141,6 @@ export const DELETE: RequestHandler = async (event) => {
 			return json({ error: '未找到通知设置' }, { status: 404 });
 		}
 
-		// Get notification name before deletion for audit log
-		const setting = await getNotificationSetting(id);
-		if (!setting) {
-			return json({ error: '未找到通知设置' }, { status: 404 });
-		}
-
 		const deleted = await deleteNotificationSetting(id);
 		if (!deleted) {
 			return json({ error: '删除通知设置失败' }, { status: 500 });

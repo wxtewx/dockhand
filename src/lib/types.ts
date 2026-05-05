@@ -205,6 +205,7 @@ const LabelMaps = {
     starting: '启动中',
     started: '已启动',
     unknown: '未知',
+    "not deployed": '未部署',
   },
   health: {
     healthy: '健康',

@@ -1,4 +1,4 @@
-Simport { json } from '@sveltejs/kit';
+import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { authorize } from '$lib/server/authorize';
 import { getStackSource, updateStackSource } from '$lib/server/db';

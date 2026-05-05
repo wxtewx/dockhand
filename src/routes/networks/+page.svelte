@@ -563,7 +563,7 @@
 			</Button>
 			<Button size="sm" variant="outline" onclick={openGraphModal}>
 				<GitGraph class="w-3.5 h-3.5" />
-				View Graph
+				查看拓扑图
 			</Button>
 			{#if $canAccess('networks', 'create')}
 			<Button size="sm" variant="secondary" onclick={() => showCreateModal = true}>

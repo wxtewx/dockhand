@@ -1124,51 +1124,6 @@
 		}
 	}
 
-	// === Image Prune Settings Functions ===
-	async function loadImagePruneSettings(envId: number) {
-		imagePruneLoading = true;
-		try {
-			const response = await fetch(`/api/environments/${envId}/image-prune`);
-			if (response.ok) {
-				const data = await response.json();
-				if (data.settings) {
-					imagePruneEnabled = data.settings.enabled ?? false;
-					imagePruneCron = data.settings.cronExpression || '0 3 * * 0';
-					imagePruneMode = data.settings.pruneMode || 'dangling';
-					imagePruneLastPruned = data.settings.lastPruned;
-					imagePruneLastResult = data.settings.lastResult;
-				} else {
-					// No settings found - use defaults
-					imagePruneEnabled = false;
-					imagePruneCron = '0 3 * * 0';
-					imagePruneMode = 'dangling';
-					imagePruneLastPruned = undefined;
-					imagePruneLastResult = undefined;
-				}
-			}
-		} catch (error) {
-			console.error('Failed to load image prune settings:', error);
-		} finally {
-			imagePruneLoading = false;
-		}
-	}
-
-	async function saveImagePruneSettings(envId: number) {
-		try {
-			await fetch(`/api/environments/${envId}/image-prune`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					enabled: imagePruneEnabled,
-					cronExpression: imagePruneCron,
-					pruneMode: imagePruneMode
-				})
-			});
-		} catch (error) {
-			console.error('Failed to save image prune settings:', error);
-		}
-	}
-
 	async function removeGrype(envId?: number) {
 		removingGrype = true;
 		try {

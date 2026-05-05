@@ -645,28 +645,28 @@
 					<Card.Title class="flex items-center gap-2 justify-between">
 						<span class="flex items-center gap-2">
 							<KeyRound class="w-5 h-5" />
-							API tokens
+							API 令牌
 						</span>
 						<Button variant="outline" size="sm" onclick={() => showApiTokenModal = true}>
 							<Plus class="w-4 h-4 mr-1" />
-							Generate token
+							生成令牌
 						</Button>
 					</Card.Title>
-					<Card.Description>Create tokens for CI/CD pipelines and scripts</Card.Description>
+					<Card.Description>为 CI/CD 流水线和脚本创建令牌</Card.Description>
 				</Card.Header>
 				<Card.Content>
 					{#if tokensLoading}
-						<p class="text-sm text-muted-foreground">Loading tokens...</p>
+						<p class="text-sm text-muted-foreground">正在加载令牌...</p>
 					{:else if apiTokens.length === 0}
-						<p class="text-sm text-muted-foreground">No API tokens created yet.</p>
+						<p class="text-sm text-muted-foreground">尚未创建任何 API 令牌。</p>
 					{:else}
 						<Table.Root>
 							<Table.Header>
 								<Table.Row>
-									<Table.Head>Name</Table.Head>
-									<Table.Head>Prefix</Table.Head>
-									<Table.Head>Last used</Table.Head>
-									<Table.Head>Expires</Table.Head>
+									<Table.Head>名称</Table.Head>
+									<Table.Head>前缀</Table.Head>
+									<Table.Head>最近使用</Table.Head>
+									<Table.Head>过期时间</Table.Head>
 									<Table.Head class="w-[80px]"></Table.Head>
 								</Table.Row>
 							</Table.Header>
@@ -678,22 +678,22 @@
 											<code class="text-xs bg-muted px-1.5 py-0.5 rounded">dh_{token.tokenPrefix}...</code>
 										</Table.Cell>
 										<Table.Cell class="text-sm text-muted-foreground">
-											{token.lastUsed ? formatDateTime(token.lastUsed) : 'Never'}
+											{token.lastUsed ? formatDateTime(token.lastUsed) : '从未'}
 										</Table.Cell>
 										<Table.Cell class="text-sm">
 											{#if isTokenExpired(token.expiresAt)}
-												<Badge variant="destructive">Expired</Badge>
+												<Badge variant="destructive">已过期</Badge>
 											{:else if token.expiresAt}
 												{formatDateTime(token.expiresAt)}
 											{:else}
-												<span class="text-muted-foreground">Never</span>
+												<span class="text-muted-foreground">永不过期</span>
 											{/if}
 										</Table.Cell>
 										<Table.Cell>
 											<ConfirmPopover
-												title="Revoke token"
-												description="This token will stop working immediately."
-												confirmText="Revoke"
+												title="吊销令牌"
+												description="该令牌将立即失效。"
+												confirmText="吊销"
 												onConfirm={() => revokeToken(token.id)}
 											>
 												<Button variant="ghost" size="sm" class="text-destructive hover:text-destructive">

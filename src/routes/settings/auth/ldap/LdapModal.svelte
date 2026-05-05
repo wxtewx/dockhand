@@ -9,6 +9,7 @@
 	import { Network, Pencil, Plus, Check, RefreshCw, TriangleAlert, Trash2, Star } from 'lucide-svelte';
 	import * as Alert from '$lib/components/ui/alert';
 	import { focusFirstInput } from '$lib/utils';
+	import { getLabelText } from '$lib/types';
 
 	export interface LdapRoleMapping {
 		groupDn: string;
@@ -465,7 +466,7 @@
 												</Select.Trigger>
 												<Select.Content>
 													{#each roles.filter(r => !r.isSystem || r.name !== 'Admin') as role}
-														<Select.Item value={String(role.id)}>{role.name}</Select.Item>
+														<Select.Item value={String(role.id)}>{getLabelText(role.name)}</Select.Item>
 													{/each}
 												</Select.Content>
 											</Select.Root>

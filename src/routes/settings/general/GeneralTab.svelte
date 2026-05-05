@@ -785,6 +785,8 @@ services:
 									value={labelFilterMode}
 									leftValue="any"
 									rightValue="all"
+									leftLabel="任意"
+                        			rightLabel="全部"
 									onchange={(mode) => appSettings.setLabelFilterMode(mode as LabelFilterMode)}
 									disabled={!$canAccess('settings', 'edit')}
 								/>

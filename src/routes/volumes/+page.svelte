@@ -62,7 +62,7 @@
 	const driverOptions = $derived(
 		[...new Set(volumes.map(v => v.driver))].sort().map(d => {
 			const mapping = driverIconMap[d] || { icon: Database, color: 'text-muted-foreground' };
-			return { value: d, label: d, icon: mapping.icon, color: mapping.color };
+			return { value: d, label: getLabelText(d), icon: mapping.icon, color: mapping.color };
 		})
 	);
 

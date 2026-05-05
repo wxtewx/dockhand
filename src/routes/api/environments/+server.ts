@@ -88,19 +88,6 @@ export const POST: RequestHandler = async (event) => {
 			return json({ error: `无效的连接类型：${connectionType}` }, { status: 400 });
 		}
 
-		// Check if environment with this name already exists
-		const existing = await getEnvironmentByName(data.name);
-		if (existing) {
-			return json({ error: '该名称的环境已存在' }, { status: 409 });
-		}
-
-		// Validate connection type
-		const validConnectionTypes = ['socket', 'direct', 'hawser-standard', 'hawser-edge'];
-		const connectionType = data.connectionType || 'socket';
-		if (!validConnectionTypes.includes(connectionType)) {
-			return json({ error: `无效的连接类型：${connectionType}` }, { status: 400 });
-		}
-
 		// Host is required for direct and hawser-standard connections
 		if ((connectionType === 'direct' || connectionType === 'hawser-standard') && !data.host) {
 			return json({ error: '该连接类型需要填写主机地址' }, { status: 400 });

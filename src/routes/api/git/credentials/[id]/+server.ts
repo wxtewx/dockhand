@@ -128,12 +128,6 @@ export const DELETE: RequestHandler = async (event) => {
 			return json({ error: '凭据不存在' }, { status: 404 });
 		}
 
-		// Get credential name before deletion for audit log
-		const credential = await getGitCredential(id);
-		if (!credential) {
-			return json({ error: '未找到凭据' }, { status: 404 });
-		}
-
 		const deleted = await deleteGitCredential(id);
 		if (!deleted) {
 			return json({ error: '删除凭据失败' }, { status: 500 });

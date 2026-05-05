@@ -1924,7 +1924,7 @@
 								{#snippet extraContent()}
 									<label class="flex items-center gap-1.5 cursor-pointer">
 										<Checkbox bind:checked={deleteVolumes} />
-										<span class="text-xs text-muted-foreground">Also delete volumes</span>
+										<span class="text-xs text-muted-foreground">同时删除数据卷</span>
 									</label>
 								{/snippet}
 								{#snippet children({ open })}

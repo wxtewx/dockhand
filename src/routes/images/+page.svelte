@@ -811,40 +811,6 @@
 					</span>
 				{/snippet}
 			</ConfirmPopover>
-			<ConfirmPopover
-				open={confirmPruneUnused}
-				action="Prune"
-				itemType="all unused images"
-				title="Prune unused images"
-				position="left"
-				onConfirm={pruneUnusedImages}
-				onOpenChange={(open) => confirmPruneUnused = open}
-				unstyled
-			>
-				{#snippet children({ open })}
-					<span
-						class="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-sm bg-background shadow-xs border hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 {pruneUnusedStatus === 'pruning' ? 'opacity-50 pointer-events-none' : ''}"
-						title="Remove ALL images not used by any container (including tagged images)"
-					>
-						{#if pruneUnusedStatus === 'pruning'}
-							<RefreshCw class="w-3.5 h-3.5 animate-spin" />
-						{:else if pruneUnusedStatus === 'success'}
-							<Check class="w-3.5 h-3.5 text-green-600" />
-						{:else if pruneUnusedStatus === 'error'}
-							<XCircle class="w-3.5 h-3.5 text-destructive" />
-						{:else}
-							<Icon iconNode={broom} class="w-3.5 h-3.5 text-amber-600" />
-						{/if}
-						Prune unused
-					</span>
-				{/snippet}
-			</ConfirmPopover>
-			{/if}
-			{#if $canAccess('images', 'pull')}
-			<Button size="sm" variant="default" onclick={() => showPullModal = true}>
-				<Download class="w-3.5 h-3.5 mr-1.5" />
-				Pull
-			</Button>
 			{/if}
 			{#if $canAccess('images', 'pull')}
 			<Button size="sm" variant="default" onclick={() => showPullModal = true}>

@@ -174,7 +174,8 @@
 		{ value: 'role', label: '角色' },
 		{ value: 'settings', label: '设置' },
 		{ value: 'git_repository', label: 'Git 仓库' },
-		{ value: 'git_credential', label: 'Git 凭据' }
+		{ value: 'git_credential', label: 'Git 凭据' },
+		{ value: 'config_set', label: '配置集' }
 	];
 
 	const actionTypes = [
@@ -191,11 +192,27 @@
 		{ value: 'prune', label: '清理' },
 		{ value: 'exec', label: '执行' },
 		{ value: 'connect', label: '连接' },
-		{ value: 'disconnect', label: '断开连接' },
+		{ value: 'disconnect', label: '断开' },
 		{ value: 'login', label: '登录' },
 		{ value: 'logout', label: '登出' },
-		{ value: 'sync', label: '同步' }
+		{ value: 'sync', label: '同步' },
+		{ value: 'deploy', label: '部署' }
 	];
+
+	function translateDescription(desc: string): string {
+  		if (!desc) return '';
+  		let translated = desc;
+
+  		entityTypes.forEach(item => {
+    		translated = translated.replace(new RegExp(`\\b${item.value}\\b`, 'g'), item.label);
+  		});
+
+  		actionTypes.forEach(item => {
+    		translated = translated.replace(new RegExp(`\\b${item.value}\\b`, 'g'), item.label);
+  		});
+
+  		return translated;
+	}
 
 	// Date filter preset
 	let selectedDatePreset = $state<string>('');
@@ -435,13 +452,16 @@
 		if (filterActions.length > 0) params.set('actions', filterActions.join(','));
 		if (filterFromDate) params.set('fromDate', filterFromDate);
 		if (filterToDate) params.set('toDate', filterToDate + 'T23:59:59');
+		const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  		params.set('timeZone', timeZone);
 		params.set('format', format);
 
 		window.location.href = `/api/audit/export?${params.toString()}`;
 	}
 
 	function formatTimestamp(ts: string): string {
-		return formatDateTime(ts, true);
+		const date = new Date(ts + ' UTC'); 
+		return formatDateTime(date.toISOString(), true);
 	}
 
 	function getEntityIcon(entityType: string) {
@@ -886,14 +906,14 @@
 					</div>
 				{:else if column.id === 'action'}
 					<div class="flex justify-center">
-						<Badge class="{getActionColor(log.action)} py-0.5 px-1" title={log.action.charAt(0).toUpperCase() + log.action.slice(1)}>
+						<Badge class="{getActionColor(log.action)} py-0.5 px-1" title={actionTypes.find(a => a.value === log.action)?.label || log.action}>
 							<svelte:component this={getActionIcon(log.action)} class="w-3 h-3" />
 						</Badge>
 					</div>
 				{:else if column.id === 'entity'}
 					<div class="flex items-center gap-1 text-xs">
 						<svelte:component this={getEntityIcon(log.entityType)} class="w-3 h-3 text-muted-foreground shrink-0" />
-						<span class="truncate">{log.entityType}</span>
+						<span class="truncate">{entityTypes.find(e => e.value === log.entityType)?.label || log.entityType}</span>
 					</div>
 				{:else if column.id === 'name'}
 					<span class="text-xs truncate" title={log.entityName || log.entityId || '-'}>
@@ -967,7 +987,7 @@
 						<p>
 							<Badge class="{getActionColor(selectedLog.action)} gap-1">
 								<svelte:component this={getActionIcon(selectedLog.action)} class="w-3 h-3" />
-								{selectedLog.action}
+								{actionTypes.find(a => a.value === selectedLog.action)?.label || selectedLog.action}
 							</Badge>
 						</p>
 					</div>
@@ -975,7 +995,7 @@
 						<label class="text-sm font-medium text-muted-foreground">实体类型</label>
 						<p class="flex items-center gap-1">
 							<svelte:component this={getEntityIcon(selectedLog.entityType)} class="w-4 h-4 text-muted-foreground" />
-							{selectedLog.entityType}
+							{entityTypes.find(e => e.value === selectedLog.entityType)?.label || selectedLog.entityType}
 						</p>
 					</div>
 					{#if selectedLog.entityName}
