@@ -67,18 +67,18 @@
 	let loading = $state(false);
 
 	const navigationItems: CommandItem[] = [
-		{ name: 'Dashboard', href: '/', icon: LayoutDashboard, keywords: ['home', 'overview'] },
-		{ name: 'Containers', href: '/containers', icon: Box, keywords: ['docker', 'running'] },
-		{ name: 'Logs', href: '/logs', icon: ScrollText, keywords: ['output', 'debug'] },
-		{ name: 'Shell', href: '/terminal', icon: Terminal, keywords: ['exec', 'bash', 'sh'] },
-		{ name: 'Stacks', href: '/stacks', icon: Layers, keywords: ['compose', 'docker-compose'] },
-		{ name: 'Images', href: '/images', icon: Images, keywords: ['pull', 'build'] },
-		{ name: 'Volumes', href: '/volumes', icon: HardDrive, keywords: ['storage', 'data'] },
-		{ name: 'Networks', href: '/networks', icon: Network, keywords: ['bridge', 'host'] },
-		{ name: 'Registry', href: '/registry', icon: Download, keywords: ['hub', 'pull'] },
-		{ name: 'Activity', href: '/activity', icon: Eye, keywords: ['events', 'history'] },
-		{ name: 'Schedules', href: '/schedules', icon: Timer, keywords: ['cron', 'auto'] },
-		{ name: 'Settings', href: '/settings', icon: Settings, keywords: ['config', 'preferences'] }
+		{ name: '控制台', href: '/', icon: LayoutDashboard, keywords: ['home', 'overview'] },
+		{ name: '容器', href: '/containers', icon: Box, keywords: ['docker', 'running'] },
+		{ name: '日志', href: '/logs', icon: ScrollText, keywords: ['output', 'debug'] },
+		{ name: '终端', href: '/terminal', icon: Terminal, keywords: ['exec', 'bash', 'sh'] },
+		{ name: '堆栈', href: '/stacks', icon: Layers, keywords: ['compose', 'docker-compose'] },
+		{ name: '镜像', href: '/images', icon: Images, keywords: ['pull', 'build'] },
+		{ name: '数据卷', href: '/volumes', icon: HardDrive, keywords: ['storage', 'data'] },
+		{ name: '网络', href: '/networks', icon: Network, keywords: ['bridge', 'host'] },
+		{ name: '仓库', href: '/registry', icon: Download, keywords: ['hub', 'pull'] },
+		{ name: '活动', href: '/activity', icon: Eye, keywords: ['events', 'history'] },
+		{ name: '计划任务', href: '/schedules', icon: Timer, keywords: ['cron', 'auto'] },
+		{ name: '设置', href: '/settings', icon: Settings, keywords: ['config', 'preferences'] }
 	];
 
 	// Filter items based on permissions
@@ -112,11 +112,11 @@
 					state: c.State,
 					image: c.Image,
 					envId: c.environmentId || 0,
-					envName: c.environmentName || 'Local'
+					envName: c.environmentName || '本地'
 				}));
 			}
 		} catch (e) {
-			console.error('Failed to load command palette data:', e);
+			console.error('加载命令面板数据失败:', e);
 		} finally {
 			loading = false;
 		}
@@ -168,7 +168,7 @@
 			try {
 				await fetch(`/api/containers/${containerId}/${action}${envParam}`, { method: 'POST' });
 			} catch (e) {
-				console.error(`Failed to ${action} container:`, e);
+				console.error(`${action === 'start' ? '启动' : action === 'stop' ? '停止' : '重启'}容器失败:`, e);
 			}
 		}
 	}
@@ -193,11 +193,11 @@
 	});
 </script>
 
-<Command.Dialog bind:open title="Command Palette" description="Search for pages and actions">
-	<Command.Input placeholder="Search..." />
+<Command.Dialog bind:open title="命令面板" description="搜索页面和操作">
+	<Command.Input placeholder="搜索..." />
 	<Command.List>
-		<Command.Empty>No results found.</Command.Empty>
-		<Command.Group heading="Navigation">
+		<Command.Empty>未找到结果。</Command.Empty>
+		<Command.Group heading="导航">
 			{#each filteredItems as item (item.href)}
 				<Command.Item
 					value={item.name + ' ' + (item.keywords?.join(' ') || '')}
@@ -210,9 +210,9 @@
 		</Command.Group>
 		{#if $licenseStore.isEnterprise && $authStore.authEnabled}
 			<Command.Separator />
-			<Command.Group heading="Enterprise">
+			<Command.Group heading="企业版">
 				<Command.Item
-					value="Audit log compliance"
+					value="审计日志"
 					onSelect={() => handleSelect('/audit')}
 				>
 					<ClipboardList class="mr-2 h-4 w-4" />
@@ -221,7 +221,7 @@
 			</Command.Group>
 		{/if}
 		<Command.Separator />
-		<Command.Group heading="Light theme">
+		<Command.Group heading="浅色主题">
 			{#each lightThemes as theme (theme.id)}
 				<Command.Item
 					value={`light theme ${theme.name}`}
@@ -242,7 +242,7 @@
 			{/each}
 		</Command.Group>
 		<Command.Separator />
-		<Command.Group heading="Dark theme">
+		<Command.Group heading="深色主题">
 			{#each darkThemes as theme (theme.id)}
 				<Command.Item
 					value={`dark theme ${theme.name}`}
@@ -263,7 +263,7 @@
 			{/each}
 		</Command.Group>
 		<Command.Separator />
-		<Command.Group heading="Font">
+		<Command.Group heading="字体">
 			{#each fonts as font (font.id)}
 				<Command.Item
 					value={`font ${font.name}`}
@@ -279,7 +279,7 @@
 		</Command.Group>
 		{#if environments.length > 0}
 			<Command.Separator />
-			<Command.Group heading="Switch environment">
+			<Command.Group heading="切换环境">
 				{#each environments as env (env.id)}
 					<Command.Item
 						value={`environment ${env.name}`}
@@ -296,7 +296,7 @@
 		{/if}
 		{#if containers.length > 0}
 			<Command.Separator />
-			<Command.Group heading="Containers">
+			<Command.Group heading="容器">
 				{#each containers as container (container.id)}
 					<Command.Item
 						value={`container ${container.name} ${container.image} ${container.envName}`}
@@ -312,28 +312,28 @@
 								<button
 									class="p-1 hover:bg-muted rounded"
 									onclick={(e) => { e.stopPropagation(); handleContainerAction(container.id, 'logs'); }}
-									title="View logs"
+									title="查看日志"
 								>
 									<FileText class="h-3 w-3" />
 								</button>
 								<button
 									class="p-1 hover:bg-muted rounded"
 									onclick={(e) => { e.stopPropagation(); handleContainerAction(container.id, 'terminal'); }}
-									title="Open terminal"
+									title="打开终端"
 								>
 									<Terminal class="h-3 w-3" />
 								</button>
 								<button
 									class="p-1 hover:bg-muted rounded"
 									onclick={(e) => { e.stopPropagation(); handleContainerAction(container.id, 'restart'); }}
-									title="Restart"
+									title="重启"
 								>
 									<RotateCcw class="h-3 w-3" />
 								</button>
 								<button
 									class="p-1 hover:bg-muted rounded text-destructive"
 									onclick={(e) => { e.stopPropagation(); handleContainerAction(container.id, 'stop'); }}
-									title="Stop"
+									title="停止"
 								>
 									<Square class="h-3 w-3" />
 								</button>
@@ -341,7 +341,7 @@
 								<button
 									class="p-1 hover:bg-muted rounded text-green-500"
 									onclick={(e) => { e.stopPropagation(); handleContainerAction(container.id, 'start'); }}
-									title="Start"
+									title="启动"
 								>
 									<Play class="h-3 w-3" />
 								</button>

@@ -23,12 +23,12 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 
 	// Permission check - need exec permission to detect shells
 	if (auth.authEnabled && !await auth.can('containers', 'exec', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Environment access check (enterprise only)
 	if (envIdNum && auth.isEnterprise && !await auth.canAccessEnvironment(envIdNum)) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问此环境' }, { status: 403 });
 	}
 
 	try {
@@ -88,9 +88,9 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 			}))
 		});
 	} catch (error) {
-		console.error('Error detecting shells:', error);
+		console.error('检测 Shell 错误:', error);
 		return json({
-			error: 'Failed to detect shells',
+			error: '检测 Shell 失败',
 			shells: [],
 			defaultShell: null,
 			allShells: SHELLS_TO_CHECK.map(s => ({

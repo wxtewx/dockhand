@@ -141,7 +141,7 @@ interface EdgeContainerLogSource {
 async function handleEdgeMergedLogs(containerIds: string[], tail: string, environmentId: number): Promise<Response> {
 	// Check if edge agent is connected
 	if (!isEdgeConnected(environmentId)) {
-		return new Response(JSON.stringify({ error: 'Edge agent not connected' }), {
+		return new Response(JSON.stringify({ error: '边缘代理未连接' }), {
 			status: 503,
 			headers: { 'Content-Type': 'application/json' }
 		});
@@ -178,7 +178,7 @@ async function handleEdgeMergedLogs(containerIds: string[], tail: string, enviro
 					const inspectResponse = await sendEdgeRequest(environmentId, 'GET', inspectPath);
 
 					if (inspectResponse.statusCode !== 200) {
-						console.log(`[merged-logs-edge] Inspect failed for ${containerId.slice(0, 12)}, skipping`);
+						console.log(`[合并日志-边缘] 检查容器 ${containerId.slice(0, 12)} 失败，已跳过`);
 						return null;
 					}
 
@@ -272,7 +272,7 @@ async function handleEdgeMergedLogs(containerIds: string[], tail: string, enviro
 								source.done = true;
 								// Check if all sources are done
 								if (sources.every(s => s.done)) {
-									safeEnqueue(`event: end\ndata: ${JSON.stringify({ reason: 'all streams ended' })}\n\n`);
+									safeEnqueue(`event: end\ndata: ${JSON.stringify({ reason: '所有流已结束' })}\n\n`);
 									if (!controllerClosed) {
 										try {
 											controller.close();
@@ -283,7 +283,7 @@ async function handleEdgeMergedLogs(containerIds: string[], tail: string, enviro
 								}
 							},
 							onError: (error: string) => {
-								console.error(`[merged-logs-edge] Error from ${containerName}:`, error);
+								console.error(`[合并日志-边缘] ${containerName} 错误:`, error);
 								source.done = true;
 							}
 						}
@@ -292,18 +292,18 @@ async function handleEdgeMergedLogs(containerIds: string[], tail: string, enviro
 					source.cancel = cancel;
 					return source;
 				} catch (error) {
-					console.error(`[merged-logs-edge] Error setting up log source for ${containerId}:`, error);
+					console.error(`[合并日志-边缘] 设置容器 ${containerId} 日志源失败:`, error);
 					return null;
 				}
 			};
 
 			// Setup all containers in parallel
-			console.log(`[merged-logs-edge] Setting up ${containerIds.length} containers in parallel...`);
+			console.log(`[合并日志-边缘] 并行初始化 ${containerIds.length} 个容器...`);
 			const setupStart = Date.now();
 			const results = await Promise.all(
 				containerIds.map((id, index) => setupEdgeContainer(id, index))
 			);
-			console.log(`[merged-logs-edge] Parallel setup completed in ${Date.now() - setupStart}ms`);
+			console.log(`[合并日志-边缘] 并行初始化完成，耗时 ${Date.now() - setupStart}ms`);
 
 			// Filter out failed containers
 			for (const result of results) {
@@ -313,13 +313,13 @@ async function handleEdgeMergedLogs(containerIds: string[], tail: string, enviro
 			}
 
 			if (sources.length === 0) {
-				console.log('[merged-logs-edge] No valid sources, returning error');
-				safeEnqueue(`event: error\ndata: ${JSON.stringify({ error: 'No valid containers found' })}\n\n`);
+				console.log('[合并日志-边缘] 无有效容器，返回错误');
+				safeEnqueue(`event: error\ndata: ${JSON.stringify({ error: '未找到有效容器' })}\n\n`);
 				if (!controllerClosed) controller.close();
 				return;
 			}
 
-			console.log(`[merged-logs-edge] Sources ready: ${sources.length}, sending connected event`);
+			console.log(`[合并日志-边缘] 日志源就绪：${sources.length} 个，发送连接成功事件`);
 			// Send connected event with container info
 			safeEnqueue(`event: connected\ndata: ${JSON.stringify({
 				containers: sources.map(s => ({
@@ -367,22 +367,22 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('containers', 'logs', envIdNum)) {
-		return new Response(JSON.stringify({ error: 'Permission denied' }), {
+		return new Response(JSON.stringify({ error: '权限不足' }), {
 			status: 403,
 			headers: { 'Content-Type': 'application/json' }
 		});
 	}
 
 	if (containerIds.length === 0) {
-		return new Response(JSON.stringify({ error: 'No containers specified' }), {
+		return new Response(JSON.stringify({ error: '未指定任何容器' }), {
 			status: 400,
 			headers: { 'Content-Type': 'application/json' }
 		});
 	}
 
-	console.log(`[merged-logs] Request: containers=${containerIds.length}, env=${envId}`);
+	console.log(`[合并日志] 请求：容器数=${containerIds.length}, 环境=${envId}`);
 	const config = await getDockerConfig(envIdNum);
-	console.log(`[merged-logs] Config: type=${config.type}, host=${config.host}, port=${config.port}`);
+	console.log(`[合并日志] 配置：类型=${config.type}, 主机=${config.host}, 端口=${config.port}`);
 
 	// Handle Hawser Edge mode separately
 	if (config.type === 'hawser-edge') {
@@ -440,7 +440,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 					if (!inspectResponse.ok) {
 						await inspectResponse.arrayBuffer().catch(() => {});
-						console.log(`[merged-logs] Inspect failed for ${containerId.slice(0, 12)}, skipping`);
+						console.log(`[合并日志] 检查容器 ${containerId.slice(0, 12)} 失败，已跳过`);
 						return null;
 					}
 
@@ -467,7 +467,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 					if (!logsResponse.ok) {
 						await logsResponse.arrayBuffer().catch(() => {});
-						console.error(`[merged-logs] Failed to get logs for container ${containerId}: ${logsResponse.status}`);
+						console.error(`[合并日志] 获取容器 ${containerId} 日志失败: ${logsResponse.status}`);
 						return null;
 					}
 
@@ -483,18 +483,18 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 						done: false
 					};
 				} catch (error) {
-					console.error(`Error setting up log source for ${containerId}:`, error);
+					console.error(`设置容器 ${containerId} 日志源失败:`, error);
 					return null;
 				}
 			};
 
 			// Setup all containers in parallel
-			console.log(`[merged-logs] Setting up ${containerIds.length} containers in parallel...`);
+			console.log(`[合并日志] 并行初始化 ${containerIds.length} 个容器...`);
 			const setupStart = Date.now();
 			const results = await Promise.all(
 				containerIds.map((id, index) => setupContainer(id, index))
 			);
-			console.log(`[merged-logs] Parallel setup completed in ${Date.now() - setupStart}ms`);
+			console.log(`[合并日志] 并行初始化完成，耗时 ${Date.now() - setupStart}ms`);
 
 			// Filter out failed containers
 			for (const result of results) {
@@ -504,13 +504,13 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 			}
 
 			if (sources.length === 0) {
-				console.log('[merged-logs] No valid sources, returning error');
-				safeEnqueue(`event: error\ndata: ${JSON.stringify({ error: 'No valid containers found' })}\n\n`);
+				console.log('[合并日志] 无有效容器，返回错误');
+				safeEnqueue(`event: error\ndata: ${JSON.stringify({ error: '未找到有效容器' })}\n\n`);
 				if (!controllerClosed) controller.close();
 				return;
 			}
 
-			console.log(`[merged-logs] Sources ready: ${sources.length}, sending connected event`);
+			console.log(`[合并日志] 日志源就绪：${sources.length} 个，发送连接成功事件`);
 			// Send connected event with container info
 			safeEnqueue(`event: connected\ndata: ${JSON.stringify({
 				containers: sources.map(s => ({
@@ -582,20 +582,20 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 					}
 				} catch (error) {
 					if (!String(error).includes('abort')) {
-						console.error(`Error reading logs from ${source.containerName}:`, error);
+						console.error(`从 ${source.containerName} 读取日志错误:`, error);
 					}
 					source.done = true;
 				}
 			};
 
 			// Each source streams independently — no lockstep polling
-			console.log(`[merged-logs] Starting ${sources.length} independent read loops`);
+			console.log(`[合并日志] 启动 ${sources.length} 个独立读取循环`);
 
 			let endedCount = 0;
 			const checkAllDone = () => {
 				endedCount++;
 				if (endedCount >= sources.length) {
-					safeEnqueue(`event: end\ndata: ${JSON.stringify({ reason: 'all streams ended' })}\n\n`);
+					safeEnqueue(`event: end\ndata: ${JSON.stringify({ reason: '所有流已结束' })}\n\n`);
 					if (!controllerClosed) {
 						try { controller.close(); } catch { /* Already closed */ }
 					}

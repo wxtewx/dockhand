@@ -81,12 +81,12 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 
 	// Permission check with environment context (stats uses view permission)
 	if (auth.authEnabled && !await auth.can('containers', 'view', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Early return if no environments configured (fresh install)
 	if (!await hasEnvironments()) {
-		return json({ error: 'No environment configured' }, { status: 404 });
+		return json({ error: '未配置环境' }, { status: 404 });
 	}
 
 	try {
@@ -115,12 +115,12 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 	} catch (error: any) {
 		// Return 404 for deleted environments so client can clear stale cache
 		if (error instanceof EnvironmentNotFoundError) {
-			return json({ error: 'Environment not found' }, { status: 404 });
+			return json({ error: '环境未找到' }, { status: 404 });
 		}
 		if (error.statusCode === 404) {
-			return json({ error: 'Container not found' }, { status: 404 });
+			return json({ error: '容器未找到' }, { status: 404 });
 		}
-		console.error('Failed to get container stats:', error.message || error);
-		return json({ error: error.message || 'Failed to get stats' }, { status: 500 });
+		console.error('获取容器统计信息失败:', error.message || error);
+		return json({ error: error.message || '获取统计信息失败' }, { status: 500 });
 	}
 };

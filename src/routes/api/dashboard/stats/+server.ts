@@ -125,7 +125,7 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('environments', 'view', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Early return if no environments configured (fresh install)
@@ -140,7 +140,7 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
 		if (envIdNum) {
 			environments = environments.filter(env => env.id === envIdNum);
 			if (environments.length === 0) {
-				return json({ error: 'Environment not found' }, { status: 404 });
+				return json({ error: '环境未找到' }, { status: 404 });
 			}
 		}
 
@@ -197,7 +197,7 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
 				// Check if Docker is accessible (with 5 second timeout)
 				const dockerInfo = await withTimeout(getDockerInfo(env.id), 5000, null);
 				if (!dockerInfo) {
-					envStats.error = 'Connection timeout or Docker not accessible';
+					envStats.error = '连接超时或 Docker 不可访问';
 					return envStats;
 				}
 				envStats.online = true;
@@ -285,16 +285,16 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
 				// Convert technical error messages to user-friendly ones
 				const errorStr = String(error);
 				if (errorStr.includes('FailedToOpenSocket') || errorStr.includes('ECONNREFUSED')) {
-					envStats.error = 'Docker socket not accessible';
+					envStats.error = 'Docker socket 不可访问';
 				} else if (errorStr.includes('ECONNRESET') || errorStr.includes('connection was closed')) {
-					envStats.error = 'Connection lost';
+					envStats.error = '连接已断开';
 				} else if (errorStr.includes('verbose: true') || errorStr.includes('verbose')) {
-					envStats.error = 'Connection failed';
+					envStats.error = '连接失败';
 				} else if (errorStr.includes('timeout') || errorStr.includes('Timeout')) {
-					envStats.error = 'Connection timeout';
+					envStats.error = '连接超时';
 				} else {
 					const match = errorStr.match(/^(?:Error:\s*)?([^.!?]+[.!?]?)/);
-					envStats.error = match ? match[1].trim() : 'Connection error';
+					envStats.error = match ? match[1].trim() : '连接错误';
 				}
 			}
 
@@ -310,7 +310,7 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
 
 		return json(results);
 	} catch (error: any) {
-		console.error('Failed to get dashboard stats:', error);
-		return json({ error: 'Failed to get dashboard stats' }, { status: 500 });
+		console.error('获取仪表板统计数据失败:', error);
+		return json({ error: '获取仪表板统计数据失败' }, { status: 500 });
 	}
 };

@@ -12,7 +12,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 	const auth = await authorize(cookies);
 
 	if (auth.authEnabled && !await auth.can('environments', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const envId = url.searchParams.get('env') ? parseInt(url.searchParams.get('env')!) : null;
@@ -23,7 +23,12 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 	// Check environment access in enterprise mode
 	if (auth.authEnabled && auth.isEnterprise && !await auth.canAccessEnvironment(envId)) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问该环境' }, { status: 403 });
+	}
+
+	// Skip disk usage when disabled (Synology NAS performance fix)
+	if (SKIP_DF_COLLECTION) {
+		return json({ diskUsage: null });
 	}
 
 	// Skip disk usage when disabled (Synology NAS performance fix)
@@ -35,14 +40,14 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 		// Fetch disk usage with timeout
 		const diskUsagePromise = getDiskUsage(envId);
 		const timeoutPromise = new Promise((_, reject) =>
-			setTimeout(() => reject(new Error('Disk usage timeout')), DISK_USAGE_TIMEOUT)
+			setTimeout(() => reject(new Error('磁盘使用率查询超时')), DISK_USAGE_TIMEOUT)
 		);
 
 		const diskUsage = await Promise.race([diskUsagePromise, timeoutPromise]);
 		return json({ diskUsage });
 	} catch (error) {
 		// Return null on timeout or error - UI will show loading/unavailable state
-		console.log(`Disk usage fetch failed for env ${envId}:`, error instanceof Error ? error.message : String(error));
+		console.log(`环境 ${envId} 的磁盘使用率获取失败：`, error instanceof Error ? error.message : String(error));
 		return json({ diskUsage: null });
 	}
 };

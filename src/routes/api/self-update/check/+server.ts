@@ -30,15 +30,15 @@ function localDockerFetch(path: string, options: RequestInit = {}): Promise<Resp
 export const GET: RequestHandler = async ({ cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !auth.isAdmin) {
-		return json({ error: 'Admin access required' }, { status: 403 });
+		return json({ error: '需要管理员权限' }, { status: 403 });
 	}
 
 	const containerId = getOwnContainerId();
 	if (!containerId) {
-		console.log('[SelfUpdate] Not running in Docker, skipping update check');
+		console.log('[SelfUpdate] 未在 Docker 中运行，跳过更新检查');
 		return json({
 			updateAvailable: false,
-			error: 'Not running in Docker'
+			error: '未在 Docker 中运行'
 		});
 	}
 
@@ -46,10 +46,10 @@ export const GET: RequestHandler = async ({ cookies }) => {
 		// Inspect own container to get current image info
 		const inspectResponse = await localDockerFetch(`/containers/${containerId}/json`);
 		if (!inspectResponse.ok) {
-			console.log(`[SelfUpdate] Failed to inspect container ${containerId.substring(0, 12)}: ${inspectResponse.status}`);
+			console.log(`[SelfUpdate] 检查容器 ${containerId.substring(0, 12)} 失败: ${inspectResponse.status}`);
 			return json({
 				updateAvailable: false,
-				error: 'Failed to inspect own container'
+				error: '检查自身容器失败'
 			});
 		}
 
@@ -63,13 +63,13 @@ export const GET: RequestHandler = async ({ cookies }) => {
 		const currentImageId = inspectData.Image || '';
 		const containerName = inspectData.Name?.replace(/^\//, '') || '';
 
-		console.log(`[SelfUpdate] Container: ${containerId.substring(0, 12)}, image: ${currentImage}, tag: ${currentImage.split(':').pop() || 'latest'}`);
+		console.log(`[SelfUpdate] 容器: ${containerId.substring(0, 12)}, 镜像: ${currentImage}, 标签: ${currentImage.split(':').pop() || 'latest'}`);
 
 		if (!currentImage) {
-			console.log('[SelfUpdate] Could not determine current image from inspect data');
+			console.log('[SelfUpdate] 无法从检查数据中确定当前镜像');
 			return json({
 				updateAvailable: false,
-				error: 'Could not determine current image'
+				error: '无法确定当前镜像'
 			});
 		}
 
@@ -78,7 +78,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
 
 		// Digest-based images (e.g. image@sha256:...) can't be checked for updates
 		if (currentImage.includes('@sha256:')) {
-			console.log('[SelfUpdate] Image pinned by digest, cannot check for updates');
+			console.log('[SelfUpdate] 镜像已通过摘要固定，无法检查更新');
 			return json({
 				updateAvailable: false,
 				currentImage,
@@ -100,7 +100,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
 			// Version-based check: compare against latest released version from changelog
 			const currentTagVersion = versionMatch[1];
 			const suffix = versionMatch[2] || ''; // '-baseline' or ''
-			console.log(`[SelfUpdate] Version-based check: current=${currentTagVersion}${suffix}`);
+			console.log(`[SelfUpdate] 基于版本检查: 当前=${currentTagVersion}${suffix}`);
 
 			try {
 				const changelogResponse = await fetch(
@@ -109,13 +109,13 @@ export const GET: RequestHandler = async ({ cookies }) => {
 				);
 
 				if (!changelogResponse.ok) {
-					console.log(`[SelfUpdate] Failed to fetch changelog from GitHub: ${changelogResponse.status}`);
+					console.log(`[SelfUpdate] 从 GitHub 获取更新日志失败: ${changelogResponse.status}`);
 					return json({
 						updateAvailable: false,
 						currentImage,
 						containerName,
 						isComposeManaged,
-						error: 'Could not fetch changelog from GitHub'
+						error: '无法从 GitHub 获取更新日志'
 					});
 				}
 
@@ -130,26 +130,26 @@ export const GET: RequestHandler = async ({ cookies }) => {
 				const latestRelease = changelog.find(entry => !entry.comingSoon);
 
 				if (!latestRelease) {
-					console.log('[SelfUpdate] No released version found in changelog');
+					console.log('[SelfUpdate] 在更新日志中未找到已发布版本');
 					return json({
 						updateAvailable: false,
 						currentImage,
 						containerName,
 						isComposeManaged,
-						error: 'No released version found in changelog'
+						error: '在更新日志中未找到已发布版本'
 					});
 				}
 
 				const latestVersion = latestRelease.version;
 				const hasNewer = compareVersions(latestVersion, currentTagVersion) > 0;
-				console.log(`[SelfUpdate] Latest changelog version: ${latestVersion}, current: ${currentTagVersion}, hasNewer: ${hasNewer}`);
+				console.log(`[SelfUpdate] 最新版本: ${latestVersion}, 当前版本: ${currentTagVersion}, 有更新: ${hasNewer}`);
 
 				if (hasNewer) {
 					// Build new image tag preserving registry prefix and suffix
 					const newTag = `v${latestVersion.replace(/^v/, '')}${suffix}`;
 					const newImage = `${imageWithoutTag}:${newTag}`;
 
-					console.log(`[SelfUpdate] Update available: ${currentImage} → ${newImage}`);
+					console.log(`[SelfUpdate] 有可用更新: ${currentImage} → ${newImage}`);
 					return json({
 						updateAvailable: true,
 						currentImage,
@@ -160,7 +160,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
 					});
 				}
 
-				console.log(`[SelfUpdate] Up to date (version ${currentTagVersion})`);
+				console.log(`[SelfUpdate] 已是最新版本 (${currentTagVersion})`);
 				return json({
 					updateAvailable: false,
 					currentImage,
@@ -168,30 +168,30 @@ export const GET: RequestHandler = async ({ cookies }) => {
 					isComposeManaged
 				});
 			} catch (err) {
-				console.log(`[SelfUpdate] Version check failed: ${err}`);
+				console.log(`[SelfUpdate] 版本检查失败: ${err}`);
 				return json({
 					updateAvailable: false,
 					currentImage,
 					containerName,
 					isComposeManaged,
-					error: 'Version check failed: ' + String(err)
+					error: '版本检查失败: ' + String(err)
 				});
 			}
 		}
 
 		// Digest-based check for mutable tags (:latest, :baseline, etc.)
-		console.log(`[SelfUpdate] Digest-based check for mutable tag: ${tag}`);
+		console.log(`[SelfUpdate] 对可变标签进行摘要检查: ${tag}`);
 
 		// Inspect image via local Docker socket to get RepoDigests
 		const imageResponse = await localDockerFetch(`/images/${encodeURIComponent(currentImageId)}/json`);
 		if (!imageResponse.ok) {
-			console.log(`[SelfUpdate] Failed to inspect image ${currentImageId}: ${imageResponse.status}`);
+			console.log(`[SelfUpdate] 检查镜像 ${currentImageId} 失败: ${imageResponse.status}`);
 			return json({
 				updateAvailable: false,
 				currentImage,
 				containerName,
 				isComposeManaged,
-				error: 'Could not inspect current image'
+				error: '无法检查当前镜像'
 			});
 		}
 
@@ -207,7 +207,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
 			.filter(Boolean) as string[];
 
 		if (localDigests.length === 0) {
-			console.log('[SelfUpdate] No RepoDigests found — local/untagged image, cannot check registry');
+			console.log('[SelfUpdate] 未找到 RepoDigests — 本地/未标记镜像，无法检查仓库');
 			return json({
 				updateAvailable: false,
 				currentImage,
@@ -218,24 +218,24 @@ export const GET: RequestHandler = async ({ cookies }) => {
 			});
 		}
 
-		console.log(`[SelfUpdate] Local digests: ${localDigests.map(d => d.substring(0, 19)).join(', ')}`);
+		console.log(`[SelfUpdate] 本地摘要: ${localDigests.map(d => d.substring(0, 19)).join(', ')}`);
 
 		// Query registry for latest digest
 		const registryDigest = await getRegistryManifestDigest(currentImage);
 		if (!registryDigest) {
-			console.log(`[SelfUpdate] Could not query registry for ${currentImage}`);
+			console.log(`[SelfUpdate] 无法查询仓库 ${currentImage}`);
 			return json({
 				updateAvailable: false,
 				currentImage,
 				newImage: currentImage,
 				containerName,
 				isComposeManaged,
-				error: 'Could not query registry'
+				error: '无法查询仓库'
 			});
 		}
 
 		const hasUpdate = !localDigests.includes(registryDigest);
-		console.log(`[SelfUpdate] Registry digest: ${registryDigest.substring(0, 19)}, match: ${!hasUpdate}, updateAvailable: ${hasUpdate}`);
+		console.log(`[SelfUpdate] 仓库摘要: ${registryDigest.substring(0, 19)}, 匹配: ${!hasUpdate}, 有更新: ${hasUpdate}`);
 
 		return json({
 			updateAvailable: hasUpdate,
@@ -247,10 +247,10 @@ export const GET: RequestHandler = async ({ cookies }) => {
 			isComposeManaged
 		});
 	} catch (err) {
-		console.log(`[SelfUpdate] Check failed with error: ${err}`);
+		console.log(`[SelfUpdate] 检查失败: ${err}`);
 		return json({
 			updateAvailable: false,
-			error: 'Check failed: ' + String(err)
+			error: '检查失败: ' + String(err)
 		});
 	}
 };

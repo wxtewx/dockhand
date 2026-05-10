@@ -19,12 +19,12 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('volumes', 'inspect', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		if (!path) {
-			return json({ error: 'Path is required' }, { status: 400 });
+			return json({ error: '路径为必填项' }, { status: 400 });
 		}
 
 		const content = await readVolumeFile(
@@ -35,23 +35,23 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 
 		// Check if content is too large
 		if (content.length > MAX_FILE_SIZE) {
-			return json({ error: 'File is too large to view (max 1MB)' }, { status: 413 });
+			return json({ error: '文件过大，无法查看 (最大 1MB)' }, { status: 413 });
 		}
 
 		return json({ content, path });
 	} catch (error: any) {
-		console.error('Error reading volume file:', error);
+		console.error('读取数据卷文件时出错：', error);
 
 		if (error.message?.includes('No such file or directory')) {
-			return json({ error: 'File not found' }, { status: 404 });
+			return json({ error: '文件不存在' }, { status: 404 });
 		}
 		if (error.message?.includes('Permission denied')) {
-			return json({ error: 'Permission denied to read this file' }, { status: 403 });
+			return json({ error: '读取此文件权限不足' }, { status: 403 });
 		}
 		if (error.message?.includes('Is a directory')) {
-			return json({ error: 'Cannot read a directory' }, { status: 400 });
+			return json({ error: '无法读取目录' }, { status: 400 });
 		}
 
-		return json({ error: 'Failed to read file' }, { status: 500 });
+		return json({ error: '读取文件失败' }, { status: 500 });
 	}
 };

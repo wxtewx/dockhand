@@ -26,7 +26,7 @@ export function createJobResponse(
 		const encoder = new TextEncoder();
 		const stream = new ReadableStream({
 			async start(controller) {
-				let resultData: unknown = { success: false, error: 'No result' };
+				let resultData: unknown = { success: false, error: '无结果' };
 				const send = (_event: string, data: unknown) => {
 					resultData = data;
 				};

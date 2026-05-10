@@ -58,7 +58,7 @@ function decrypt(value: string | null | undefined): string | null {
 
 	const key = getEncryptionKey();
 	if (!key) {
-		console.error('[vite.config] Cannot decrypt: no encryption key available');
+		console.error('[vite.config] 无法解密：未提供加密密钥');
 		return value;
 	}
 
@@ -84,7 +84,7 @@ function decrypt(value: string | null | undefined): string | null {
 
 		return decrypted.toString('utf8');
 	} catch (error) {
-		console.error('[vite.config] Decryption failed:', error);
+		console.error('[vite.config] 解密失败:', error);
 		return value;
 	}
 }
@@ -384,7 +384,7 @@ function dockerHttpRequest(method: string, path: string, target: DockerTarget, b
 async function createExecForWs(containerId: string, cmd: string[], user: string, target: ReturnType<typeof getDockerTarget>): Promise<{ Id: string }> {
 	const body = JSON.stringify({ AttachStdin: true, AttachStdout: true, AttachStderr: true, Tty: true, Cmd: cmd, User: user });
 	const res = await dockerHttpRequest('POST', '/containers/' + containerId + '/exec', target, body);
-	if (res.statusCode !== 201) throw new Error('Failed to create exec: ' + res.body);
+	if (res.statusCode !== 201) throw new Error('创建执行实例失败: ' + res.body);
 	return JSON.parse(res.body);
 }
 
@@ -439,7 +439,7 @@ function startCleanupInterval() {
 		}
 
 		if (dockerCleaned > 0 || edgeCleaned > 0) {
-			console.log(`[WS Cleanup] Removed ${dockerCleaned} orphaned docker streams, ${edgeCleaned} orphaned edge sessions`);
+			console.log(`[WS 清理] 已移除 ${dockerCleaned} 个孤立的 docker 流，${edgeCleaned} 个孤立的边缘会话`);
 		}
 
 		// Maintain reconnection tracker: reset for stable connections, prune stale entries
@@ -520,7 +520,7 @@ globalThis.__hawserSendMessage = (envId: number, message: string): boolean => {
 		conn.ws.send(message);
 		return true;
 	} catch (e) {
-		console.error(`[Hawser WS] sendMessage error:`, e);
+		console.error(`[Hawser WS] 发送消息错误:`, e);
 		return false;
 	}
 };
@@ -545,12 +545,12 @@ function webSocketPlugin(): Plugin {
 			}, 5 * 60_000);
 
 			const dockerSocketPath = detectDockerSocket();
-			console.log(`[Terminal WS] Detected Docker socket at: ${dockerSocketPath}`);
+			console.log(`[Terminal WS] 检测到 Docker socket 位: ${dockerSocketPath}`);
 
 			// Start a ws WebSocket server on a separate port
 			const httpServer = http.createServer((_req: any, res: any) => {
 				res.writeHead(200);
-				res.end('WebSocket server');
+				res.end('WebSocket 服务');
 			});
 
 			const wss = new WebSocketServer({ server: httpServer });
@@ -570,7 +570,7 @@ function webSocketPlugin(): Plugin {
 				(async () => {
 					// Check if this is a Hawser Edge connection
 					if (url.pathname === '/api/hawser/connect') {
-						console.log('[Hawser WS] New connection pending authentication');
+						console.log('[Hawser WS] 新连接等待认证');
 						return;
 					}
 
@@ -589,7 +589,7 @@ function webSocketPlugin(): Plugin {
 					const envId = envIdParam ? parseInt(envIdParam, 10) : undefined;
 
 					if (!containerId) {
-						ws.send(JSON.stringify({ type: 'error', message: 'No container ID' }));
+						ws.send(JSON.stringify({ type: 'error', message: '无容器 ID' }));
 						ws.close();
 						return;
 					}
@@ -601,7 +601,7 @@ function webSocketPlugin(): Plugin {
 						if (target.type === 'hawser-edge') {
 							const conn = edgeConnections.get(target.environmentId);
 							if (!conn) {
-								ws.send(JSON.stringify({ type: 'error', message: 'Edge agent not connected' }));
+								ws.send(JSON.stringify({ type: 'error', message: '边缘代理未连接' }));
 								ws.close();
 								return;
 							}
@@ -678,15 +678,15 @@ function webSocketPlugin(): Plugin {
 						});
 
 						dockerStream.on('error', (error: Error) => {
-							console.error('[Terminal WS] Socket error:', error?.message || error);
+							console.error('[Terminal WS] Socket 错误:', error?.message || error);
 							if (ws.readyState === WsWebSocket.OPEN) {
-								ws.send(JSON.stringify({ type: 'error', message: `Connection error: ${error?.message || 'Unknown error'}` }));
+								ws.send(JSON.stringify({ type: 'error', message: `连接错误：${error?.message || '未知错误'}` }));
 							}
 						});
 
 						dockerStreams.set(connId, { stream: dockerStream, execId, target, state, ws });
 					} catch (error: any) {
-						console.error('[Terminal WS] Connection error:', error?.message || error);
+						console.error('[Terminal WS] 连接错误:', error?.message || error);
 						ws.send(JSON.stringify({ type: 'error', message: error.message }));
 						ws.close();
 					}
@@ -705,7 +705,7 @@ function webSocketPlugin(): Plugin {
 							const msg = JSON.parse(messageStr);
 							await handleHawserMessage(ws, msg);
 						} catch (error: any) {
-							console.error('[Hawser WS] Error handling message:', error.message);
+							console.error('[Hawser WS] 处理消息错误:', error.message);
 							ws.send(JSON.stringify({ type: 'error', error: error.message }));
 						}
 						return;
@@ -726,7 +726,7 @@ function webSocketPlugin(): Plugin {
 										conn.ws.send(JSON.stringify(createExecResizeMessage(edgeExecId, msg.cols, msg.rows)));
 									}
 								} catch (e) {
-									console.error('[Terminal WS] Error handling Edge message:', e);
+									console.error('[Terminal WS] 处理边缘消息错误:', e);
 								}
 							}
 						}
@@ -763,17 +763,17 @@ function webSocketPlugin(): Plugin {
 					if (envId) {
 						const conn = edgeConnections.get(envId);
 						if (conn) {
-							console.log(`[Hawser WS] Agent disconnected: ${conn.agentId}`);
+							console.log(`[Hawser WS] 代理已断开连接: ${conn.agentId}`);
 							if (conn.pingInterval) {
 								clearInterval(conn.pingInterval);
 								conn.pingInterval = undefined;
 							}
 							for (const [, pending] of conn.pendingRequests) {
 								clearTimeout(pending.timeout);
-								pending.reject(new Error('Connection closed'));
+								pending.reject(new Error('连接已关闭'));
 							}
 							for (const [, pending] of conn.pendingStreamRequests) {
-								pending.onEnd('Connection closed');
+								pending.onEnd('连接已关闭');
 							}
 							edgeConnections.delete(envId);
 						}
@@ -791,7 +791,7 @@ function webSocketPlugin(): Plugin {
 								conn.ws.send(JSON.stringify(createExecEndMessage(edgeExecId)));
 							}
 							edgeExecSessions.delete(edgeExecId);
-							console.log(`[Terminal WS] Edge exec session closed: ${edgeExecId}`);
+							console.log(`[Terminal WS] 边缘执行会话已关闭: ${edgeExecId}`);
 						}
 						return;
 					}
@@ -809,7 +809,7 @@ function webSocketPlugin(): Plugin {
 			});
 
 			httpServer.listen(WS_PORT, () => {
-				console.log(`[Terminal WS] WebSocket server running on port ${WS_PORT}`);
+				console.log(`[Terminal WS] WebSocket 服务运行在端口 ${WS_PORT}`);
 			});
 		}
 	};
@@ -857,9 +857,9 @@ function recordReconnection(envId: number): { allowed: true } | { allowed: false
 		entry.cooldownLevel = Math.min(entry.cooldownLevel + 1, COOLDOWN_LEVELS_SECS.length - 1);
 
 		console.warn(
-			`[Hawser WS] Reconnection storm detected for env ${envId}: ` +
-			`${entry.timestamps.length} connections in ${RECONNECT_WINDOW_MS / 1000}s. ` +
-			`Cooldown ${cooldownSecs}s (level ${level})`
+			`[Hawser WS] 检测到环境 ${envId} 重连风暴: ` +
+			`${entry.timestamps.length} 次连接在 ${RECONNECT_WINDOW_MS / 1000} 秒内。 ` +
+			`冷却 ${cooldownSecs} 秒 (等级 ${level})`
 		);
 
 		return { allowed: false, retryAfter: cooldownSecs };
@@ -872,14 +872,14 @@ function recordReconnection(envId: number): { allowed: true } | { allowed: false
 async function handleHawserMessage(ws: any, msg: any) {
 	if (msg.type === 'hello') {
 		const agentId = msg.agentId || 'unknown';
-		console.log(`[Hawser WS] Hello from agent: ${msg.agentName} (${agentId})`);
+		console.log(`[Hawser WS] 来自代理的问候: ${msg.agentName} (${agentId})`);
 
 		// Rate-limit by remote IP (not agentId which is attacker-controlled)
 		const meta = wsMetadata.get(ws);
 		const rateLimitKey = meta?.remoteIp || agentId;
 		const lastFail = hawserAuthFailCache.get(rateLimitKey);
 		if (lastFail && (Date.now() - lastFail) < HAWSER_AUTH_FAIL_COOLDOWN_MS) {
-			ws.send(JSON.stringify({ type: 'error', error: 'Rate limited - retry later' }));
+			ws.send(JSON.stringify({ type: 'error', error: '已限流 - 稍后重试r' }));
 			ws.close();
 			return;
 		}
@@ -887,7 +887,7 @@ async function handleHawserMessage(ws: any, msg: any) {
 		// In dev mode, we need to validate the token against the database
 		const db = getDb();
 		if (!db) {
-			ws.send(JSON.stringify({ type: 'error', error: 'Database not available' }));
+			ws.send(JSON.stringify({ type: 'error', error: '数据库不可用' }));
 			ws.close();
 			return;
 		}
@@ -913,9 +913,9 @@ async function handleHawserMessage(ws: any, msg: any) {
 		}
 
 		if (!matchedToken) {
-			console.log(`[Hawser WS] Invalid token (IP: ${rateLimitKey})`);
+			console.log(`[Hawser WS] 无效令牌 (IP: ${rateLimitKey})`);
 			hawserAuthFailCache.set(rateLimitKey, Date.now());
-			ws.send(JSON.stringify({ type: 'error', error: 'Invalid token' }));
+			ws.send(JSON.stringify({ type: 'error', error: '无效令牌' }));
 			ws.close();
 			return;
 		}
@@ -927,10 +927,10 @@ async function handleHawserMessage(ws: any, msg: any) {
 		// Throttle reconnection storms
 		const throttle = recordReconnection(environmentId);
 		if (!throttle.allowed) {
-			console.log(`[Hawser WS] Throttling reconnection for env ${environmentId}: retry after ${throttle.retryAfter}s`);
+			console.log(`[Hawser WS] 限制环境 ${environmentId} 重连：${throttle.retryAfter} 秒后重试`);
 			ws.send(JSON.stringify({
 				type: 'error',
-				error: `Reconnection throttled. Retry after ${throttle.retryAfter}s.`,
+				error: `重连已限流。${throttle.retryAfter} 秒后重试。`,
 				retryAfter: throttle.retryAfter
 			}));
 			ws.close();
@@ -962,19 +962,19 @@ async function handleHawserMessage(ws: any, msg: any) {
 			const pendingCount = existing.pendingRequests.size;
 			const streamCount = existing.pendingStreamRequests.size;
 			console.log(
-				`[Hawser WS] Replacing existing connection for environment ${environmentId}. ` +
-				`Rejecting ${pendingCount} pending requests and ${streamCount} stream requests.`
+				`[Hawser WS] 正在替换环境 ${environmentId} 的现有连接。 ` +
+				`正在拒绝 ${pendingCount} 个待处理请求和 ${streamCount} 个流请求。`
 			);
 
 			// Reject all pending requests before closing
 			for (const [requestId, pending] of existing.pendingRequests) {
-				console.log(`[Hawser WS] Rejecting pending request ${requestId} due to connection replacement`);
+				console.log(`[Hawser WS] 因连接替换，拒绝待处理请求 ${requestId}`);
 				clearTimeout(pending.timeout);
-				pending.reject(new Error('Connection replaced by new agent'));
+				pending.reject(new Error('连接已被新代理替换'));
 			}
 			for (const [requestId, pending] of existing.pendingStreamRequests) {
-				console.log(`[Hawser WS] Ending stream request ${requestId} due to connection replacement`);
-				pending.onEnd?.('Connection replaced by new agent');
+				console.log(`[Hawser WS] 因连接替换，结束流请求 ${requestId}`);
+				pending.onEnd?.('连接已被新代理替换');
 			}
 			existing.pendingRequests.clear();
 			existing.pendingStreamRequests.clear();
@@ -987,7 +987,7 @@ async function handleHawserMessage(ws: any, msg: any) {
 			if (typeof existing.ws.terminate === 'function') {
 				existing.ws.terminate();
 			} else {
-				existing.ws.close(1000, 'Replaced by new connection');
+				existing.ws.close(1000, '已被新连接替换');
 			}
 			wsToEnvId.delete(existing.ws);
 		}
@@ -1015,13 +1015,13 @@ async function handleHawserMessage(ws: any, msg: any) {
 		ws.send(JSON.stringify({
 			type: 'welcome',
 			environmentId,
-			message: `Welcome ${msg.agentName}! Connected to Dockhand dev server.`
+			message: `欢迎 ${msg.agentName}！已连接到 Dockhand 开发服务。`
 		}));
 
 		// Note: server-side ping interval is managed by hawser.ts handleEdgeConnection()
 		// via the shared edgeConnections map — no duplicate interval needed here.
 
-		console.log(`[Hawser WS] Agent ${msg.agentName} connected for environment ${environmentId}`);
+		console.log(`[Hawser WS] 代理 ${msg.agentName} 已连接到环境 ${environmentId}`);
 	} else if (msg.type === 'ping') {
 		// Agent sent ping - respond with pong to keep connection alive
 		const envId = wsToEnvId.get(ws);
@@ -1067,17 +1067,17 @@ async function handleHawserMessage(ws: any, msg: any) {
 		// Streaming data from agent
 		const envId = wsToEnvId.get(ws);
 		if (!envId) {
-			console.warn(`[Hawser WS] Stream data from unknown WebSocket, requestId=${msg.requestId}`);
+			console.warn(`[Hawser WS] 来自未知 WebSocket 的流数据，请求ID=${msg.requestId}`);
 			return;
 		}
 		const conn = edgeConnections.get(envId);
 		if (!conn) {
-			console.warn(`[Hawser WS] Stream data for unknown environment ${envId}, requestId=${msg.requestId}`);
+			console.warn(`[Hawser WS] 未知环境 ${envId} 的流数据，请求ID=${msg.requestId}`);
 			return;
 		}
 		const pending = conn.pendingStreamRequests?.get(msg.requestId);
 		if (!pending) {
-			console.warn(`[Hawser WS] Stream data for unknown request ${msg.requestId} on env ${envId}`);
+			console.warn(`[Hawser WS] 环境 ${envId} 上未知请求 ${msg.requestId} 的流数据`);
 			return;
 		}
 		pending.onData(msg.data, msg.stream);
@@ -1085,17 +1085,17 @@ async function handleHawserMessage(ws: any, msg: any) {
 		// Stream ended
 		const envId = wsToEnvId.get(ws);
 		if (!envId) {
-			console.warn(`[Hawser WS] Stream end from unknown WebSocket, requestId=${msg.requestId}`);
+			console.warn(`[Hawser WS] 来自未知 WebSocket 的流结束，请求ID=${msg.requestId}`);
 			return;
 		}
 		const conn = edgeConnections.get(envId);
 		if (!conn) {
-			console.warn(`[Hawser WS] Stream end for unknown environment ${envId}, requestId=${msg.requestId}`);
+			console.warn(`[Hawser WebSocket] 未知环境 ${envId} 的流结束，请求ID=${msg.requestId}`);
 			return;
 		}
 		const pending = conn.pendingStreamRequests.get(msg.requestId);
 		if (!pending) {
-			console.warn(`[Hawser WS] Stream end for unknown request ${msg.requestId} on env ${envId}`);
+			console.warn(`[Hawser WebSocket] 环境 ${envId} 上未知请求 ${msg.requestId} 的流结束`);
 			return;
 		}
 		conn.pendingStreamRequests.delete(msg.requestId);
@@ -1106,7 +1106,7 @@ async function handleHawserMessage(ws: any, msg: any) {
 		if (envId && msg.metrics) {
 			if (globalThis.__hawserHandleMetrics) {
 				globalThis.__hawserHandleMetrics(envId, msg.metrics).catch((err) => {
-					console.error(`[Hawser WS] Error saving metrics:`, err);
+					console.error(`[Hawser WS] 保存指标错误:`, err);
 				});
 			}
 		}
@@ -1114,7 +1114,7 @@ async function handleHawserMessage(ws: any, msg: any) {
 		// Exec session is ready
 		const session = edgeExecSessions.get(msg.execId);
 		if (session?.ws?.readyState === 1) {
-			console.log(`[Hawser WS] Exec ready: ${msg.execId}`);
+			console.log(`[Hawser WS] 执行就绪: ${msg.execId}`);
 			// Frontend doesn't need explicit ready message, it's already waiting for output
 		}
 	} else if (msg.type === 'exec_output') {
@@ -1129,7 +1129,7 @@ async function handleHawserMessage(ws: any, msg: any) {
 		// Exec session ended
 		const session = edgeExecSessions.get(msg.execId);
 		if (session) {
-			console.log(`[Hawser WS] Exec ended: ${msg.execId} (reason: ${msg.reason})`);
+			console.log(`[Hawser WS] 执行结束: ${msg.execId} (原因: ${msg.reason})`);
 			if (session.ws?.readyState === 1) {
 				session.ws.send(JSON.stringify({ type: 'exit' }));
 				session.ws.close();
@@ -1143,7 +1143,7 @@ async function handleHawserMessage(ws: any, msg: any) {
 			// Call the global handler registered by hawser.ts
 			if (globalThis.__hawserHandleContainerEvent) {
 				globalThis.__hawserHandleContainerEvent(envId, msg.event).catch((err) => {
-					console.error('[Hawser WS] Error handling container event:', err);
+					console.error('[Hawser WS] 处理容器事件错误:', err);
 				});
 			}
 		}
@@ -1151,7 +1151,7 @@ async function handleHawserMessage(ws: any, msg: any) {
 		// Error might be for an exec session
 		const session = edgeExecSessions.get(msg.requestId);
 		if (session?.ws?.readyState === 1) {
-			console.error(`[Hawser WS] Exec error: ${msg.error}`);
+			console.error(`[Hawser WS] 执行错误: ${msg.error}`);
 			session.ws.send(JSON.stringify({ type: 'error', message: msg.error }));
 			session.ws.close();
 			edgeExecSessions.delete(msg.requestId);

@@ -84,7 +84,7 @@ async function scannerCleanupAllEnvs(): Promise<{ volumes: string[]; dirs: strin
 			localResult.volumes.push(...envResult.volumes);
 		} catch (error) {
 			const msg = error instanceof Error ? error.message : String(error);
-			console.log(`[Scanner] Skipping cache cleanup for env "${env.name}" (id=${env.id}): ${msg}`);
+			console.log(`[扫描器] 跳过环境 "${env.name}" (id=${env.id}) 的缓存清理：${msg}`);
 		}
 	}
 
@@ -102,16 +102,16 @@ async function cleanupStaleSyncStates(): Promise<void> {
 		return;
 	}
 
-	console.log(`[Scheduler] Recovering ${staleStacks.length} git stack(s) from stale syncing state`);
+	console.log(`[调度器] 正在恢复 ${staleStacks.length} 个处于异常同步状态的 Git 堆栈`);
 
 	for (const stack of staleStacks) {
 		await db.update(gitStacks).set({
 			syncStatus: 'pending',
-			syncError: 'Recovered from interrupted sync on startup',
+			syncError: '启动时从中断的同步中恢复',
 			updatedAt: new Date().toISOString()
 		}).where(eq(gitStacks.id, stack.id));
 
-		console.log(`[Scheduler] Reset git stack "${stack.stackName}" (ID: ${stack.id}) to pending`);
+		console.log(`[调度器] 已重置 Git 堆栈 "${stack.stackName}" (ID: ${stack.id}) 为待处理状态`);
 	}
 }
 
@@ -121,11 +121,11 @@ async function cleanupStaleSyncStates(): Promise<void> {
  */
 export async function startScheduler(): Promise<void> {
 	if (isRunning) {
-		console.log('[Scheduler] Already running');
+		console.log('[调度器] 已在运行中');
 		return;
 	}
 
-	console.log('[Scheduler] Starting scheduler service...');
+	console.log('[调度器] 正在启动调度服务...');
 	isRunning = true;
 
 	// Clean up stale sync states from previous crashed processes
@@ -170,15 +170,15 @@ export async function startScheduler(): Promise<void> {
 		});
 	}
 
-	console.log(`[Scheduler] System schedule cleanup: ${scheduleCleanupCron} [${defaultTimezone}]`);
-	console.log(`[Scheduler] System event cleanup: ${eventCleanupCron} [${defaultTimezone}]`);
-	console.log(`[Scheduler] Volume helper cleanup: every 30 minutes [${defaultTimezone}]`);
-	console.log(`[Scheduler] Scanner cache cleanup: ${scannerCleanupEnabled ? scannerCleanupCron : 'disabled'} [${defaultTimezone}]`);
+	console.log(`[调度器] 系统计划清理：${scheduleCleanupCron} [${defaultTimezone}]`);
+	console.log(`[调度器] 系统事件清理：${eventCleanupCron} [${defaultTimezone}]`);
+	console.log(`[调度器] 数据卷助手清理：每 30 分钟 [${defaultTimezone}]`);
+	console.log(`[调度器] 扫描器缓存清理：${scannerCleanupEnabled ? scannerCleanupCron : '已禁用'} [${defaultTimezone}]`);
 
 	// Register all dynamic schedules from database
 	await refreshAllSchedules();
 
-	console.log('[Scheduler] Service started');
+	console.log('[调度器] 服务已启动');
 }
 
 /**
@@ -187,7 +187,7 @@ export async function startScheduler(): Promise<void> {
 export function stopScheduler(): void {
 	if (!isRunning) return;
 
-	console.log('[Scheduler] Stopping scheduler...');
+	console.log('[调度器] 正在停止调度服务...');
 	isRunning = false;
 
 	// Stop system jobs
@@ -214,7 +214,7 @@ export function stopScheduler(): void {
 	}
 	activeJobs.clear();
 
-	console.log('[Scheduler] Service stopped');
+	console.log('[调度器] 服务已停止');
 }
 
 /**
@@ -222,7 +222,7 @@ export function stopScheduler(): void {
  * Called on startup and optionally for recovery.
  */
 export async function refreshAllSchedules(): Promise<void> {
-	console.log('[Scheduler] Refreshing all schedules...');
+	console.log('[调度器] 正在刷新所有计划任务...');
 
 	// Clear existing dynamic jobs
 	for (const [key, job] of activeJobs.entries()) {
@@ -248,7 +248,7 @@ export async function refreshAllSchedules(): Promise<void> {
 		}
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		console.error('[Scheduler] Error loading container schedules:', errorMsg);
+		console.error('[调度器] 加载容器计划任务失败：', errorMsg);
 	}
 
 	// Register git stack auto-sync schedules
@@ -266,7 +266,7 @@ export async function refreshAllSchedules(): Promise<void> {
 		}
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		console.error('[Scheduler] Error loading git stack schedules:', errorMsg);
+		console.error('[调度器] 加载 Git 堆栈计划任务失败：', errorMsg);
 	}
 
 	// Register environment update check schedules
@@ -285,7 +285,7 @@ export async function refreshAllSchedules(): Promise<void> {
 		}
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		console.error('[Scheduler] Error loading env update check schedules:', errorMsg);
+		console.error('[调度器] 加载环境更新检查计划任务失败：', errorMsg);
 	}
 
 	// Register image prune schedules
@@ -304,10 +304,10 @@ export async function refreshAllSchedules(): Promise<void> {
 		}
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		console.error('[Scheduler] Error loading image prune schedules:', errorMsg);
+		console.error('[调度器] 加载镜像清理计划任务失败：', errorMsg);
 	}
 
-	console.log(`[Scheduler] Registered ${containerCount} container schedules, ${gitStackCount} git stack schedules, ${envUpdateCheckCount} env update check schedules, ${imagePruneCount} image prune schedules`);
+	console.log(`[调度器] 已注册 ${containerCount} 个容器任务、${gitStackCount} 个 Git 堆栈任务、${envUpdateCheckCount} 个环境更新检查任务、${imagePruneCount} 个镜像清理任务`);
 }
 
 /**
@@ -348,7 +348,7 @@ export async function registerSchedule(
 			const env = await getEnvironment(scheduleId);
 			if (!env) return false;
 			cronExpression = config.cron;
-			entityName = `Update: ${env.name}`;
+			entityName = `更新检查：${env.name}`;
 			enabled = config.enabled;
 		} else if (type === 'image_prune') {
 			const config = await getImagePruneSettings(scheduleId);
@@ -356,7 +356,15 @@ export async function registerSchedule(
 			const env = await getEnvironment(scheduleId);
 			if (!env) return false;
 			cronExpression = config.cronExpression;
-			entityName = `Prune: ${env.name}`;
+			entityName = `镜像清理：${env.name}`;
+			enabled = config.enabled;
+		} else if (type === 'image_prune') {
+			const config = await getImagePruneSettings(scheduleId);
+			if (!config) return false;
+			const env = await getEnvironment(scheduleId);
+			if (!env) return false;
+			cronExpression = config.cronExpression;
+			entityName = `清理: ${env.name}`;
 			enabled = config.enabled;
 		}
 
@@ -392,10 +400,10 @@ export async function registerSchedule(
 
 		// Store in active jobs map
 		activeJobs.set(key, job);
-		console.log(`[Scheduler] Registered ${type} schedule ${scheduleId} (${entityName}): ${cronExpression} [${timezone}]`);
+		console.log(`[调度器] 已注册 ${type} 计划任务 ${scheduleId} (${entityName}): ${cronExpression} [${timezone}]`);
 		return true;
 	} catch (error: any) {
-		console.error(`[Scheduler] Failed to register ${type} schedule ${scheduleId}:`, error.message);
+		console.error(`[调度器] 注册 ${type} 计划任务 ${scheduleId} 失败：`, error.message);
 		return false;
 	}
 }
@@ -414,7 +422,7 @@ export function unregisterSchedule(
 	if (job) {
 		job.stop();
 		activeJobs.delete(key);
-		console.log(`[Scheduler] Unregistered ${type} schedule ${scheduleId}`);
+		console.log(`[调度器] 已注销 ${type} 计划任务 ${scheduleId}`);
 	}
 }
 
@@ -423,7 +431,7 @@ export function unregisterSchedule(
  * Called when an environment's timezone changes to re-register jobs with the new timezone.
  */
 export async function refreshSchedulesForEnvironment(environmentId: number): Promise<void> {
-	console.log(`[Scheduler] Refreshing schedules for environment ${environmentId} (timezone changed)`);
+	console.log(`[调度器] 正在刷新环境 ${environmentId} 的计划任务 (时区已变更)`);
 
 	let refreshedCount = 0;
 
@@ -442,7 +450,7 @@ export async function refreshSchedulesForEnvironment(environmentId: number): Pro
 		}
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		console.error('[Scheduler] Error refreshing container schedules:', errorMsg);
+		console.error('[调度器] 刷新容器计划任务失败：', errorMsg);
 	}
 
 	// Re-register git stack auto-sync schedules for this environment
@@ -460,7 +468,7 @@ export async function refreshSchedulesForEnvironment(environmentId: number): Pro
 		}
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		console.error('[Scheduler] Error refreshing git stack schedules:', errorMsg);
+		console.error('[调度器] 刷新 Git 堆栈计划任务失败：', errorMsg);
 	}
 
 	// Re-register environment update check schedule for this environment
@@ -476,7 +484,7 @@ export async function refreshSchedulesForEnvironment(environmentId: number): Pro
 		}
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		console.error('[Scheduler] Error refreshing env update check schedule:', errorMsg);
+		console.error('[调度器] 刷新环境更新检查定时任务时出错:', errorMsg);
 	}
 
 	// Re-register image prune schedule for this environment
@@ -492,10 +500,26 @@ export async function refreshSchedulesForEnvironment(environmentId: number): Pro
 		}
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		console.error('[Scheduler] Error refreshing image prune schedule:', errorMsg);
+		console.error('[调度器] 刷新镜像清理定时任务时出错:', errorMsg);
 	}
 
-	console.log(`[Scheduler] Refreshed ${refreshedCount} schedules for environment ${environmentId}`);
+	// Re-register image prune schedule for this environment
+	try {
+		const config = await getImagePruneSettings(environmentId);
+		if (config && config.enabled && config.cronExpression) {
+			const registered = await registerSchedule(
+				environmentId,
+				'image_prune',
+				environmentId
+			);
+			if (registered) refreshedCount++;
+		}
+	} catch (error) {
+		const errorMsg = error instanceof Error ? error.message : String(error);
+		console.error('[调度器] 刷新镜像清理计划任务失败：', errorMsg);
+	}
+
+	console.log(`[调度器] 已刷新环境 ${environmentId} 的 ${refreshedCount} 个计划任务`);
 }
 
 /**
@@ -503,7 +527,7 @@ export async function refreshSchedulesForEnvironment(environmentId: number): Pro
  * Called when the default timezone setting changes.
  */
 export async function refreshSystemJobs(): Promise<void> {
-	console.log('[Scheduler] Refreshing system jobs (default timezone changed)');
+	console.log('[调度器] 正在刷新系统任务 (默认时区已变更)');
 
 	// Get current settings
 	const scheduleCleanupCron = await getScheduleCleanupCron();
@@ -555,10 +579,10 @@ export async function refreshSystemJobs(): Promise<void> {
 		});
 	}
 
-	console.log(`[Scheduler] System schedule cleanup: ${scheduleCleanupCron} [${defaultTimezone}]`);
-	console.log(`[Scheduler] System event cleanup: ${eventCleanupCron} [${defaultTimezone}]`);
-	console.log(`[Scheduler] Volume helper cleanup: every 30 minutes [${defaultTimezone}]`);
-	console.log(`[Scheduler] Scanner cache cleanup: ${scannerCleanupEnabled ? scannerCleanupCron : 'disabled'} [${defaultTimezone}]`);
+	console.log(`[调度器] 系统计划清理：${scheduleCleanupCron} [${defaultTimezone}]`);
+	console.log(`[调度器] 系统事件清理：${eventCleanupCron} [${defaultTimezone}]`);
+	console.log(`[调度器] 数据卷助手清理：每 30 分钟 [${defaultTimezone}]`);
+	console.log(`[调度器] 扫描器缓存清理：${scannerCleanupEnabled ? scannerCleanupCron : '已禁用'} [${defaultTimezone}]`);
 }
 
 // =============================================================================
@@ -572,7 +596,7 @@ export async function triggerContainerUpdate(settingId: number): Promise<{ succe
 	try {
 		const setting = await getAutoUpdateSettingById(settingId);
 		if (!setting) {
-			return { success: false, error: 'Auto-update setting not found' };
+			return { success: false, error: '未找到自动更新配置' };
 		}
 
 		// Run in background
@@ -591,7 +615,7 @@ export async function triggerGitStackSync(stackId: number): Promise<{ success: b
 	try {
 		const stack = await getGitStack(stackId);
 		if (!stack) {
-			return { success: false, error: 'Git stack not found' };
+			return { success: false, error: '未找到 Git 堆栈' };
 		}
 
 		// Run in background
@@ -610,7 +634,7 @@ export async function triggerGitStackSyncFromWebhook(stackId: number): Promise<{
 	try {
 		const stack = await getGitStack(stackId);
 		if (!stack) {
-			return { success: false, error: 'Git stack not found' };
+			return { success: false, error: '未找到 Git 堆栈' };
 		}
 
 		// Run in background
@@ -629,12 +653,12 @@ export async function triggerEnvUpdateCheck(environmentId: number): Promise<{ su
 	try {
 		const config = await getEnvUpdateCheckSettings(environmentId);
 		if (!config) {
-			return { success: false, error: 'Update check settings not found for this environment' };
+			return { success: false, error: '未找到该环境的更新检查配置' };
 		}
 
 		const env = await getEnvironment(environmentId);
 		if (!env) {
-			return { success: false, error: 'Environment not found' };
+			return { success: false, error: '未找到环境' };
 		}
 
 		// Run in background
@@ -653,12 +677,12 @@ export async function triggerImagePrune(environmentId: number): Promise<{ succes
 	try {
 		const config = await getImagePruneSettings(environmentId);
 		if (!config) {
-			return { success: false, error: 'Image prune settings not found for this environment' };
+			return { success: false, error: '未找到该环境的镜像清理配置' };
 		}
 
 		const env = await getEnvironment(environmentId);
 		if (!env) {
-			return { success: false, error: 'Environment not found' };
+			return { success: false, error: '未找到环境' };
 		}
 
 		// Run in background
@@ -696,7 +720,7 @@ export async function triggerSystemJob(jobId: string): Promise<{ success: boolea
 			runScannerCacheCleanupJob('manual', scannerCleanupAllEnvs);
 			return { success: true };
 		} else {
-			return { success: false, error: 'Unknown system job ID' };
+			return { success: false, error: '未知的系统任务 ID' };
 		}
 	} catch (error: any) {
 		return { success: false, error: error.message };
@@ -728,8 +752,8 @@ export async function getSystemSchedules(): Promise<SystemScheduleInfo[]> {
 		{
 			id: SYSTEM_SCHEDULE_CLEANUP_ID,
 			type: 'system_cleanup' as const,
-			name: 'Schedule execution cleanup',
-			description: `Removes execution logs older than ${scheduleRetention} days`,
+			name: '计划任务执行记录清理',
+			description: `移除超过 ${scheduleRetention} 天的执行日志`,
 			cronExpression: scheduleCleanupCron,
 			nextRun: scheduleCleanupEnabled ? getNextRun(scheduleCleanupCron)?.toISOString() ?? null : null,
 			isSystem: true,
@@ -738,8 +762,8 @@ export async function getSystemSchedules(): Promise<SystemScheduleInfo[]> {
 		{
 			id: SYSTEM_EVENT_CLEANUP_ID,
 			type: 'system_cleanup' as const,
-			name: 'Container event cleanup',
-			description: `Removes container events older than ${eventRetention} days`,
+			name: '容器事件清理',
+			description: `移除超过 ${eventRetention} 天的容器事件`,
 			cronExpression: eventCleanupCron,
 			nextRun: eventCleanupEnabled ? getNextRun(eventCleanupCron)?.toISOString() ?? null : null,
 			isSystem: true,
@@ -748,8 +772,8 @@ export async function getSystemSchedules(): Promise<SystemScheduleInfo[]> {
 		{
 			id: SYSTEM_VOLUME_HELPER_CLEANUP_ID,
 			type: 'system_cleanup' as const,
-			name: 'Volume helper cleanup',
-			description: 'Cleans up temporary volume browser containers',
+			name: '数据卷辅助容器清理',
+			description: '清理临时数据卷浏览容器',
 			cronExpression: '*/30 * * * *',
 			nextRun: getNextRun('*/30 * * * *')?.toISOString() ?? null,
 			isSystem: true,
@@ -758,8 +782,8 @@ export async function getSystemSchedules(): Promise<SystemScheduleInfo[]> {
 		{
 			id: SYSTEM_SCANNER_CLEANUP_ID,
 			type: 'system_cleanup' as const,
-			name: 'Scanner cache cleanup',
-			description: 'Removes scanner vulnerability database cache to reclaim disk space',
+			name: '扫描器缓存清理',
+			description: '移除扫描器漏洞数据库缓存以释放磁盘空间',
 			cronExpression: scannerCleanupCron,
 			nextRun: scannerCleanupEnabled ? getNextRun(scannerCleanupCron)?.toISOString() ?? null : null,
 			isSystem: true,

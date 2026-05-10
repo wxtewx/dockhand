@@ -121,7 +121,7 @@
 			// Fetch scanner status for all environments in background
 			fetchAllEnvScannerStatus();
 		} catch (error) {
-			console.error('Failed to fetch environments:', error);
+			console.error('获取环境信息失败:', error);
 		} finally {
 			envLoading = false;
 		}
@@ -132,7 +132,7 @@
 			const response = await fetch('/api/notifications');
 			notifications = await response.json();
 		} catch (error) {
-			console.error('Failed to fetch notifications:', error);
+			console.error('获取通知失败:', error);
 		}
 	}
 
@@ -168,23 +168,23 @@
 
 	async function deleteEnvironment(id: number) {
 		const env = environments.find(e => e.id === id);
-		const name = env?.name || 'environment';
+		const name = env?.name || '环境';
 		try {
 			const response = await fetch(`/api/environments/${id}`, {
 				method: 'DELETE'
 			});
 
 			if (response.ok) {
-				toast.success(`Deleted ${name}`);
+				toast.success(`已删除 ${name}`);
 				await fetchEnvironments();
 				// Refresh the global environments store so dropdown updates
 				environmentsStore.refresh();
 			} else {
 				const data = await response.json();
-				toast.error(data.error || 'Failed to delete environment');
+				toast.error(data.error || '删除环境失败');
 			}
 		} catch (error) {
-			toast.error('Failed to delete environment');
+			toast.error('删除环境失败');
 		}
 	}
 
@@ -200,7 +200,7 @@
 			testResults[id] = result;
 			testResults = { ...testResults };
 		} catch (error) {
-			testResults[id] = { success: false, error: 'Connection failed' };
+			testResults[id] = { success: false, error: '连接失败' };
 			testResults = { ...testResults };
 		}
 
@@ -227,7 +227,7 @@
 					const response = await fetch(`/api/environments/${env.id}/test`, { method: 'POST' });
 					testResults[env.id] = await response.json();
 				} catch {
-					testResults[env.id] = { success: false, error: 'Connection failed' };
+					testResults[env.id] = { success: false, error: '连接失败' };
 				} finally {
 					testingEnvs.delete(env.id);
 					testingEnvs = new Set(testingEnvs);
@@ -254,14 +254,14 @@
 			} else {
 				const errorData = await response.json().catch(() => ({}));
 				if (errorData.details?.includes('already running')) {
-					console.warn('Prune already in progress, please wait');
+					console.warn('清理已在进行中，请稍后');
 				} else {
-					console.error('Prune failed:', response.status, errorData, errorData.details);
+					console.error('清理失败:', response.status, errorData, errorData.details);
 				}
 				pruneStatus[id] = 'error';
 			}
 		} catch (error) {
-			console.error('Prune error:', error);
+			console.error('清理错误:', error);
 			pruneStatus[id] = 'error';
 		}
 		pruneStatus = { ...pruneStatus };
@@ -328,13 +328,13 @@
 <div class="space-y-4">
 	<div class="flex justify-between items-center">
 		<div class="flex items-center gap-3">
-			<Badge variant="secondary" class="text-xs">{environments.length} total</Badge>
+			<Badge variant="secondary" class="text-xs">总计 {environments.length} 个</Badge>
 		</div>
 		<div class="flex gap-2">
 			{#if $canAccess('environments', 'create')}
 				<Button size="sm" onclick={openAddEnvModal}>
 					<Plus class="w-4 h-4 mr-1" />
-					Add environment
+					添加环境
 				</Button>
 			{/if}
 			<Button
@@ -349,30 +349,30 @@
 				{:else}
 					<Wifi class="w-4 h-4 mr-1" />
 				{/if}
-				<span class="w-14">Test all</span>
+				<span class="w-14">全部测试</span>
 			</Button>
-			<Button size="sm" variant="outline" onclick={fetchEnvironments}>Refresh</Button>
+			<Button size="sm" variant="outline" onclick={fetchEnvironments}>刷新</Button>
 		</div>
 	</div>
 
 	{#if envLoading && environments.length === 0}
-		<p class="text-muted-foreground text-sm">Loading environments...</p>
+		<p class="text-muted-foreground text-sm">正在加载环境...</p>
 	{:else if environments.length === 0}
-		<p class="text-muted-foreground text-sm">No environments found</p>
+		<p class="text-muted-foreground text-sm">未找到任何环境</p>
 	{:else}
 		<div class="border rounded-lg overflow-hidden">
 			<Table.Root>
 				<Table.Header>
 					<Table.Row>
-						<Table.Head class="w-[200px]">Name</Table.Head>
-						<Table.Head>Connection</Table.Head>
-						<Table.Head class="w-[120px]">Labels</Table.Head>
-						<Table.Head class="w-[140px]">Timezone</Table.Head>
-						<Table.Head class="w-[100px]">Features</Table.Head>
-						<Table.Head class="w-[120px]">Status</Table.Head>
+						<Table.Head class="w-[200px]">名称</Table.Head>
+						<Table.Head>连接</Table.Head>
+						<Table.Head class="w-[120px]">标签</Table.Head>
+						<Table.Head class="w-[140px]">时区</Table.Head>
+						<Table.Head class="w-[100px]">功能</Table.Head>
+						<Table.Head class="w-[120px]">状态</Table.Head>
 						<Table.Head class="w-[100px]">Docker</Table.Head>
 						<Table.Head class="w-[100px]">Hawser</Table.Head>
-						<Table.Head class="w-[180px] text-right">Actions</Table.Head>
+						<Table.Head class="w-[180px] text-right">操作</Table.Head>
 					</Table.Row>
 				</Table.Header>
 				<Table.Body>
@@ -386,19 +386,19 @@
 								<div class="flex items-center gap-2">
 									<EnvironmentIcon icon={env.icon || 'globe'} envId={env.id} class="w-4 h-4 text-muted-foreground shrink-0" />
 									{#if env.connectionType === 'socket' || !env.connectionType}
-										<span title="Unix socket connection" class="shrink-0">
+										<span title="Unix socket 连接" class="shrink-0">
 											<Unplug class="w-3.5 h-3.5 text-cyan-500 glow-cyan" />
 										</span>
 									{:else if env.connectionType === 'direct'}
-										<span title="Direct Docker connection" class="shrink-0">
+										<span title="直接 Docker 连接" class="shrink-0">
 											<Icon iconNode={whale} class="w-3.5 h-3.5 text-blue-500 glow-blue" />
 										</span>
 									{:else if env.connectionType === 'hawser-standard'}
-										<span title="Hawser agent (standard mode)" class="shrink-0">
+										<span title="Hawser 代理 (标准模式)" class="shrink-0">
 											<Route class="w-3.5 h-3.5 text-purple-500 glow-purple" />
 										</span>
 									{:else if env.connectionType === 'hawser-edge'}
-										<span title="Hawser agent (edge mode)" class="shrink-0">
+										<span title="Hawser 代理 (边缘模式)" class="shrink-0">
 											<UndoDot class="w-3.5 h-3.5 text-green-500 glow-green" />
 										</span>
 									{/if}
@@ -412,7 +412,7 @@
 									{#if env.connectionType === 'socket' || !env.connectionType}
 										{env.socketPath || '/var/run/docker.sock'}
 									{:else if env.connectionType === 'hawser-edge'}
-										Edge connection (outbound)
+										边缘连接 (出站)
 									{:else}
 										{env.protocol || 'http'}://{env.host}:{env.port || 2375}
 									{/if}
@@ -454,7 +454,7 @@
 							<Table.Cell>
 								<div class="flex items-center gap-1.5">
 									{#if env.updateCheckEnabled}
-										<span title={env.updateCheckAutoUpdate ? "Auto-update enabled" : "Update check enabled (notify only)"}>
+										<span title={env.updateCheckAutoUpdate ? "已启用自动更新" : "已启用更新检查 (仅通知)"}>
 											{#if env.updateCheckAutoUpdate}
 												<CircleArrowUp class="w-4 h-4 text-green-500 glow-green" />
 											{:else}
@@ -463,22 +463,22 @@
 										</span>
 									{/if}
 									{#if hasScannerEnabled}
-										<span title="Vulnerability scanning enabled">
+										<span title="已启用漏洞扫描">
 											<ShieldCheck class="w-4 h-4 text-green-500 glow-green" />
 										</span>
 									{/if}
 									{#if env.collectActivity}
-										<span title="Activity collection enabled">
+										<span title="已启用操作采集">
 											<Activity class="w-4 h-4 text-amber-500 glow-amber" />
 										</span>
 									{/if}
 									{#if env.collectMetrics}
-										<span title="Metrics collection enabled">
+										<span title="已启用指标采集">
 											<Cpu class="w-4 h-4 text-sky-400 glow-sky" />
 										</span>
 									{/if}
 									{#if env.imagePruneEnabled}
-										<span title="Automatic image pruning enabled">
+										<span title="已启用自动镜像清理">
 											<Trash2 class="w-4 h-4 text-amber-500 glow-amber" />
 										</span>
 									{/if}
@@ -498,7 +498,7 @@
 											{:else}
 												<Wifi class="w-3.5 h-3.5" />
 											{/if}
-											<span>Connected</span>
+											<span>已连接</span>
 										</div>
 									{:else}
 										<div class="flex items-center gap-1.5 text-red-600 dark:text-red-400 text-sm" title={testResult.error}>
@@ -507,16 +507,16 @@
 											{:else}
 												<WifiOff class="w-3.5 h-3.5" />
 											{/if}
-											<span>Failed</span>
+											<span>连接失败</span>
 										</div>
 									{/if}
 								{:else if isTesting}
 									<div class="flex items-center gap-1.5 text-muted-foreground text-sm">
 										<RefreshCw class="w-3.5 h-3.5 animate-spin" />
-										<span>Testing...</span>
+										<span>测试中...</span>
 									</div>
 								{:else}
-									<span class="text-muted-foreground text-xs">Not tested</span>
+									<span class="text-muted-foreground text-xs">未测试</span>
 								{/if}
 							</Table.Cell>
 
@@ -549,7 +549,7 @@
 										class="h-7 px-2"
 										onclick={() => testConnection(env.id)}
 										disabled={isTesting}
-										title="Test connection"
+										title="测试连接"
 									>
 										{#if isTesting}
 											<RefreshCw class="w-3.5 h-3.5 animate-spin" />
@@ -563,7 +563,7 @@
 											size="sm"
 											class="h-7 px-2"
 											onclick={() => openEditEnvModal(env)}
-											title="Edit environment"
+											title="编辑环境"
 										>
 											<Pencil class="w-3.5 h-3.5" />
 										</Button>
@@ -571,10 +571,10 @@
 									{#if $canAccess('containers', 'remove') && $canAccess('images', 'remove') && $canAccess('volumes', 'remove') && $canAccess('networks', 'remove')}
 										<ConfirmPopover
 											open={confirmPruneEnvId === env.id}
-											action="Prune"
-											itemType="system on "
+											action="清理"
+											itemType="系统"
 											itemName={env.name}
-											title="System prune"
+											title="系统清理"
 											position="left"
 											onConfirm={() => pruneSystem(env.id)}
 											onOpenChange={(open) => confirmPruneEnvId = open ? env.id : null}
@@ -585,7 +585,7 @@
 													size="sm"
 													class="h-7 px-2"
 													disabled={pruneStatus[env.id] === 'pruning'}
-													title="Prune system"
+													title="系统清理"
 												>
 													{#if pruneStatus[env.id] === 'pruning'}
 														<RefreshCw class="w-3.5 h-3.5 animate-spin" />
@@ -603,10 +603,10 @@
 									{#if $canAccess('environments', 'delete')}
 										<ConfirmPopover
 											open={confirmDeleteEnvId === env.id}
-											action="Delete"
-											itemType="environment"
+											action="删除"
+											itemType="环境"
 											itemName={env.name}
-											title="Remove"
+											title="移除"
 											position="left"
 											onConfirm={() => deleteEnvironment(env.id)}
 											onOpenChange={(open) => confirmDeleteEnvId = open ? env.id : null}
@@ -616,7 +616,7 @@
 													variant="ghost"
 													size="sm"
 													class="h-7 px-2 {open ? 'text-destructive' : 'text-muted-foreground hover:text-destructive'}"
-													title="Delete environment"
+													title="删除环境"
 												>
 													<Trash2 class="w-3.5 h-3.5" />
 												</Button>

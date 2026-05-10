@@ -50,7 +50,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 	// Check basic environment view permission
 	if (auth.authEnabled && !await auth.can('environments', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -62,7 +62,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 			const envId = parseInt(envIdParam);
 			// Check if user can access this specific environment
 			if (auth.authEnabled && auth.isEnterprise && !await auth.canAccessEnvironment(envId)) {
-				return json({ error: 'Access denied to this environment' }, { status: 403 });
+				return json({ error: '无权访问此环境' }, { status: 403 });
 			}
 			env = await getEnvironment(envId);
 		}
@@ -126,15 +126,15 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 		const hostInfo: HostInfo = {
 			// For local connections, show local system info; for remote, show Docker host info
-			hostname: isLocalConnection ? os.hostname() : (dockerInfo.Name || env.host || 'unknown'),
-			ipAddress: isLocalConnection ? getLocalIpAddress() : (env.host || 'unknown'),
-			platform: isLocalConnection ? os.platform() : (dockerInfo.OperatingSystem || 'unknown'),
-			arch: isLocalConnection ? os.arch() : (dockerInfo.Architecture || 'unknown'),
+			hostname: isLocalConnection ? os.hostname() : (dockerInfo.Name || env.host || '未知'),
+			ipAddress: isLocalConnection ? getLocalIpAddress() : (env.host || '未知'),
+			platform: isLocalConnection ? os.platform() : (dockerInfo.OperatingSystem || '未知'),
+			arch: isLocalConnection ? os.arch() : (dockerInfo.Architecture || '未知'),
 			cpus: isLocalConnection ? os.cpus().length : (dockerInfo.NCPU || 0),
 			totalMemory: isLocalConnection ? os.totalmem() : (dockerInfo.MemTotal || 0),
 			freeMemory: isLocalConnection ? os.freemem() : 0, // Not available from Docker API
 			uptime,
-			dockerVersion: dockerInfo.ServerVersion || 'unknown',
+			dockerVersion: dockerInfo.ServerVersion || '未知',
 			dockerContainers: dockerInfo.Containers || 0,
 			dockerContainersRunning: dockerInfo.ContainersRunning || 0,
 			dockerImages: dockerInfo.Images || 0,
@@ -152,7 +152,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 		return json(hostInfo);
 	} catch (error) {
-		console.error('Failed to get host info:', (error as Error)?.message ?? error);
-		return json({ error: 'Failed to get host info' }, { status: 500 });
+		console.error('获取主机信息失败:', (error as Error)?.message ?? error);
+		return json({ error: '获取主机信息失败' }, { status: 500 });
 	}
 };
