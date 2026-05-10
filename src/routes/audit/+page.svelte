@@ -175,7 +175,8 @@
 		{ value: 'settings', label: '设置' },
 		{ value: 'git_repository', label: 'Git 仓库' },
 		{ value: 'git_credential', label: 'Git 凭据' },
-		{ value: 'config_set', label: '配置集' }
+		{ value: 'config_set', label: '配置集' },
+		{ value: 'api_token', label: 'API 令牌' }
 	];
 
 	const actionTypes = [
@@ -460,8 +461,9 @@
 	}
 
 	function formatTimestamp(ts: string): string {
-		const date = new Date(ts + ' UTC'); 
-		return formatDateTime(date.toISOString(), true);
+		const date = new Date(ts);
+		if (isNaN(date.getTime())) return ts;
+		return formatDateTime(date, true);
 	}
 
 	function getEntityIcon(entityType: string) {

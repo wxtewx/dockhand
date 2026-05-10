@@ -1171,8 +1171,8 @@ export async function cleanupScannerCache(envId?: number): Promise<{ volumes: st
 		try {
 			await removeVolume(volumeName, true, envId);
 			removedVolumes.push(volumeName);
-			const envSuffix = envId ? ` (env ${envId})` : '';
-			console.log(`[Scanner] Removed volume: ${volumeName}${envSuffix}`);
+			const envSuffix = envId ? ` (环境 ${envId})` : '';
+			console.log(`[扫描器] 已移除数据卷：${volumeName}${envSuffix}`);
 		} catch {
 			// Volume might not exist, ignore
 		}
@@ -1185,7 +1185,7 @@ export async function cleanupScannerCache(envId?: number): Promise<{ volumes: st
 			try {
 				await rm(cachePath, { recursive: true, force: true });
 				removedDirs.push(cachePath);
-				console.log(`[Scanner] Removed cache directory: ${cachePath}`);
+				console.log(`[扫描器] 已移除缓存目录：${cachePath}`);
 			} catch {
 				// Directory might not exist, ignore
 			}
@@ -1193,7 +1193,7 @@ export async function cleanupScannerCache(envId?: number): Promise<{ volumes: st
 	}
 
 	if (removedVolumes.length > 0 || removedDirs.length > 0) {
-		console.log(`[Scanner] Cache cleanup complete: ${removedVolumes.length} volumes, ${removedDirs.length} directories removed`);
+		console.log(`[扫描器] 缓存清理完成：已移除 ${removedVolumes.length} 个数据卷，${removedDirs.length} 个目录`);
 	}
 
 	return { volumes: removedVolumes, dirs: removedDirs };

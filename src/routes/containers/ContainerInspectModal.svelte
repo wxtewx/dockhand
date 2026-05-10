@@ -938,7 +938,7 @@
 											{#if mount.Driver}
 												<div>
 													<p class="text-muted-foreground">驱动</p>
-													<code>{mount.Driver}</code>
+													<code>{getLabelText(mount.Driver)}</code>
 												</div>
 											{/if}
 											{#if mount.Propagation}
@@ -1283,15 +1283,15 @@
 							<div class="grid grid-cols-2 lg:grid-cols-3 gap-3">
 								<div class="p-2 bg-muted rounded">
 									<p class="text-xs text-muted-foreground">控制组 (Cgroup)</p>
-									<code class="text-xs">{containerData.HostConfig?.Cgroup || '默认'}</code>
+									<code class="text-xs">{getLabelText(containerData.HostConfig?.Cgroup || 'default')}</code>
 								</div>
 								<div class="p-2 bg-muted rounded">
 									<p class="text-xs text-muted-foreground">父控制组 (Cgroup)</p>
-									<code class="text-xs">{containerData.HostConfig?.CgroupParent || '默认'}</code>
+									<code class="text-xs">{getLabelText(containerData.HostConfig?.CgroupParent || 'default')}</code>
 								</div>
 								<div class="p-2 bg-muted rounded">
 									<p class="text-xs text-muted-foreground">控制组 (Cgroup) 命名空间模式</p>
-									<code class="text-xs">{containerData.HostConfig?.CgroupnsMode || 'host'}</code>
+									<code class="text-xs">{getLabelText(containerData.HostConfig?.CgroupnsMode || 'host')}</code>
 								</div>
 							</div>
 						</div>

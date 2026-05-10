@@ -244,6 +244,15 @@ const LabelMaps = {
     npipe: '命名管道',
     unknown: '未知'
   },
+  common: {
+    default: '默认',
+    unlimited: '无限制',
+    enabled: '已启用',
+    disabled: '已禁用',
+    private: '私有',
+    host: '主机',
+    shared: '共享',
+  },
   mountPropagation: {
     shared: '共享',
     slave: '从属',
@@ -266,6 +275,7 @@ const LabelMaps = {
     git_repository: 'Git 仓库',
     git_credential: 'Git 凭据',
     config_set: '配置集',
+    api_token: 'API 令牌',
   },
   category: {
     containers: '容器',
