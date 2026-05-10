@@ -14,6 +14,7 @@
 	import UpdateSummaryStats from '$lib/components/UpdateSummaryStats.svelte';
 	import ScannerSeverityPills from '$lib/components/ScannerSeverityPills.svelte';
 	import { watchJob } from '$lib/utils/sse-fetch';
+	import { getLabelText } from '$lib/types';
 
 	interface Props {
 		open: boolean;
@@ -114,6 +115,7 @@
 	function formatPullLog(entry: PullLogEntry): string {
 		// Clarify potentially confusing Docker messages
 		let status = entry.status;
+		status = getLabelText(status);
 		if (status.toLowerCase().includes('image is up to date')) {
 			status = '镜像已缓存 (仓库版本与本地一致)';
 		} else if (status.toLowerCase().includes('status: image is up to date')) {

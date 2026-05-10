@@ -18,7 +18,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 	const envId = url.searchParams.get('env') ? parseInt(url.searchParams.get('env')!) : null;
 
 	if (!envId) {
-		return json({ error: 'Environment ID required' }, { status: 400 });
+		return json({ error: '环境 ID 为必填项' }, { status: 400 });
 	}
 
 	// Check environment access in enterprise mode

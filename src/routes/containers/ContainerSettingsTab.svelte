@@ -237,17 +237,17 @@
 
 	function validateIpv4(value: string): string | null {
 		if (!value) return null;
-		return ipv4Regex.test(value) ? null : 'Invalid IPv4 address';
+		return ipv4Regex.test(value) ? null : '无效的 IPv4 地址';
 	}
 
 	function validateIpv6(value: string): string | null {
 		if (!value) return null;
-		return ipv6Regex.test(value) ? null : 'Invalid IPv6 address';
+		return ipv6Regex.test(value) ? null : '无效的 IPv6 地址';
 	}
 
 	function validateMac(value: string): string | null {
 		if (!value) return null;
-		return macRegex.test(value) ? null : 'Invalid MAC address (e.g., 02:42:ac:11:00:02)';
+		return macRegex.test(value) ? null : '无效的 MAC 地址 (例如：02:42:ac:11:00:02)';
 	}
 
 	// Auto-expand networks that have config
@@ -771,7 +771,7 @@
 											<span class={getDriverBadgeClasses(network.driver)}>{network.driver}</span>
 										{/if}
 										{#if hasNetworkConfig(networkName)}
-											<Badge variant="secondary" class="text-2xs">configured</Badge>
+											<Badge variant="secondary" class="text-2xs">已配置</Badge>
 										{/if}
 									</button>
 									<button
@@ -786,10 +786,10 @@
 									<div class="px-2.5 pb-2.5 pt-1 border-t space-y-2">
 										<div class="grid grid-cols-2 gap-2">
 											<div class="space-y-1">
-												<Label class="text-2xs font-medium text-muted-foreground">IPv4 address</Label>
+												<Label class="text-2xs font-medium text-muted-foreground">IPv4 地址</Label>
 												<Input
 													bind:value={networkConfigs[networkName].ipv4Address}
-													placeholder="e.g., 172.28.0.100"
+													placeholder="例如：172.28.0.100"
 													class="h-8 text-xs"
 												/>
 												{#if validateIpv4(networkConfigs[networkName].ipv4Address)}
@@ -797,10 +797,10 @@
 												{/if}
 											</div>
 											<div class="space-y-1">
-												<Label class="text-2xs font-medium text-muted-foreground">IPv6 address</Label>
+												<Label class="text-2xs font-medium text-muted-foreground">IPv6 地址</Label>
 												<Input
 													bind:value={networkConfigs[networkName].ipv6Address}
-													placeholder="e.g., fd00::100"
+													placeholder="例如：fd00::100"
 													class="h-8 text-xs"
 												/>
 												{#if validateIpv6(networkConfigs[networkName].ipv6Address)}
@@ -809,10 +809,10 @@
 											</div>
 										</div>
 										<div class="space-y-1">
-											<Label class="text-2xs font-medium text-muted-foreground">Aliases (comma-separated)</Label>
+											<Label class="text-2xs font-medium text-muted-foreground">别名 (逗号分隔)</Label>
 											<Input
 												bind:value={networkConfigs[networkName].aliases}
-												placeholder="e.g., myalias, web"
+												placeholder="例如：myalias, web"
 												class="h-8 text-xs"
 											/>
 										</div>
@@ -825,10 +825,10 @@
 
 				<!-- MAC Address -->
 				<div class="space-y-1 pt-1">
-					<Label class="text-xs font-medium">MAC address</Label>
+					<Label class="text-xs font-medium">MAC 地址</Label>
 					<Input
 						bind:value={macAddress}
-						placeholder="e.g., 02:42:ac:11:00:02"
+						placeholder="例如：02:42:ac:11:00:02"
 						class="h-9"
 					/>
 					{#if validateMac(macAddress)}

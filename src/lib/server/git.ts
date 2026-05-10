@@ -1262,11 +1262,11 @@ export async function deployGitStackWithProgress(
 		if (gitStack.contextDir) {
 			const contextDirAbsolute = resolve(repoPath, gitStack.contextDir);
 			if (!contextDirAbsolute.startsWith(repoPath)) {
-				throw new Error('Context directory must be within the repository');
+				throw new Error('上下文目录必须位于仓库内');
 			}
 			const relCompose = relative(contextDirAbsolute, composePath);
 			if (relCompose.startsWith('..')) {
-				throw new Error('Compose file must be within the context directory');
+				throw new Error('编排文件必须位于上下文目录内');
 			}
 			composeDir = contextDirAbsolute;
 			progressComposeFileName = relCompose;

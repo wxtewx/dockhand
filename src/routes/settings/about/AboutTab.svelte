@@ -80,7 +80,7 @@
 	async function fetchChangelog() {
 		try {
 			const res = await fetch('/api/changelog');
-			if (!res.ok) throw new Error('Failed to fetch changelog');
+			if (!res.ok) throw new Error('获取更新日志失败');
 			changelog = await res.json();
 		} catch (e) {
 			changelogError = e instanceof Error ? e.message : '未知错误';

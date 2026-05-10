@@ -451,7 +451,7 @@
 					}
 				}
 			} catch (e) {
-				console.warn('Failed to check for existing stacks:', e);
+				console.warn('检查现有堆栈失败:', e);
 			}
 		}
 
@@ -825,16 +825,16 @@
 			<!-- Context directory -->
 			<div class="space-y-2">
 				<div class="flex items-center gap-1.5">
-					<Label for="context-dir">Context directory (optional)</Label>
+					<Label for="context-dir">上下文目录 (可选)</Label>
 					<Tooltip.Root>
 						<Tooltip.Trigger>
 							<HelpCircle class="w-3.5 h-3.5 text-muted-foreground cursor-help" />
 						</Tooltip.Trigger>
 						<Tooltip.Content>
 							<div class="w-80">
-								<p class="text-xs">Working directory for Docker Compose, relative to the repository root. All files in this directory will be available for volume mounts and build contexts.</p>
-								<p class="text-xs mt-2">Use <code class="bg-muted px-1 rounded">.</code> for the repository root when your compose file references files in sibling directories.</p>
-								<p class="text-xs mt-2">Defaults to the compose file's parent directory.</p>
+								<p class="text-xs">Docker Compose 的工作目录，相对于仓库根目录。此目录中的所有文件均可用于数据卷挂载和构建上下文。</p>
+								<p class="text-xs mt-2">当你的编排文件引用同级目录中的文件时，使用 <code class="bg-muted px-1 rounded">.</code> 表示仓库根目录。</p>
+								<p class="text-xs mt-2">默认为编排文件的父目录。</p>
 							</div>
 						</Tooltip.Content>
 					</Tooltip.Root>
@@ -843,9 +843,9 @@
 					id="context-dir"
 					value={formContextDir ?? ''}
 					oninput={(e) => { const v = (e.target as HTMLInputElement).value; formContextDir = v.trim() || null; }}
-					placeholder="Defaults to compose file's directory"
+					placeholder="默认为编排文件所在目录"
 				/>
-				<p class="text-xs text-muted-foreground">Relative to repository root, e.g. <code class="text-xs bg-muted px-1 rounded">.</code> for root</p>
+				<p class="text-xs text-muted-foreground">相对于仓库根目录，例如 <code class="text-xs bg-muted px-1 rounded">.</code> 表示根目录</p>
 			</div>
 
 			<!-- Auto-update section -->
@@ -981,12 +981,12 @@
 				<div class="flex items-center gap-3 ml-6">
 					<div class="flex items-center gap-2 flex-1">
 						<Ban class="w-4 h-4 text-muted-foreground" />
-						<Label class="text-sm font-normal">Disable build cache</Label>
+						<Label class="text-sm font-normal">禁用构建缓存</Label>
 					</div>
 					<TogglePill bind:checked={formNoBuildCache} />
 				</div>
 				<p class="text-xs text-muted-foreground ml-6">
-					Pass <code class="text-xs bg-muted px-1 rounded">--no-cache</code> to force a clean build without using cached layers.
+					传入 <code class="text-xs bg-muted px-1 rounded">--no-cache</code> 以强制进行干净构建，不使用缓存层。
 				</p>
 				{/if}
 				<div class="flex items-center gap-3">
@@ -1134,12 +1134,12 @@
 				Stack already exists
 			</Dialog.Title>
 			<Dialog.Description>
-				A stack named "{formStackName}" already exists. Please choose a different name.
+				名为 "{formStackName}" 的堆栈已存在，请更换其他名称。
 			</Dialog.Description>
 		</Dialog.Header>
 		<div class="flex justify-end mt-4">
 			<Button size="sm" onclick={() => showExistsWarning = false}>
-				OK
+				确定
 			</Button>
 		</div>
 	</Dialog.Content>

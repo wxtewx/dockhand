@@ -2067,7 +2067,7 @@ export async function getGitStacksByRepositoryId(repositoryId: number): Promise<
 }
 
 export async function deleteGitRepository(id: number): Promise<boolean> {
-	console.log(`[GitStack] Deleting git repository id=${id} (will cascade-delete git_stacks, set null on stack_sources FKs)`);
+	console.log(`[Git 堆栈] 正在删除Git仓库 id=${id} (将级联删除 git_stacks，将 stack_sources 外键设置为 null)`);
 	await db.delete(gitRepositories).where(eq(gitRepositories.id, id));
 	return true;
 }

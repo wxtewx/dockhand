@@ -1474,7 +1474,7 @@
 						type="button"
 						onclick={(e) => { e.stopPropagation(); dismissPendingUpdates(); }}
 						class="-mr-1 text-[12px] leading-none rounded-full hover:bg-destructive/20 hover:text-destructive transition-colors opacity-40 hover:opacity-100"
-						title="Dismiss all update indicators"
+						title="关闭所有更新提示"
 					>×</button>
 				</Button>
 				{/if}

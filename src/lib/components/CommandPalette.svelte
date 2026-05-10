@@ -216,7 +216,7 @@
 					onSelect={() => handleSelect('/audit')}
 				>
 					<ClipboardList class="mr-2 h-4 w-4" />
-					<span>Audit log</span>
+					<span>审计日志</span>
 				</Command.Item>
 			</Command.Group>
 		{/if}

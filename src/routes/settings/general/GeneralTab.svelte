@@ -769,14 +769,14 @@ services:
 					</div>
 					<div class="space-y-1 pt-2 border-t">
 						<div class="flex items-center gap-3">
-							<Label>Scanner cache cleanup</Label>
+							<Label>扫描器缓存清理</Label>
 							<TogglePill
 								checked={scannerCleanupEnabled}
 								onchange={handleScannerCleanupEnabledChange}
 								disabled={!$canAccess('settings', 'edit')}
 							/>
 						</div>
-						<p class="text-xs text-muted-foreground">Remove cached vulnerability databases to reclaim disk space</p>
+						<p class="text-xs text-muted-foreground">移除缓存的漏洞数据库以释放磁盘空间</p>
 						<div class="flex items-center gap-2 mt-2">
 							<div class="ml-auto">
 								<CronEditor

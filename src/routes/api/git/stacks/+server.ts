@@ -65,7 +65,7 @@ export const POST: RequestHandler = async (event) => {
 		// Check for name conflicts with existing stacks (regular/external/git)
 		const existing = await getStackSource(trimmedStackName, data.environmentId || null);
 		if (existing) {
-			return json({ error: 'A stack with this name already exists on this environment' }, { status: 409 });
+			return json({ error: '此环境中已存在同名堆栈' }, { status: 409 });
 		}
 
 		// Either repositoryId or new repo details (url, branch) must be provided
