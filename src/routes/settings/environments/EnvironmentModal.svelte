@@ -2163,7 +2163,7 @@
 						<!-- Public IP field -->
 						<div class="space-y-2 pt-4 border-t">
 							<div class="flex items-center gap-2">
-								<Label for="edit-env-public-ip">Public IP</Label>
+								<Label for="edit-env-public-ip">公网 IP</Label>
 								<Tooltip.Root>
 									<Tooltip.Trigger>
 										<HelpCircle class="w-3.5 h-3.5 text-muted-foreground" />
@@ -2176,7 +2176,7 @@
 							<Input
 								id="edit-env-public-ip"
 								bind:value={formPublicIp}
-								placeholder="e.g., 192.168.1.4"
+								placeholder="例如：192.168.1.4"
 								class="w-full"
 							/>
 							<p class="text-xs text-muted-foreground">

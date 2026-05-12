@@ -61,12 +61,12 @@ services:
 
 	function saveComposeTemplate() {
 		appSettings.setDefaultComposeTemplate(composeTemplateWIP);
-		toast.success('Compose template updated');
+		toast.success('Compose 模板已更新');
 	}
 
 	function revertComposeTemplate() {
 		composeTemplateWIP = builtinComposeTemplate;
-		toast.info('Template reverted to default');
+		toast.info('模板已恢复为默认值');
 	}
 	let scheduleRetentionDays = $derived($appSettings.scheduleRetentionDays);
 	let eventRetentionDays = $derived($appSettings.eventRetentionDays);
@@ -148,13 +148,13 @@ services:
 
 	function handleScannerCleanupCronChange(cron: string) {
 		appSettings.setScannerCleanupCron(cron);
-		toast.success('Scanner cleanup cron updated');
+		toast.success('扫描器清理定时任务已更新');
 	}
 
 	function handleScannerCleanupEnabledChange() {
 		const newState = !scannerCleanupEnabled;
 		appSettings.setScannerCleanupEnabled(newState);
-		toast.success(newState ? 'Scanner cleanup enabled' : 'Scanner cleanup disabled');
+		toast.success(newState ? '扫描器清理已启用' : '扫描器清理已禁用');
 	}
 
 	function handleGrypeImageBlur(e: Event) {
@@ -304,7 +304,7 @@ services:
 										disabled={!$canAccess('settings', 'edit')}
 									/>
 								</div>
-								<p class="text-xs text-muted-foreground">使用 12 小时制或 24小时制显示时间戳</p>
+								<p class="text-xs text-muted-foreground">使用 12 小时制或 24 小时制显示时间戳</p>
 							</div>
 							<div class="space-y-1">
 								<div class="flex items-center gap-3">
@@ -649,13 +649,13 @@ services:
 									disabled={!$canAccess('settings', 'edit') || (eventCollectionMode || 'stream') !== 'poll'}
 								>
 									<Select.Trigger class="w-24 h-8 {(eventCollectionMode || 'stream') === 'poll' ? '' : 'invisible'}">
-										{(eventPollInterval || 60000) === 30000 ? '30s' : (eventPollInterval || 60000) === 60000 ? '60s' : (eventPollInterval || 60000) === 120000 ? '120s' : '300s'}
+										{(eventPollInterval || 60000) === 30000 ? '30 秒' : (eventPollInterval || 60000) === 60000 ? '60 秒' : (eventPollInterval || 60000) === 120000 ? '120 秒' : '300 秒'}
 									</Select.Trigger>
 									<Select.Content>
-										<Select.Item value="30000">30s</Select.Item>
-										<Select.Item value="60000">60s</Select.Item>
-										<Select.Item value="120000">120s</Select.Item>
-										<Select.Item value="300000">300s</Select.Item>
+										<Select.Item value="30000">30 秒</Select.Item>
+										<Select.Item value="60000">60 秒</Select.Item>
+										<Select.Item value="120000">120 秒</Select.Item>
+										<Select.Item value="300000">300 秒</Select.Item>
 									</Select.Content>
 								</Select.Root>
 							</div>
@@ -684,13 +684,13 @@ services:
 								disabled={!$canAccess('settings', 'edit')}
 							>
 								<Select.Trigger class="w-24 h-8">
-									{(metricsCollectionInterval || 30000) === 10000 ? '10s' : (metricsCollectionInterval || 30000) === 30000 ? '30s' : (metricsCollectionInterval || 30000) === 60000 ? '60s' : '120s'}
+									{(metricsCollectionInterval || 30000) === 10000 ? '10 秒' : (metricsCollectionInterval || 30000) === 30000 ? '30 秒' : (metricsCollectionInterval || 30000) === 60000 ? '60 秒' : '120 秒'}
 								</Select.Trigger>
 								<Select.Content>
-									<Select.Item value="10000">10s</Select.Item>
-									<Select.Item value="30000">30s</Select.Item>
-									<Select.Item value="60000">60s</Select.Item>
-									<Select.Item value="120000">120s</Select.Item>
+									<Select.Item value="10000">10 秒</Select.Item>
+									<Select.Item value="30000">30 秒</Select.Item>
+									<Select.Item value="60000">60 秒</Select.Item>
+									<Select.Item value="120000">120 秒</Select.Item>
 								</Select.Content>
 							</Select.Root>
 						</div>

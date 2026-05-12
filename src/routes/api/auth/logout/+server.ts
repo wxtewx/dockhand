@@ -16,7 +16,7 @@ export const POST: RequestHandler = async (event) => {
 			|| event.getClientAddress();
 
 		await destroySession(cookies);
-		console.log(`[Auth] 退出登录: 用户=${username} IP=${clientIp}`);
+		console.log(`[认证] 退出登录: 用户=${username} IP=${clientIp}`);
 
 		// Audit log
 		await auditAuth(event, 'logout', username);

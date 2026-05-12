@@ -37,7 +37,7 @@ export const POST: RequestHandler = async (event) => {
 
 		const { limited, retryAfter } = isRateLimited(rateLimitKey);
 		if (limited) {
-			console.warn(`[Auth] 登录频率限制：用户=${username} IP=${clientIp} 重试等待=${retryAfter}秒`);
+			console.warn(`[认证] 登录频率限制：用户=${username} IP=${clientIp} 重试等待=${retryAfter}秒`);
 			return json(
 				{ error: `登录尝试次数过多，请在 ${retryAfter} 秒后重试。` },
 				{ status: 429 }
@@ -69,7 +69,7 @@ export const POST: RequestHandler = async (event) => {
 
 		if (!result.success) {
 			recordFailedAttempt(rateLimitKey);
-			console.warn(`[Auth] 登录失败：用户=${username} 提供商=${authProviderType} IP=${clientIp} 原因=${result.error || '身份验证失败'}`);
+			console.warn(`[认证] 登录失败：用户=${username} 提供商=${authProviderType} IP=${clientIp} 原因=${result.error || '身份验证失败'}`);
 			return json({ error: result.error || '身份验证失败' }, { status: 401 });
 		}
 
@@ -84,14 +84,14 @@ export const POST: RequestHandler = async (event) => {
 			const user = await getUserByUsername(username);
 			if (!user || !(await verifyMfaToken(user.id, mfaToken))) {
 				recordFailedAttempt(rateLimitKey);
-				console.warn(`[Auth] MFA验证失败：用户=${username} IP=${clientIp}`);
+				console.warn(`[认证] MFA验证失败：用户=${username} IP=${clientIp}`);
 				return json({ error: '无效的MFA验证码' }, { status: 401 });
 			}
 
 			// MFA verified, create session
 			const session = await createUserSession(user.id, authProviderType, cookies, request);
 			clearRateLimit(rateLimitKey);
-			console.log(`[Auth] 登录成功：用户=${username} 提供商=${authProviderType} IP=${clientIp} MFA=已验证`);
+			console.log(`[认证] 登录成功：用户=${username} 提供商=${authProviderType} IP=${clientIp} MFA=已验证`);
 
 			// Audit log
 			await auditAuth(event, 'login', user.username, {
@@ -115,7 +115,7 @@ export const POST: RequestHandler = async (event) => {
 		if (result.user) {
 			const session = await createUserSession(result.user.id, authProviderType, cookies, request);
 			clearRateLimit(rateLimitKey);
-			console.log(`[Auth] 登录成功：用户=${result.user.username} 提供商=${authProviderType} IP=${clientIp} MFA=未启用`);
+			console.log(`[认证] 登录成功：用户=${result.user.username} 提供商=${authProviderType} IP=${clientIp} MFA=未启用`);
 
 			// Audit log
 			await auditAuth(event, 'login', result.user.username, {

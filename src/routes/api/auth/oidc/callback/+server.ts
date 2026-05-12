@@ -25,7 +25,7 @@ export const GET: RequestHandler = async (event) => {
 	// Handle error from IdP
 	if (error) {
 		console.error('来自身份提供商的 OIDC 错误:', error, errorDescription);
-		console.warn(`[Auth] OIDC 登录失败: IP=${clientIp} 错误=${errorDescription || error}`);
+		console.warn(`[认证] OIDC 登录失败: IP=${clientIp} 错误=${errorDescription || error}`);
 		const errorMsg = encodeURIComponent(errorDescription || error);
 		throw redirect(302, `/login?error=${errorMsg}`);
 	}
@@ -39,14 +39,14 @@ export const GET: RequestHandler = async (event) => {
 		const result = await handleOidcCallback(code, state);
 
 		if (!result.success || !result.user) {
-			console.warn(`[Auth] OIDC 登录失败: IP=${clientIp} 错误=${result.error || '身份验证失败'}`);
+			console.warn(`[认证] OIDC 登录失败: IP=${clientIp} 错误=${result.error || '身份验证失败'}`);
 			const errorMsg = encodeURIComponent(result.error || '身份验证失败');
 			throw redirect(302, `/login?error=${errorMsg}`);
 		}
 
 		// Create session
 		await createUserSession(result.user.id, 'oidc', cookies, event.request);
-		console.log(`[Auth] OIDC 登录成功: 用户=${result.user.username} 提供商=${result.providerName || 'oidc'} IP=${clientIp}`);
+		console.log(`[认证] OIDC 登录成功: 用户=${result.user.username} 提供商=${result.providerName || 'oidc'} IP=${clientIp}`);
 
 		// Audit log
 		await auditAuth(event, 'login', result.user.username, {

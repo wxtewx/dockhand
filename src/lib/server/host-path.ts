@@ -176,7 +176,7 @@ export async function detectHostDataDir(): Promise<string | null> {
 			cachedOwnNetworkMode = custom.length > 0 ? custom[0]
 				: networks.bridge ? 'bridge' : null;
 			if (cachedOwnNetworkMode) {
-				console.log(`[HostPath] 检测到自身网络：${cachedOwnNetworkMode}`);
+				console.log(`[主机路径] 检测到自身网络：${cachedOwnNetworkMode}`);
 			}
 		}
 
@@ -184,7 +184,7 @@ export async function detectHostDataDir(): Promise<string | null> {
 			? [...containerInfo.HostConfig.ExtraHosts]
 			: null;
 		if (cachedOwnExtraHosts) {
-			console.log(`[HostPath] 检测到自身 ExtraHosts：${cachedOwnExtraHosts.join(', ')}`);
+			console.log(`[主机路径] 检测到自身 ExtraHosts：${cachedOwnExtraHosts.join(', ')}`);
 		}
 
 		// Explicit override wins for DATA_DIR path, but we still inspect to populate

@@ -2829,7 +2829,7 @@ export async function upsertStackSource(data: {
 		if (newRepoId !== existing.gitRepositoryId) changes.push(`gitRepoId: ${existing.gitRepositoryId} → ${newRepoId}`);
 		if (newStackId !== existing.gitStackId) changes.push(`gitStackId: ${existing.gitStackId} → ${newStackId}`);
 		if (changes.length > 0) {
-			console.log(`[GitStack] Updating stack_sources "${data.stackName}" env=${data.environmentId}: ${changes.join(', ')}`);
+			console.log(`[Git堆栈] 更新堆栈源 "${data.stackName}" 环境=${data.environmentId}: ${changes.join(', ')}`);
 		}
 
 		await db.update(stackSources)
@@ -2844,7 +2844,7 @@ export async function upsertStackSource(data: {
 			.where(eq(stackSources.id, existing.id));
 		return getStackSource(data.stackName, data.environmentId) as Promise<StackSourceData>;
 	} else {
-		console.log(`[GitStack] Creating stack_sources "${data.stackName}" env=${data.environmentId} type=${data.sourceType} repoId=${data.gitRepositoryId || null} stackId=${data.gitStackId || null}`);
+		console.log(`[Git堆栈] 创建堆栈源 "${data.stackName}" 环境=${data.environmentId} 类型=${data.sourceType} 仓库ID=${data.gitRepositoryId || null} 堆栈ID=${data.gitStackId || null}`);
 		await db.insert(stackSources).values({
 			stackName: data.stackName,
 			environmentId: data.environmentId ?? null,
@@ -2878,7 +2878,7 @@ export async function updateStackSource(
 }
 
 export async function deleteStackSource(stackName: string, environmentId?: number | null): Promise<boolean> {
-	console.log(`[GitStack] Deleting stack_sources "${stackName}" env=${environmentId}`);
+	console.log(`[Git堆栈] 删除堆栈源 "${stackName}" 环境=${environmentId}`);
 	// Delete matching record (either with specific envId or NULL)
 	await db.delete(stackSources)
 		.where(and(
