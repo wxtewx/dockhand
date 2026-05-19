@@ -59,7 +59,7 @@
 			</Tabs.Trigger>
 			<Tabs.Trigger value="labels" class="flex-1 flex items-center justify-center gap-1.5">
 				<Tags class="w-4 h-4" />
-				Labels
+				标签
 			</Tabs.Trigger>
 			<Tabs.Trigger value="registries" class="flex-1 flex items-center justify-center gap-1.5">
 				<Download class="w-4 h-4" />

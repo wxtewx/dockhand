@@ -434,7 +434,7 @@
 			</div>
 		{/if}
 		<Dialog.Footer>
-			<Button variant="outline" onclick={() => showRenameDialog = false}>Cancel</Button>
+			<Button variant="outline" onclick={() => showRenameDialog = false}>取消</Button>
 			<Button
 				onclick={handleRename}
 				disabled={renaming || !newLabelName.trim() || newLabelName.trim() === renameTarget?.label}

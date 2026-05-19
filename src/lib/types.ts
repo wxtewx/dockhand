@@ -458,7 +458,7 @@ export function getLabelText(
 
   const pullEntries = Object.entries(LabelMaps.pull).sort((a,b) => b[0].length - a[0].length);
   for (const [en, cn] of pullEntries) {
-    const reg = new RegExp(en.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+    const reg = new RegExp(en.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
     text = text.replace(reg, cn);
   }
   
