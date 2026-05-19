@@ -663,7 +663,7 @@
 							type="button"
 							onclick={toggleSelectAll}
 							class="flex items-center justify-center transition-colors opacity-40 hover:opacity-100 cursor-pointer"
-							title={allSelected ? 'Deselect all' : 'Select all'}
+							title={allSelected ? '取消全选' : '全选'}
 						>
 							{#if allSelected}
 								<CheckSquare class="w-3.5 h-3.5 text-muted-foreground" />
@@ -735,7 +735,7 @@
 				<th class="text-right py-2 px-2 font-medium actions-col" style="width: {getDisplayWidth(colId)}px">
 					{#if colId === 'actions'}
 						<div class="flex items-center justify-end gap-1">
-							<span>Actions</span>
+							<span>操作</span>
 							<ColumnSettingsPopover {gridId} />
 						</div>
 					{:else if headerCell}
@@ -798,7 +798,7 @@
 									toggleExpand(item[keyField]);
 								}}
 								class="flex items-center justify-center transition-colors cursor-pointer opacity-50 hover:opacity-100"
-								title={rowState.isExpanded ? 'Collapse' : 'Expand'}
+								title={rowState.isExpanded ? '收起' : '展开'}
 							>
 								{#if rowState.isExpanded}
 									<ChevronDown class="w-4 h-4 text-muted-foreground" />
@@ -904,7 +904,7 @@
 										type="button"
 										onclick={(e) => { e.stopPropagation(); toggleExpand(item[keyField]); }}
 										class="flex items-center justify-center transition-colors cursor-pointer opacity-50 hover:opacity-100"
-										title={rowState.isExpanded ? 'Collapse' : 'Expand'}
+										title={rowState.isExpanded ? '收起' : '展开'}
 									>
 										{#if rowState.isExpanded}
 											<ChevronDown class="w-4 h-4 text-muted-foreground" />

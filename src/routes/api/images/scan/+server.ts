@@ -33,14 +33,14 @@ export const POST: RequestHandler = async ({ request, url, cookies }) => {
 
 	// Permission check with environment context (Scanning is an inspect operation)
 	if (auth.authEnabled && !await auth.can('images', 'inspect', envId)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const body = await request.json();
 	const { imageName, scanner: forceScannerType } = body;
 
 	if (!imageName) {
-		return json({ error: 'Image name is required' }, { status: 400 });
+		return json({ error: '镜像名称为必填项' }, { status: 400 });
 	}
 
 	return createJobResponse(async (send) => {
@@ -59,7 +59,7 @@ export const POST: RequestHandler = async ({ request, url, cookies }) => {
 			// Send final complete message with all results
 			const completeProgress: ScanProgress = {
 				stage: 'complete',
-				message: `Scan complete - found ${results.reduce((sum, r) => sum + r.vulnerabilities.length, 0)} vulnerabilities`,
+				message: `扫描完成 - 发现 ${results.reduce((sum, r) => sum + r.vulnerabilities.length, 0)} 个漏洞`,
 				progress: 100,
 				result: results[0],
 				results: results // Include all scanner results
@@ -69,7 +69,7 @@ export const POST: RequestHandler = async ({ request, url, cookies }) => {
 			const errorMsg = error instanceof Error ? error.message : String(error);
 			const errorProgress: ScanProgress = {
 				stage: 'error',
-				message: `Scan failed: ${errorMsg}`,
+				message: `扫描失败: ${errorMsg}`,
 				error: errorMsg
 			};
 			send('result', errorProgress);
@@ -89,11 +89,11 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('images', 'view', envId)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	if (!imageName) {
-		return json({ error: 'Image name is required' }, { status: 400 });
+		return json({ error: '镜像名称为必填项' }, { status: 400 });
 	}
 
 	try {
@@ -108,7 +108,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 			result
 		});
 	} catch (error) {
-		console.error('Failed to get scan results:', error);
-		return json({ error: 'Failed to get scan results' }, { status: 500 });
+		console.error('获取扫描结果失败:', error);
+		return json({ error: '获取扫描结果失败' }, { status: 500 });
 	}
 };

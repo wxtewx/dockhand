@@ -39,11 +39,11 @@
 	let showLayoutMenu = $state(false);
 
 	const layoutOptions: { value: LayoutType; label: string; icon: string }[] = [
-		{ value: 'breadthfirst', label: 'Tree', icon: 'tree' },
-		{ value: 'grid', label: 'Grid', icon: 'grid' },
-		{ value: 'circle', label: 'Circle', icon: 'circle' },
-		{ value: 'concentric', label: 'Radial', icon: 'radial' },
-		{ value: 'cose', label: 'Force', icon: 'force' }
+		{ value: 'breadthfirst', label: '树状', icon: 'tree' },
+		{ value: 'grid', label: '网格', icon: 'grid' },
+		{ value: 'circle', label: '圆形', icon: 'circle' },
+		{ value: 'concentric', label: '放射状', icon: 'radial' },
+		{ value: 'cose', label: '力导向', icon: 'force' }
 	];
 
 	// Connection mode state (for service dependencies)
@@ -148,7 +148,7 @@
 				const partial = yaml.load(partialContent) as ComposeFile;
 				if (partial && (partial.services || partial.networks || partial.volumes)) {
 					// We found a valid partial - update error message
-					parseError = `${originalError.message} (showing partial graph)`;
+					parseError = `${originalError.message} (显示部分图表)`;
 					return partial;
 				}
 			} catch {
@@ -160,7 +160,7 @@
 		try {
 			const lenient = yaml.load(content, { json: true }) as ComposeFile;
 			if (lenient && typeof lenient === 'object') {
-				parseError = `${originalError.message} (showing partial graph)`;
+				parseError = `${originalError.message} (显示部分图表)`;
 				return lenient;
 			}
 		} catch {
@@ -221,7 +221,7 @@
 			const dependsOn = config.depends_on
 				? (Array.isArray(config.depends_on) ? config.depends_on : Object.keys(config.depends_on))
 				: [];
-			const imageStr = config.image || (config.build ? 'build' : 'custom');
+			const imageStr = config.image || (config.build ? '构建' : '自定义');
 			// Truncate long image names
 			const shortImage = imageStr.length > 25 ? imageStr.substring(0, 22) + '...' : imageStr;
 
@@ -231,11 +231,11 @@
 					label: name,
 					caption: shortImage,
 					type: 'service',
-					image: config.image || config.build || 'custom',
+					image: config.image || config.build || '自定义',
 					ports: ports.map((p: any) => typeof p === 'string' ? p : `${p.published}:${p.target}`),
 					envCount,
 					replicas: config.deploy?.replicas || 1,
-					restart: config.restart || 'no',
+					restart: config.restart || '不重启',
 					healthcheck: !!config.healthcheck,
 					dependsOn,
 					config: config
@@ -251,7 +251,7 @@
 						source: `service-${dep}`,
 						target: `service-${name}`,
 						type: 'dependency',
-						label: 'depends on',
+						label: '依赖于',
 						isError: !depExists,
 						missingTarget: !depExists ? dep : undefined
 					}
@@ -268,7 +268,7 @@
 							source: `service-${linkName}`,
 							target: `service-${name}`,
 							type: 'link',
-							label: 'links'
+							label: '链接'
 						}
 					});
 				});
@@ -288,14 +288,14 @@
 						data: {
 							id: `service-${dep}`,
 							label: dep,
-							caption: 'missing',
+							caption: '缺失',
 							type: 'service',
 							isMissing: true,
 							image: '',
 							ports: [],
 							envCount: 0,
 							replicas: 0,
-							restart: 'no',
+							restart: '不重启',
 							healthcheck: false,
 							dependsOn: [],
 							config: {}
@@ -307,7 +307,7 @@
 
 		// Add network nodes
 		Object.entries(networks).forEach(([name, config]) => {
-			const driver = (config as any)?.driver || 'bridge';
+			const driver = getNetworkDriverLabel((config as any)?.driver || 'bridge');
 			elements.push({
 				data: {
 					id: `network-${name}`,
@@ -337,9 +337,9 @@
 								elements.push({
 									data: {
 										id: 'network-default',
-										label: 'default',
+										label: '默认',
 										type: 'network',
-										driver: 'bridge',
+										driver: '桥接',
 										external: false
 									}
 								});
@@ -360,7 +360,7 @@
 
 		// Add volume nodes
 		Object.entries(volumes).forEach(([name, config]) => {
-			const driver = (config as any)?.driver || 'local';
+			const driver = (config as any)?.driver || '本地';
 			elements.push({
 				data: {
 					id: `volume-${name}`,
@@ -399,7 +399,7 @@
 				data: {
 					id: `config-${name}`,
 					label: name,
-					caption: 'config',
+					caption: '配置',
 					type: 'config',
 					external: (config as any)?.external || false,
 					config: config
@@ -432,7 +432,7 @@
 				data: {
 					id: `secret-${name}`,
 					label: name,
-					caption: 'secret',
+					caption: '密钥',
 					type: 'secret',
 					external: (config as any)?.external || false,
 					config: config
@@ -558,7 +558,7 @@
 						'border-width': 3,
 						'border-style': 'dashed',
 						'opacity': 0.85,
-						'label': (ele: any) => `${ele.data('label')}\nmissing`,
+						'label': (ele: any) => `${ele.data('label')}\n缺失`,
 						'color': isDark ? '#fca5a5' : '#7f1d1d',
 						'text-valign': 'center',
 						'text-halign': 'center',
@@ -587,7 +587,7 @@
 						'background-color': colors.network.bg,
 						'border-color': colors.network.border,
 						'border-width': 2,
-						'label': (ele: any) => `${ele.data('label')}\nnetwork: ${ele.data('caption') || 'bridge'}`,
+						'label': (ele: any) => `${ele.data('label')}\n网络: ${ele.data('caption') || '桥接'}`,
 						'color': colors.network.text,
 						'text-valign': 'center',
 						'text-halign': 'center',
@@ -616,7 +616,7 @@
 						'background-color': colors.volume.bg,
 						'border-color': colors.volume.border,
 						'border-width': 2,
-						'label': (ele: any) => `${ele.data('label')}\nvolume: ${ele.data('caption') || 'local'}`,
+						'label': (ele: any) => `${ele.data('label')}\n数据卷: ${ele.data('caption') || '本地'}`,
 						'color': colors.volume.text,
 						'text-valign': 'center',
 						'text-halign': 'center',
@@ -645,7 +645,7 @@
 						'background-color': colors.config.bg,
 						'border-color': colors.config.border,
 						'border-width': 2,
-						'label': (ele: any) => `${ele.data('label')}\nconfig`,
+						'label': (ele: any) => `${ele.data('label')}\n配置`,
 						'color': colors.config.text,
 						'text-valign': 'center',
 						'text-halign': 'center',
@@ -674,7 +674,7 @@
 						'background-color': colors.secret.bg,
 						'border-color': colors.secret.border,
 						'border-width': 2,
-						'label': (ele: any) => `${ele.data('label')}\nsecret`,
+						'label': (ele: any) => `${ele.data('label')}\n密钥`,
 						'color': colors.secret.text,
 						'text-valign': 'center',
 						'text-halign': 'center',
@@ -866,7 +866,7 @@
 		// Handle node selection
 		cy.on('tap', 'node', (evt) => {
 			const nodeData = evt.target.data();
-			console.log('Node tapped:', nodeData);
+			console.log('节点已点击:', nodeData);
 
 			if (connectionMode && nodeData.type === 'service') {
 				handleConnectionClick(nodeData);
@@ -875,7 +875,7 @@
 			} else {
 				selectedNode = nodeData;
 				selectedEdge = null;
-				console.log('selectedNode set to:', selectedNode);
+				console.log('已设置选中节点:', selectedNode);
 			}
 		});
 
@@ -1116,7 +1116,7 @@
 			case 'network':
 				if (!composeData.networks) composeData.networks = {};
 				composeData.networks[name] = {
-					driver: 'bridge'
+					driver: '桥接'
 				};
 				break;
 			case 'volume':
@@ -1462,13 +1462,25 @@
 		}
 	}
 
+	function getNetworkDriverLabel(driver: string): string {
+  		switch (driver) {
+    		case 'bridge': return '桥接';
+    		case 'host': return '主机';
+    		case 'overlay': return '覆盖';
+    		case 'macvlan': return 'Macvlan';
+    		case 'ipvlan': return 'IPvlan';
+    		case 'none': return '无';
+    		default: return driver;
+  		}
+	}
+
 	function getElementTypeLabel(type: string) {
 		switch (type) {
-			case 'service': return 'Service';
-			case 'network': return 'Network';
-			case 'volume': return 'Volume';
-			case 'config': return 'Config';
-			case 'secret': return 'Secret';
+			case 'service': return '服务';
+			case 'network': return '网络';
+			case 'volume': return '数据卷';
+			case 'config': return '配置';
+			case 'secret': return '密钥';
 			default: return type;
 		}
 	}
@@ -2112,7 +2124,7 @@
 					onclick={() => showAddMenu = !showAddMenu}
 				>
 					<Plus class="w-3 h-3" />
-					Add
+					添加
 					<ChevronDown class="w-2.5 h-2.5" />
 				</Button>
 
@@ -2123,35 +2135,35 @@
 							onclick={() => openAddDialog('service')}
 						>
 							<Box class="w-3.5 h-3.5 text-blue-500" />
-							Service
+							服务
 						</button>
 						<button
 							class="w-full px-2.5 py-1.5 text-left text-xs text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2 transition-colors"
 							onclick={() => openAddDialog('network')}
 						>
 							<Network class="w-3.5 h-3.5 text-violet-500" />
-							Network
+							网络
 						</button>
 						<button
 							class="w-full px-2.5 py-1.5 text-left text-xs text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2 transition-colors"
 							onclick={() => openAddDialog('volume')}
 						>
 							<HardDrive class="w-3.5 h-3.5 text-emerald-500" />
-							Volume
+							数据卷
 						</button>
 						<button
 							class="w-full px-2.5 py-1.5 text-left text-xs text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2 transition-colors"
 							onclick={() => openAddDialog('config')}
 						>
 							<FileText class="w-3.5 h-3.5 text-amber-500" />
-							Config
+							配置
 						</button>
 						<button
 							class="w-full px-2.5 py-1.5 text-left text-xs text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2 transition-colors"
 							onclick={() => openAddDialog('secret')}
 						>
 							<Lock class="w-3.5 h-3.5 text-red-500" />
-							Secret
+							密钥
 						</button>
 					</div>
 				{/if}
@@ -2165,7 +2177,7 @@
 				onclick={toggleConnectionMode}
 			>
 				<Link class="w-3 h-3" />
-				{connectionMode ? 'Cancel' : 'Dependency'}
+				{connectionMode ? '取消' : '依赖关系'}
 			</Button>
 
 			<!-- Mount mode toggle (volume/network/config/secret to service) -->
@@ -2176,7 +2188,7 @@
 				onclick={toggleMountMode}
 			>
 				<HardDrive class="w-3 h-3" />
-				{mountMode ? 'Cancel' : 'Mount'}
+				{mountMode ? '取消' : '挂载'}
 			</Button>
 
 			<!-- Hint when in connection/mount mode -->
@@ -2185,15 +2197,15 @@
 					<Lightbulb class="w-3 h-3" />
 					{#if connectionMode}
 						{#if connectionSource}
-							Click target service
+							点击目标服务
 						{:else}
-							Click source service
+							点击源服务
 						{/if}
 					{:else if mountMode}
 						{#if mountSource}
-							Click target service
+							点击目标服务
 						{:else}
-							Click volume/network/config/secret
+							点击数据卷/网络/配置/密钥
 						{/if}
 					{/if}
 				</div>
@@ -2207,7 +2219,7 @@
 				<button
 					onclick={() => showLayoutMenu = !showLayoutMenu}
 					class="h-6 px-2 flex items-center gap-1 rounded text-xs text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
-					title="Change layout"
+					title="切换布局"
 				>
 					{#if currentLayout === 'breadthfirst'}
 						<GitBranch class="w-3 h-3" />
@@ -2233,35 +2245,35 @@
 							onclick={() => applyLayout('breadthfirst')}
 						>
 							<GitBranch class="w-3.5 h-3.5" />
-							Tree
+							树状
 						</button>
 						<button
 							class="w-full px-3 py-1.5 text-left text-xs flex items-center gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 {currentLayout === 'grid' ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-zinc-700 dark:text-zinc-200'}"
 							onclick={() => applyLayout('grid')}
 						>
 							<LayoutGrid class="w-3.5 h-3.5" />
-							Grid
+							网格
 						</button>
 						<button
 							class="w-full px-3 py-1.5 text-left text-xs flex items-center gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 {currentLayout === 'circle' ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-zinc-700 dark:text-zinc-200'}"
 							onclick={() => applyLayout('circle')}
 						>
 							<Circle class="w-3.5 h-3.5" />
-							Circle
+							圆形
 						</button>
 						<button
 							class="w-full px-3 py-1.5 text-left text-xs flex items-center gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 {currentLayout === 'concentric' ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-zinc-700 dark:text-zinc-200'}"
 							onclick={() => applyLayout('concentric')}
 						>
 							<Target class="w-3.5 h-3.5" />
-							Radial
+							放射状
 						</button>
 						<button
 							class="w-full px-3 py-1.5 text-left text-xs flex items-center gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 {currentLayout === 'cose' ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-zinc-700 dark:text-zinc-200'}"
 							onclick={() => applyLayout('cose')}
 						>
 							<Sparkles class="w-3.5 h-3.5" />
-							Force
+							力导向
 						</button>
 					</div>
 				{/if}
@@ -2271,7 +2283,7 @@
 			<button
 				onclick={toggleGraphTheme}
 				class="h-6 w-6 flex items-center justify-center rounded text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
-				title={graphTheme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'}
+				title={graphTheme === 'light' ? '切换到深色主题' : '切换到浅色主题'}
 			>
 				{#if graphTheme === 'light'}
 					<Moon class="w-3.5 h-3.5" />
@@ -2302,7 +2314,7 @@
 			{#if parseError}
 				<div class="absolute top-2 left-2 right-2 z-10">
 					<div class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2 shadow-sm">
-						<p class="text-xs text-red-600 dark:text-red-400 font-medium">YAML Parse Error</p>
+						<p class="text-xs text-red-600 dark:text-red-400 font-medium">YAML 解析错误</p>
 						<p class="text-xs text-red-500 dark:text-red-300 mt-0.5 font-mono">{parseError}</p>
 					</div>
 				</div>
@@ -2312,23 +2324,23 @@
 				<div class="flex items-center gap-2 text-xs bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm rounded px-2 py-1 shadow-sm border border-zinc-200/50 dark:border-zinc-700/50 whitespace-nowrap">
 					<div class="flex items-center gap-1 flex-shrink-0">
 						<div class="w-2 h-2 rounded-sm bg-blue-500 flex-shrink-0"></div>
-						<span class="text-zinc-600 dark:text-zinc-300">Service</span>
+						<span class="text-zinc-600 dark:text-zinc-300">服务</span>
 					</div>
 					<div class="flex items-center gap-1 flex-shrink-0">
 						<div class="w-2 h-2 rounded-sm bg-violet-500 flex-shrink-0"></div>
-						<span class="text-zinc-600 dark:text-zinc-300">Network</span>
+						<span class="text-zinc-600 dark:text-zinc-300">网络</span>
 					</div>
 					<div class="flex items-center gap-1 flex-shrink-0">
 						<div class="w-2 h-2 rounded-sm bg-emerald-500 flex-shrink-0"></div>
-						<span class="text-zinc-600 dark:text-zinc-300">Volume</span>
+						<span class="text-zinc-600 dark:text-zinc-300">数据卷</span>
 					</div>
 					<div class="flex items-center gap-1 flex-shrink-0">
 						<div class="w-2 h-2 rounded-sm bg-amber-500 flex-shrink-0"></div>
-						<span class="text-zinc-600 dark:text-zinc-300">Config</span>
+						<span class="text-zinc-600 dark:text-zinc-300">配置</span>
 					</div>
 					<div class="flex items-center gap-1 flex-shrink-0">
 						<div class="w-2 h-2 rounded-sm bg-red-500 flex-shrink-0"></div>
-						<span class="text-zinc-600 dark:text-zinc-300">Secret</span>
+						<span class="text-zinc-600 dark:text-zinc-300">密钥</span>
 					</div>
 				</div>
 			</div>
@@ -2346,7 +2358,7 @@
 								</div>
 								<div>
 									<h3 class="font-semibold text-sm text-zinc-800 dark:text-zinc-100">{selectedNode.label}</h3>
-									<p class="text-xs text-zinc-500 dark:text-zinc-400 capitalize">{selectedNode.type}</p>
+									<p class="text-xs text-zinc-500 dark:text-zinc-400">{getElementTypeLabel(selectedNode.type)}</p>
 								</div>
 							</div>
 							<div class="flex items-center gap-1">
@@ -2368,7 +2380,7 @@
 											selectedNode = null;
 											selectedEdge = null;
 										}}
-										title="Save and close"
+										title="保存并关闭"
 									>
 										<Save class="w-3.5 h-3.5" />
 									</Button>
@@ -2378,7 +2390,7 @@
 									size="sm"
 									class="h-6 w-6 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30"
 									onclick={deleteSelectedNode}
-									title="Delete"
+									title="删除"
 								>
 									<Trash2 class="w-3.5 h-3.5" />
 								</Button>
@@ -2387,7 +2399,7 @@
 									size="sm"
 									class="h-6 w-6 p-0 text-zinc-500 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700"
 									onclick={() => { selectedNode = null; selectedEdge = null; }}
-									title="Close"
+									title="关闭"
 								>
 									<X class="w-3.5 h-3.5" />
 								</Button>
@@ -2412,7 +2424,7 @@
 									size="sm"
 									class="h-6 w-6 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30"
 									onclick={deleteSelectedEdge}
-									title="Remove connection"
+									title="移除连接"
 								>
 									<Trash2 class="w-3.5 h-3.5" />
 								</Button>
@@ -2421,7 +2433,7 @@
 									size="sm"
 									class="h-6 w-6 p-0 text-zinc-500 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700"
 									onclick={() => { selectedNode = null; selectedEdge = null; }}
-									title="Close"
+									title="关闭"
 								>
 									<X class="w-3.5 h-3.5" />
 								</Button>
@@ -2437,7 +2449,7 @@
 								<!-- Image -->
 								<div class="space-y-1.5">
 									<div class="flex items-center justify-between">
-										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">Image</span>
+										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">镜像</span>
 									</div>
 									<Input
 										bind:value={editServiceImage}
@@ -2449,7 +2461,7 @@
 
 								<!-- Command -->
 								<div class="space-y-1.5">
-									<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">Command</span>
+									<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">启动命令</span>
 									<Input
 										bind:value={editServiceCommand}
 										oninput={markServiceDirty}
@@ -2460,16 +2472,16 @@
 
 								<!-- Restart policy -->
 								<div class="space-y-1.5">
-									<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">Restart policy</span>
+									<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">重启策略</span>
 									<Select.Root type="single" bind:value={editServiceRestart} onValueChange={() => { serviceEditDirty = true; }}>
 										<Select.Trigger class="h-8 text-xs">
-											<span>{editServiceRestart === 'no' ? 'No' : editServiceRestart === 'always' ? 'Always' : editServiceRestart === 'on-failure' ? 'On failure' : 'Unless stopped'}</span>
+											<span>{editServiceRestart === 'no' ? '不重启' : editServiceRestart === 'always' ? '始终重启' : editServiceRestart === 'on-failure' ? '失败重启' : '除非停止'}</span>
 										</Select.Trigger>
 										<Select.Content>
-											<Select.Item value="no" label="No" />
-											<Select.Item value="always" label="Always" />
-											<Select.Item value="on-failure" label="On failure" />
-											<Select.Item value="unless-stopped" label="Unless stopped" />
+											<Select.Item value="no" label="不重启" />
+											<Select.Item value="always" label="始终重启" />
+											<Select.Item value="on-failure" label="失败重启" />
+											<Select.Item value="unless-stopped" label="除非停止" />
 										</Select.Content>
 									</Select.Root>
 								</div>
@@ -2477,7 +2489,7 @@
 								<!-- Port mappings -->
 								<div class="space-y-1.5">
 									<div class="flex items-center justify-between">
-										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">Port mappings</span>
+										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">端口映射</span>
 										<button onclick={addServicePort} class="text-xs text-blue-500 hover:text-blue-600">
 											<Plus class="w-3.5 h-3.5" />
 										</button>
@@ -2486,11 +2498,11 @@
 										{#each editServicePorts as port, index}
 											<div class="flex gap-1 items-center">
 												<div class="flex-1 relative">
-													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">Host</span>
+													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">主机</span>
 													<Input bind:value={port.host} oninput={markServiceDirty} class="h-9 pt-3 text-xs" />
 												</div>
 												<div class="flex-1 relative">
-													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">Container</span>
+													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">容器</span>
 													<Input bind:value={port.container} oninput={markServiceDirty} class="h-9 pt-3 text-xs" />
 												</div>
 												<button
@@ -2508,7 +2520,7 @@
 								<!-- Volumes -->
 								<div class="space-y-1.5">
 									<div class="flex items-center justify-between">
-										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">Volumes</span>
+										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">数据卷</span>
 										<button onclick={addServiceVolume} class="text-xs text-blue-500 hover:text-blue-600">
 											<Plus class="w-3.5 h-3.5" />
 										</button>
@@ -2517,11 +2529,11 @@
 										{#each editServiceVolumes as vol, index}
 											<div class="flex gap-1 items-center">
 												<div class="flex-1 relative">
-													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">Host</span>
+													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">主机</span>
 													<Input bind:value={vol.host} oninput={markServiceDirty} class="h-9 pt-3 text-xs" />
 												</div>
 												<div class="flex-1 relative">
-													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">Container</span>
+													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">容器</span>
 													<Input bind:value={vol.container} oninput={markServiceDirty} class="h-9 pt-3 text-xs" />
 												</div>
 												<button
@@ -2539,7 +2551,7 @@
 								<!-- Environment variables -->
 								<div class="space-y-1.5">
 									<div class="flex items-center justify-between">
-										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">Environment</span>
+										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">环境变量</span>
 										<button onclick={addServiceEnvVar} class="text-xs text-blue-500 hover:text-blue-600">
 											<Plus class="w-3.5 h-3.5" />
 										</button>
@@ -2548,11 +2560,11 @@
 										{#each editServiceEnvVars as env, index}
 											<div class="flex gap-1 items-center">
 												<div class="flex-1 relative">
-													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">Key</span>
+													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">键</span>
 													<Input bind:value={env.key} oninput={markServiceDirty} class="h-9 pt-3 text-xs" />
 												</div>
 												<div class="flex-1 relative">
-													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">Value</span>
+													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">值</span>
 													<Input bind:value={env.value} oninput={markServiceDirty} class="h-9 pt-3 text-xs" />
 												</div>
 												<button
@@ -2570,7 +2582,7 @@
 								<!-- Labels -->
 								<div class="space-y-1.5">
 									<div class="flex items-center justify-between">
-										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">Labels</span>
+										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">标签</span>
 										<button onclick={addServiceLabel} class="text-xs text-blue-500 hover:text-blue-600">
 											<Plus class="w-3.5 h-3.5" />
 										</button>
@@ -2579,11 +2591,11 @@
 										{#each editServiceLabels as label, index}
 											<div class="flex gap-1 items-center">
 												<div class="flex-1 relative">
-													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">Key</span>
+													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">键</span>
 													<Input bind:value={label.key} oninput={markServiceDirty} class="h-9 pt-3 text-xs" />
 												</div>
 												<div class="flex-1 relative">
-													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">Value</span>
+													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">值</span>
 													<Input bind:value={label.value} oninput={markServiceDirty} class="h-9 pt-3 text-xs" />
 												</div>
 												<button
@@ -2601,7 +2613,7 @@
 								<!-- Dependencies -->
 								{#if selectedNode.dependsOn?.length > 0}
 									<div class="space-y-1.5">
-										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">Depends on</span>
+										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">依赖于</span>
 										<div class="space-y-1">
 											{#each selectedNode.dependsOn as dep}
 												<div class="flex items-center justify-between text-zinc-700 text-xs bg-zinc-100 px-2 py-1.5 rounded">
@@ -2623,7 +2635,7 @@
 							<div class="space-y-3 text-sm">
 								<!-- Driver -->
 								<div class="space-y-1.5">
-									<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">Driver</span>
+									<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">驱动</span>
 									<Select.Root type="single" bind:value={editNetworkDriver} onValueChange={() => { networkEditDirty = true; }}>
 										<Select.Trigger class="h-8 text-xs">
 											<span class="flex items-center gap-1.5">
@@ -2640,31 +2652,31 @@
 												{:else}
 													<CircleOff class="w-3.5 h-3.5 text-muted-foreground" />
 												{/if}
-												<span class="capitalize">{editNetworkDriver}</span>
+												<span class="capitalize">{getNetworkDriverLabel(editNetworkDriver)}</span>
 											</span>
 										</Select.Trigger>
 										<Select.Content>
-											<Select.Item value="bridge" label="Bridge">
+											<Select.Item value="bridge" label="桥接">
 												{#snippet children()}
 													<div class="flex items-center gap-2">
 														<Share2 class="w-3.5 h-3.5 text-emerald-500" />
-														<span>Bridge</span>
+														<span>桥接</span>
 													</div>
 												{/snippet}
 											</Select.Item>
-											<Select.Item value="host" label="Host">
+											<Select.Item value="host" label="主机">
 												{#snippet children()}
 													<div class="flex items-center gap-2">
 														<Server class="w-3.5 h-3.5 text-sky-500" />
-														<span>Host</span>
+														<span>主机</span>
 													</div>
 												{/snippet}
 											</Select.Item>
-											<Select.Item value="overlay" label="Overlay">
+											<Select.Item value="overlay" label="覆盖">
 												{#snippet children()}
 													<div class="flex items-center gap-2">
 														<Globe class="w-3.5 h-3.5 text-violet-500" />
-														<span>Overlay</span>
+														<span>覆盖</span>
 													</div>
 												{/snippet}
 											</Select.Item>
@@ -2684,11 +2696,11 @@
 													</div>
 												{/snippet}
 											</Select.Item>
-											<Select.Item value="none" label="None">
+											<Select.Item value="none" label="无">
 												{#snippet children()}
 													<div class="flex items-center gap-2">
 														<CircleOff class="w-3.5 h-3.5 text-muted-foreground" />
-														<span>None</span>
+														<span>无</span>
 													</div>
 												{/snippet}
 											</Select.Item>
@@ -2698,14 +2710,14 @@
 
 								<!-- IPAM Config -->
 								<div class="space-y-1.5">
-									<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">IPAM configuration</span>
+									<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">IP 地址管理配置</span>
 									<div class="space-y-4 pt-2">
 										<div class="relative">
-											<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">Subnet</span>
+											<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">子网</span>
 											<Input bind:value={editNetworkSubnet} oninput={markNetworkDirty} placeholder="172.20.0.0/16" class="h-9 pt-3 text-xs" />
 										</div>
 										<div class="relative">
-											<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">Gateway</span>
+											<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">网关</span>
 											<Input bind:value={editNetworkGateway} oninput={markNetworkDirty} placeholder="172.20.0.1" class="h-9 pt-3 text-xs" />
 										</div>
 									</div>
@@ -2715,22 +2727,22 @@
 								<div class="space-y-2">
 									<label class="flex items-center gap-2 cursor-pointer">
 										<input type="checkbox" bind:checked={editNetworkExternal} onchange={markNetworkDirty} class="rounded border-zinc-300" />
-										<span class="text-xs text-zinc-600">External network</span>
+										<span class="text-xs text-zinc-600">外部网络</span>
 									</label>
 									<label class="flex items-center gap-2 cursor-pointer">
 										<input type="checkbox" bind:checked={editNetworkInternal} onchange={markNetworkDirty} class="rounded border-zinc-300" />
-										<span class="text-xs text-zinc-600">Internal network</span>
+										<span class="text-xs text-zinc-600">内部网络</span>
 									</label>
 									<label class="flex items-center gap-2 cursor-pointer">
 										<input type="checkbox" bind:checked={editNetworkAttachable} onchange={markNetworkDirty} class="rounded border-zinc-300" />
-										<span class="text-xs text-zinc-600">Attachable</span>
+										<span class="text-xs text-zinc-600">可附加</span>
 									</label>
 								</div>
 
 								<!-- Labels -->
 								<div class="space-y-1.5">
 									<div class="flex items-center justify-between">
-										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">Labels</span>
+										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">标签</span>
 										<button onclick={addNetworkLabel} class="text-xs text-blue-500 hover:text-blue-600">
 											<Plus class="w-3.5 h-3.5" />
 										</button>
@@ -2739,11 +2751,11 @@
 										{#each editNetworkLabels as label, index}
 											<div class="flex gap-1 items-center">
 												<div class="flex-1 relative">
-													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">Key</span>
+													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">键</span>
 													<Input bind:value={label.key} oninput={markNetworkDirty} class="h-9 pt-3 text-xs" />
 												</div>
 												<div class="flex-1 relative">
-													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">Value</span>
+													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">值</span>
 													<Input bind:value={label.value} oninput={markNetworkDirty} class="h-9 pt-3 text-xs" />
 												</div>
 												<button onclick={() => removeNetworkLabel(index)} disabled={editNetworkLabels.length === 1} class="p-1 text-zinc-400 hover:text-red-500 disabled:opacity-30">
@@ -2757,7 +2769,7 @@
 								<!-- Driver options -->
 								<div class="space-y-1.5">
 									<div class="flex items-center justify-between">
-										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">Driver options</span>
+										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">驱动选项</span>
 										<button onclick={addNetworkOption} class="text-xs text-blue-500 hover:text-blue-600">
 											<Plus class="w-3.5 h-3.5" />
 										</button>
@@ -2766,11 +2778,11 @@
 										{#each editNetworkOptions as opt, index}
 											<div class="flex gap-1 items-center">
 												<div class="flex-1 relative">
-													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">Key</span>
+													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">键</span>
 													<Input bind:value={opt.key} oninput={markNetworkDirty} class="h-9 pt-3 text-xs" />
 												</div>
 												<div class="flex-1 relative">
-													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">Value</span>
+													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">值</span>
 													<Input bind:value={opt.value} oninput={markNetworkDirty} class="h-9 pt-3 text-xs" />
 												</div>
 												<button onclick={() => removeNetworkOption(index)} disabled={editNetworkOptions.length === 1} class="p-1 text-zinc-400 hover:text-red-500 disabled:opacity-30">
@@ -2786,20 +2798,20 @@
 							<div class="space-y-3 text-sm">
 								<!-- Driver -->
 								<div class="space-y-1.5">
-									<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">Driver</span>
-									<Input bind:value={editVolumeDriver} oninput={markVolumeDirty} placeholder="local" class="h-8 text-xs" />
+									<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">驱动</span>
+									<Input bind:value={editVolumeDriver} oninput={markVolumeDirty} placeholder="本地" class="h-8 text-xs" />
 								</div>
 
 								<!-- External -->
 								<label class="flex items-center gap-2 cursor-pointer">
 									<input type="checkbox" bind:checked={editVolumeExternal} onchange={markVolumeDirty} class="rounded border-zinc-300" />
-									<span class="text-xs text-zinc-600">External volume</span>
+									<span class="text-xs text-zinc-600">外部数据卷</span>
 								</label>
 
 								<!-- Labels -->
 								<div class="space-y-1.5">
 									<div class="flex items-center justify-between">
-										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">Labels</span>
+										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">标签</span>
 										<button onclick={addVolumeLabel} class="text-xs text-blue-500 hover:text-blue-600">
 											<Plus class="w-3.5 h-3.5" />
 										</button>
@@ -2808,11 +2820,11 @@
 										{#each editVolumeLabels as label, index}
 											<div class="flex gap-1 items-center">
 												<div class="flex-1 relative">
-													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">Key</span>
+													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">键</span>
 													<Input bind:value={label.key} oninput={markVolumeDirty} class="h-9 pt-3 text-xs" />
 												</div>
 												<div class="flex-1 relative">
-													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">Value</span>
+													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">值</span>
 													<Input bind:value={label.value} oninput={markVolumeDirty} class="h-9 pt-3 text-xs" />
 												</div>
 												<button onclick={() => removeVolumeLabel(index)} disabled={editVolumeLabels.length === 1} class="p-1 text-zinc-400 hover:text-red-500 disabled:opacity-30">
@@ -2826,7 +2838,7 @@
 								<!-- Driver options -->
 								<div class="space-y-1.5">
 									<div class="flex items-center justify-between">
-										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">Driver options</span>
+										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">D驱动选项</span>
 										<button onclick={addVolumeOption} class="text-xs text-blue-500 hover:text-blue-600">
 											<Plus class="w-3.5 h-3.5" />
 										</button>
@@ -2835,11 +2847,11 @@
 										{#each editVolumeOptions as opt, index}
 											<div class="flex gap-1 items-center">
 												<div class="flex-1 relative">
-													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">Key</span>
+													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">键</span>
 													<Input bind:value={opt.key} oninput={markVolumeDirty} class="h-9 pt-3 text-xs" />
 												</div>
 												<div class="flex-1 relative">
-													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">Value</span>
+													<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">值</span>
 													<Input bind:value={opt.value} oninput={markVolumeDirty} class="h-9 pt-3 text-xs" />
 												</div>
 												<button onclick={() => removeVolumeOption(index)} disabled={editVolumeOptions.length === 1} class="p-1 text-zinc-400 hover:text-red-500 disabled:opacity-30">
@@ -2856,28 +2868,28 @@
 								<!-- External checkbox -->
 								<label class="flex items-center gap-2 cursor-pointer">
 									<input type="checkbox" bind:checked={editConfigExternal} onchange={markConfigDirty} class="rounded border-zinc-300" />
-									<span class="text-xs text-zinc-600">External config</span>
+									<span class="text-xs text-zinc-600">外部配置</span>
 								</label>
 
 								{#if editConfigExternal}
 									<!-- External name -->
 									<div class="space-y-1.5">
-										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">External name (optional)</span>
+										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">外部名称 (可选)</span>
 										<Input bind:value={editConfigName} oninput={markConfigDirty} placeholder="my-external-config" class="h-8 text-xs" />
 									</div>
 								{:else}
 									<!-- Source type selector hint -->
-									<p class="text-2xs text-zinc-400">Specify one of: file, content, or environment</p>
+									<p class="text-2xs text-zinc-400">指定其一：文件路径、内容或环境变量</p>
 
 									<!-- File path -->
 									<div class="space-y-1.5">
-										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">File path</span>
+										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">文件路径</span>
 										<Input bind:value={editConfigFile} oninput={markConfigDirty} placeholder="./config/app.conf" class="h-8 text-xs" />
 									</div>
 
 									<!-- Content -->
 									<div class="space-y-1.5">
-										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">Content (inline)</span>
+										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">内容 (内联)</span>
 										<textarea
 											bind:value={editConfigContent}
 											oninput={markConfigDirty}
@@ -2888,7 +2900,7 @@
 
 									<!-- Environment variable -->
 									<div class="space-y-1.5">
-										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">Environment variable</span>
+										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">环境变量</span>
 										<Input bind:value={editConfigEnvironment} oninput={markConfigDirty} placeholder="MY_CONFIG_VAR" class="h-8 text-xs" />
 									</div>
 								{/if}
@@ -2899,28 +2911,28 @@
 								<!-- External checkbox -->
 								<label class="flex items-center gap-2 cursor-pointer">
 									<input type="checkbox" bind:checked={editSecretExternal} onchange={markSecretDirty} class="rounded border-zinc-300" />
-									<span class="text-xs text-zinc-600">External secret</span>
+									<span class="text-xs text-zinc-600">外部密钥</span>
 								</label>
 
 								{#if editSecretExternal}
 									<!-- External name -->
 									<div class="space-y-1.5">
-										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">External name (optional)</span>
+										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">外部名称 (可选)</span>
 										<Input bind:value={editSecretName} oninput={markSecretDirty} placeholder="my-external-secret" class="h-8 text-xs" />
 									</div>
 								{:else}
 									<!-- Source type selector hint -->
-									<p class="text-2xs text-zinc-400">Specify one of: file or environment</p>
+									<p class="text-2xs text-zinc-400">指定其一：文件路径或环境变量</p>
 
 									<!-- File path -->
 									<div class="space-y-1.5">
-										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">File path</span>
+										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">文件路径</span>
 										<Input bind:value={editSecretFile} oninput={markSecretDirty} placeholder="./secrets/password.txt" class="h-8 text-xs" />
 									</div>
 
 									<!-- Environment variable -->
 									<div class="space-y-1.5">
-										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">Environment variable</span>
+										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">环境变量</span>
 										<Input bind:value={editSecretEnvironment} oninput={markSecretDirty} placeholder="MY_SECRET_VAR" class="h-8 text-xs" />
 									</div>
 								{/if}
@@ -2929,23 +2941,23 @@
 					{:else if selectedEdge}
 						{#if selectedEdge.type === 'dependency'}
 							<p class="text-xs text-zinc-500 dark:text-zinc-400">
-								This service depends on {selectedEdge.source.replace('service-', '')} and will start after it.
+								该服务依赖于{selectedEdge.source.replace('service-', '')}，将在其启动后运行。
 							</p>
 						{:else if selectedEdge.type === 'volume-mount'}
 							<p class="text-xs text-zinc-500 dark:text-zinc-400">
-								Volume mounted to this service.
+								数据卷已挂载到该服务。
 							</p>
 						{:else if selectedEdge.type === 'network-connection'}
 							<p class="text-xs text-zinc-500 dark:text-zinc-400">
-								Service connected to this network.
+								服务已连接到该网络。
 							</p>
 						{:else if selectedEdge.type === 'config-mount'}
 							<p class="text-xs text-zinc-500 dark:text-zinc-400">
-								Config mounted to this service.
+								配置已挂载到该服务。
 							</p>
 						{:else if selectedEdge.type === 'secret-mount'}
 							<p class="text-xs text-zinc-500 dark:text-zinc-400">
-								Secret mounted to this service.
+								密钥已挂载到该服务。
 							</p>
 						{/if}
 					{/if}
@@ -2963,13 +2975,13 @@
 			<Dialog.Title class="flex items-center gap-2">
 				{@const DialogIcon = getNodeIcon(addElementType)}
 				<DialogIcon class="w-5 h-5" />
-				Add {getElementTypeLabel(addElementType)}
+				添加{getElementTypeLabel(addElementType)}
 			</Dialog.Title>
 		</Dialog.Header>
 
 		<div class="space-y-4 py-4">
 			<div class="space-y-2">
-				<Label for="element-name">Name</Label>
+				<Label for="element-name">名称</Label>
 				<Input
 					id="element-name"
 					bind:value={newElementName}
@@ -2979,7 +2991,7 @@
 
 			{#if addElementType === 'service'}
 				<div class="space-y-2">
-					<Label for="service-image">Image</Label>
+					<Label for="service-image">镜像</Label>
 					<Input
 						id="service-image"
 						bind:value={newServiceImage}
@@ -2988,7 +3000,7 @@
 				</div>
 
 				<div class="space-y-2">
-					<Label for="service-ports">Ports (comma-separated)</Label>
+					<Label for="service-ports">端口 (逗号分隔)</Label>
 					<Input
 						id="service-ports"
 						bind:value={newServicePorts}
@@ -2999,10 +3011,10 @@
 		</div>
 
 		<div class="flex justify-end gap-2">
-			<Button variant="outline" size="sm" onclick={() => showAddDialog = false}>Cancel</Button>
+			<Button variant="outline" size="sm" onclick={() => showAddDialog = false}>取消</Button>
 			<Button variant="secondary" size="sm" onclick={addElement} disabled={!newElementName.trim()}>
 				<Plus class="w-3.5 h-3.5 mr-1.5" />
-				Add {getElementTypeLabel(addElementType)}
+				添加{getElementTypeLabel(addElementType)}
 			</Button>
 		</div>
 	</Dialog.Content>
@@ -3013,6 +3025,6 @@
 	<button
 		class="fixed inset-0 z-40"
 		onclick={() => showAddMenu = false}
-		aria-label="Close menu"
+		aria-label="关闭菜单"
 	></button>
 {/if}

@@ -10,28 +10,28 @@ export const POST: RequestHandler = async ({ params, cookies }) => {
 
 	// Allow access when auth is disabled (setup mode) or when user is admin
 	if (auth.authEnabled && (!auth.isAuthenticated || !auth.isAdmin)) {
-		return json({ error: 'Unauthorized' }, { status: 401 });
+		return json({ error: '未授权' }, { status: 401 });
 	}
 
 	if (!auth.isEnterprise) {
-		return json({ error: 'Enterprise license required' }, { status: 403 });
+		return json({ error: '需要企业版许可证' }, { status: 403 });
 	}
 
 	const id = parseInt(params.id!, 10);
 	if (isNaN(id)) {
-		return json({ error: 'Invalid ID' }, { status: 400 });
+		return json({ error: '无效的 ID' }, { status: 400 });
 	}
 
 	try {
 		const config = await getLdapConfig(id);
 		if (!config) {
-			return json({ error: 'LDAP configuration not found' }, { status: 404 });
+			return json({ error: '未找到 LDAP 配置' }, { status: 404 });
 		}
 
 		const result = await testLdapConnection(id);
 		return json(result);
 	} catch (error) {
-		console.error('Failed to test LDAP connection:', error);
-		return json({ error: 'Failed to test LDAP connection' }, { status: 500 });
+		console.error('测试 LDAP 连接失败:', error);
+		return json({ error: '测试 LDAP 连接失败' }, { status: 500 });
 	}
 };

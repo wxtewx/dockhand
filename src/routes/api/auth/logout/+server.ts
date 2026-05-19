@@ -16,14 +16,14 @@ export const POST: RequestHandler = async (event) => {
 			|| event.getClientAddress();
 
 		await destroySession(cookies);
-		console.log(`[Auth] Logout: user=${username} ip=${clientIp}`);
+		console.log(`[认证] 退出登录: 用户=${username} IP=${clientIp}`);
 
 		// Audit log
 		await auditAuth(event, 'logout', username);
 
 		return json({ success: true });
 	} catch (error) {
-		console.error('Logout error:', error);
-		return json({ error: 'Logout failed' }, { status: 500 });
+		console.error('退出登录错误:', error);
+		return json({ error: '退出登录失败' }, { status: 500 });
 	}
 };

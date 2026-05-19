@@ -14,7 +14,7 @@ function containsPathTraversal(value: string): boolean {
  */
 export function validateDockerIdParam(id: string, resourceType = 'resource'): Response | null {
 	if (!id || containsPathTraversal(id)) {
-		return json({ error: `Invalid ${resourceType} ID` }, { status: 400 });
+		return json({ error: `${resourceType} ID 无效` }, { status: 400 });
 	}
 	return null;
 }

@@ -46,12 +46,12 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('stacks', 'view', envIdNum ?? undefined)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Environment access check (enterprise only)
 	if (envIdNum && auth.isEnterprise && !await auth.canAccessEnvironment(envIdNum)) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问该环境' }, { status: 403 });
 	}
 
 	try {
@@ -114,8 +114,8 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 
 		return json({ variables });
 	} catch (error) {
-		console.error('Error getting stack env vars:', error);
-		return json({ error: 'Failed to get environment variables' }, { status: 500 });
+		console.error('获取堆栈环境变量时出错：', error);
+		return json({ error: '获取环境变量失败' }, { status: 500 });
 	}
 };
 
@@ -137,12 +137,12 @@ export const PUT: RequestHandler = async ({ params, url, cookies, request }) => 
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('stacks', 'edit', envIdNum ?? undefined)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Environment access check (enterprise only)
 	if (envIdNum && auth.isEnterprise && !await auth.canAccessEnvironment(envIdNum)) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问该环境' }, { status: 403 });
 	}
 
 	try {
@@ -150,19 +150,19 @@ export const PUT: RequestHandler = async ({ params, url, cookies, request }) => 
 		const body = await request.json();
 
 		if (!body.variables || !Array.isArray(body.variables)) {
-			return json({ error: 'Invalid request body: variables array required' }, { status: 400 });
+			return json({ error: '请求体无效：必须提供变量数组' }, { status: 400 });
 		}
 
 		// Validate variables
 		for (const v of body.variables) {
 			if (!v.key || typeof v.key !== 'string') {
-				return json({ error: 'Invalid variable: key is required and must be a string' }, { status: 400 });
+				return json({ error: '无效变量：必须提供键名且必须为字符串' }, { status: 400 });
 			}
 			if (typeof v.value !== 'string') {
-				return json({ error: `Invalid variable "${v.key}": value must be a string` }, { status: 400 });
+				return json({ error: `无效变量 "${v.key}"：值必须为字符串` }, { status: 400 });
 			}
 			if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(v.key)) {
-				return json({ error: `Invalid variable name "${v.key}": must start with a letter or underscore and contain only alphanumeric characters and underscores` }, { status: 400 });
+				return json({ error: `无效变量名 "${v.key}"：必须以字母或下划线开头，且仅包含字母、数字和下划线` }, { status: 400 });
 			}
 		}
 
@@ -194,7 +194,7 @@ export const PUT: RequestHandler = async ({ params, url, cookies, request }) => 
 
 		return json({ success: true, count: variablesToSave.length });
 	} catch (error) {
-		console.error('Error setting stack env vars:', error);
-		return json({ error: 'Failed to set environment variables' }, { status: 500 });
+		console.error('设置堆栈环境变量时出错：', error);
+		return json({ error: '设置环境变量失败' }, { status: 500 });
 	}
 };

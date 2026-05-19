@@ -57,7 +57,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			return json({
 				success: true,
 				info: {
-					message: 'Edge mode environments are tested when the agent connects'
+					message: '边缘模式环境将在代理连接时自动测试'
 				},
 				isEdgeMode: true
 			});
@@ -68,7 +68,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			const port = config.port || 2375;
 
 			if (!host) {
-				return json({ success: false, error: 'Host is required' }, { status: 400 });
+				return json({ success: false, error: '主机地址为必填项' }, { status: 400 });
 			}
 
 			const headers: Record<string, string> = {
@@ -140,35 +140,35 @@ export const POST: RequestHandler = async ({ request }) => {
 			hawser: hawserInfo
 		});
 	} catch (error) {
-		const rawMessage = error instanceof Error ? error.message : 'Connection failed';
-		console.error('Failed to test connection:', rawMessage);
+		const rawMessage = error instanceof Error ? error.message : '连接失败';
+		console.error('测试连接失败:', rawMessage);
 
 		// Provide more helpful error messages
 		let message = rawMessage;
 		if (rawMessage.includes('401') || rawMessage.toLowerCase().includes('unauthorized')) {
-			message = 'Invalid token - check that the Hawser token matches';
+			message = '无效的令牌 - 请检查 Hawser 令牌是否匹配';
 		} else if (rawMessage.includes('403') || rawMessage.toLowerCase().includes('forbidden')) {
-			message = 'Access forbidden - check token permissions';
+			message = '访问被禁止 - 请检查令牌权限';
 		} else if (rawMessage.includes('ECONNREFUSED') || rawMessage.includes('Connection refused')) {
-			message = 'Connection refused - is Docker/Hawser running?';
+			message = '连接被拒绝 - Docker/Hawser 是否正在运行？';
 		} else if (rawMessage.includes('ETIMEDOUT') || rawMessage.includes('timeout') || rawMessage.includes('Timeout')) {
-			message = 'Connection timed out - check host and port';
+			message = '连接超时 - 请检查主机和端口';
 		} else if (rawMessage.includes('ENOTFOUND') || rawMessage.includes('getaddrinfo')) {
-			message = 'Host not found - check the hostname';
+			message = '未找到主机 - 请检查主机名';
 		} else if (rawMessage.includes('EHOSTUNREACH')) {
-			message = 'Host unreachable - check network connectivity';
+			message = '主机不可达 - 请检查网络连接';
 		} else if (rawMessage.includes('ENOENT') || rawMessage.includes('no such file')) {
-			message = 'Socket not found - check the socket path';
+			message = '未找到套接字 - 请检查套接字路径';
 		} else if (rawMessage.includes('EACCES') || rawMessage.includes('permission denied')) {
-			message = 'Permission denied - check socket permissions';
+			message = '权限不足 - 请检查套接字权限';
 		} else if (rawMessage.includes('typo in the url') || rawMessage.includes('Was there a typo')) {
-			message = 'Connection failed - check host and port';
+			message = '连接失败 - 请检查主机和端口';
 		} else if (rawMessage.includes('self signed certificate') || rawMessage.includes('UNABLE_TO_VERIFY_LEAF_SIGNATURE')) {
-			message = 'TLS certificate error - provide CA certificate for self-signed certs';
+			message = 'TLS 证书错误 - 自签名证书需要提供 CA 证书';
 		} else if (rawMessage.includes('CERT_ALTNAME_INVALID') || rawMessage.includes('ERR_TLS_CERT_ALTNAME_INVALID')) {
-			message = 'Certificate hostname mismatch - your certificate\'s Subject Alternative Name (SAN) doesn\'t match the host. Regenerate with: -addext "subjectAltName=DNS:hostname,IP:x.x.x.x"';
+			message = '证书主机名不匹配 - 证书的主题备用名称（SAN）与主机不匹配。请使用参数重新生成：-addext "subjectAltName=DNS:hostname,IP:x.x.x.x"';
 		} else if (rawMessage.includes('certificate') || rawMessage.includes('SSL') || rawMessage.includes('TLS')) {
-			message = 'TLS/SSL error - check certificate configuration';
+			message = 'TLS/SSL 错误 - 请检查证书配置';
 		}
 
 		return json({ success: false, error: message }, { status: 200 });

@@ -13,7 +13,7 @@ export const POST: RequestHandler = async (event) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('containers', 'remove', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -22,13 +22,13 @@ export const POST: RequestHandler = async (event) => {
 		// Audit log
 		await audit(event, 'prune', 'container', {
 			environmentId: envIdNum,
-			description: 'Pruned stopped containers',
+			description: '已清理已停止的容器',
 			details: { result }
 		});
 
 		return json({ success: true, result });
 	} catch (error) {
-		console.error('Error pruning containers:', error);
-		return json({ error: 'Failed to prune containers' }, { status: 500 });
+		console.error('清理容器失败:', error);
+		return json({ error: '清理容器失败' }, { status: 500 });
 	}
 };

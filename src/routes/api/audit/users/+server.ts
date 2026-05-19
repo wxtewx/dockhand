@@ -13,14 +13,14 @@ export const GET: RequestHandler = async ({ cookies }) => {
 
 	// Check permission
 	if (!await auth.canViewAuditLog()) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const users = await getAuditLogUsers();
 		return json(users);
 	} catch (error) {
-		console.error('Error fetching audit log users:', error);
-		return json({ error: 'Failed to fetch audit log users' }, { status: 500 });
+		console.error('获取审计日志用户信息失败:', error);
+		return json({ error: '获取审计日志用户信息失败' }, { status: 500 });
 	}
 };

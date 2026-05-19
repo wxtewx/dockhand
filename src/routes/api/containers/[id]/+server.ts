@@ -23,12 +23,12 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('containers', 'view', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Environment access check (enterprise only)
 	if (envIdNum && auth.isEnterprise && !await auth.canAccessEnvironment(envIdNum)) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问此环境' }, { status: 403 });
 	}
 
 	try {
@@ -57,10 +57,10 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 		return json(details);
 	} catch (error: any) {
 		if (error?.statusCode === 404) {
-			return json({ error: error.json?.message || 'Container not found' }, { status: 404 });
+			return json({ error: error.json?.message || '容器未找到' }, { status: 404 });
 		}
-		console.error('Error inspecting container:', error?.message || error);
-		return json({ error: 'Failed to inspect container' }, { status: 500 });
+		console.error('检查容器错误:', error?.message || error);
+		return json({ error: '检查容器失败' }, { status: 500 });
 	}
 };
 
@@ -77,12 +77,12 @@ export const DELETE: RequestHandler = async (event) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('containers', 'remove', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Environment access check (enterprise only)
 	if (envIdNum && auth.isEnterprise && !await auth.canAccessEnvironment(envIdNum)) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问此环境' }, { status: 403 });
 	}
 
 	try {
@@ -112,7 +112,7 @@ export const DELETE: RequestHandler = async (event) => {
 				await deleteAutoUpdateSchedule(containerName, envIdNum);
 			}
 		} catch (error) {
-			console.error('Failed to cleanup auto-update schedule:', error);
+			console.error('清理自动更新计划失败:', error);
 			// Don't fail the deletion if schedule cleanup fails
 		}
 
@@ -122,16 +122,16 @@ export const DELETE: RequestHandler = async (event) => {
 				await removePendingContainerUpdate(envIdNum, params.id);
 			}
 		} catch (error) {
-			console.error('Failed to cleanup pending container update:', error);
+			console.error('清理待处理容器更新失败:', error);
 			// Don't fail the deletion if cleanup fails
 		}
 
 		return json({ success: true });
 	} catch (error: any) {
 		if (error?.statusCode === 404) {
-			return json({ error: error.json?.message || 'Container not found' }, { status: 404 });
+			return json({ error: error.json?.message || '容器未找到' }, { status: 404 });
 		}
-		console.error('Error removing container:', error?.message || error);
-		return json({ error: 'Failed to remove container' }, { status: 500 });
+		console.error('删除容器错误:', error?.message || error);
+		return json({ error: '删除容器失败' }, { status: 500 });
 	}
 };

@@ -56,19 +56,19 @@
 
 	const ALL_STEPS = [
 		// Preparation (from SSE)
-		{ id: 'pulling_image', label: 'Pulling new image' },
-		{ id: 'building_config', label: 'Building container config' },
-		{ id: 'pulling_updater', label: 'Pulling updater' },
-		{ id: 'creating_container', label: 'Creating new container' },
-		{ id: 'launching_updater', label: 'Launching updater' },
+		{ id: 'pulling_image', label: '拉取新镜像' },
+		{ id: 'building_config', label: '构建容器配置' },
+		{ id: 'pulling_updater', label: '拉取更新程序' },
+		{ id: 'creating_container', label: '创建新容器' },
+		{ id: 'launching_updater', label: '启动更新程序' },
 		// Update (from updater container logs)
-		{ id: 'stopping', label: 'Stopping Dockhand' },
-		{ id: 'removing', label: 'Removing old container' },
-		{ id: 'renaming', label: 'Renaming container' },
-		{ id: 'connecting', label: 'Connecting networks' },
-		{ id: 'starting', label: 'Starting Dockhand' },
+		{ id: 'stopping', label: '停止 Dockhand' },
+		{ id: 'removing', label: '移除旧容器' },
+		{ id: 'renaming', label: '重命名容器' },
+		{ id: 'connecting', label: '连接网络' },
+		{ id: 'starting', label: '启动 Dockhand' },
 		// Reconnect
-		{ id: 'reconnecting', label: 'Waiting for Dockhand' }
+		{ id: 'reconnecting', label: '等待 Dockhand 启动' }
 	] as const;
 
 	// Updater log markers → step id mapping
@@ -222,14 +222,14 @@
 			if (contentType.includes('application/json')) {
 				const data = await response.json();
 				phase = 'error';
-				errorMessage = data.error || 'Update failed';
+				errorMessage = data.error || '更新失败';
 				return;
 			}
 
 			// It's an SSE stream
 			if (!response.body) {
 				phase = 'error';
-				errorMessage = 'No response body';
+				errorMessage = '无响应内容';
 				return;
 			}
 
@@ -258,7 +258,7 @@
 		} catch (err) {
 			if (phase === 'preparing') {
 				phase = 'error';
-				errorMessage = 'Connection lost: ' + String(err);
+				errorMessage = '连接断开：' + String(err);
 			}
 		}
 	}
@@ -284,7 +284,7 @@
 			startProgressPolling();
 		} else if (event === 'error') {
 			phase = 'error';
-			errorMessage = data.message || 'Update failed';
+			errorMessage = data.message || '更新失败';
 			// Mark current active step as error
 			const currentId = activeStepId();
 			if (currentId) {
@@ -328,7 +328,7 @@
 					switchToRestarting();
 				} else {
 					phase = 'error';
-					errorMessage = `Updater exited with code ${data.exitCode}`;
+					errorMessage = `更新程序异常退出，错误码：${data.exitCode}`;
 					const currentId = activeStepId();
 					if (currentId) setStepStatus(currentId, 'error');
 				}
@@ -428,7 +428,7 @@
 				phase = 'completed';
 				const step = getStep('reconnecting');
 				if (step) {
-					step.label = 'Dockhand is back online';
+					step.label = 'Dockhand 已重新上线';
 					step.status = 'completed';
 					steps = [...steps];
 				}
@@ -482,9 +482,9 @@
 			<Dialog.Title class="flex items-center gap-2">
 				<CircleArrowUp class="w-5 h-5 text-amber-500" />
 				{#if phase === 'confirm'}
-					Update Dockhand
+					更新 Dockhand
 				{:else}
-					Updating Dockhand
+					正在更新 Dockhand
 				{/if}
 			</Dialog.Title>
 			{#if phase !== 'confirm'}
@@ -493,11 +493,11 @@
 						<span class="text-primary font-medium">{activeStep.label}...</span>
 						<span class="text-muted-foreground ml-2">({completedCount}/{ALL_STEPS.length})</span>
 					{:else if phase === 'completed'}
-						Update complete
+						更新完成
 					{:else if phase === 'error'}
-						Update failed
+						更新失败
 					{:else}
-						Preparing...
+						准备中...
 					{/if}
 				</Dialog.Description>
 			{/if}
@@ -508,7 +508,7 @@
 			<div class="space-y-4 py-2 overflow-y-auto min-h-0 flex-1">
 				<div class="space-y-2">
 					<div class="flex items-center justify-between text-sm">
-						<span class="text-muted-foreground">Container</span>
+						<span class="text-muted-foreground">容器</span>
 						<span class="font-medium flex items-center gap-1.5">
 							<Ship class="w-3.5 h-3.5" />
 							{containerName}
@@ -516,26 +516,26 @@
 					</div>
 					{#if isVersionUpdate}
 						<div class="flex items-center justify-between text-sm">
-							<span class="text-muted-foreground">Current image</span>
+							<span class="text-muted-foreground">当前镜像</span>
 							<Badge variant="secondary" class="font-mono text-xs">{currentImage}</Badge>
 						</div>
 						<div class="flex items-center justify-between text-sm">
-							<span class="text-muted-foreground">New image</span>
+							<span class="text-muted-foreground">目标镜像</span>
 							<Badge variant="default" class="font-mono text-xs">{newImage}</Badge>
 						</div>
 					{:else}
 						<div class="flex items-center justify-between text-sm">
-							<span class="text-muted-foreground">Image</span>
+							<span class="text-muted-foreground">镜像</span>
 							<Badge variant="secondary" class="font-mono text-xs">{currentImage}</Badge>
 						</div>
 						{#if currentDigest || newDigest}
 							<div class="flex items-center justify-between text-sm">
-								<span class="text-muted-foreground">Current digest</span>
-								<span class="font-mono text-xs text-muted-foreground">{currentDigest ? currentDigest.replace('sha256:', '').slice(0, 12) : 'unknown'}</span>
+								<span class="text-muted-foreground">当前摘要</span>
+								<span class="font-mono text-xs text-muted-foreground">{currentDigest ? currentDigest.replace('sha256:', '').slice(0, 12) : '未知'}</span>
 							</div>
 							<div class="flex items-center justify-between text-sm">
-								<span class="text-muted-foreground">New digest</span>
-								<span class="font-mono text-xs text-amber-500">{newDigest ? newDigest.replace('sha256:', '').slice(0, 12) : 'unknown'}</span>
+								<span class="text-muted-foreground">目标摘要</span>
+								<span class="font-mono text-xs text-amber-500">{newDigest ? newDigest.replace('sha256:', '').slice(0, 12) : '未知'}</span>
 							</div>
 						{/if}
 					{/if}
@@ -544,12 +544,12 @@
 				{#if loadingNotes}
 					<div class="flex items-center gap-2 text-sm text-muted-foreground py-2">
 						<Loader2 class="w-4 h-4 animate-spin" />
-						Loading release notes...
+						正在加载更新日志...
 					</div>
 				{:else if releaseNotes.length > 0}
 					<div class="border rounded-md overflow-hidden">
 						<div class="bg-muted/50 px-3 py-2 border-b">
-							<p class="text-sm font-medium">What's new</p>
+							<p class="text-sm font-medium">更新内容</p>
 						</div>
 						<div class="p-3 space-y-3 overflow-y-auto">
 							{#each releaseNotes as entry}
@@ -576,7 +576,7 @@
 				{#if isComposeManaged}
 					<div class="rounded-md border border-blue-500/30 bg-blue-500/5 p-3">
 						<p class="text-xs text-muted-foreground">
-							<span class="font-medium text-blue-400">Note:</span> This container is managed by Docker Compose. After update it will continue to work but may lose Compose tracking. Use <code class="text-2xs">docker compose pull && docker compose up -d</code> for Compose-aware updates.
+							<span class="font-medium text-blue-400">提示：</span>该容器由 Docker Compose 管理。更新后可正常使用，但可能会丢失 Compose 追踪信息。如需兼容 Compose 的更新方式，请使用 <code class="text-2xs">docker compose pull && docker compose up -d</code> 命令。
 						</p>
 					</div>
 				{/if}
@@ -584,11 +584,11 @@
 
 			<Dialog.Footer>
 				<Button variant="outline" onclick={handleClose}>
-					Cancel
+					取消
 				</Button>
 				<Button onclick={startUpdate}>
 					<CircleArrowUp class="w-4 h-4 mr-2" />
-					Update now
+					立即更新
 				</Button>
 			</Dialog.Footer>
 
@@ -598,7 +598,7 @@
 				<!-- Progress bar -->
 				<div class="space-y-2 shrink-0">
 					<div class="flex items-center justify-between text-sm">
-						<span class="text-muted-foreground">Progress</span>
+						<span class="text-muted-foreground">更新进度</span>
 						<Badge variant="secondary">{completedCount}/{ALL_STEPS.length}</Badge>
 					</div>
 					<Progress value={progressPercentage} class="h-2" />
@@ -650,16 +650,16 @@
 				{#if phase === 'completed'}
 					<Button onclick={() => window.location.reload()}>
 						<RotateCcw class="w-4 h-4 mr-2" />
-						Reload
+						刷新页面
 					</Button>
 				{:else if phase === 'error'}
 					<Button variant="outline" onclick={handleClose}>
-						Close
+						关闭
 					</Button>
 				{:else}
 					<Button variant="outline" disabled>
 						<Loader2 class="w-4 h-4 mr-2 animate-spin" />
-						Updating...
+						更新中...
 					</Button>
 				{/if}
 			</Dialog.Footer>

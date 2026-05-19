@@ -7,32 +7,32 @@ import { lightThemes, darkThemes, fonts, monospaceFonts } from '$lib/themes';
 // GET /api/profile/preferences - Get current user's theme preferences
 export const GET: RequestHandler = async ({ cookies }) => {
 	if (!(await isAuthEnabled())) {
-		return json({ error: 'Authentication is not enabled' }, { status: 400 });
+		return json({ error: '未启用身份验证' }, { status: 400 });
 	}
 
 	const currentUser = await validateSession(cookies);
 	if (!currentUser) {
-		return json({ error: 'Not authenticated' }, { status: 401 });
+		return json({ error: '未登录' }, { status: 401 });
 	}
 
 	try {
 		const prefs = await getUserThemePreferences(currentUser.id);
 		return json(prefs);
 	} catch (error) {
-		console.error('Failed to get preferences:', error);
-		return json({ error: 'Failed to get preferences' }, { status: 500 });
+		console.error('获取偏好设置失败:', error);
+		return json({ error: '获取偏好设置失败' }, { status: 500 });
 	}
 };
 
 // PUT /api/profile/preferences - Update current user's theme preferences
 export const PUT: RequestHandler = async ({ request, cookies }) => {
 	if (!(await isAuthEnabled())) {
-		return json({ error: 'Authentication is not enabled' }, { status: 400 });
+		return json({ error: '未启用身份验证' }, { status: 400 });
 	}
 
 	const currentUser = await validateSession(cookies);
 	if (!currentUser) {
-		return json({ error: 'Not authenticated' }, { status: 401 });
+		return json({ error: '未登录' }, { status: 401 });
 	}
 
 	try {
@@ -49,49 +49,49 @@ export const PUT: RequestHandler = async ({ request, cookies }) => {
 
 		if (data.lightTheme !== undefined) {
 			if (!validLightThemeIds.includes(data.lightTheme)) {
-				return json({ error: 'Invalid light theme' }, { status: 400 });
+				return json({ error: '无效的浅色主题' }, { status: 400 });
 			}
 			updates.lightTheme = data.lightTheme;
 		}
 
 		if (data.darkTheme !== undefined) {
 			if (!validDarkThemeIds.includes(data.darkTheme)) {
-				return json({ error: 'Invalid dark theme' }, { status: 400 });
+				return json({ error: '无效的深色主题' }, { status: 400 });
 			}
 			updates.darkTheme = data.darkTheme;
 		}
 
 		if (data.font !== undefined) {
 			if (!validFontIds.includes(data.font)) {
-				return json({ error: 'Invalid font' }, { status: 400 });
+				return json({ error: '无效的字体' }, { status: 400 });
 			}
 			updates.font = data.font;
 		}
 
 		if (data.fontSize !== undefined) {
 			if (!validFontSizes.includes(data.fontSize)) {
-				return json({ error: 'Invalid font size' }, { status: 400 });
+				return json({ error: '无效的字体大小' }, { status: 400 });
 			}
 			updates.fontSize = data.fontSize;
 		}
 
 		if (data.gridFontSize !== undefined) {
 			if (!validFontSizes.includes(data.gridFontSize)) {
-				return json({ error: 'Invalid grid font size' }, { status: 400 });
+				return json({ error: '无效的表格字体大小' }, { status: 400 });
 			}
 			updates.gridFontSize = data.gridFontSize;
 		}
 
 		if (data.terminalFont !== undefined) {
 			if (!validTerminalFontIds.includes(data.terminalFont)) {
-				return json({ error: 'Invalid terminal font' }, { status: 400 });
+				return json({ error: '无效的终端字体' }, { status: 400 });
 			}
 			updates.terminalFont = data.terminalFont;
 		}
 
 		if (data.editorFont !== undefined) {
 			if (!validTerminalFontIds.includes(data.editorFont)) {
-				return json({ error: 'Invalid editor font' }, { status: 400 });
+				return json({ error: '无效的编辑器字体' }, { status: 400 });
 			}
 			updates.editorFont = data.editorFont;
 		}
@@ -102,7 +102,7 @@ export const PUT: RequestHandler = async ({ request, cookies }) => {
 		const prefs = await getUserThemePreferences(currentUser.id);
 		return json(prefs);
 	} catch (error) {
-		console.error('Failed to update preferences:', error);
-		return json({ error: 'Failed to update preferences' }, { status: 500 });
+		console.error('更新偏好设置失败:', error);
+		return json({ error: '更新偏好设置失败' }, { status: 500 });
 	}
 };
