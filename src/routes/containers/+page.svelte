@@ -1964,7 +1964,7 @@
 									>+{remainingCount}</span>
 								{/if}
 								{#each exposedPorts as port}
-									<code class="text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 px-1 py-0.5 rounded shrink-0" title="Exposed (internal) port">{port.display}</code>
+									<code class="text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 px-1 py-0.5 rounded shrink-0" title="已暴露 (内部) 端口">{port.display}</code>
 								{/each}
 							</div>
 						{:else}

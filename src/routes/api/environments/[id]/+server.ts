@@ -193,7 +193,7 @@ export const DELETE: RequestHandler = async (event) => {
 				rmSync(envStackDir, { recursive: true, force: true });
 			}
 		} catch (err) {
-			console.error(`Failed to clean up stack directory for environment "${env.name}":`, err);
+			console.error(`清理环境 "${env.name}" 的堆栈目录失败:`, err);
 		}
 
 		// Clean up git-repos directory for this environment
@@ -204,7 +204,7 @@ export const DELETE: RequestHandler = async (event) => {
 				rmSync(envGitDir, { recursive: true, force: true });
 			}
 		} catch (err) {
-			console.error(`Failed to clean up git-repos directory for environment "${env.name}":`, err);
+			console.error(`清理环境 "${env.name}" 的 git-repos 目录失败:`, err);
 		}
 
 		// Notify event collectors to stop collecting from deleted environment
