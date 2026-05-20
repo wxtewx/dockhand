@@ -4,6 +4,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Progress } from '$lib/components/ui/progress';
 	import { CircleArrowUp, CheckCircle2, XCircle, Loader2, Circle, Ship, Sparkles, Bug, Wrench, RotateCcw, AlertCircle } from 'lucide-svelte';
+	import { getLabelText } from '$lib/types';
 
 	declare const __APP_VERSION__: string | null;
 
@@ -628,7 +629,7 @@
 								{#if hasLogs}
 									<div class="bg-muted/50 px-3 py-2 font-mono text-xs border-t overflow-x-hidden">
 										{#each step.logs as line}
-											<div class="text-muted-foreground break-all">{line}</div>
+											<div class="text-muted-foreground break-all">{getLabelText(line)}</div>
 										{/each}
 									</div>
 								{/if}

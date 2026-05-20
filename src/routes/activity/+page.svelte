@@ -422,7 +422,10 @@
 	}
 
 	function formatTimestamp(ts: string): string {
-		return formatDateTime(ts, true);
+		const date = new Date(ts); 
+  		if (isNaN(date.getTime())) return ts;
+		const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+		return formatDateTime(localDate, true);
 	}
 
 	function getActionIcon(action: string) {
