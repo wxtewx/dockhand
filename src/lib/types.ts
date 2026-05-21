@@ -278,6 +278,7 @@ const LabelMaps = {
     git_credential: 'Git 凭据',
     config_set: '配置集',
     api_token: 'API 令牌',
+    notification: '通知',
   },
   category: {
     containers: '容器',
