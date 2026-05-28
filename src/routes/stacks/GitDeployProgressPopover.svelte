@@ -266,7 +266,7 @@
 			<!-- Left: copy / cancel -->
 			<div>
 				{#if overallStatus === 'confirming'}
-					<Button variant="outline" onclick={handleCancelConfirm}>Cancel</Button>
+					<Button variant="outline" onclick={handleCancelConfirm}>取消</Button>
 				{:else if steps.length > 0}
 					<Button variant="outline" size="sm" onclick={copyLogs} class="gap-1.5">
 						{#if copied}
