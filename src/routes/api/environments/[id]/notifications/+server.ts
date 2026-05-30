@@ -13,25 +13,25 @@ import type { RequestHandler } from './$types';
 export const GET: RequestHandler = async ({ params, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('notifications', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const envId = parseInt(params.id);
 	if (isNaN(envId)) {
-		return json({ error: 'Invalid environment ID' }, { status: 400 });
+		return json({ error: '环境 ID 无效' }, { status: 400 });
 	}
 
 	const env = await getEnvironment(envId);
 	if (!env) {
-		return json({ error: 'Environment not found' }, { status: 404 });
+		return json({ error: '环境不存在' }, { status: 404 });
 	}
 
 	try {
 		const notifications = await getEnvironmentNotifications(envId);
 		return json(notifications);
 	} catch (error) {
-		console.error('Error fetching environment notifications:', error);
-		return json({ error: 'Failed to fetch environment notifications' }, { status: 500 });
+		console.error('获取环境通知失败:', error);
+		return json({ error: '获取环境通知失败' }, { status: 500 });
 	}
 };
 
@@ -39,17 +39,17 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 export const POST: RequestHandler = async ({ params, request, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('notifications', 'edit')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const envId = parseInt(params.id);
 	if (isNaN(envId)) {
-		return json({ error: 'Invalid environment ID' }, { status: 400 });
+		return json({ error: '环境 ID 无效' }, { status: 400 });
 	}
 
 	const env = await getEnvironment(envId);
 	if (!env) {
-		return json({ error: 'Environment not found' }, { status: 404 });
+		return json({ error: '环境不存在' }, { status: 404 });
 	}
 
 	try {
@@ -57,7 +57,7 @@ export const POST: RequestHandler = async ({ params, request, cookies }) => {
 		const { notificationId, enabled, eventTypes } = body;
 
 		if (!notificationId) {
-			return json({ error: 'notificationId is required' }, { status: 400 });
+			return json({ error: 'notificationId 为必填项' }, { status: 400 });
 		}
 
 		const notification = await createEnvironmentNotification({
@@ -69,10 +69,10 @@ export const POST: RequestHandler = async ({ params, request, cookies }) => {
 
 		return json(notification);
 	} catch (error: any) {
-		console.error('Error creating environment notification:', error);
+		console.error('创建环境通知失败:', error);
 		if (error.message?.includes('UNIQUE constraint failed')) {
-			return json({ error: 'This notification channel is already configured for this environment' }, { status: 409 });
+			return json({ error: '该通知渠道已为此环境配置' }, { status: 409 });
 		}
-		return json({ error: error.message || 'Failed to create environment notification' }, { status: 500 });
+		return json({ error: error.message || '创建环境通知失败' }, { status: 500 });
 	}
 };

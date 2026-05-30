@@ -29,7 +29,7 @@ const COPY_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
 
 function formatDate(dateStr: string): string {
 	const date = new Date(dateStr);
-	return date.toLocaleDateString('en-US', {
+	return date.toLocaleDateString('zh-CN', {
 		year: 'numeric',
 		month: 'long',
 		day: 'numeric'
@@ -39,7 +39,7 @@ function formatDate(dateStr: string): string {
 function generateChangeItem(change: { type: 'feature' | 'fix'; text: string }): string {
 	const pillClass = change.type === 'feature' ? 'changelog-pill-feature' : 'changelog-pill-fix';
 	const svg = change.type === 'feature' ? FEATURE_SVG : FIX_SVG;
-	const label = change.type === 'feature' ? 'New' : 'Fix';
+	const label = change.type === 'feature' ? '新增' : '修复';
 	return `                            <li><span class="changelog-pill ${pillClass}">${svg}${label}</span>${change.text}</li>`;
 }
 
@@ -52,7 +52,7 @@ function generateLatestEntry(entry: ChangelogEntry): string {
                     <div class="changelog-header">
                         <div class="changelog-version">
                             <h3>${version}</h3>
-                            <span class="changelog-badge">Latest</span>
+                            <span class="changelog-badge">最新版本</span>
                         </div>
                         <span class="changelog-date">${formatDate(entry.date)}</span>
                     </div>
@@ -60,12 +60,12 @@ function generateLatestEntry(entry: ChangelogEntry): string {
 ${changes}
                     </ul>
                     <div class="changelog-image-tag">
-                        <span>Docker image:</span>
+                        <span>Docker 镜像:</span>
                         <code>${entry.imageTag}</code>
-                        <button class="copy-btn" onclick="copyDockerImage(this, '${entry.imageTag}')" title="Copy to clipboard">${COPY_SVG}</button>
-                        <span style="color: var(--text-muted); margin: 0 0.25rem;">or</span>
+                        <button class="copy-btn" onclick="copyDockerImage(this, '${entry.imageTag}')" title="复制到剪贴板">${COPY_SVG}</button>
+                        <span style="color: var(--text-muted); margin: 0 0.25rem;">或</span>
                         <code>fnsys/dockhand:latest</code>
-                        <button class="copy-btn" onclick="copyDockerImage(this, 'fnsys/dockhand:latest')" title="Copy to clipboard">${COPY_SVG}</button>
+                        <button class="copy-btn" onclick="copyDockerImage(this, 'fnsys/dockhand:latest')" title="复制到剪贴板">${COPY_SVG}</button>
                     </div>
                 </div>`;
 }
@@ -88,9 +88,9 @@ function generateCollapsibleEntry(entry: ChangelogEntry): string {
 ${changes}
                         </ul>
                         <div class="changelog-image-tag">
-                            <span>Docker image:</span>
+                            <span>Docker 镜像:</span>
                             <code>${entry.imageTag}</code>
-                            <button class="copy-btn" onclick="copyDockerImage(this, '${entry.imageTag}')" title="Copy to clipboard">${COPY_SVG}</button>
+                            <button class="copy-btn" onclick="copyDockerImage(this, '${entry.imageTag}')" title="复制到剪贴板">${COPY_SVG}</button>
                         </div>
                     </div>
                 </div>`;
@@ -109,9 +109,9 @@ function generateChangelogSection(entries: ChangelogEntry[]): string {
     <section class="changelog" id="changelog">
         <div class="changelog-container">
             <div class="section-header">
-                <div class="section-label">Changelog</div>
-                <h2 class="section-title">Release history</h2>
-                <p class="section-subtitle">Track our progress and see what's new in each version. <span style="color: #fbbf24; white-space: nowrap;">Spoiler: it gets better every time.</span></p>
+                <div class="section-label">更新日志</div>
+                <h2 class="section-title">版本历史</h2>
+                <p class="section-subtitle">追踪我们的开发进度，查看每个版本的新增功能。 <span style="color: #fbbf24; white-space: nowrap;">剧透：每次更新都会变得更好。</span></p>
             </div>
             <div class="changelog-list">
 ${latestHtml}
@@ -122,12 +122,12 @@ ${restHtml}
 }
 
 // Read changelog.json
-console.log('Reading changelog from:', CHANGELOG_PATH);
+console.log('正在读取更新日志:', CHANGELOG_PATH);
 const changelog: ChangelogEntry[] = JSON.parse(readFileSync(CHANGELOG_PATH, 'utf-8'));
-console.log(`Found ${changelog.length} changelog entries`);
+console.log(`找到 ${changelog.length} 条更新日志记录`);
 
 // Read index.html
-console.log('Reading index.html from:', INDEX_PATH);
+console.log('正在读取 index.html:', INDEX_PATH);
 let indexHtml = readFileSync(INDEX_PATH, 'utf-8');
 
 // Generate new changelog section
@@ -138,8 +138,8 @@ const newChangelogSection = generateChangelogSection(changelog);
 const changelogRegex = /    <!-- Changelog Section -->[\s\S]*?<\/section>(?=\s*\n\s*<!-- CTA -->)/;
 
 if (!changelogRegex.test(indexHtml)) {
-	console.error('ERROR: Could not find changelog section in index.html');
-	console.error('Looking for pattern: <!-- Changelog Section --> ... </section> followed by <!-- CTA -->');
+	console.error('错误: 在 index.html 中未找到更新日志区域');
+	console.error('查找规则: <!-- Changelog Section --> ... </section> 后紧跟 <!-- CTA -->');
 	process.exit(1);
 }
 
@@ -152,13 +152,13 @@ if (changelog.length > 0) {
 	const versionRegex = /"softwareVersion":\s*"[\d.]+"/;
 	if (versionRegex.test(indexHtml)) {
 		indexHtml = indexHtml.replace(versionRegex, `"softwareVersion": "${latestVersion}"`);
-		console.log(`Updated softwareVersion to: ${latestVersion}`);
+		console.log(`已更新软件版本为: ${latestVersion}`);
 	}
 }
 
 // Write back to index.html
 writeFileSync(INDEX_PATH, indexHtml);
 console.log('');
-console.log('Generated changelog in webpage/index.html');
-console.log(`  - Latest version: v${changelog[0]?.version || 'unknown'}`);
-console.log(`  - Total entries: ${changelog.length}`);
+console.log('已在 webpage/index.html 中生成更新日志');
+console.log(`  - 最新版本：v${changelog[0]?.version || '未知'}`);
+console.log(`  - 总条目数：${changelog.length}`);

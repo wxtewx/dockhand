@@ -32,7 +32,7 @@ export const POST: RequestHandler = async ({ url, cookies, request }) => {
 
 	// Need at least view permission
 	if (auth.authEnabled && !await auth.can('containers', 'view', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	return createJobResponse(async (send) => {
@@ -60,7 +60,7 @@ export const POST: RequestHandler = async ({ url, cookies, request }) => {
 						containerName: container.name,
 						imageName: container.image,
 						hasUpdate: false,
-						error: 'Could not determine image name',
+						error: '无法确定镜像名称',
 						systemContainer: isSystemContainer(container.image) || null
 					};
 				}

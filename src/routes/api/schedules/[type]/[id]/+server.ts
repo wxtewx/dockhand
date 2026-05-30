@@ -26,7 +26,7 @@ export const DELETE: RequestHandler = async ({ params, cookies }) => {
 		const scheduleId = parseInt(id, 10);
 
 		if (isNaN(scheduleId)) {
-			return json({ error: 'Invalid schedule ID' }, { status: 400 });
+			return json({ error: '无效的定时任务 ID' }, { status: 400 });
 		}
 
 		if (type === 'container_update') {
@@ -63,13 +63,13 @@ export const DELETE: RequestHandler = async ({ params, cookies }) => {
 			return json({ success: true });
 
 		} else if (type === 'system_cleanup') {
-			return json({ error: 'System schedules cannot be removed' }, { status: 400 });
+			return json({ error: '系统定时任务无法删除' }, { status: 400 });
 
 		} else {
-			return json({ error: 'Invalid schedule type' }, { status: 400 });
+			return json({ error: '无效的定时任务类型' }, { status: 400 });
 		}
 	} catch (error) {
-		console.error('Failed to delete schedule:', error);
-		return json({ error: 'Failed to delete schedule' }, { status: 500 });
+		console.error('删除定时任务失败:', error);
+		return json({ error: '删除定时任务失败' }, { status: 500 });
 	}
 };

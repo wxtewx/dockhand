@@ -50,7 +50,7 @@
 		<Dialog.Header>
 			<Dialog.Title class="flex items-center gap-2">
 				<ScrollText class="w-5 h-5 text-muted-foreground" />
-				Dockhand has been updated to {version}
+				Dockhand 已更新至 {version}
 			</Dialog.Title>
 		</Dialog.Header>
 
@@ -75,7 +75,7 @@
 		</div>
 
 		<Dialog.Footer>
-			<Button onclick={onDismiss}>Got it</Button>
+			<Button onclick={onDismiss}>知道了</Button>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>

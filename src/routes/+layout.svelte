@@ -123,7 +123,7 @@
 
 <svelte:head>
 	<link rel="icon" href="/logo_light.webp" />
-	<title>Dockhand - Docker Management</title>
+	<title>Dockhand - Docker 管理</title>
 </svelte:head>
 
 {#if isLoginPage}
@@ -147,7 +147,7 @@
 						class="flex items-center gap-2 px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground border rounded-md hover:bg-muted/50 transition-colors"
 					>
 						<Search class="w-3.5 h-3.5" />
-						<span class="hidden sm:inline">Search...</span>
+						<span class="hidden sm:inline">搜索...</span>
 						<kbd class="pointer-events-none hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-2xs font-medium text-muted-foreground">
 							{#if isMac}
 								<span class="text-xs">⌘</span>
@@ -167,11 +167,11 @@
 						>
 							<AlertTriangle class="w-3.5 h-3.5" />
 							{#if $daysUntilExpiry <= 0}
-								License expired
+								许可证已过期
 							{:else if $daysUntilExpiry === 1}
-								License expires tomorrow
+								许可证将于明天到期
 							{:else}
-								License expires in {$daysUntilExpiry} days
+								许可证将于 {$daysUntilExpiry} 天后到期
 							{/if}
 						</a>
 					{/if}

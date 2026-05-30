@@ -11,18 +11,18 @@ export const POST: RequestHandler = async ({ params, cookies }) => {
 		const id = parseInt(params.id);
 		const gitStack = await getGitStack(id);
 		if (!gitStack) {
-			return json({ error: 'Git stack not found' }, { status: 404 });
+			return json({ error: 'Git 堆栈不存在' }, { status: 404 });
 		}
 
 		// Permission check with environment context
 		if (auth.authEnabled && !await auth.can('stacks', 'view', gitStack.environmentId || undefined)) {
-			return json({ error: 'Permission denied' }, { status: 403 });
+			return json({ error: '权限不足' }, { status: 403 });
 		}
 
 		const result = await testGitStack(id);
 		return json(result);
 	} catch (error) {
-		console.error('Failed to test git stack:', error);
-		return json({ error: 'Failed to test git stack' }, { status: 500 });
+		console.error('测试 Git 堆栈失败:', error);
+		return json({ error: '测试 Git 堆栈失败' }, { status: 500 });
 	}
 };

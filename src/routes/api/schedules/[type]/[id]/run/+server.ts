@@ -16,7 +16,7 @@ import { authorize } from '$lib/server/authorize';
 export const POST: RequestHandler = async ({ params, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('schedules', 'run')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限拒绝' }, { status: 403 });
 	}
 
 	try {
@@ -24,7 +24,7 @@ export const POST: RequestHandler = async ({ params, cookies }) => {
 		const scheduleId = parseInt(id, 10);
 
 		if (isNaN(scheduleId)) {
-			return json({ error: 'Invalid schedule ID' }, { status: 400 });
+			return json({ error: '无效的定时任务 ID' }, { status: 400 });
 		}
 
 		let result: { success: boolean; executionId?: number; error?: string };
@@ -46,16 +46,16 @@ export const POST: RequestHandler = async ({ params, cookies }) => {
 				result = await triggerImagePrune(scheduleId);
 				break;
 			default:
-				return json({ error: 'Invalid schedule type' }, { status: 400 });
+				return json({ error: '无效的计划任务类型' }, { status: 400 });
 		}
 
 		if (!result.success) {
 			return json({ error: result.error }, { status: 400 });
 		}
 
-		return json({ success: true, message: 'Schedule triggered successfully' });
+		return json({ success: true, message: '计划任务触发成功' });
 	} catch (error: any) {
-		console.error('Failed to trigger schedule:', error);
+		console.error('触发计划任务失败:', error);
 		return json({ error: error.message }, { status: 500 });
 	}
 };

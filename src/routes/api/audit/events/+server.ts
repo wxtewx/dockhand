@@ -15,7 +15,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
 
 	// Check permission
 	if (!await auth.canViewAuditLog()) {
-		return new Response(JSON.stringify({ error: 'Permission denied' }), {
+		return new Response(JSON.stringify({ error: '权限不足' }), {
 			status: 403,
 			headers: { 'Content-Type': 'application/json' }
 		});

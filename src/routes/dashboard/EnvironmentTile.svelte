@@ -65,19 +65,19 @@
 						<EnvironmentIcon icon={stats.icon} envId={stats.id} class="w-4 h-4 {stats.online ? 'text-primary' : 'text-muted-foreground'}" />
 					</div>
 					{#if stats.connectionType === 'socket' || !stats.connectionType}
-						<span title="Unix socket connection" class="shrink-0">
+						<span title="Unix socket 连接" class="shrink-0">
 							<Unplug class="w-4 h-4 text-cyan-500 glow-cyan" />
 						</span>
 					{:else if stats.connectionType === 'direct'}
-						<span title="Direct Docker connection" class="shrink-0">
+						<span title="Docker 直连" class="shrink-0">
 							<Icon iconNode={whale} class="w-4 h-4 text-blue-500 glow-blue" />
 						</span>
 					{:else if stats.connectionType === 'hawser-standard'}
-						<span title="Hawser agent (standard mode)" class="shrink-0">
+						<span title="Hawser 代理 (标准模式)" class="shrink-0">
 							<Route class="w-4 h-4 text-purple-500 glow-purple" />
 						</span>
 					{:else if stats.connectionType === 'hawser-edge'}
-						<span title="Hawser agent (edge mode)" class="shrink-0">
+						<span title="Hawser 代理 (边缘模式)" class="shrink-0">
 							<UndoDot class="w-4 h-4 text-green-500 glow-green" />
 						</span>
 					{/if}
@@ -94,15 +94,15 @@
 						</div>
 						<span class="text-xs text-muted-foreground truncate block" title={stats.connectionType === 'socket' ? (stats.socketPath || '/var/run/docker.sock') : stats.connectionType === 'hawser-edge' ? 'Edge connection' : (stats.port ? `${stats.host}:${stats.port}` : stats.host || 'Unknown host')}>
 							{stats.connectionType === 'socket' ? (stats.socketPath || '/var/run/docker.sock') :
-							 stats.connectionType === 'hawser-edge' ? 'Edge connection' :
-							 (stats.port ? `${stats.host}:${stats.port}` : stats.host || 'Unknown host')}
+							 stats.connectionType === 'hawser-edge' ? '边缘连接' :
+							 (stats.port ? `${stats.host}:${stats.port}` : stats.host || '未知主机')}
 						</span>
 					</div>
 				</div>
 				<!-- Right: Status icons + Settings -->
 				<div class="flex items-center gap-2 shrink-0">
 					{#if stats.updateCheckEnabled}
-						<span title={stats.updateCheckAutoUpdate ? "Auto-update enabled" : "Update check enabled (notify only)"}>
+						<span title={stats.updateCheckAutoUpdate ? "已启用自动更新" : "已启用更新检查 (仅通知)"}>
 							{#if stats.updateCheckAutoUpdate}
 								<CircleArrowUp class="w-4 h-4 text-green-500 glow-green" />
 							{:else}
@@ -111,17 +111,17 @@
 						</span>
 					{/if}
 					{#if stats.scannerEnabled}
-						<span title="Vulnerability scanning enabled">
+						<span title="已启用漏洞扫描">
 							<ShieldCheck class="w-4 h-4 text-green-500 glow-green" />
 						</span>
 					{/if}
 					{#if stats.collectActivity}
-						<span title="Activity collection enabled">
+						<span title="已启用活动收集">
 							<Activity class="w-4 h-4 text-amber-500 glow-amber" />
 						</span>
 					{/if}
 					{#if stats.collectMetrics}
-						<span title="Metrics collection enabled">
+						<span title="已启用指标收集">
 							<Cpu class="w-4 h-4 text-sky-400 glow-sky" />
 						</span>
 					{/if}
@@ -130,7 +130,7 @@
 							onpointerdown={(e) => e.stopPropagation()}
 							onclick={(e) => { e.stopPropagation(); goto(`/settings?tab=environments&edit=${stats.id}`); }}
 							class="p-0.5 rounded hover:bg-muted transition-colors"
-							title="Edit environment settings"
+							title="编辑环境设置"
 						>
 							<Settings class="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" />
 						</button>
@@ -161,19 +161,19 @@
 						<EnvironmentIcon icon={stats.icon} envId={stats.id} class="w-4 h-4 {stats.online ? 'text-primary' : 'text-muted-foreground'}" />
 					</div>
 					{#if stats.connectionType === 'socket' || !stats.connectionType}
-						<span title="Unix socket connection" class="shrink-0">
+						<span title="Unix socket 连接" class="shrink-0">
 							<Unplug class="w-4 h-4 text-cyan-500 glow-cyan" />
 						</span>
 					{:else if stats.connectionType === 'direct'}
-						<span title="Direct Docker connection" class="shrink-0">
+						<span title="Docker 直连" class="shrink-0">
 							<Icon iconNode={whale} class="w-4 h-4 text-blue-500 glow-blue" />
 						</span>
 					{:else if stats.connectionType === 'hawser-standard'}
-						<span title="Hawser agent (standard mode)" class="shrink-0">
+						<span title="Hawser 代理 (标准模式)" class="shrink-0">
 							<Route class="w-4 h-4 text-purple-500 glow-purple" />
 						</span>
 					{:else if stats.connectionType === 'hawser-edge'}
-						<span title="Hawser agent (edge mode)" class="shrink-0">
+						<span title="Hawser 代理 (边缘模式)" class="shrink-0">
 							<UndoDot class="w-4 h-4 text-green-500 glow-green" />
 						</span>
 					{/if}
@@ -190,15 +190,15 @@
 						</div>
 						<span class="text-xs text-muted-foreground truncate block" title={stats.connectionType === 'socket' ? (stats.socketPath || '/var/run/docker.sock') : stats.connectionType === 'hawser-edge' ? 'Edge connection' : (stats.port ? `${stats.host}:${stats.port}` : stats.host || 'Unknown host')}>
 							{stats.connectionType === 'socket' ? (stats.socketPath || '/var/run/docker.sock') :
-							 stats.connectionType === 'hawser-edge' ? 'Edge connection' :
-							 (stats.port ? `${stats.host}:${stats.port}` : stats.host || 'Unknown host')}
+							 stats.connectionType === 'hawser-edge' ? '边缘连接' :
+							 (stats.port ? `${stats.host}:${stats.port}` : stats.host || '未知主机')}
 						</span>
 					</div>
 				</div>
 				<!-- Right: Status icons + Settings -->
 				<div class="flex items-center gap-2 shrink-0">
 					{#if stats.updateCheckEnabled}
-						<span title={stats.updateCheckAutoUpdate ? "Auto-update enabled" : "Update check enabled (notify only)"}>
+						<span title={stats.updateCheckAutoUpdate ? "已启用自动更新" : "已启用更新检查 (仅通知)"}>
 							{#if stats.updateCheckAutoUpdate}
 								<CircleArrowUp class="w-4 h-4 text-green-500 glow-green" />
 							{:else}
@@ -207,17 +207,17 @@
 						</span>
 					{/if}
 					{#if stats.scannerEnabled}
-						<span title="Vulnerability scanning enabled">
+						<span title="已启用漏洞扫描">
 							<ShieldCheck class="w-4 h-4 text-green-500 glow-green" />
 						</span>
 					{/if}
 					{#if stats.collectActivity}
-						<span title="Activity collection enabled">
+						<span title="已启用活动收集">
 							<Activity class="w-4 h-4 text-amber-500 glow-amber" />
 						</span>
 					{/if}
 					{#if stats.collectMetrics}
-						<span title="Metrics collection enabled">
+						<span title="已启用指标收集">
 							<Cpu class="w-4 h-4 text-sky-400 glow-sky" />
 						</span>
 					{/if}
@@ -226,7 +226,7 @@
 							onpointerdown={(e) => e.stopPropagation()}
 							onclick={(e) => { e.stopPropagation(); goto(`/settings?tab=environments&edit=${stats.id}`); }}
 							class="p-0.5 rounded hover:bg-muted transition-colors"
-							title="Edit environment settings"
+							title="编辑环境设置"
 						>
 							<Settings class="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" />
 						</button>
@@ -264,19 +264,19 @@
 					<EnvironmentIcon icon={stats.icon} envId={stats.id} class="w-4 h-4 {stats.online ? 'text-primary' : 'text-muted-foreground'}" />
 				</div>
 				{#if stats.connectionType === 'socket' || !stats.connectionType}
-					<span title="Unix socket connection" class="shrink-0">
+					<span title="Unix socket 连接" class="shrink-0">
 						<Unplug class="w-4 h-4 text-cyan-500 glow-cyan" />
 					</span>
 				{:else if stats.connectionType === 'direct'}
-					<span title="Direct Docker connection" class="shrink-0">
+					<span title="Docker 直连" class="shrink-0">
 						<Icon iconNode={whale} class="w-4 h-4 text-blue-500 glow-blue" />
 					</span>
 				{:else if stats.connectionType === 'hawser-standard'}
-					<span title="Hawser agent (standard mode)" class="shrink-0">
+					<span title="Hawser 代理 (标准模式)" class="shrink-0">
 						<Route class="w-4 h-4 text-purple-500 glow-purple" />
 					</span>
 				{:else if stats.connectionType === 'hawser-edge'}
-					<span title="Hawser agent (edge mode)" class="shrink-0">
+					<span title="Hawser 代理 (边缘模式)" class="shrink-0">
 						<UndoDot class="w-4 h-4 text-green-500 glow-green" />
 					</span>
 				{/if}
@@ -293,15 +293,15 @@
 					</div>
 					<span class="text-xs text-muted-foreground truncate block" title={stats.connectionType === 'socket' ? (stats.socketPath || '/var/run/docker.sock') : stats.connectionType === 'hawser-edge' ? 'Edge connection' : (stats.port ? `${stats.host}:${stats.port}` : stats.host || 'Unknown host')}>
 						{stats.connectionType === 'socket' ? (stats.socketPath || '/var/run/docker.sock') :
-						 stats.connectionType === 'hawser-edge' ? 'Edge connection' :
-						 (stats.port ? `${stats.host}:${stats.port}` : stats.host || 'Unknown host')}
+						 stats.connectionType === 'hawser-edge' ? '边缘连接' :
+						 (stats.port ? `${stats.host}:${stats.port}` : stats.host || '未知主机')}
 					</span>
 				</div>
 			</div>
 			<!-- Right: Status icons + Settings -->
 			<div class="flex items-center gap-2 shrink-0">
 				{#if stats.updateCheckEnabled}
-					<span title={stats.updateCheckAutoUpdate ? "Auto-update enabled" : "Update check enabled (notify only)"}>
+					<span title={stats.updateCheckAutoUpdate ? "已启用自动更新" : "已启用更新检查 (仅通知)"}>
 						{#if stats.updateCheckAutoUpdate}
 							<CircleArrowUp class="w-4 h-4 text-green-500 glow-green" />
 						{:else}
@@ -310,17 +310,17 @@
 					</span>
 				{/if}
 				{#if stats.scannerEnabled}
-					<span title="Vulnerability scanning enabled">
+					<span title="已启用漏洞扫描">
 						<ShieldCheck class="w-4 h-4 text-green-500 glow-green" />
 					</span>
 				{/if}
 				{#if stats.collectActivity}
-					<span title="Activity collection enabled">
+					<span title="已启用活动收集">
 						<Activity class="w-4 h-4 text-amber-500 glow-amber" />
 					</span>
 				{/if}
 				{#if stats.collectMetrics}
-					<span title="Metrics collection enabled">
+					<span title="已启用指标收集">
 						<Cpu class="w-4 h-4 text-sky-400 glow-sky" />
 					</span>
 				{/if}
@@ -329,7 +329,7 @@
 						onpointerdown={(e) => e.stopPropagation()}
 						onclick={(e) => { e.stopPropagation(); goto(`/settings?tab=environments&edit=${stats.id}`); }}
 						class="p-0.5 rounded hover:bg-muted transition-colors"
-						title="Edit environment settings"
+						title="编辑环境设置"
 					>
 						<Settings class="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" />
 					</button>
@@ -365,19 +365,19 @@
 					<EnvironmentIcon icon={stats.icon} envId={stats.id} class="w-4 h-4 {stats.online ? 'text-primary' : 'text-muted-foreground'}" />
 				</div>
 				{#if stats.connectionType === 'socket' || !stats.connectionType}
-					<span title="Unix socket connection" class="shrink-0">
+					<span title="Unix socket 连接" class="shrink-0">
 						<Unplug class="w-4 h-4 text-cyan-500 glow-cyan" />
 					</span>
 				{:else if stats.connectionType === 'direct'}
-					<span title="Direct Docker connection" class="shrink-0">
+					<span title="Docker 直连" class="shrink-0">
 						<Icon iconNode={whale} class="w-4 h-4 text-blue-500 glow-blue" />
 					</span>
 				{:else if stats.connectionType === 'hawser-standard'}
-					<span title="Hawser agent (standard mode)" class="shrink-0">
+					<span title="Hawser 代理 (标准模式)" class="shrink-0">
 						<Route class="w-4 h-4 text-purple-500 glow-purple" />
 					</span>
 				{:else if stats.connectionType === 'hawser-edge'}
-					<span title="Hawser agent (edge mode)" class="shrink-0">
+					<span title="Hawser 代理 (边缘模式)" class="shrink-0">
 						<UndoDot class="w-4 h-4 text-green-500 glow-green" />
 					</span>
 				{/if}
@@ -394,15 +394,15 @@
 					</div>
 					<span class="text-xs text-muted-foreground truncate block" title={stats.connectionType === 'socket' ? (stats.socketPath || '/var/run/docker.sock') : stats.connectionType === 'hawser-edge' ? 'Edge connection' : (stats.port ? `${stats.host}:${stats.port}` : stats.host || 'Unknown host')}>
 						{stats.connectionType === 'socket' ? (stats.socketPath || '/var/run/docker.sock') :
-						 stats.connectionType === 'hawser-edge' ? 'Edge connection' :
-						 (stats.port ? `${stats.host}:${stats.port}` : stats.host || 'Unknown host')}
+						 stats.connectionType === 'hawser-edge' ? '边缘连接' :
+						 (stats.port ? `${stats.host}:${stats.port}` : stats.host || '未知主机')}
 					</span>
 				</div>
 			</div>
 			<!-- Right: Status icons + Settings -->
 			<div class="flex items-center gap-2 shrink-0">
 				{#if stats.updateCheckEnabled}
-					<span title={stats.updateCheckAutoUpdate ? "Auto-update enabled" : "Update check enabled (notify only)"}>
+					<span title={stats.updateCheckAutoUpdate ? "已启用自动更新" : "已启用更新检查 (仅通知)"}>
 						{#if stats.updateCheckAutoUpdate}
 							<CircleArrowUp class="w-4 h-4 text-green-500 glow-green" />
 						{:else}
@@ -411,17 +411,17 @@
 					</span>
 				{/if}
 				{#if stats.scannerEnabled}
-					<span title="Vulnerability scanning enabled">
+					<span title="已启用漏洞扫描">
 						<ShieldCheck class="w-4 h-4 text-green-500 glow-green" />
 					</span>
 				{/if}
 				{#if stats.collectActivity}
-					<span title="Activity collection enabled">
+					<span title="已启用活动收集">
 						<Activity class="w-4 h-4 text-amber-500 glow-amber" />
 					</span>
 				{/if}
 				{#if stats.collectMetrics}
-					<span title="Metrics collection enabled">
+					<span title="已启用指标收集">
 						<Cpu class="w-4 h-4 text-sky-400 glow-sky" />
 					</span>
 				{/if}
@@ -430,7 +430,7 @@
 						onpointerdown={(e) => e.stopPropagation()}
 						onclick={(e) => { e.stopPropagation(); goto(`/settings?tab=environments&edit=${stats.id}`); }}
 						class="p-0.5 rounded hover:bg-muted transition-colors"
-						title="Edit environment settings"
+						title="编辑环境设置"
 					>
 						<Settings class="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" />
 					</button>
@@ -469,19 +469,19 @@
 					<EnvironmentIcon icon={stats.icon} envId={stats.id} class="w-4 h-4 {stats.online ? 'text-primary' : 'text-muted-foreground'}" />
 				</div>
 				{#if stats.connectionType === 'socket' || !stats.connectionType}
-					<span title="Unix socket connection" class="shrink-0">
+					<span title="Unix socket 连接" class="shrink-0">
 						<Unplug class="w-4 h-4 text-cyan-500 glow-cyan" />
 					</span>
 				{:else if stats.connectionType === 'direct'}
-					<span title="Direct Docker connection" class="shrink-0">
+					<span title="Docker 直连" class="shrink-0">
 						<Icon iconNode={whale} class="w-4 h-4 text-blue-500 glow-blue" />
 					</span>
 				{:else if stats.connectionType === 'hawser-standard'}
-					<span title="Hawser agent (standard mode)" class="shrink-0">
+					<span title="Hawser 代理 (标准模式)" class="shrink-0">
 						<Route class="w-4 h-4 text-purple-500 glow-purple" />
 					</span>
 				{:else if stats.connectionType === 'hawser-edge'}
-					<span title="Hawser agent (edge mode)" class="shrink-0">
+					<span title="Hawser 代理 (边缘模式)" class="shrink-0">
 						<UndoDot class="w-4 h-4 text-green-500 glow-green" />
 					</span>
 				{/if}
@@ -498,15 +498,15 @@
 					</div>
 					<span class="text-xs text-muted-foreground truncate block" title={stats.connectionType === 'socket' ? (stats.socketPath || '/var/run/docker.sock') : stats.connectionType === 'hawser-edge' ? 'Edge connection' : (stats.port ? `${stats.host}:${stats.port}` : stats.host || 'Unknown host')}>
 						{stats.connectionType === 'socket' ? (stats.socketPath || '/var/run/docker.sock') :
-						 stats.connectionType === 'hawser-edge' ? 'Edge connection' :
-						 (stats.port ? `${stats.host}:${stats.port}` : stats.host || 'Unknown host')}
+						 stats.connectionType === 'hawser-edge' ? '边缘连接' :
+						 (stats.port ? `${stats.host}:${stats.port}` : stats.host || '未知主机')}
 					</span>
 				</div>
 			</div>
 			<!-- Right: Status icons + Settings -->
 			<div class="flex items-center gap-2 shrink-0">
 				{#if stats.updateCheckEnabled}
-					<span title={stats.updateCheckAutoUpdate ? "Auto-update enabled" : "Update check enabled (notify only)"}>
+					<span title={stats.updateCheckAutoUpdate ? "已启用自动更新" : "已启用更新检查 (仅通知)"}>
 						{#if stats.updateCheckAutoUpdate}
 							<CircleArrowUp class="w-4 h-4 text-green-500 glow-green" />
 						{:else}
@@ -515,17 +515,17 @@
 					</span>
 				{/if}
 				{#if stats.scannerEnabled}
-					<span title="Vulnerability scanning enabled">
+					<span title="已启用漏洞扫描">
 						<ShieldCheck class="w-4 h-4 text-green-500 glow-green" />
 					</span>
 				{/if}
 				{#if stats.collectActivity}
-					<span title="Activity collection enabled">
+					<span title="已启用活动收集">
 						<Activity class="w-4 h-4 text-amber-500 glow-amber" />
 					</span>
 				{/if}
 				{#if stats.collectMetrics}
-					<span title="Metrics collection enabled">
+					<span title="已启用指标收集">
 						<Cpu class="w-4 h-4 text-sky-400 glow-sky" />
 					</span>
 				{/if}
@@ -534,7 +534,7 @@
 						onpointerdown={(e) => e.stopPropagation()}
 						onclick={(e) => { e.stopPropagation(); goto(`/settings?tab=environments&edit=${stats.id}`); }}
 						class="p-0.5 rounded hover:bg-muted transition-colors"
-						title="Edit environment settings"
+						title="编辑环境设置"
 					>
 						<Settings class="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" />
 					</button>

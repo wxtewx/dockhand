@@ -110,8 +110,8 @@
 			wsUrl += `&envId=${envId}`;
 		}
 
-		terminal.writeln(`\x1b[90mConnecting to ${containerName}...\x1b[0m`);
-		terminal.writeln(`\x1b[90mShell: ${selectedShell}, User: ${selectedUser || 'default'}\x1b[0m`);
+		terminal.writeln(`\x1b[90m正在连接到 ${containerName}...\x1b[0m`);
+		terminal.writeln(`\x1b[90mShell: ${selectedShell}, 用户：${selectedUser || '默认'}\x1b[0m`);
 		terminal.writeln('');
 
 		ws = new WebSocket(wsUrl);
@@ -135,9 +135,9 @@
 					terminal?.write(msg.data);
 				} else if (msg.type === 'error') {
 					error = msg.message;
-					terminal?.writeln(`\x1b[31mError: ${msg.message}\x1b[0m`);
+					terminal?.writeln(`\x1b[31m错误：${msg.message}\x1b[0m`);
 				} else if (msg.type === 'exit') {
-					terminal?.writeln('\x1b[90m\r\nSession ended.\x1b[0m');
+					terminal?.writeln('\x1b[90m\r\n会话已结束。\x1b[0m');
 					connected = false;
 					// Close the dialog after a brief delay so user sees the message
 					setTimeout(() => {
@@ -150,14 +150,14 @@
 		};
 
 		ws.onerror = (e) => {
-			console.error('WebSocket error:', e);
-			error = 'Connection error';
-			terminal?.writeln('\x1b[31mConnection error\x1b[0m');
+			console.error('WebSocket 错误:', e);
+			error = '连接错误';
+			terminal?.writeln('\x1b[31m连接错误\x1b[0m');
 		};
 
 		ws.onclose = () => {
 			connected = false;
-			terminal?.writeln('\x1b[90mDisconnected.\x1b[0m');
+			terminal?.writeln('\x1b[90m已断开连接。\x1b[0m');
 		};
 	}
 
@@ -227,7 +227,7 @@
 				selectedShell = bestShell;
 			}
 		} catch (error) {
-			console.error('Failed to detect shells:', error);
+			console.error('检测终端失败:', error);
 		} finally {
 			detectingShells = false;
 		}
@@ -273,11 +273,11 @@
 			<div class="flex items-center justify-between">
 				<div class="flex items-center gap-2">
 					<TerminalIcon class="w-5 h-5" />
-					<Dialog.Title>Terminal - {containerName}</Dialog.Title>
+					<Dialog.Title>终端 - {containerName}</Dialog.Title>
 					{#if connected}
 						<span class="inline-flex items-center gap-1 text-xs text-green-500">
 							<span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-							Connected
+							已连接
 						</span>
 					{/if}
 				</div>
@@ -295,29 +295,29 @@
 				{#if detectingShells}
 					<div class="text-center">
 						<Loader2 class="w-12 h-12 mx-auto mb-4 text-muted-foreground animate-spin" />
-						<h3 class="text-lg font-medium">Detecting available shells...</h3>
+						<h3 class="text-lg font-medium">正在检测可用终端...</h3>
 					</div>
 				{:else if !anyShellAvailable}
 					<div class="text-center">
 						<AlertCircle class="w-12 h-12 mx-auto mb-4 text-amber-500" />
-						<h3 class="text-lg font-medium text-amber-500">No shell available</h3>
+						<h3 class="text-lg font-medium text-amber-500">无可用终端</h3>
 						<p class="text-sm text-muted-foreground mt-2">
-							This container does not have any shell installed.
+							该容器未安装任何终端程序。
 						</p>
 						<p class="text-xs text-muted-foreground/70 mt-1">
-							Containers built from scratch or distroless images often don't include shells.
+							基于空白镜像或极简镜像构建的容器通常不包含终端。
 						</p>
 						<Button onclick={handleClose} variant="outline" class="mt-6">
-							Close
+							关闭
 						</Button>
 					</div>
 				{:else}
 					<div class="w-full max-w-md space-y-6">
 						<div class="text-center">
 							<TerminalIcon class="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-							<h3 class="text-lg font-medium">Open terminal session</h3>
+							<h3 class="text-lg font-medium">打开终端会话</h3>
 							<p class="text-sm text-muted-foreground mt-1">
-								Configure the shell and user for this session
+								配置本次会话使用的终端和用户
 							</p>
 						</div>
 
@@ -327,7 +327,7 @@
 								<Select.Root type="single" bind:value={selectedShell}>
 									<Select.Trigger class="w-full h-10">
 										<Shell class="w-4 h-4 mr-2 text-muted-foreground" />
-										<span>{shellDetection?.allShells.find(o => o.path === selectedShell)?.label || 'Select shell'}</span>
+										<span>{shellDetection?.allShells.find(o => o.path === selectedShell)?.label || '选择 shell'}</span>
 									</Select.Trigger>
 									<Select.Content>
 										{#if shellDetection}
@@ -341,7 +341,7 @@
 													<span class={option.available ? 'text-foreground' : 'text-muted-foreground/60'}>
 														{option.label}
 														{#if !option.available}
-															<span class="text-xs ml-1">(unavailable)</span>
+															<span class="text-xs ml-1">(不可用)</span>
 														{/if}
 													</span>
 												</Select.Item>
@@ -352,11 +352,11 @@
 							</div>
 
 							<div class="space-y-2">
-								<Label>User</Label>
+								<Label>用户</Label>
 								<Select.Root type="single" bind:value={selectedUser}>
 									<Select.Trigger class="w-full h-10">
 										<User class="w-4 h-4 mr-2 text-muted-foreground" />
-										<span>{USER_OPTIONS.find(o => o.value === selectedUser)?.label || 'Select user'}</span>
+										<span>{USER_OPTIONS.find(o => o.value === selectedUser)?.label || '选择用户'}</span>
 									</Select.Trigger>
 									<Select.Content>
 										{#each USER_OPTIONS as option}
@@ -373,9 +373,9 @@
 						<div class="flex gap-2">
 							<Button onclick={startSession} class="flex-1" disabled={!xtermLoaded || !anyShellAvailable}>
 								<TerminalIcon class="w-4 h-4" />
-								{xtermLoaded ? 'Connect' : 'Loading...'}
+								{xtermLoaded ? '连接' : '加载中...'}
 							</Button>
-							<Button onclick={openInNewWindow} variant="outline" disabled={!xtermLoaded} title="Open in new window">
+							<Button onclick={openInNewWindow} variant="outline" disabled={!xtermLoaded} title="在新窗口打开">
 								<ExternalLink class="w-4 h-4" />
 							</Button>
 						</div>

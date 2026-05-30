@@ -15,14 +15,14 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('images', 'inspect', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const history = await getImageHistory(params.id, envIdNum);
 		return json(history);
 	} catch (error) {
-		console.error('Failed to get image history:', error);
-		return json({ error: 'Failed to get image history' }, { status: 500 });
+		console.error('获取镜像历史记录失败:', error);
+		return json({ error: '获取镜像历史记录失败' }, { status: 500 });
 	}
 };

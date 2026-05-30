@@ -86,12 +86,12 @@ export const POST: RequestHandler = async ({ params, url, cookies, request }) =>
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('stacks', 'view', envIdNum ?? undefined)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Environment access check (enterprise only)
 	if (envIdNum && auth.isEnterprise && !await auth.canAccessEnvironment(envIdNum)) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问该环境' }, { status: 403 });
 	}
 
 	try {
@@ -125,7 +125,7 @@ export const POST: RequestHandler = async ({ params, url, cookies, request }) =>
 		}
 
 		if (!composeContent) {
-			return json({ error: 'No compose content provided and no saved compose file found' }, { status: 400 });
+			return json({ error: '未提供 Compose 内容，且未找到已保存的 Compose 文件' }, { status: 400 });
 		}
 
 		// Extract variables from compose
@@ -157,7 +157,7 @@ export const POST: RequestHandler = async ({ params, url, cookies, request }) =>
 
 		return json(result);
 	} catch (error) {
-		console.error('Error validating stack env vars:', error);
-		return json({ error: 'Failed to validate environment variables' }, { status: 500 });
+		console.error('验证堆栈环境变量时出错：', error);
+		return json({ error: '验证环境变量失败' }, { status: 500 });
 	}
 };

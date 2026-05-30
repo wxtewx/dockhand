@@ -255,12 +255,12 @@ async function getEnvironmentStatsProgressive(
 		// dashboard tab fires a 5s ping per edge env simultaneously, creating a flood.
 		if (env.connectionType === 'hawser-edge' && !isEdgeConnected(env.id)) {
 			envStats.online = false;
-			envStats.error = 'Agent not connected';
+			envStats.error = '代理未连接';
 			envStats.loading = undefined;
 			onPartialUpdate({
 				id: env.id,
 				online: false,
-				error: 'Agent not connected',
+				error: '代理未连接',
 				loading: undefined
 			});
 			return envStats;
@@ -269,12 +269,12 @@ async function getEnvironmentStatsProgressive(
 		// Quick reachability check — if ping fails, skip all expensive Docker API calls
 		if (!await dockerPing(env.id)) {
 			envStats.online = false;
-			envStats.error = 'Environment offline';
+			envStats.error = '环境离线';
 			envStats.loading = undefined;
 			onPartialUpdate({
 				id: env.id,
 				online: false,
-				error: 'Environment offline',
+				error: '环境离线',
 				loading: undefined
 			});
 			return envStats;
@@ -295,7 +295,7 @@ async function getEnvironmentStatsProgressive(
 			.then(async (containers) => {
 				// Timeout returns null
 				if (containers === null) {
-					throw new Error('Connection timeout');
+					throw new Error('连接超时');
 				}
 				// If we got here, Docker API is accessible
 				dockerApiAccessible = true;
@@ -324,15 +324,15 @@ async function getEnvironmentStatsProgressive(
 				dockerApiAccessible = false;
 				const errorStr = String(error);
 				if (errorStr.includes('not connected') || errorStr.includes('Edge agent')) {
-					dockerApiError = 'Agent not connected';
+					dockerApiError = '代理未连接';
 				} else if (errorStr.includes('FailedToOpenSocket') || errorStr.includes('ECONNREFUSED')) {
-					dockerApiError = 'Docker socket not accessible';
+					dockerApiError = 'Docker socket 不可访问';
 				} else if (errorStr.includes('ECONNRESET') || errorStr.includes('connection was closed')) {
-					dockerApiError = 'Connection lost';
+					dockerApiError = '连接已断开';
 				} else if (errorStr.includes('timeout') || errorStr.includes('Timeout')) {
-					dockerApiError = 'Connection timeout';
+					dockerApiError = '连接超时';
 				} else {
-					dockerApiError = 'Connection error';
+					dockerApiError = '连接错误';
 				}
 				envStats.error = dockerApiError;
 				envStats.loading!.containers = false;
@@ -527,19 +527,19 @@ async function getEnvironmentStatsProgressive(
 		// Convert technical error messages to user-friendly ones
 		const errorStr = String(error);
 		if (errorStr.includes('not connected') || errorStr.includes('Edge agent')) {
-			envStats.error = 'Agent not connected';
+			envStats.error = '代理未连接';
 		} else if (errorStr.includes('FailedToOpenSocket') || errorStr.includes('ECONNREFUSED')) {
-			envStats.error = 'Docker socket not accessible';
+			envStats.error = 'Docker socket 不可访问';
 		} else if (errorStr.includes('ECONNRESET') || errorStr.includes('connection was closed')) {
-			envStats.error = 'Connection lost';
+			envStats.error = '连接已断开';
 		} else if (errorStr.includes('verbose: true') || errorStr.includes('verbose')) {
-			envStats.error = 'Connection failed';
+			envStats.error = '连接失败';
 		} else if (errorStr.includes('timeout') || errorStr.includes('Timeout')) {
-			envStats.error = 'Connection timeout';
+			envStats.error = '连接超时';
 		} else {
 			// Extract just the error message, not the full stack/details
 			const match = errorStr.match(/^(?:Error:\s*)?([^.!?]+[.!?]?)/);
-			envStats.error = match ? match[1].trim() : 'Connection error';
+			envStats.error = match ? match[1].trim() : '连接错误';
 		}
 		envStats.loading = undefined;
 		// Send offline status to client
@@ -557,7 +557,7 @@ async function getEnvironmentStatsProgressive(
 export const GET: RequestHandler = async ({ request, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('environments', 'view')) {
-		return new Response(JSON.stringify({ error: 'Permission denied' }), {
+		return new Response(JSON.stringify({ error: '权限不足' }), {
 			status: 403,
 			headers: { 'Content-Type': 'application/json' }
 		});
@@ -632,19 +632,19 @@ export const GET: RequestHandler = async ({ request, cookies }) => {
 					safeEnqueue(`event: complete\ndata: ${JSON.stringify({ id: env.id })}\n\n`);
 				} catch (error) {
 					if (!(error instanceof DockerConnectionError)) {
-						console.error(`Failed to get stats for ${env.name}:`, error);
+						console.error(`获取环境 ${env.name} 统计信息失败:`, error);
 					}
 					// Convert technical error to user-friendly message
 					const errorStr = String(error);
-					let friendlyError = 'Connection error';
+					let friendlyError = '连接错误';
 					if (errorStr.includes('FailedToOpenSocket') || errorStr.includes('ECONNREFUSED')) {
-						friendlyError = 'Docker socket not accessible';
+						friendlyError = 'Docker socket 不可访问';
 					} else if (errorStr.includes('ECONNRESET') || errorStr.includes('connection was closed')) {
-						friendlyError = 'Connection lost';
+						friendlyError = '连接已断开';
 					} else if (errorStr.includes('verbose') || errorStr.includes('typo')) {
-						friendlyError = 'Connection failed';
+						friendlyError = '连接失败';
 					} else if (errorStr.includes('timeout') || errorStr.includes('Timeout')) {
-						friendlyError = 'Connection timeout';
+						friendlyError = '连接超时';
 					}
 					safeEnqueue(`event: error\ndata: ${JSON.stringify({ id: env.id, error: friendlyError })}\n\n`);
 				}
