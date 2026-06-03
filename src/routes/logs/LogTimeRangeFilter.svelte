@@ -123,6 +123,7 @@
 					value={sinceCalValue}
 					onValueChange={onFromSelect}
 					class="p-2"
+					locale="zh-CN"
 				/>
 				<div class="px-3 pb-2">
 					<div class="flex items-center gap-2">
@@ -136,6 +137,7 @@
 					value={untilCalValue}
 					onValueChange={onToSelect}
 					class="p-2"
+					locale="zh-CN"
 				/>
 				<div class="px-3 pb-2">
 					<div class="flex items-center gap-2">

@@ -995,7 +995,7 @@
 												<span class="flex items-center gap-2">
 													<Network class="w-3 h-3 text-muted-foreground" />
 													{net?.name || '未知'}
-													<Badge variant="outline" class="text-[10px] px-1 py-0">{net?.driver}</Badge>
+													<Badge variant="outline" class="text-[10px] px-1 py-0">{getLabelText(net?.driver)}</Badge>
 												</span>
 											{:else}
 												<span class="text-muted-foreground">
@@ -1009,7 +1009,7 @@
 													<span class="flex items-center gap-2">
 														<Network class="w-3 h-3 text-muted-foreground" />
 														{network.name}
-														<Badge variant="outline" class="text-[10px] px-1 py-0 ml-auto">{network.driver}</Badge>
+														<Badge variant="outline" class="text-[10px] px-1 py-0 ml-auto">{getLabelText(network.driver)}</Badge>
 													</span>
 												</Select.Item>
 											{/each}

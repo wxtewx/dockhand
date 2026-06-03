@@ -175,8 +175,10 @@
 		{ value: 'settings', label: '设置' },
 		{ value: 'git_repository', label: 'Git 仓库' },
 		{ value: 'git_credential', label: 'Git 凭据' },
+		{ value: 'git_stack', label: 'Git 堆栈' },
 		{ value: 'config_set', label: '配置集' },
-		{ value: 'api_token', label: 'API 令牌' }
+		{ value: 'api_token', label: 'API 令牌' },
+		{ value: 'notification', label: '通知' }
 	];
 
 	const actionTypes = [

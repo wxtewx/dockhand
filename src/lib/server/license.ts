@@ -6,7 +6,8 @@ import { sendEventNotification } from './notifications';
 // RSA Public Key for license verification
 // This key can only VERIFY signatures, not create them
 // The private key is kept secret and used only for license generation
-const LICENSE_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
+const LICENSE_PUBLIC_KEYS = [
+`-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoGJOObrKQyOPrDC+xSVh
 Cq5WeUQqwvAl2xEoI5iOhJtHIvnlxayc2UKt9D5WVWS0dgzi41L7VD2OjTayrbL8
 RxPXYh0EfMtnKoJZyFwN1XdlYk8yUjs2TRXnrw8Y+riuMjFWgUHmWUQTA7yBnJG6
@@ -14,7 +15,17 @@ RxPXYh0EfMtnKoJZyFwN1XdlYk8yUjs2TRXnrw8Y+riuMjFWgUHmWUQTA7yBnJG6
 OgRZRNWPljc/cX5DLSaB1RXFUnBM4O9YalNCNOR3HvEV/8HULFtDpZT0ZwRbC3K3
 R8GFY97lrqADuWVaEdRRYdr402eAcd4DnRT62OjpEllNbRI3U5Wyj6EmYm3Cmc9Q
 GwIDAQAB
------END PUBLIC KEY-----`;
+-----END PUBLIC KEY-----`,
+`-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAv/roIIYNIzYtQL7VUA4V
+4YzsuJSnUj9EOnfW80z5XOmTPQySeOQ2E3TfJifJIbsH1cyFmEF4x4RGoZhELMP4
+cF4klnNJG4cztgwzPbpRCMgDEXfuhY0IrfxGwMneA2yd3Ax3Di4jQpBsEcoTSjwx
+UwhHzv3AYk/ToG1QKfTCmtR0MsINkMvopYbRwl/tDs+D/4emIqRLH0VXspbgFA5a
+hM1ENju1eIYxxwlEcKlvuCY+ui/CzWto51tAeSOCTtNPYvlx52atrXVXTugZBQza
+KkcLg3hDoBRakbs56e9hsr8cWeE2bT2FPwkOLZ9DnvDdjTzAFwCJYISRP56tqDMd
+/QIDAQAB
+-----END PUBLIC KEY-----`
+];
 
 export type LicenseType = 'enterprise' | 'smb';
 
@@ -56,9 +67,15 @@ export function validateLicense(licenseKey: string, currentHost?: string): Licen
 		const [payloadBase64, signature] = parts;
 
 		// Verify RSA-SHA256 signature
-		const verify = crypto.createVerify('RSA-SHA256');
-		verify.update(payloadBase64);
-		const isValid = verify.verify(LICENSE_PUBLIC_KEY, signature, 'base64url');
+		let isValid = false;
+		for (const pubKey of LICENSE_PUBLIC_KEYS) {
+			const verify = crypto.createVerify('RSA-SHA256');
+			verify.update(payloadBase64);
+			if (verify.verify(pubKey, signature, 'base64url')) {
+				isValid = true;
+				break;
+			}
+		}
 
 		if (!isValid) {
 			return { valid: false, active: false, error: '许可证签名无效' };

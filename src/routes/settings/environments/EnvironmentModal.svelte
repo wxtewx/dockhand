@@ -185,7 +185,7 @@
 		},
 		{
 			id: 'git_stack',
-			label: 'Git堆栈事件',
+			label: 'Git 堆栈事件',
 			events: [
 				{ id: 'git_sync_success', label: 'Git 同步成功', description: 'Git 堆栈同步并部署成功' },
 				{ id: 'git_sync_failed', label: 'Git 同步失败', description: 'Git 堆栈同步或部署失败' },
