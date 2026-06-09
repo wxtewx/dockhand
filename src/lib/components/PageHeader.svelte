@@ -75,7 +75,7 @@
 		</Badge>
 	{/if}
 	{#if showConnection}
-		<span title={$sseConnected ? 'Live updates active - grid will auto-refresh' : 'Connecting to live updates...'}>
+		<span title={$sseConnected ? '实时更新已激活 - 表格将自动刷新' : '正在连接实时更新...'}>
 			<Wifi class="w-3.5 h-3.5 {$sseConnected ? 'text-emerald-500' : 'text-muted-foreground'}" />
 		</span>
 	{/if}

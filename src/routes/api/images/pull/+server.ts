@@ -55,12 +55,12 @@ export const POST: RequestHandler = async (event) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('images', 'pull', envId)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Environment access check (enterprise only)
 	if (envId && auth.isEnterprise && !await auth.canAccessEnvironment(envId)) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问此环境' }, { status: 403 });
 	}
 
 	const { image, scanAfterPull } = await request.json();
@@ -87,7 +87,7 @@ export const POST: RequestHandler = async (event) => {
 
 			const { scanner } = await getScannerSettings(envId);
 			if (scanner !== 'none') {
-				sendData({ status: 'scanning', message: 'Starting vulnerability scan...' });
+				sendData({ status: 'scanning', message: '正在启动漏洞扫描...' });
 
 				try {
 					const results = await scanImage(image, envId, (progress) => {
@@ -116,11 +116,11 @@ export const POST: RequestHandler = async (event) => {
 					const totalVulns = results.reduce((sum, r) => sum + r.vulnerabilities.length, 0);
 					sendData({
 						status: 'scan-complete',
-						message: `Scan complete - found ${totalVulns} vulnerabilities`,
+						message: `扫描完成 - 发现 ${totalVulns} 个漏洞`,
 						results
 					});
 				} catch (scanError) {
-					console.error('Scan-on-pull failed:', scanError);
+					console.error('拉取后扫描失败:', scanError);
 					sendData({
 						status: 'scan-error',
 						error: scanError instanceof Error ? scanError.message : String(scanError)
@@ -129,13 +129,13 @@ export const POST: RequestHandler = async (event) => {
 			}
 		};
 
-		console.log(`Starting pull for image: ${image}${edgeCheck.isEdge ? ' (edge mode)' : ''}`);
+		console.log(`开始拉取镜像: ${image}${edgeCheck.isEdge ? ' (边缘模式)' : ''}`);
 
 		if (edgeCheck.isEdge && edgeCheck.environmentId) {
 			if (!isEdgeConnected(edgeCheck.environmentId)) {
-				sendData({ status: 'error', error: 'Edge agent not connected' });
-				send('result', { status: 'error', error: 'Edge agent not connected' });
-				throw new Error('Edge agent not connected');
+				sendData({ status: 'error', error: '边缘代理未连接' });
+				send('result', { status: 'error', error: '边缘代理未连接' });
+				throw new Error('边缘代理未连接');
 			}
 
 			const pullUrl = buildPullUrl(image);
@@ -173,7 +173,7 @@ export const POST: RequestHandler = async (event) => {
 							resolve();
 						},
 						onError: (error: string) => {
-							console.error('Edge pull error:', error);
+							console.error('边缘拉取错误:', error);
 							sendData({ status: 'error', error });
 							send('result', { status: 'error', error });
 							reject(new Error(error));
@@ -196,7 +196,7 @@ export const POST: RequestHandler = async (event) => {
 				await handleScanOnPull();
 				send('result', { status: 'complete' });
 			} catch (error) {
-				console.error('Error pulling image:', error);
+				console.error('拉取镜像错误:', error);
 				const errMsg = String(error);
 				sendData({ status: 'error', error: errMsg });
 				send('result', { status: 'error', error: errMsg });

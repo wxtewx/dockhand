@@ -13,7 +13,7 @@ import type { RequestHandler } from './$types';
 export const GET: RequestHandler = async ({ cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('notifications', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -28,8 +28,8 @@ export const GET: RequestHandler = async ({ cookies }) => {
 		}));
 		return json(safeSettings);
 	} catch (error) {
-		console.error('Error fetching notification settings:', error);
-		return json({ error: 'Failed to fetch notification settings' }, { status: 500 });
+		console.error('获取通知设置失败:', error);
+		return json({ error: '获取通知设置失败' }, { status: 500 });
 	}
 };
 
@@ -37,7 +37,7 @@ export const POST: RequestHandler = async (event) => {
 	const { request, cookies } = event;
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('notifications', 'create')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -47,23 +47,23 @@ export const POST: RequestHandler = async (event) => {
 		const resolvedEventTypes = eventTypes || event_types;
 
 		if (!type || !name || !config) {
-			return json({ error: 'Type, name, and config are required' }, { status: 400 });
+			return json({ error: '类型、名称和配置为必填项' }, { status: 400 });
 		}
 
 		if (type !== 'smtp' && type !== 'apprise') {
-			return json({ error: 'Type must be smtp or apprise' }, { status: 400 });
+			return json({ error: '类型必须为 smtp 或 apprise' }, { status: 400 });
 		}
 
 		// Validate config based on type
 		if (type === 'smtp') {
 			const smtpConfig = config as SmtpConfig;
 			if (!smtpConfig.host || !smtpConfig.port || !smtpConfig.from_email || !smtpConfig.to_emails?.length) {
-				return json({ error: 'SMTP config requires host, port, from_email, and to_emails' }, { status: 400 });
+				return json({ error: 'SMTP 配置必须包含主机、端口、发件邮箱和收件邮箱' }, { status: 400 });
 			}
 		} else if (type === 'apprise') {
 			const appriseConfig = config as AppriseConfig;
 			if (!appriseConfig.urls?.length) {
-				return json({ error: 'Apprise config requires at least one URL' }, { status: 400 });
+				return json({ error: 'Apprise 配置至少需要一个 URL' }, { status: 400 });
 			}
 		}
 
@@ -88,7 +88,7 @@ export const POST: RequestHandler = async (event) => {
 		} : setting;
 		return json(safeSetting);
 	} catch (error: any) {
-		console.error('Error creating notification setting:', error);
-		return json({ error: error.message || 'Failed to create notification setting' }, { status: 500 });
+		console.error('创建通知设置失败:', error);
+		return json({ error: error.message || '创建通知设置失败' }, { status: 500 });
 	}
 };

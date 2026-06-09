@@ -39,7 +39,7 @@
 
 	let {
 		open = $bindable(false),
-		title = 'Select file',
+		title = '选择文件',
 		icon,
 		description,
 		initialPath = '/',
@@ -104,14 +104,14 @@
 			const data = await res.json();
 
 			if (!res.ok) {
-				error = data.error || 'Failed to load directory';
+				error = data.error || '加载目录失败';
 				return;
 			}
 
 			currentPath = data.path;
 			entries = data.entries;
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Failed to load directory';
+			error = e instanceof Error ? e.message : '加载目录失败';
 		} finally {
 			loading = false;
 		}
@@ -213,7 +213,7 @@
 			const data = await res.json();
 
 			if (!res.ok) {
-				createError = data.error || 'Failed to create folder';
+				createError = data.error || '创建文件夹失败';
 				return;
 			}
 
@@ -221,7 +221,7 @@
 			newFolderName = '';
 			loadDirectory(newPath);
 		} catch (e) {
-			createError = e instanceof Error ? e.message : 'Failed to create folder';
+			createError = e instanceof Error ? e.message : '创建文件夹失败';
 		}
 	}
 
@@ -316,7 +316,7 @@
 						class="p-1 rounded hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
 						disabled={!canGoUp}
 						onclick={handleGoUp}
-						title="Go up"
+						title="返回上一级"
 					>
 						<ArrowUp class="w-4 h-4" />
 					</button>
@@ -326,7 +326,7 @@
 							<Input
 								bind:ref={folderInputEl}
 								bind:value={newFolderName}
-								placeholder="Folder name"
+								placeholder="文件夹名称"
 								class="h-7 w-40 max-w-40 text-xs"
 								onkeydown={handleFolderKeydown}
 							/>
@@ -335,7 +335,7 @@
 								class="p-1 rounded hover:bg-muted text-green-600 disabled:opacity-40 disabled:cursor-not-allowed"
 								disabled={!newFolderName.trim()}
 								onclick={confirmCreateFolder}
-								title="Create folder"
+								title="创建文件夹"
 							>
 								<Check class="w-4 h-4" />
 							</button>
@@ -343,7 +343,7 @@
 								type="button"
 								class="p-1 rounded hover:bg-muted text-muted-foreground"
 								onclick={cancelCreatingFolder}
-								title="Cancel"
+								title="取消"
 							>
 								<X class="w-4 h-4" />
 							</button>
@@ -356,7 +356,7 @@
 							type="button"
 							class="p-1 rounded hover:bg-muted text-muted-foreground"
 							onclick={startCreatingFolder}
-							title="New folder"
+							title="新建文件夹"
 						>
 							<FolderPlus class="w-4 h-4" />
 						</button>
@@ -370,10 +370,10 @@
 						>
 							{#if scanning}
 								<Loader2 class="w-4 h-4 animate-spin" />
-								Scanning...
+								扫描中...
 							{:else}
 								<Search class="w-4 h-4" />
-								Scan this folder
+								扫描此文件夹
 							{/if}
 						</Button>
 					{/if}
@@ -390,16 +390,16 @@
 						<div class="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-4">
 							<AlertCircle class="w-8 h-8 text-red-500" />
 						</div>
-						<p class="text-red-600 dark:text-red-400 font-medium">Unable to browse files</p>
+						<p class="text-red-600 dark:text-red-400 font-medium">无法浏览文件</p>
 						<p class="text-sm text-muted-foreground mt-1">{error}</p>
 						<Button variant="outline" size="sm" class="mt-4" onclick={() => currentPath && loadDirectory(currentPath)}>
-							Retry
+							重试
 						</Button>
 					</div>
 				{:else if filteredEntries.length === 0}
 					<div class="flex flex-col items-center justify-center py-12 text-muted-foreground">
 						<FolderOpen class="w-12 h-12 mb-3 opacity-50" />
-						<p>{selectMode === 'directory' ? 'No subdirectories' : 'Directory is empty'}</p>
+						<p>{selectMode === 'directory' ? '无子目录' : '目录为空'}</p>
 					</div>
 				{:else}
 					<div class="divide-y">
@@ -426,7 +426,7 @@
 									{entry.name}
 								</span>
 								{#if highlighted && isAdoptMode}
-									<Badge variant="secondary" class="text-xs">Compose file</Badge>
+									<Badge variant="secondary" class="text-xs">编排文件</Badge>
 								{:else if entry.type !== 'directory' && !isAdoptMode}
 									<span class="text-xs text-muted-foreground">{formatSize(entry.size)}</span>
 								{/if}
@@ -445,46 +445,46 @@
 			<Dialog.Footer class="border-t pt-4">
 				{#if selectMode === 'directory'}
 					<div class="flex-1 flex items-center gap-2 min-w-0">
-						<span class="text-xs text-muted-foreground shrink-0">Selected:</span>
+						<span class="text-xs text-muted-foreground shrink-0">已选择：</span>
 						<code class="text-xs font-mono bg-muted px-2 py-1 rounded truncate" title={currentPath || '/'}>{currentPath || '/'}</code>
 					</div>
 				{:else if selectMode === 'file_or_directory'}
 					<div class="flex-1 flex items-center gap-2 min-w-0">
 						{#if selectedPath}
-							<span class="text-xs text-muted-foreground shrink-0">Selected:</span>
+							<span class="text-xs text-muted-foreground shrink-0">已选择：</span>
 							<code class="text-xs font-mono bg-muted px-2 py-1 rounded truncate" title={selectedPath}>{selectedPath}</code>
 						{:else}
-							<span class="text-xs text-muted-foreground">Click to select file or folder, double-click to enter folder</span>
+							<span class="text-xs text-muted-foreground">单击选择文件或文件夹，双击进入文件夹</span>
 						{/if}
 					</div>
 				{:else if selectedPath}
 					<div class="flex-1 flex items-center gap-2 min-w-0">
-						<span class="text-xs text-muted-foreground shrink-0">Selected:</span>
+						<span class="text-xs text-muted-foreground shrink-0">已选择：</span>
 						<code class="text-xs font-mono bg-muted px-2 py-1 rounded truncate" title={selectedPath}>{selectedPath}</code>
 					</div>
 				{:else}
 					<div class="flex-1 text-xs text-muted-foreground">
-						Click a file to select it
+						单击文件即可选择
 					</div>
 				{/if}
 				<Button variant="outline" onclick={handleClose}>
-					Cancel
+					取消
 				</Button>
 				{#if selectMode === 'directory'}
 					<Button onclick={handleConfirm}>
 						<FolderPlus class="w-4 h-4" />
-						Select
+						选择
 					</Button>
 				{:else if selectMode === 'file_or_directory'}
 					<Button onclick={handleConfirm}>
-						Select
+						选择
 					</Button>
 				{:else}
 					<Button
 						disabled={!selectedPath}
 						onclick={handleConfirm}
 					>
-						Select
+						选择
 					</Button>
 				{/if}
 			</Dialog.Footer>

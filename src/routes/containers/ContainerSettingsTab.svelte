@@ -15,7 +15,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import AutoUpdateSettings from './AutoUpdateSettings.svelte';
 	import type { VulnerabilityCriteria } from '$lib/components/VulnerabilityCriteriaSelector.svelte';
-	import type { SystemContainerType } from '$lib/types';
+	import type { SystemContainerType, getLabelText } from '$lib/types';
 
 	// Detect system containers (must match server-side logic in update-utils.ts)
 	function detectSystemContainer(imageName: string): SystemContainerType | null {
@@ -33,8 +33,8 @@
 
 	// Mode options for volumes
 	const volumeModeOptions = [
-		{ value: 'rw', label: 'RW' },
-		{ value: 'ro', label: 'RO' }
+		{ value: 'rw', label: '读写' },
+		{ value: 'ro', label: '只读' }
 	];
 
 	const commonCapabilities = [
@@ -246,7 +246,7 @@
 				availableNetworks = await response.json();
 			}
 		} catch (err) {
-			console.error('Failed to fetch networks:', err);
+			console.error('获取网络列表失败:', err);
 		}
 	}
 
@@ -266,7 +266,7 @@
 					.filter(c => c.name && c.name !== name);
 			}
 		} catch (err) {
-			console.error('Failed to fetch containers:', err);
+			console.error('获取容器列表失败:', err);
 		}
 	}
 
@@ -355,17 +355,17 @@
 
 	function validateIpv4(value: string): string | null {
 		if (!value) return null;
-		return ipv4Regex.test(value) ? null : 'Invalid IPv4 address';
+		return ipv4Regex.test(value) ? null : '无效的 IPv4 地址';
 	}
 
 	function validateIpv6(value: string): string | null {
 		if (!value) return null;
-		return ipv6Regex.test(value) ? null : 'Invalid IPv6 address';
+		return ipv6Regex.test(value) ? null : '无效的 IPv6 地址';
 	}
 
 	function validateMac(value: string): string | null {
 		if (!value) return null;
-		return macRegex.test(value) ? null : 'Invalid MAC address (e.g., 02:42:ac:11:00:02)';
+		return macRegex.test(value) ? null : '无效的 MAC 地址 (例如：02:42:ac:11:00:02)';
 	}
 
 	// Auto-expand networks that have config
@@ -669,24 +669,24 @@
 			<div class="flex items-center gap-3">
 				<Package class="w-5 h-5 text-muted-foreground" />
 				<div>
-					<p class="text-sm font-medium">Image: <code class="bg-muted px-1.5 py-0.5 rounded">{image || 'Not set'}</code></p>
+					<p class="text-sm font-medium">镜像： <code class="bg-muted px-1.5 py-0.5 rounded">{image || '未设置'}</code></p>
 					{#if imageSummary.isPulling || imageSummary.isScanning}
 						<p class="text-xs text-blue-600 flex items-center gap-1 mt-0.5">
 							<Loader2 class="w-3 h-3 animate-spin" />
-							{imageSummary.isScanning ? 'Scanning...' : 'Pulling...'}
+							{imageSummary.isScanning ? '扫描中...' : '拉取中...'}
 						</p>
 					{:else if imageSummary.imageReady}
 						<p class="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
 							<CheckCircle2 class="w-3 h-3" />
-							Image pulled and ready
+							镜像已拉取并就绪
 							{#if imageSummary.scanResults && imageSummary.scanResults.length > 0}
-								• <span class="{imageSummary.hasCriticalOrHigh ? 'text-red-600' : (imageSummary.totalVulnerabilities ?? 0) > 0 ? 'text-amber-600' : 'text-green-600'}">{imageSummary.totalVulnerabilities ?? 0} vulnerabilities</span>
+								• <span class="{imageSummary.hasCriticalOrHigh ? 'text-red-600' : (imageSummary.totalVulnerabilities ?? 0) > 0 ? 'text-amber-600' : 'text-green-600'}">{imageSummary.totalVulnerabilities ?? 0} 个漏洞</span>
 							{/if}
 						</p>
 					{:else if !image}
 						<p class="text-xs text-amber-600 flex items-center gap-1 mt-0.5">
 							<AlertTriangle class="w-3 h-3" />
-							Go to "Pull" tab to set the image
+							请前往 “拉取” 标签页设置镜像
 						</p>
 					{/if}
 				</div>
@@ -699,13 +699,13 @@
 		<div class="space-y-2">
 			<div class="flex items-center gap-2 pb-2 border-b">
 				<Settings2 class="w-4 h-4 text-muted-foreground" />
-				<h3 class="text-sm font-semibold text-foreground">{mode === 'edit' ? 'Apply config set' : 'Config set'}</h3>
+				<h3 class="text-sm font-semibold text-foreground">{mode === 'edit' ? '应用配置集' : '配置集'}</h3>
 			</div>
 			<div class="flex gap-2 items-end">
 				<div class="flex-1">
 					<Select.Root type="single" value={selectedConfigSetId} onValueChange={applyConfigSet}>
 						<Select.Trigger class="w-full h-9">
-							<span>{selectedConfigSetId ? configSets.find(c => c.id === parseInt(selectedConfigSetId))?.name : (mode === 'edit' ? 'Select a config set to merge values...' : 'Select a config set to pre-fill values...')}</span>
+							<span>{selectedConfigSetId ? configSets.find(c => c.id === parseInt(selectedConfigSetId))?.name : (mode === 'edit' ? '选择配置集以合并参数...' : '选择配置集以预填充参数...')}</span>
 						</Select.Trigger>
 						<Select.Content>
 							{#each configSets as configSet}
@@ -723,7 +723,7 @@
 				</div>
 			</div>
 			{#if mode === 'edit'}
-				<p class="text-xs text-muted-foreground">Note: Values from the config set will be merged with existing settings. Existing keys won't be overwritten.</p>
+				<p class="text-xs text-muted-foreground">注意：配置集中的参数将与现有设置合并，不会覆盖已有键值。</p>
 			{/if}
 		</div>
 	{/if}
@@ -731,12 +731,12 @@
 	<!-- Basic Settings -->
 	<div class="space-y-3">
 		<div class="flex items-center gap-2 pb-2 border-b">
-			<h3 class="text-sm font-semibold text-foreground">Basic settings</h3>
+			<h3 class="text-sm font-semibold text-foreground">基础设置</h3>
 		</div>
 
 		<div class="grid grid-cols-2 gap-3">
 			<div class="space-y-1.5">
-				<Label for="name" class="text-xs font-medium">Container name *</Label>
+				<Label for="name" class="text-xs font-medium">容器名称 *</Label>
 				<Input
 					id="name"
 					bind:value={name}
@@ -751,7 +751,7 @@
 			</div>
 			{#if mode === 'edit'}
 				<div class="space-y-1.5">
-					<Label for="image" class="text-xs font-medium">Image *</Label>
+					<Label for="image" class="text-xs font-medium">镜像 *</Label>
 					<Input
 						id="image"
 						bind:value={image}
@@ -768,13 +768,13 @@
 		</div>
 
 		<div class="space-y-1.5">
-			<Label for="command" class="text-xs font-medium">Command (optional)</Label>
+			<Label for="command" class="text-xs font-medium">启动命令 (可选)</Label>
 			<Input id="command" bind:value={command} placeholder="/bin/sh -c 'echo hello'" class="h-9" />
 		</div>
 
 		<div class="grid grid-cols-2 gap-3">
 			<div class="space-y-1.5">
-				<Label class="text-xs font-medium">Restart policy</Label>
+				<Label class="text-xs font-medium">重启策略</Label>
 				<Select.Root type="single" bind:value={restartPolicy}>
 					<Select.Trigger id="restartPolicy" tabindex={0} class="w-full h-9">
 						<span class="flex items-center">
@@ -787,53 +787,53 @@
 							{:else}
 								<PauseCircle class="w-3.5 h-3.5 mr-2 text-blue-500" />
 							{/if}
-							{restartPolicy === 'no' ? 'No' : restartPolicy === 'always' ? 'Always' : restartPolicy === 'on-failure' ? 'On failure' : 'Unless stopped'}
+							{restartPolicy === 'no' ? '不重启' : restartPolicy === 'always' ? '始终重启' : restartPolicy === 'on-failure' ? '失败时重启' : '除非手动停止'}
 						</span>
 					</Select.Trigger>
 					<Select.Content>
 						<Select.Item value="no">
 							{#snippet children()}
 								<Ban class="w-3.5 h-3.5 mr-2 text-muted-foreground" />
-								No
+								不重启
 							{/snippet}
 						</Select.Item>
 						<Select.Item value="always">
 							{#snippet children()}
 								<RotateCw class="w-3.5 h-3.5 mr-2 text-green-500" />
-								Always
+								始终重启
 							{/snippet}
 						</Select.Item>
 						<Select.Item value="on-failure">
 							{#snippet children()}
 								<AlertTriangle class="w-3.5 h-3.5 mr-2 text-amber-500" />
-								On failure
+								失败时重启
 							{/snippet}
 						</Select.Item>
 						<Select.Item value="unless-stopped">
 							{#snippet children()}
 								<PauseCircle class="w-3.5 h-3.5 mr-2 text-blue-500" />
-								Unless stopped
+								除非手动停止
 							{/snippet}
 						</Select.Item>
 					</Select.Content>
 				</Select.Root>
 				{#if restartPolicy === 'on-failure'}
 					<div class="space-y-1.5 mt-2">
-						<Label class="text-xs font-medium">Max retry count</Label>
+						<Label class="text-xs font-medium">最大重试次数</Label>
 						<Input
 							type="number"
 							bind:value={restartMaxRetries}
-							placeholder="Unlimited"
+							placeholder="无限制"
 							min="0"
 							class="h-9"
 						/>
-						<p class="text-xs text-muted-foreground">Leave empty for unlimited retries</p>
+						<p class="text-xs text-muted-foreground">留空表示无限制重试</p>
 					</div>
 				{/if}
 			</div>
 
 			<div class="space-y-1.5">
-				<Label class="text-xs font-medium">Network</Label>
+				<Label class="text-xs font-medium">网络</Label>
 				<Popover.Root bind:open={networkModePickerOpen}>
 					<Popover.Trigger bind:ref={networkModePickerTriggerRef}>
 						{#snippet child({ props })}
@@ -864,30 +864,30 @@
 					</Popover.Trigger>
 					<Popover.Content class="w-[var(--bits-popover-anchor-width)] p-0" align="start">
 						<Command.Root>
-							<Command.Input placeholder="Filter networks..." />
+							<Command.Input placeholder="筛选网络..." />
 							<Command.List class="max-h-64">
-								<Command.Empty>No networks found.</Command.Empty>
+								<Command.Empty>未找到网络。</Command.Empty>
 								<Command.Group>
 									<Command.Item value="bridge" onSelect={() => { networkMode = 'bridge'; closeAndFocusNetworkModePicker(); }}>
 										<Share2 class="text-emerald-500" />
-										<span>Bridge</span>
+										<span>桥接</span>
 									</Command.Item>
 									<Command.Item value="host" onSelect={() => { networkMode = 'host'; closeAndFocusNetworkModePicker(); }}>
 										<Server class="text-sky-500" />
-										<span>Host</span>
+										<span>主机</span>
 									</Command.Item>
 									<Command.Item value="none" onSelect={() => { networkMode = 'none'; closeAndFocusNetworkModePicker(); }}>
 										<CircleOff class="text-muted-foreground" />
-										<span>None</span>
+										<span>无</span>
 									</Command.Item>
 									<Command.Item value="container" onSelect={() => { if (!networkMode.startsWith('container:')) networkMode = 'container:'; closeAndFocusNetworkModePicker(); }}>
 										<Box class="text-violet-500" />
-										<span>Container</span>
+										<span>容器</span>
 									</Command.Item>
 								</Command.Group>
 								{#if customNetworks.length > 0}
 									<Command.Separator />
-									<Command.Group heading="Custom networks">
+									<Command.Group heading="自定义网络">
 										{#each customNetworks as n (n.name)}
 											<Command.Item value={n.name} onSelect={() => { networkMode = n.name; closeAndFocusNetworkModePicker(); }}>
 												<Network class="text-orange-500" />
@@ -913,7 +913,7 @@
 									aria-expanded={containerPickerOpen}
 								>
 									<span class="truncate min-w-0 flex-1 text-left {containerRef ? '' : 'text-muted-foreground'}">
-										{containerRef || 'Select a container...'}
+										{containerRef || '选择容器...'}
 									</span>
 									<ChevronsUpDown class="w-4 h-4 shrink-0 opacity-50" />
 								</Button>
@@ -921,9 +921,9 @@
 						</Popover.Trigger>
 						<Popover.Content class="w-[var(--bits-popover-anchor-width)] p-0" align="start">
 							<Command.Root>
-								<Command.Input placeholder="Filter by name..." />
+								<Command.Input placeholder="按名称筛选..." />
 								<Command.List class="max-h-64">
-									<Command.Empty>No containers found.</Command.Empty>
+									<Command.Empty>未找到容器。</Command.Empty>
 									<Command.Group>
 										{#each availableContainers as c (c.id)}
 											<Command.Item
@@ -945,19 +945,19 @@
 						</Popover.Content>
 					</Popover.Root>
 					{#if !containerRef}
-						<p class="text-xs text-amber-600 mt-1">Select a container to share its network namespace</p>
+						<p class="text-xs text-amber-600 mt-1">选择一个容器以共享其网络命名空间</p>
 					{/if}
 				{/if}
 			</div>
 		</div>
 
 		<div class="flex items-center gap-3 pt-1">
-			<Label class="text-xs font-normal">Pull image before update</Label>
+			<Label class="text-xs font-normal">更新前拉取最新镜像</Label>
 			<TogglePill bind:checked={repullImage} />
 		</div>
 
 		<div class="flex items-center gap-3 pt-1">
-			<Label class="text-xs font-normal">Start container after {mode === 'create' ? 'creation' : 'update'}</Label>
+			<Label class="text-xs font-normal">{mode === 'create' ? '创建后' : '更新后'}启动容器</Label>
 			<TogglePill bind:checked={startAfterCreate} />
 		</div>
 	</div>
@@ -968,14 +968,14 @@
 			<div class="flex justify-between items-center pb-2 border-b">
 				<div class="flex items-center gap-2">
 					<Network class="w-4 h-4 text-muted-foreground" />
-					<h3 class="text-sm font-semibold text-foreground">Additional networks</h3>
+					<h3 class="text-sm font-semibold text-foreground">附加网络</h3>
 				</div>
 			</div>
 
 			<div class="space-y-2">
 				{#if selectableNetworks.length === 0}
 					<Button variant="outline" disabled class="w-full justify-start font-normal text-muted-foreground">
-						All networks already attached
+						所有网络已全部挂载
 					</Button>
 				{:else}
 					<Popover.Root bind:open={networkPickerOpen}>
@@ -988,16 +988,16 @@
 									role="combobox"
 									aria-expanded={networkPickerOpen}
 								>
-									<span class="text-muted-foreground">Select network to add...</span>
+									<span class="text-muted-foreground">选择要添加的网络...</span>
 									<ChevronsUpDown class="w-4 h-4 opacity-50" />
 								</Button>
 							{/snippet}
 						</Popover.Trigger>
 						<Popover.Content class="w-[var(--bits-popover-anchor-width)] p-0" align="start">
 							<Command.Root>
-								<Command.Input placeholder="Filter networks..." />
+								<Command.Input placeholder="筛选网络..." />
 								<Command.List class="max-h-64">
-									<Command.Empty>No networks found.</Command.Empty>
+									<Command.Empty>未找到网络。</Command.Empty>
 									<Command.Group>
 										{#each selectableNetworks as network (network.name)}
 											<Command.Item
@@ -1040,7 +1040,7 @@
 											<span class={getDriverBadgeClasses(network.driver)}>{network.driver}</span>
 										{/if}
 										{#if hasNetworkConfig(networkName)}
-											<Badge variant="secondary" class="text-2xs">configured</Badge>
+											<Badge variant="secondary" class="text-2xs">已配置</Badge>
 										{/if}
 									</button>
 									<button
@@ -1055,10 +1055,10 @@
 									<div class="px-2.5 pb-2.5 pt-1 border-t space-y-2">
 										<div class="grid grid-cols-2 gap-2">
 											<div class="space-y-1">
-												<Label class="text-2xs font-medium text-muted-foreground">IPv4 address</Label>
+												<Label class="text-2xs font-medium text-muted-foreground">IPv4 地址</Label>
 												<Input
 													bind:value={networkConfigs[networkName].ipv4Address}
-													placeholder="e.g., 172.28.0.100"
+													placeholder="例如：172.28.0.100"
 													class="h-8 text-xs"
 												/>
 												{#if validateIpv4(networkConfigs[networkName].ipv4Address)}
@@ -1066,10 +1066,10 @@
 												{/if}
 											</div>
 											<div class="space-y-1">
-												<Label class="text-2xs font-medium text-muted-foreground">IPv6 address</Label>
+												<Label class="text-2xs font-medium text-muted-foreground">IPv6 地址</Label>
 												<Input
 													bind:value={networkConfigs[networkName].ipv6Address}
-													placeholder="e.g., fd00::100"
+													placeholder="例如：fd00::100"
 													class="h-8 text-xs"
 												/>
 												{#if validateIpv6(networkConfigs[networkName].ipv6Address)}
@@ -1078,10 +1078,10 @@
 											</div>
 										</div>
 										<div class="space-y-1">
-											<Label class="text-2xs font-medium text-muted-foreground">Aliases (comma-separated)</Label>
+											<Label class="text-2xs font-medium text-muted-foreground">别名 (逗号分隔)</Label>
 											<Input
 												bind:value={networkConfigs[networkName].aliases}
-												placeholder="e.g., myalias, web"
+												placeholder="例如：myalias, web"
 												class="h-8 text-xs"
 											/>
 										</div>
@@ -1094,10 +1094,10 @@
 
 				<!-- MAC Address -->
 				<div class="space-y-1 pt-1">
-					<Label class="text-xs font-medium">MAC address</Label>
+					<Label class="text-xs font-medium">MAC 地址</Label>
 					<Input
 						bind:value={macAddress}
-						placeholder="e.g., 02:42:ac:11:00:02"
+						placeholder="例如：02:42:ac:11:00:02"
 						class="h-9"
 					/>
 					{#if validateMac(macAddress)}
@@ -1106,7 +1106,7 @@
 				</div>
 
 				{#if mode === 'edit'}
-					<p class="text-xs text-muted-foreground">Container will be connected to selected networks in addition to the network mode above</p>
+					<p class="text-xs text-muted-foreground">容器将连接到所选网络，同时保留上方设置的网络模式</p>
 				{/if}
 			</div>
 		</div>
@@ -1115,10 +1115,10 @@
 	<!-- Port Mappings -->
 	<div class="space-y-2">
 		<div class="flex justify-between items-center pb-2 border-b">
-			<h3 class="text-sm font-semibold text-foreground">Port mappings</h3>
+			<h3 class="text-sm font-semibold text-foreground">端口映射</h3>
 			<Button type="button" size="sm" variant="ghost" onclick={addPortMapping} class="h-7 text-xs">
 				<Plus class="w-3.5 h-3.5" />
-				Add
+				添加
 			</Button>
 		</div>
 
@@ -1131,14 +1131,14 @@
 				<div class="flex flex-col gap-1">
 					<div class="flex gap-2 items-center">
 						<div class="flex-1 relative group/port">
-							<span class="absolute -top-2 left-2 text-2xs text-muted-foreground bg-background px-1">Host</span>
-							<Input bind:value={mapping.hostPort} type="text" placeholder="e.g. 8080 or 127.0.0.1:8080" class="h-9 {(hostPortError || hostIpError) && mapping.hostPort ? 'border-destructive' : ''}" />
+							<span class="absolute -top-2 left-2 text-2xs text-muted-foreground bg-background px-1">主机端口</span>
+							<Input bind:value={mapping.hostPort} type="text" placeholder="例如：8080 或 127.0.0.1:8080" class="h-9 {(hostPortError || hostIpError) && mapping.hostPort ? 'border-destructive' : ''}" />
 							<button
 								type="button"
 								class="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-primary transition-colors opacity-0 group-hover/port:opacity-100"
 								onclick={() => findFreePort(index)}
 								disabled={findingFreePort}
-								title="Find next available Docker port"
+								title="查找下一个可用的 Docker 端口"
 							>
 								{#if findingFreePort}
 									<Loader2 class="w-3.5 h-3.5 animate-spin" />
@@ -1148,8 +1148,8 @@
 							</button>
 						</div>
 						<div class="flex-1 relative">
-							<span class="absolute -top-2 left-2 text-2xs text-muted-foreground bg-background px-1">Container</span>
-							<Input bind:value={mapping.containerPort} type="text" placeholder="e.g. 8080 or 8000-8005" class="h-9 {containerPortError && mapping.containerPort ? 'border-destructive' : ''}" />
+							<span class="absolute -top-2 left-2 text-2xs text-muted-foreground bg-background px-1">容器端口</span>
+							<Input bind:value={mapping.containerPort} type="text" placeholder="例如：8080 或 8000-8005" class="h-9 {containerPortError && mapping.containerPort ? 'border-destructive' : ''}" />
 						</div>
 					<ToggleGroup
 						value={mapping.protocol}
@@ -1180,27 +1180,27 @@
 						<CircleHelp class="w-3.5 h-3.5 text-muted-foreground/70 cursor-help shrink-0" />
 					</Tooltip.Trigger>
 					<Tooltip.Content class="max-w-xs text-xs" side="right">
-						<p class="font-medium mb-1">Supported host port formats:</p>
+						<p class="font-medium mb-1">支持的主机端口格式：</p>
 						<ul class="space-y-0.5 text-muted-foreground">
-							<li><code class="text-foreground">8080</code> — bind to all interfaces</li>
-							<li><code class="text-foreground">127.0.0.1:8080</code> — bind to specific IP</li>
-							<li><code class="text-foreground">8000-8005</code> — port range (container port must also be a range)</li>
-							<li>Leave host port empty for random allocation</li>
+							<li><code class="text-foreground">8080</code> — 绑定到所有网卡</li>
+							<li><code class="text-foreground">127.0.0.1:8080</code> — 绑定到指定IP</li>
+							<li><code class="text-foreground">8000-8005</code> — 端口范围 (容器端口也必须为范围格式)</li>
+							<li>主机端口留空将随机分配端口</li>
 						</ul>
 					</Tooltip.Content>
 				</Tooltip.Root>
 			</Tooltip.Provider>
-			Hover the host port field and click the search icon to find the next available port.
+			将鼠标悬停在主机端口输入框并点击搜索图标，可查找下一个可用端口。
 		</p>
 	</div>
 
 	<!-- Volume Mappings -->
 	<div class="space-y-2">
 		<div class="flex justify-between items-center pb-2 border-b">
-			<h3 class="text-sm font-semibold text-foreground">Volume mappings</h3>
+			<h3 class="text-sm font-semibold text-foreground">数据卷映射</h3>
 			<Button type="button" size="sm" variant="ghost" onclick={addVolumeMapping} class="h-7 text-xs">
 				<Plus class="w-3.5 h-3.5" />
-				Add
+				添加
 			</Button>
 		</div>
 
@@ -1208,11 +1208,11 @@
 			{#each volumeMappings as mapping, index}
 				<div class="flex gap-2 items-center">
 					<div class="flex-1 relative">
-						<span class="absolute -top-2 left-2 text-2xs text-muted-foreground bg-background px-1">Host path</span>
+						<span class="absolute -top-2 left-2 text-2xs text-muted-foreground bg-background px-1">主机路径</span>
 						<Input bind:value={mapping.hostPath} class="h-9" />
 					</div>
 					<div class="flex-1 relative">
-						<span class="absolute -top-2 left-2 text-2xs text-muted-foreground bg-background px-1">Container path</span>
+						<span class="absolute -top-2 left-2 text-2xs text-muted-foreground bg-background px-1">容器路径</span>
 						<Input bind:value={mapping.containerPath} class="h-9" />
 					</div>
 					<ToggleGroup
@@ -1238,10 +1238,10 @@
 	<!-- Environment Variables -->
 	<div class="space-y-2">
 		<div class="flex justify-between items-center pb-2 border-b">
-			<h3 class="text-sm font-semibold text-foreground">Environment variables</h3>
+			<h3 class="text-sm font-semibold text-foreground">环境变量</h3>
 			<Button type="button" size="sm" variant="ghost" onclick={addEnvVar} class="h-7 text-xs">
 				<Plus class="w-3.5 h-3.5" />
-				Add
+				添加
 			</Button>
 		</div>
 
@@ -1249,11 +1249,11 @@
 			{#each envVars as envVar, index}
 				<div class="flex gap-2 items-center">
 					<div class="flex-1 relative">
-						<span class="absolute -top-2 left-2 text-2xs text-muted-foreground bg-background px-1">Key</span>
+						<span class="absolute -top-2 left-2 text-2xs text-muted-foreground bg-background px-1">键</span>
 						<Input bind:value={envVar.key} class="h-9" />
 					</div>
 					<div class="flex-1 relative">
-						<span class="absolute -top-2 left-2 text-2xs text-muted-foreground bg-background px-1">Value</span>
+						<span class="absolute -top-2 left-2 text-2xs text-muted-foreground bg-background px-1">值</span>
 						<Input bind:value={envVar.value} class="h-9" />
 					</div>
 					<Button
@@ -1274,10 +1274,10 @@
 	<!-- Labels -->
 	<div class="space-y-2">
 		<div class="flex justify-between items-center pb-2 border-b">
-			<h3 class="text-sm font-semibold text-foreground">Labels</h3>
+			<h3 class="text-sm font-semibold text-foreground">标签</h3>
 			<Button type="button" size="sm" variant="ghost" onclick={addLabel} class="h-7 text-xs">
 				<Plus class="w-3.5 h-3.5" />
-				Add
+				添加
 			</Button>
 		</div>
 
@@ -1285,11 +1285,11 @@
 			{#each labels as label, index}
 				<div class="flex gap-2 items-center">
 					<div class="flex-1 relative">
-						<span class="absolute -top-2 left-2 text-2xs text-muted-foreground bg-background px-1">Key</span>
+						<span class="absolute -top-2 left-2 text-2xs text-muted-foreground bg-background px-1">键</span>
 						<Input bind:value={label.key} class="h-9" />
 					</div>
 					<div class="flex-1 relative">
-						<span class="absolute -top-2 left-2 text-2xs text-muted-foreground bg-background px-1">Value</span>
+						<span class="absolute -top-2 left-2 text-2xs text-muted-foreground bg-background px-1">值</span>
 						<Input bind:value={label.value} class="h-9" />
 					</div>
 					<Button
@@ -1309,7 +1309,7 @@
 
 	<!-- Advanced Options Header -->
 	<div class="pt-2">
-		<p class="text-xs text-muted-foreground mb-3">Advanced container options (click to expand)</p>
+		<p class="text-xs text-muted-foreground mb-3">高级容器选项 (点击展开)</p>
 	</div>
 
 	<!-- Resources Section (Collapsible) -->
@@ -1321,9 +1321,9 @@
 		>
 			<div class="flex items-center gap-2">
 				<Cpu class="w-4 h-4 text-muted-foreground" />
-				<span class="text-sm font-medium">Resources</span>
+				<span class="text-sm font-medium">资源限制</span>
 				{#if memoryLimit || nanoCpus || cpuShares}
-					<Badge variant="secondary" class="text-2xs">configured</Badge>
+					<Badge variant="secondary" class="text-2xs">已配置</Badge>
 				{/if}
 			</div>
 			{#if showResources}
@@ -1334,37 +1334,37 @@
 		</button>
 		{#if showResources}
 			<div class="px-3 pb-3 space-y-3 border-t">
-				<p class="text-xs text-muted-foreground pt-2">Configure memory and CPU limits for this container</p>
+				<p class="text-xs text-muted-foreground pt-2">配置容器的内存与 CPU 限制</p>
 				<div class="grid grid-cols-2 gap-3">
 					<div class="space-y-1.5">
-						<Label for="memoryLimit" class="text-xs font-medium">Memory limit</Label>
-						<Input id="memoryLimit" bind:value={memoryLimit} placeholder="e.g., 512m, 1g" class="h-9" />
+						<Label for="memoryLimit" class="text-xs font-medium">内存限制</Label>
+						<Input id="memoryLimit" bind:value={memoryLimit} placeholder="例如： 512m, 1g" class="h-9" />
 					</div>
 					<div class="space-y-1.5">
-						<Label for="memoryReservation" class="text-xs font-medium">Memory reservation</Label>
-						<Input id="memoryReservation" bind:value={memoryReservation} placeholder="e.g., 256m" class="h-9" />
+						<Label for="memoryReservation" class="text-xs font-medium">内存预留</Label>
+						<Input id="memoryReservation" bind:value={memoryReservation} placeholder="例如： 256m" class="h-9" />
 					</div>
 				</div>
 				<div class="grid grid-cols-2 gap-3">
 					<div class="space-y-1.5">
-						<Label for="nanoCpus" class="text-xs font-medium">CPU limit</Label>
-						<Input id="nanoCpus" bind:value={nanoCpus} placeholder="e.g., 0.5, 1.5, 2" class="h-9" />
+						<Label for="nanoCpus" class="text-xs font-medium">CPU 限制</Label>
+						<Input id="nanoCpus" bind:value={nanoCpus} placeholder="例如： 0.5, 1.5, 2" class="h-9" />
 					</div>
 					<div class="space-y-1.5">
-						<Label for="cpuShares" class="text-xs font-medium">CPU shares</Label>
+						<Label for="cpuShares" class="text-xs font-medium">CPU 共享值</Label>
 						<Input id="cpuShares" bind:value={cpuShares} type="number" placeholder="1024" class="h-9" />
 					</div>
 				</div>
 				<div class="grid grid-cols-2 gap-3">
 					<div class="space-y-1.5">
-						<Label for="cpuQuota" class="text-xs font-medium">CPU quota</Label>
-						<Input id="cpuQuota" bind:value={cpuQuota} type="number" placeholder="e.g., 50000" class="h-9" />
-						<p class="text-xs text-muted-foreground">Microseconds per period</p>
+						<Label for="cpuQuota" class="text-xs font-medium">CPU 配额</Label>
+						<Input id="cpuQuota" bind:value={cpuQuota} type="number" placeholder="例如： 50000" class="h-9" />
+						<p class="text-xs text-muted-foreground">微秒/每个周期</p>
 					</div>
 					<div class="space-y-1.5">
-						<Label for="cpuPeriod" class="text-xs font-medium">CPU period</Label>
-						<Input id="cpuPeriod" bind:value={cpuPeriod} type="number" placeholder="Default: 100000" class="h-9" />
-						<p class="text-xs text-muted-foreground">Period in microseconds</p>
+						<Label for="cpuPeriod" class="text-xs font-medium">CPU 周期</Label>
+						<Input id="cpuPeriod" bind:value={cpuPeriod} type="number" placeholder="默认： 100000" class="h-9" />
+						<p class="text-xs text-muted-foreground">周期时长，单位微秒</p>
 					</div>
 				</div>
 			</div>
@@ -1380,9 +1380,9 @@
 		>
 			<div class="flex items-center gap-2">
 				<Shield class="w-4 h-4 text-muted-foreground" />
-				<span class="text-sm font-medium">Security</span>
+				<span class="text-sm font-medium">安全</span>
 				{#if privilegedMode || containerUser || capAdd.length > 0 || capDrop.length > 0 || securityOptions.length > 0}
-					<Badge variant="secondary" class="text-2xs">configured</Badge>
+					<Badge variant="secondary" class="text-2xs">已配置</Badge>
 				{/if}
 			</div>
 			{#if showSecurity}
@@ -1395,25 +1395,25 @@
 			<div class="px-3 pb-3 space-y-3 border-t">
 				<div class="grid grid-cols-2 gap-3 pt-2">
 					<div class="space-y-1.5">
-						<Label for="containerUser" class="text-xs font-medium">User</Label>
-						<Input id="containerUser" bind:value={containerUser} placeholder="user:group or UID:GID" class="h-9" />
+						<Label for="containerUser" class="text-xs font-medium">运行用户</Label>
+						<Input id="containerUser" bind:value={containerUser} placeholder="用户:组 或 UID:GID" class="h-9" />
 					</div>
 					<div class="space-y-1.5 flex flex-col justify-center pt-4">
 						<div class="flex items-center space-x-2">
 							<Checkbox id="privilegedMode" bind:checked={privilegedMode} />
 							<Label for="privilegedMode" class="text-xs font-normal flex items-center gap-1">
 								<Lock class="w-3 h-3 text-amber-500" />
-								Privileged mode
+								特权模式
 							</Label>
 						</div>
 					</div>
 				</div>
 
 				<div class="space-y-2">
-					<Label class="text-xs font-medium">Add capabilities</Label>
+					<Label class="text-xs font-medium">添加权限</Label>
 					<Select.Root type="single" value="" onValueChange={(v) => { addCapability('add', v); }}>
 						<Select.Trigger class="h-9">
-							<span class="text-muted-foreground">Select capability to add...</span>
+							<span class="text-muted-foreground">选择要添加的权限...</span>
 						</Select.Trigger>
 						<Select.Content>
 							{#each commonCapabilities.filter(c => !capAdd.includes(c)) as cap}
@@ -1436,10 +1436,10 @@
 				</div>
 
 				<div class="space-y-2">
-					<Label class="text-xs font-medium">Drop capabilities</Label>
+					<Label class="text-xs font-medium">移除权限</Label>
 					<Select.Root type="single" value="" onValueChange={(v) => { addCapability('drop', v); }}>
 						<Select.Trigger class="h-9">
-							<span class="text-muted-foreground">Select capability to drop...</span>
+							<span class="text-muted-foreground">选择要移除的权限...</span>
 						</Select.Trigger>
 						<Select.Content>
 							{#each commonCapabilities.filter(c => !capDrop.includes(c)) as cap}
@@ -1462,11 +1462,11 @@
 				</div>
 
 				<div class="space-y-2 pt-2 border-t">
-					<Label class="text-xs font-medium">Security options</Label>
+					<Label class="text-xs font-medium">安全选项</Label>
 					<div class="flex gap-2">
 						<Input
 							bind:value={securityOptionInput}
-							placeholder="e.g., no-new-privileges, seccomp=unconfined"
+							placeholder="例如： no-new-privileges, seccomp=unconfined"
 							class="h-9 flex-1"
 							onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSecurityOption(); } }}
 						/>
@@ -1486,7 +1486,7 @@
 							{/each}
 						</div>
 					{/if}
-					<p class="text-xs text-muted-foreground">Common options: no-new-privileges, seccomp=unconfined, apparmor=unconfined</p>
+					<p class="text-xs text-muted-foreground">常用选项： no-new-privileges, seccomp=unconfined, apparmor=unconfined</p>
 				</div>
 			</div>
 		{/if}
@@ -1501,9 +1501,9 @@
 		>
 			<div class="flex items-center gap-2">
 				<HeartPulse class="w-4 h-4 text-muted-foreground" />
-				<span class="text-sm font-medium">Healthcheck</span>
+				<span class="text-sm font-medium">健康检查</span>
 				{#if healthcheckEnabled}
-					<Badge variant="secondary" class="text-2xs">enabled</Badge>
+					<Badge variant="secondary" class="text-2xs">已启用</Badge>
 				{/if}
 			</div>
 			{#if showHealth}
@@ -1516,28 +1516,28 @@
 			<div class="px-3 pb-3 space-y-3 border-t">
 				<div class="flex items-center space-x-2 pt-2">
 					<Checkbox id="healthcheckEnabled" bind:checked={healthcheckEnabled} />
-					<Label for="healthcheckEnabled" class="text-xs font-normal">Enable healthcheck</Label>
+					<Label for="healthcheckEnabled" class="text-xs font-normal">启用健康检查</Label>
 				</div>
 				{#if healthcheckEnabled}
 					<div class="space-y-1.5">
-						<Label for="healthcheckCommand" class="text-xs font-medium">Command</Label>
-						<Input id="healthcheckCommand" bind:value={healthcheckCommand} placeholder="e.g., curl -f http://localhost/ || exit 1" class="h-9" />
+						<Label for="healthcheckCommand" class="text-xs font-medium">检查命令</Label>
+						<Input id="healthcheckCommand" bind:value={healthcheckCommand} placeholder="例如： curl -f http://localhost/ || exit 1" class="h-9" />
 					</div>
 					<div class="grid grid-cols-4 gap-3">
 						<div class="space-y-1.5">
-							<Label for="healthcheckInterval" class="text-xs font-medium">Interval (s)</Label>
+							<Label for="healthcheckInterval" class="text-xs font-medium">检查间隔 (秒)</Label>
 							<Input id="healthcheckInterval" type="number" bind:value={healthcheckInterval} min="1" class="h-9" />
 						</div>
 						<div class="space-y-1.5">
-							<Label for="healthcheckTimeout" class="text-xs font-medium">Timeout (s)</Label>
+							<Label for="healthcheckTimeout" class="text-xs font-medium">超时时间 (秒)</Label>
 							<Input id="healthcheckTimeout" type="number" bind:value={healthcheckTimeout} min="1" class="h-9" />
 						</div>
 						<div class="space-y-1.5">
-							<Label for="healthcheckRetries" class="text-xs font-medium">Retries</Label>
+							<Label for="healthcheckRetries" class="text-xs font-medium">重试次数</Label>
 							<Input id="healthcheckRetries" type="number" bind:value={healthcheckRetries} min="1" class="h-9" />
 						</div>
 						<div class="space-y-1.5">
-							<Label for="healthcheckStartPeriod" class="text-xs font-medium">Start (s)</Label>
+							<Label for="healthcheckStartPeriod" class="text-xs font-medium">启动等待 (秒)</Label>
 							<Input id="healthcheckStartPeriod" type="number" bind:value={healthcheckStartPeriod} min="0" class="h-9" />
 						</div>
 					</div>
@@ -1555,9 +1555,9 @@
 		>
 			<div class="flex items-center gap-2">
 				<Wifi class="w-4 h-4 text-muted-foreground" />
-				<span class="text-sm font-medium">DNS settings</span>
+				<span class="text-sm font-medium">DNS 设置</span>
 				{#if dnsServers.length > 0 || dnsSearch.length > 0}
-					<Badge variant="secondary" class="text-2xs">configured</Badge>
+					<Badge variant="secondary" class="text-2xs">已配置</Badge>
 				{/if}
 			</div>
 			{#if showDns}
@@ -1569,11 +1569,11 @@
 		{#if showDns}
 			<div class="px-3 pb-3 space-y-3 border-t">
 				<div class="space-y-2 pt-2">
-					<Label class="text-xs font-medium">DNS servers</Label>
+					<Label class="text-xs font-medium">DNS 服务器</Label>
 					<div class="flex gap-2">
 						<Input
 							bind:value={dnsInput}
-							placeholder="e.g., 8.8.8.8"
+							placeholder="例如： 8.8.8.8"
 							class="h-9 flex-1"
 							onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addDnsServer(); } }}
 						/>
@@ -1597,11 +1597,11 @@
 
 				<!-- DNS Search domains -->
 				<div class="space-y-2">
-					<Label class="text-xs font-medium">DNS search domains</Label>
+					<Label class="text-xs font-medium">DNS 搜索域</Label>
 					<div class="flex gap-2">
 						<Input
 							bind:value={dnsSearchInput}
-							placeholder="e.g., example.com"
+							placeholder="例如： example.com"
 							class="h-9 flex-1"
 							onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addDnsSearch(); } }}
 						/>
@@ -1625,11 +1625,11 @@
 
 				<!-- DNS Options -->
 				<div class="space-y-2">
-					<Label class="text-xs font-medium">DNS options</Label>
+					<Label class="text-xs font-medium">DNS 选项</Label>
 					<div class="flex gap-2">
 						<Input
 							bind:value={dnsOptionInput}
-							placeholder="e.g., ndots:5"
+							placeholder="例如： ndots:5"
 							class="h-9 flex-1"
 							onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addDnsOption(); } }}
 						/>
@@ -1663,7 +1663,7 @@
 		>
 			<div class="flex items-center gap-2">
 				<HardDrive class="w-4 h-4 text-muted-foreground" />
-				<span class="text-sm font-medium">Devices</span>
+				<span class="text-sm font-medium">设备挂载</span>
 				{#if deviceMappings.length > 0}
 					<Badge variant="secondary" class="text-2xs">{deviceMappings.length}</Badge>
 				{/if}
@@ -1679,7 +1679,7 @@
 				<div class="flex justify-end pt-2">
 					<Button type="button" size="sm" variant="ghost" onclick={addDeviceMapping} class="h-7 text-xs">
 						<Plus class="w-3.5 h-3.5" />
-						Add device
+						添加设备
 					</Button>
 				</div>
 				{#each deviceMappings as mapping, index}
@@ -1712,7 +1712,7 @@
 				<Gpu class="w-4 h-4 text-muted-foreground" />
 				<span class="text-sm font-medium">GPU</span>
 				{#if gpuEnabled}
-					<Badge variant="secondary" class="text-2xs">configured</Badge>
+					<Badge variant="secondary" class="text-2xs">已配置</Badge>
 				{/if}
 			</div>
 			{#if showGpu}
@@ -1724,12 +1724,12 @@
 		{#if showGpu}
 			<div class="px-3 pb-3 space-y-3 border-t">
 				<div class="flex items-center justify-between pt-2">
-					<Label class="text-xs font-medium">Enable GPU access</Label>
+					<Label class="text-xs font-medium">启用 GPU 访问</Label>
 					<TogglePill bind:checked={gpuEnabled} />
 				</div>
 
 				<div class="space-y-1.5">
-					<Label class="text-xs font-medium">Runtime</Label>
+					<Label class="text-xs font-medium">运行时</Label>
 					<div class="flex gap-2">
 						<Select.Root type="single" value={runtime === '' ? '' : runtime === 'nvidia' ? 'nvidia' : 'custom'} onValueChange={(v) => {
 							if (v === '') runtime = '';
@@ -1737,18 +1737,18 @@
 							else if (v === 'custom') runtime = customRuntimeInput || '';
 						}}>
 							<Select.Trigger class="h-9 flex-1">
-								<span>{runtime === '' ? 'Default (runc)' : runtime === 'nvidia' ? 'NVIDIA' : `Custom: ${runtime}`}</span>
+								<span>{runtime === '' ? '默认（runc）' : runtime === 'nvidia' ? 'NVIDIA' : `自定义：${runtime}`}</span>
 							</Select.Trigger>
 							<Select.Content>
-								<Select.Item value="" label="Default (runc)" />
+								<Select.Item value="" label="默认 (runc)" />
 								<Select.Item value="nvidia" label="NVIDIA" />
-								<Select.Item value="custom" label="Custom..." />
+								<Select.Item value="custom" label="自定义..." />
 							</Select.Content>
 						</Select.Root>
 						{#if runtime !== '' && runtime !== 'nvidia'}
 							<Input
 								bind:value={customRuntimeInput}
-								placeholder="Runtime name"
+								placeholder="运行时名称"
 								class="h-9 w-40"
 								oninput={() => { runtime = customRuntimeInput; }}
 							/>
@@ -1758,13 +1758,13 @@
 
 				{#if gpuEnabled}
 					<div class="space-y-1.5">
-						<Label class="text-xs font-medium">GPU mode</Label>
+						<Label class="text-xs font-medium">GPU 模式</Label>
 						<ToggleGroup
 							value={gpuMode}
 							options={[
-								{ value: 'all', label: 'All' },
-								{ value: 'count', label: 'Count' },
-								{ value: 'specific', label: 'Specific' }
+								{ value: 'all', label: '全部' },
+								{ value: 'count', label: '数量' },
+								{ value: 'specific', label: '指定设备' }
 							]}
 							onchange={(v) => { gpuMode = v as 'all' | 'count' | 'specific'; }}
 						/>
@@ -1772,18 +1772,18 @@
 
 					{#if gpuMode === 'count'}
 						<div class="space-y-1.5">
-							<Label class="text-xs font-medium">GPU count</Label>
+							<Label class="text-xs font-medium">GPU 数量</Label>
 							<Input type="number" bind:value={gpuCount} min="1" placeholder="1" class="h-9 w-24" />
 						</div>
 					{/if}
 
 					{#if gpuMode === 'specific'}
 						<div class="space-y-2">
-							<Label class="text-xs font-medium">Device IDs</Label>
+							<Label class="text-xs font-medium">设备 ID</Label>
 							<div class="flex gap-2">
 								<Input
 									bind:value={gpuDeviceIdInput}
-									placeholder="e.g., 0, GPU-xxxx"
+									placeholder="例如： 0, GPU-xxxx"
 									class="h-9 flex-1"
 									onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addGpuDeviceId(); } }}
 								/>
@@ -1807,15 +1807,15 @@
 					{/if}
 
 					<div class="space-y-1.5">
-						<Label class="text-xs font-medium">Driver</Label>
+						<Label class="text-xs font-medium">驱动</Label>
 						<Input bind:value={gpuDriver} placeholder="nvidia" class="h-9" />
 					</div>
 
 					<div class="space-y-2">
-						<Label class="text-xs font-medium">Capabilities</Label>
+						<Label class="text-xs font-medium">功能权限</Label>
 						<Select.Root type="single" value="" onValueChange={(v) => { addGpuCapability(v); }}>
 							<Select.Trigger class="h-9">
-								<span class="text-muted-foreground">Add capability...</span>
+								<span class="text-muted-foreground">添加功能权限...</span>
 							</Select.Trigger>
 							<Select.Content>
 								{#each commonGpuCapabilities.filter(c => !gpuCapabilities.includes(c)) as cap}
@@ -1850,7 +1850,7 @@
 		>
 			<div class="flex items-center gap-2">
 				<Settings2 class="w-4 h-4 text-muted-foreground" />
-				<span class="text-sm font-medium">Ulimits</span>
+				<span class="text-sm font-medium">用户资源限制</span>
 				{#if ulimits.length > 0}
 					<Badge variant="secondary" class="text-2xs">{ulimits.length}</Badge>
 				{/if}
@@ -1866,7 +1866,7 @@
 				<div class="flex justify-end pt-2">
 					<Button type="button" size="sm" variant="ghost" onclick={addUlimit} class="h-7 text-xs">
 						<Plus class="w-3.5 h-3.5" />
-						Add ulimit
+						添加资源限制
 					</Button>
 				</div>
 				{#each ulimits as ulimit, index}
@@ -1881,8 +1881,8 @@
 								{/each}
 							</Select.Content>
 						</Select.Root>
-						<Input bind:value={ulimit.soft} type="number" placeholder="Soft" class="h-9 flex-1" />
-						<Input bind:value={ulimit.hard} type="number" placeholder="Hard" class="h-9 flex-1" />
+						<Input bind:value={ulimit.soft} type="number" placeholder="软限制" class="h-9 flex-1" />
+						<Input bind:value={ulimit.hard} type="number" placeholder="硬限制" class="h-9 flex-1" />
 						<Button
 							type="button"
 							size="icon"
@@ -1902,7 +1902,7 @@
 	<div class="space-y-3">
 		<div class="flex items-center gap-2 pb-2 border-b">
 			<RefreshCw class="w-4 h-4 text-muted-foreground" />
-			<h3 class="text-sm font-semibold text-foreground">Auto-update</h3>
+			<h3 class="text-sm font-semibold text-foreground">自动更新</h3>
 		</div>
 		<AutoUpdateSettings
 			bind:enabled={autoUpdateEnabled}

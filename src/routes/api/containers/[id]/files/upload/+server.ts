@@ -96,11 +96,11 @@ export const POST: RequestHandler = async ({ params, url, request, cookies }) =>
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('containers', 'exec', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	if (!path) {
-		return json({ error: 'Target path is required' }, { status: 400 });
+		return json({ error: '目标路径为必填项' }, { status: 400 });
 	}
 
 	try {
@@ -108,7 +108,7 @@ export const POST: RequestHandler = async ({ params, url, request, cookies }) =>
 		const files = formData.getAll('files') as File[];
 
 		if (files.length === 0) {
-			return json({ error: 'No files provided' }, { status: 400 });
+			return json({ error: '未提供任何文件' }, { status: 400 });
 		}
 
 		// We'll inspect the container once to determine its default user
@@ -160,7 +160,7 @@ export const POST: RequestHandler = async ({ params, url, request, cookies }) =>
 		}
 
 		if (errors.length > 0 && uploaded.length === 0) {
-			return json({ error: 'Failed to upload files', details: errors }, { status: 500 });
+			return json({ error: '文件上传失败', details: errors }, { status: 500 });
 		}
 
 		return json({
@@ -169,15 +169,15 @@ export const POST: RequestHandler = async ({ params, url, request, cookies }) =>
 			errors: errors.length > 0 ? errors : undefined
 		});
 	} catch (error: any) {
-		console.error('Error uploading to container:', error?.message || error);
+		console.error('上传到容器错误:', error?.message || error);
 
 		if (error.message?.includes('Permission denied')) {
-			return json({ error: 'Permission denied to write to this path' }, { status: 403 });
+			return json({ error: '写入此路径权限不足' }, { status: 403 });
 		}
 		if (error.message?.includes('No such file or directory')) {
-			return json({ error: 'Target directory not found' }, { status: 404 });
+			return json({ error: '目标目录未找到' }, { status: 404 });
 		}
 
-		return json({ error: 'Failed to upload files' }, { status: 500 });
+		return json({ error: '文件上传失败' }, { status: 500 });
 	}
 };

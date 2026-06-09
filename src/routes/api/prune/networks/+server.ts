@@ -13,7 +13,7 @@ export const POST: RequestHandler = async (event) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('networks', 'remove', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -22,13 +22,13 @@ export const POST: RequestHandler = async (event) => {
 		// Audit log
 		await audit(event, 'prune', 'network', {
 			environmentId: envIdNum,
-			description: 'Pruned unused networks',
+			description: '已清理未使用的网络',
 			details: { result }
 		});
 
 		return json({ success: true, result });
 	} catch (error) {
-		console.error('Error pruning networks:', error);
-		return json({ error: 'Failed to prune networks' }, { status: 500 });
+		console.error('清理网络失败:', error);
+		return json({ error: '清理网络失败' }, { status: 500 });
 	}
 };

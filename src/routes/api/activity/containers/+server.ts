@@ -11,7 +11,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 	// Permission check for activity viewing
 	if (auth.authEnabled && !await auth.can('activity', 'view', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -36,7 +36,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 		const containers = await getContainerEventContainers(undefined, environmentIds);
 		return json(containers);
 	} catch (error) {
-		console.error('Error fetching container names:', error);
-		return json({ error: 'Failed to fetch container names' }, { status: 500 });
+		console.error('获取容器名称失败:', error);
+		return json({ error: '获取容器名称失败' }, { status: 500 });
 	}
 };

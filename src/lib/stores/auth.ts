@@ -103,7 +103,7 @@ function createAuthStore() {
 				const data = await response.json();
 
 				if (!response.ok) {
-					return { success: false, error: data.error || 'Login failed' };
+					return { success: false, error: data.error || '登录失败' };
 				}
 
 				if (data.requiresMfa) {
@@ -116,9 +116,9 @@ function createAuthStore() {
 					return { success: true };
 				}
 
-				return { success: false, error: 'Login failed' };
+				return { success: false, error: '登录失败' };
 			} catch (error) {
-				return { success: false, error: 'Network error' };
+				return { success: false, error: '网络错误' };
 			}
 		},
 
