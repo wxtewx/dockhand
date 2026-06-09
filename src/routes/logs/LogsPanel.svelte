@@ -75,9 +75,9 @@
 	// Capped at 1000 — larger initial replays freeze the browser since rendering
 	// isn't virtualized.
 	const tailOptions = [
-		{ value: '100', label: '100 行' },
-		{ value: '500', label: '500 行' },
-		{ value: '1000', label: '1000 行' }
+		{ value: '100', label: '100' },
+		{ value: '500', label: '500' },
+		{ value: '1000', label: '1000' }
 	];
 	const VALID_TAIL_VALUES = new Set(tailOptions.map(o => o.value));
 
@@ -791,12 +791,12 @@
 			</button>
 			<!-- Tail lines selector -->
 			<Select.Root type="single" value={tailCount} onValueChange={(v) => { tailCount = v; saveSettings(); reloadLogs(); }}>
-				<Select.Trigger size="sm" class="!h-auto !py-0.5 w-[52px] text-xs px-1.5 {darkMode ? 'bg-zinc-800 border-zinc-700 text-zinc-300' : 'bg-white border-gray-300 text-gray-700'} [&_svg]:size-3" title="Number of log lines to load">
+				<Select.Trigger size="sm" class="!h-auto !py-0.5 w-[52px] text-xs px-1.5 {darkMode ? 'bg-zinc-800 border-zinc-700 text-zinc-300' : 'bg-white border-gray-300 text-gray-700'} [&_svg]:size-3" title="加载的日志行数">
 					<span>{tailOptions.find(o => o.value === tailCount)?.label ?? tailCount}</span>
 				</Select.Trigger>
 				<Select.Content>
 					{#each tailOptions as opt}
-						<Select.Item value={opt.value} label={opt.label}>{opt.label} lines</Select.Item>
+						<Select.Item value={opt.value} label={opt.label}>{opt.label} 行</Select.Item>
 					{/each}
 				</Select.Content>
 			</Select.Root>

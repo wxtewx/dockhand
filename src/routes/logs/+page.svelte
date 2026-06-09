@@ -86,9 +86,9 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 	// Capped at 1000 to avoid the frozen-browser hang from rendering thousands of
 	// nodes at once (no virtualization yet).
 	const tailOptions = [
-		{ value: '100', label: '100 行' },
-		{ value: '500', label: '500 行' },
-		{ value: '1000', label: '1000 行' }
+		{ value: '100', label: '100' },
+		{ value: '500', label: '500' },
+		{ value: '1000', label: '1000' }
 	];
 	const VALID_TAIL_VALUES = new Set(tailOptions.map(o => o.value));
 	let tailCount = $state('500');
@@ -2046,12 +2046,12 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 							</button>
 							<!-- Tail lines selector -->
 							<Select.Root type="single" value={tailCount} onValueChange={(v) => { tailCount = v; saveState(); reloadAllLogs(); }}>
-								<Select.Trigger class="!h-7 w-[52px] text-xs px-2 [&_svg]:size-3 {darkMode ? 'bg-zinc-800 border-zinc-700 text-zinc-300' : 'bg-white border-gray-300 text-gray-700'}" title="Number of log lines to load">
+								<Select.Trigger class="!h-7 w-[52px] text-xs px-2 [&_svg]:size-3 {darkMode ? 'bg-zinc-800 border-zinc-700 text-zinc-300' : 'bg-white border-gray-300 text-gray-700'}" title="加载的日志行数">
 									<span>{tailOptions.find(o => o.value === tailCount)?.label ?? tailCount}</span>
 								</Select.Trigger>
 								<Select.Content>
 									{#each tailOptions as opt}
-										<Select.Item value={opt.value} label={opt.label} class="pe-2 [&>span:first-child]:hidden">{opt.label} lines</Select.Item>
+										<Select.Item value={opt.value} label={opt.label} class="pe-2 [&>span:first-child]:hidden">{opt.label} 行</Select.Item>
 									{/each}
 								</Select.Content>
 							</Select.Root>
@@ -2271,7 +2271,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 						</Select.Trigger>
 						<Select.Content>
 							{#each tailOptions as opt}
-								<Select.Item value={opt.value} label={opt.label} class="pe-2 [&>span:first-child]:hidden">{opt.label} lines</Select.Item>
+								<Select.Item value={opt.value} label={opt.label} class="pe-2 [&>span:first-child]:hidden">{opt.label} 行</Select.Item>
 							{/each}
 						</Select.Content>
 					</Select.Root>
