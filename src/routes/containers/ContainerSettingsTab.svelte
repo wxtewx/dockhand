@@ -316,10 +316,10 @@
 
 	// Display label for the current network mode in the trigger
 	const networkModeLabel = $derived.by(() => {
-		if (networkModeType === 'bridge') return 'Bridge';
-		if (networkModeType === 'host') return 'Host';
-		if (networkModeType === 'none') return 'None';
-		if (networkModeType === 'container') return containerRef ? `Container: ${containerRef}` : 'Container';
+		if (networkModeType === 'bridge') return '桥接';
+		if (networkModeType === 'host') return '主机';
+		if (networkModeType === 'none') return '无';
+		if (networkModeType === 'container') return containerRef ? `容器: ${containerRef}` : '容器';
 		return networkMode;  // custom network name
 	});
 

@@ -939,7 +939,7 @@
 						<!-- Network Mode -->
 						<div class="space-y-2">
 							<h3 class="text-sm font-semibold">网络模式</h3>
-							<Badge variant="outline">{networkModeLabel}</Badge>
+							<Badge variant="outline">{getLabelText(networkModeLabel)}</Badge>
 						</div>
 
 						<!-- DNS Settings -->
