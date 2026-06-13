@@ -1,5 +1,5 @@
 <svelte:head>
-	<title>Settings - Dockhand</title>
+	<title>设置 - Dockhand</title>
 </svelte:head>
 
 <script lang="ts">
