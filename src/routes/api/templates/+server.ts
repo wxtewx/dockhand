@@ -87,9 +87,9 @@ function normalizeLinuxServerTemplate(entry: any): TemplateItem | null {
 		source: 'LinuxServer.io',
 		image: `lscr.io/linuxserver/${entry.name}:latest`,
 		env: [
-			{ name: 'PUID', label: 'User ID', default: '1000' },
-			{ name: 'PGID', label: 'Group ID', default: '1000' },
-			{ name: 'TZ', label: 'Timezone', default: 'Etc/UTC' },
+			{ name: 'PUID', label: '用户 ID', default: '1000' },
+			{ name: 'PGID', label: '用户组 ID', default: '1000' },
+			{ name: 'TZ', label: '时区', default: 'Etc/UTC' },
 		],
 		restartPolicy: 'unless-stopped',
 		stars: entry.stars,
@@ -110,7 +110,7 @@ async function fetchSource(source: TemplateSource): Promise<TemplateItem[]> {
 		});
 
 		if (!response.ok) {
-			console.error(`[Templates] Failed to fetch ${source.name}: ${response.status}`);
+			console.error(`[模板] 获取模板源 ${source.name} 失败，状态码: ${response.status}`);
 			return cached?.data || [];
 		}
 
@@ -130,7 +130,7 @@ async function fetchSource(source: TemplateSource): Promise<TemplateItem[]> {
 		cache.set(source.url, { data: templates, fetchedAt: Date.now() });
 		return templates;
 	} catch (error) {
-		console.error(`[Templates] Error fetching ${source.name}:`, error instanceof Error ? error.message : error);
+		console.error(`[模板] 请求模板源 ${source.name} 发生错误:`, error instanceof Error ? error.message : error);
 		return cached?.data || [];
 	}
 }
@@ -138,7 +138,7 @@ async function fetchSource(source: TemplateSource): Promise<TemplateItem[]> {
 export const GET: RequestHandler = async ({ cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('templates', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const sources = await getTemplateSources();

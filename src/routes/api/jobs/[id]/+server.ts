@@ -11,7 +11,7 @@ import type { RequestHandler } from './$types';
 export const GET: RequestHandler = async ({ params }) => {
 	const job = getJob(params.id);
 	if (!job) {
-		return json({ error: 'Job not found' }, { status: 404 });
+		return json({ error: '任务不存在' }, { status: 404 });
 	}
 
 	return json({

@@ -14,7 +14,7 @@ import { registerSchedule, unregisterSchedule, triggerImagePrune } from '$lib/se
 export const GET: RequestHandler = async ({ params, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('environments', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -23,7 +23,7 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 		// Verify environment exists
 		const env = await getEnvironment(id);
 		if (!env) {
-			return json({ error: 'Environment not found' }, { status: 404 });
+			return json({ error: '环境不存在' }, { status: 404 });
 		}
 
 		const settings = await getImagePruneSettings(id);
@@ -36,8 +36,8 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 			}
 		});
 	} catch (error) {
-		console.error('Failed to get image prune settings:', error);
-		return json({ error: 'Failed to get image prune settings' }, { status: 500 });
+		console.error('获取镜像清理设置失败:', error);
+		return json({ error: '获取镜像清理设置失败' }, { status: 500 });
 	}
 };
 
@@ -47,7 +47,7 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 export const POST: RequestHandler = async ({ params, request, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('environments', 'edit')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -56,7 +56,7 @@ export const POST: RequestHandler = async ({ params, request, cookies }) => {
 		// Verify environment exists
 		const env = await getEnvironment(id);
 		if (!env) {
-			return json({ error: 'Environment not found' }, { status: 404 });
+			return json({ error: '环境不存在' }, { status: 404 });
 		}
 
 		const data = await request.json();
@@ -84,8 +84,8 @@ export const POST: RequestHandler = async ({ params, request, cookies }) => {
 
 		return json({ success: true, settings });
 	} catch (error) {
-		console.error('Failed to save image prune settings:', error);
-		return json({ error: 'Failed to save image prune settings' }, { status: 500 });
+		console.error('保存镜像清理设置失败:', error);
+		return json({ error: '保存镜像清理设置失败' }, { status: 500 });
 	}
 };
 
@@ -95,7 +95,7 @@ export const POST: RequestHandler = async ({ params, request, cookies }) => {
 export const PUT: RequestHandler = async ({ params, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('environments', 'edit')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -104,7 +104,7 @@ export const PUT: RequestHandler = async ({ params, cookies }) => {
 		// Verify environment exists
 		const env = await getEnvironment(id);
 		if (!env) {
-			return json({ error: 'Environment not found' }, { status: 404 });
+			return json({ error: '环境不存在' }, { status: 404 });
 		}
 
 		const result = await triggerImagePrune(id);
@@ -115,7 +115,7 @@ export const PUT: RequestHandler = async ({ params, cookies }) => {
 
 		return json({ success: true });
 	} catch (error) {
-		console.error('Failed to trigger image prune:', error);
-		return json({ error: 'Failed to trigger image prune' }, { status: 500 });
+		console.error('触发镜像清理失败:', error);
+		return json({ error: '触发镜像清理失败' }, { status: 500 });
 	}
 };

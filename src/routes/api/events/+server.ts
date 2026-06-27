@@ -9,7 +9,7 @@ export const GET: RequestHandler = async ({ url }) => {
 	// Early return if no environment specified
 	if (!envIdNum) {
 		return new Response(
-			`event: info\ndata: ${JSON.stringify({ message: 'No environment selected' })}\n\n`,
+			`event: info\ndata: ${JSON.stringify({ message: '未选择环境' })}\n\n`,
 			{
 				headers: {
 					'Content-Type': 'text/event-stream',
@@ -23,7 +23,7 @@ export const GET: RequestHandler = async ({ url }) => {
 	const env = await getEnvironment(envIdNum);
 	if (env?.connectionType === 'hawser-edge') {
 		return new Response(
-			`event: error\ndata: ${JSON.stringify({ message: 'Edge environments receive events via agent push, not this endpoint' })}\n\n`,
+			`event: error\ndata: ${JSON.stringify({ message: '边缘环境通过代理推送接收事件，而非此接口' })}\n\n`,
 			{
 				headers: {
 					'Content-Type': 'text/event-stream',
@@ -85,7 +85,7 @@ export const GET: RequestHandler = async ({ url }) => {
 				);
 
 				if (!eventStream) {
-					sendEvent('error', { message: 'Failed to connect to Docker events' });
+					sendEvent('error', { message: '连接 Docker 事件流失败' });
 					clearInterval(heartbeatInterval);
 					safeClose();
 					return;
@@ -134,9 +134,9 @@ export const GET: RequestHandler = async ({ url }) => {
 						// Don't log full stack trace for expected connection errors
 						const isConnectionError = error?.code === 'ECONNRESET' || error?.code === 'ECONNREFUSED';
 						if (!isConnectionError) {
-							console.error('Docker event stream error:', error?.message || error);
+							console.error('Docker 事件流错误:', error?.message || error);
 						}
-						sendEvent('error', { message: error?.message || 'Stream connection lost' });
+						sendEvent('error', { message: error?.message || '流连接已断开' });
 					} finally {
 						clearInterval(heartbeatInterval);
 						safeClose();
@@ -147,14 +147,14 @@ export const GET: RequestHandler = async ({ url }) => {
 			} catch (error: any) {
 				if (error instanceof EnvironmentNotFoundError) {
 					// Expected error when environment doesn't exist - don't spam logs
-					sendEvent('error', { message: 'Environment not found' });
+					sendEvent('error', { message: '环境不存在' });
 				} else {
 					// Don't log full stack trace for expected connection errors
 					const isConnectionError = error?.code === 'ECONNRESET' || error?.code === 'ECONNREFUSED';
 					if (!isConnectionError) {
-						console.error('Failed to connect to Docker events:', error?.message || error);
+						console.error('连接 Docker 事件流失败:', error?.message || error);
 					}
-					sendEvent('error', { message: error?.message || 'Failed to connect to Docker' });
+					sendEvent('error', { message: error?.message || '连接 Docker 失败' });
 				}
 				clearInterval(heartbeatInterval);
 				safeClose();

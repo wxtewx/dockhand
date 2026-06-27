@@ -77,7 +77,7 @@
 				}
 			}
 		} catch (err) {
-			console.error('Failed to load environments:', err);
+			console.error('加载环境失败:', err);
 		} finally {
 			loadingEnvs = false;
 		}
@@ -120,7 +120,7 @@
 	);
 
 	const defaultEnv = $derived(environments.find(e => e.id === defaultEnvId));
-	const defaultEnvName = $derived(defaultEnv?.name || 'Select environment');
+	const defaultEnvName = $derived(defaultEnv?.name || '选择环境');
 
 	function isSelected(composePath: string): boolean {
 		return stackSelections.has(composePath);
@@ -212,7 +212,7 @@
 				if (!response.ok) {
 					// Add all stacks in this batch as failed
 					for (const stack of stacks) {
-						totalFailed.push({ name: stack.name, error: data.error || 'Failed to adopt' });
+						totalFailed.push({ name: stack.name, error: data.error || '导入失败' });
 					}
 				} else {
 					// Track adopted stacks with their environment
@@ -224,10 +224,10 @@
 			}
 
 			if (totalAdopted.length > 0) {
-				toast.success(`Adopted ${totalAdopted.length} stack(s)`);
+				toast.success(`已导入 ${totalAdopted.length} 个堆栈`);
 			}
 			if (totalFailed.length > 0) {
-				toast.error(`Failed to adopt ${totalFailed.length} stack(s)`);
+				toast.error(`${totalFailed.length} 个堆栈导入失败`);
 			}
 
 			// Update the result to reflect adopted stacks
@@ -258,7 +258,7 @@
 			onAdopted?.();
 
 		} catch (err) {
-			toast.error('Failed to adopt stacks');
+			toast.error('导入堆栈失败');
 		} finally {
 			adopting = false;
 		}
@@ -270,10 +270,10 @@
 		<Dialog.Header>
 			<Dialog.Title class="flex items-center gap-2">
 				<Search class="w-5 h-5" />
-				External stack scan results
+				外部堆栈扫描结果
 			</Dialog.Title>
 			<Dialog.Description>
-				Scanned {scannedPaths.length} configured path{scannedPaths.length !== 1 ? 's' : ''} for Docker Compose files
+				已扫描 {scannedPaths.length} 个配置路径，查找 Docker Compose 文件
 			</Dialog.Description>
 		</Dialog.Header>
 
@@ -284,30 +284,30 @@
 				<div class="flex items-center gap-4 p-3 rounded-lg bg-muted/50">
 					<div class="flex items-center gap-2">
 						<FolderOpen class="w-4 h-4 text-muted-foreground" />
-						<span class="text-sm font-medium">{result.discovered.length + result.skipped.length + adoptedStacks.length} found</span>
+						<span class="text-sm font-medium">共找到 {result.discovered.length + result.skipped.length + adoptedStacks.length} 个</span>
 					</div>
 					{#if result.discovered.length > 0}
 						<div class="flex items-center gap-1.5 text-blue-600 dark:text-blue-500">
 							<Import class="w-4 h-4" />
-							<span class="text-sm">{result.discovered.length} new</span>
+							<span class="text-sm">{result.discovered.length} 个新堆栈</span>
 						</div>
 					{/if}
 					{#if adoptedStacks.length > 0}
 						<div class="flex items-center gap-1.5 text-green-600 dark:text-green-500">
 							<CheckCircle2 class="w-4 h-4" />
-							<span class="text-sm">{adoptedStacks.length} adopted</span>
+							<span class="text-sm">{adoptedStacks.length} 个已导入</span>
 						</div>
 					{/if}
 					{#if result.skipped.length > 0}
 						<div class="flex items-center gap-1.5 text-muted-foreground">
 							<SkipForward class="w-4 h-4" />
-							<span class="text-sm">{result.skipped.length} already adopted</span>
+							<span class="text-sm">{result.skipped.length} 个已导入</span>
 						</div>
 					{/if}
 					{#if result.errors.length > 0}
 						<div class="flex items-center gap-1.5 text-destructive">
 							<AlertCircle class="w-4 h-4" />
-							<span class="text-sm">{result.errors.length} errors</span>
+							<span class="text-sm">{result.errors.length} 个错误</span>
 						</div>
 					{/if}
 				</div>
@@ -316,19 +316,19 @@
 				{#if result.discovered.length > 0}
 					{#if loadingEnvs}
 						<div class="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
-							<Label class="text-sm font-medium shrink-0">Adopt to:</Label>
+							<Label class="text-sm font-medium shrink-0">导入到：</Label>
 							<div class="flex items-center gap-2 text-muted-foreground">
 								<Loader2 class="w-4 h-4 animate-spin" />
-								<span class="text-sm">Loading...</span>
+								<span class="text-sm">加载中...</span>
 							</div>
 						</div>
 					{:else if environments.length === 0}
 						<div class="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
-							<p class="text-sm text-destructive">No environments configured</p>
+							<p class="text-sm text-destructive">未配置任何环境</p>
 						</div>
 					{:else if environments.length > 1}
 						<div class="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
-							<Label class="text-sm font-medium shrink-0">Adopt to:</Label>
+							<Label class="text-sm font-medium shrink-0">导入到：</Label>
 							<Select.Root
 								type="single"
 								value={defaultEnvId?.toString()}
@@ -354,7 +354,7 @@
 								</Select.Content>
 							</Select.Root>
 							<Button variant="outline" size="sm" onclick={applyDefaultEnvToAll} disabled={stackSelections.size === 0}>
-								Apply to all
+								应用到全部
 							</Button>
 						</div>
 					{/if}
@@ -369,7 +369,7 @@
 						<div class="flex items-center justify-between">
 							<h4 class="text-sm font-medium flex items-center gap-2 text-blue-600 dark:text-blue-500">
 								<Import class="w-4 h-4" />
-								Available for adoption
+								可导入的堆栈
 							</h4>
 							<button
 								type="button"
@@ -377,7 +377,7 @@
 								onclick={toggleAll}
 							>
 								<Checkbox checked={allSelected} indeterminate={someSelected} />
-								<span>{allSelected ? 'Deselect all' : 'Select all'}</span>
+								<span>{allSelected ? '取消全选' : '全选'}</span>
 							</button>
 						</div>
 						<div class="space-y-1.5">
@@ -407,13 +407,13 @@
 											{#if stack.runningOn && stack.runningOn.length > 0}
 												<Badge variant="outline" class="text-xs text-green-600 dark:text-green-500 border-green-300 dark:border-green-600 gap-1">
 													<Play class="w-3 h-3" />
-													Running on {stack.runningOn.map(r => r.envName).join(', ')}
+													运行于 {stack.runningOn.map(r => r.envName).join(', ')}
 													<Tooltip.Root>
 														<Tooltip.Trigger>
 															<HelpCircle class="w-3 h-3 opacity-60" />
 														</Tooltip.Trigger>
 														<Tooltip.Content class="max-w-sm">
-															<p class="text-xs">This stack is already running (detected via Docker's <code class="bg-muted px-1 rounded">com.docker.compose.project</code> label). Adopting will allow you to manage it through Dockhand.</p>
+															<p class="text-xs">该堆栈已在运行 (通过 Docker 的 <code class="bg-muted px-1 rounded">com.docker.compose.project</code> 标签检测到)。 导入后可通过 Dockhand 管理。</p>
 														</Tooltip.Content>
 													</Tooltip.Root>
 												</Badge>
@@ -423,7 +423,7 @@
 										{#if stack.envPath}
 											<p class="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
 												<FileText class="w-3 h-3" />
-												.env file detected
+												检测到 .env 文件
 											</p>
 										{/if}
 									</button>
@@ -433,13 +433,13 @@
 											<!-- Note if importing to different environment than running -->
 											{#if stack.runningOn && stack.runningOn.length > 0 && !stack.runningOn.some(r => r.envId === stackEnvId)}
 												<Badge variant="outline" class="text-xs text-amber-600 dark:text-amber-500 border-amber-300 dark:border-amber-600 gap-1">
-													Running elsewhere
+													运行于其他环境
 													<Tooltip.Root>
 														<Tooltip.Trigger>
 															<HelpCircle class="w-3 h-3 opacity-60" />
 														</Tooltip.Trigger>
 														<Tooltip.Content class="max-w-sm">
-															<p class="text-xs">This stack is running on a different environment ({stack.runningOn?.map(r => r.envName).join(', ')}). You can still adopt it here, but it won't affect the running containers.</p>
+															<p class="text-xs">该堆栈运行在其他环境({stack.runningOn?.map(r => r.envName).join(', ')})。您仍可以在此导入，但不会影响正在运行的容器。</p>
 														</Tooltip.Content>
 													</Tooltip.Root>
 												</Badge>
@@ -482,7 +482,7 @@
 					<div class="space-y-2">
 						<h4 class="text-sm font-medium flex items-center gap-2 text-green-600 dark:text-green-500">
 							<CheckCircle2 class="w-4 h-4" />
-							Adopted stacks
+							已导入的堆栈
 						</h4>
 						<div class="space-y-1.5">
 							{#each adoptedStacks as adopted}
@@ -507,7 +507,7 @@
 					<div class="space-y-2">
 						<h4 class="text-sm font-medium flex items-center gap-2 text-muted-foreground">
 							<SkipForward class="w-4 h-4" />
-							Already adopted
+							已导入
 						</h4>
 						<div class="space-y-1.5">
 							{#each result.skipped as stack}
@@ -528,7 +528,7 @@
 					<div class="space-y-2">
 						<h4 class="text-sm font-medium flex items-center gap-2 text-destructive">
 							<AlertCircle class="w-4 h-4" />
-							Errors
+							错误
 						</h4>
 						<div class="space-y-1.5">
 							{#each result.errors as error}
@@ -548,14 +548,14 @@
 				{#if result.discovered.length === 0 && result.skipped.length === 0 && result.adopted.length === 0 && result.errors.length === 0}
 					<div class="text-center py-8 text-muted-foreground">
 						<FolderOpen class="w-12 h-12 mx-auto mb-3 opacity-50" />
-						<p class="text-sm">No Docker Compose files found in the configured paths.</p>
-						<p class="text-xs mt-1">Make sure your paths contain compose.yaml, compose.yml, or similar files.</p>
+						<p class="text-sm">在配置路径中未找到 Docker Compose 文件。</p>
+						<p class="text-xs mt-1">请确保路径中包含 compose.yaml、compose.yml 或同类文件。</p>
 					</div>
 				{/if}
 
 				<!-- Scanned paths -->
 				<div class="space-y-2 pt-2 border-t">
-					<h4 class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Scanned paths</h4>
+					<h4 class="text-xs font-medium text-muted-foreground uppercase tracking-wide">已扫描路径</h4>
 					<div class="space-y-1">
 						{#each scannedPaths as path}
 							<code class="text-xs text-muted-foreground block">{path}</code>
@@ -568,11 +568,11 @@
 		<Dialog.Footer class="flex items-center justify-between">
 			<div class="text-xs text-muted-foreground">
 				{#if selectedCount > 0}
-					{selectedCount} stack{selectedCount !== 1 ? 's' : ''} selected
+					已选择 {selectedCount} 个堆栈
 				{/if}
 			</div>
 			<div class="flex items-center gap-2">
-				<Button variant="outline" onclick={() => { open = false; onclose(); }}>Close</Button>
+				<Button variant="outline" onclick={() => { open = false; onclose(); }}>关闭</Button>
 				{#if result && result.discovered.length > 0}
 					<Button
 						onclick={handleAdopt}
@@ -580,14 +580,14 @@
 					>
 						{#if adopting}
 							<Loader2 class="w-4 h-4 mr-2 animate-spin" />
-							Adopting...
+							正在导入...
 						{:else}
 							<Import class="w-4 h-4" />
-							Adopt selected
+							导入所选
 						{/if}
 					</Button>
 				{:else if adoptedStacks.length > 0}
-					<Button href="/stacks">View stacks</Button>
+					<Button href="/stacks">查看堆栈</Button>
 				{/if}
 			</div>
 		</Dialog.Footer>

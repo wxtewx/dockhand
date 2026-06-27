@@ -148,7 +148,7 @@ export async function validateApiToken(rawToken: string): Promise<AuthenticatedU
 			.where(eq(table.id, candidate.id))
 			.catch((err) => {
 				if (typeof process !== 'undefined' && process.env.DB_VERBOSE_LOGGING === 'true') {
-					console.debug('[api-tokens] lastUsed update failed:', err?.message);
+					console.debug('[API 令牌] 更新最后使用时间失败:', err?.message);
 				}
 			});
 

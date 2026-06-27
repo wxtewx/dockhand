@@ -11,7 +11,7 @@ import { auditGitCredential } from '$lib/server/audit';
 export const GET: RequestHandler = async ({ cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('git', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -29,8 +29,8 @@ export const GET: RequestHandler = async ({ cookies }) => {
 		}));
 		return json(sanitized);
 	} catch (error) {
-		console.error('Failed to get git credentials:', error);
-		return json({ error: 'Failed to get git credentials' }, { status: 500 });
+		console.error('获取 Git 凭据失败:', error);
+		return json({ error: '获取 Git 凭据失败' }, { status: 500 });
 	}
 };
 
@@ -38,27 +38,27 @@ export const POST: RequestHandler = async (event) => {
 	const { request, cookies } = event;
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('git', 'create')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const data = await request.json();
 
 		if (!data.name || typeof data.name !== 'string') {
-			return json({ error: 'Name is required' }, { status: 400 });
+			return json({ error: '名称为必填项' }, { status: 400 });
 		}
 
 		const authType = (data.authType || 'none') as GitAuthType;
 		if (!['none', 'password', 'ssh'].includes(authType)) {
-			return json({ error: 'Invalid auth type' }, { status: 400 });
+			return json({ error: '无效的认证类型' }, { status: 400 });
 		}
 
 		if (authType === 'password' && !data.password) {
-			return json({ error: 'Password is required for password authentication' }, { status: 400 });
+			return json({ error: '密码认证需要填写密码' }, { status: 400 });
 		}
 
 		if (authType === 'ssh' && !data.sshPrivateKey) {
-			return json({ error: 'SSH private key is required for SSH authentication' }, { status: 400 });
+			return json({ error: 'SSH 认证需要填写私钥' }, { status: 400 });
 		}
 
 		const credential = await createGitCredential({
@@ -84,10 +84,10 @@ export const POST: RequestHandler = async (event) => {
 			updatedAt: credential.updatedAt
 		});
 	} catch (error: any) {
-		console.error('Failed to create git credential:', error);
+		console.error('创建 Git 凭据失败:', error);
 		if (error.message?.includes('UNIQUE constraint failed')) {
-			return json({ error: 'A credential with this name already exists' }, { status: 400 });
+			return json({ error: '同名凭据已存在' }, { status: 400 });
 		}
-		return json({ error: 'Failed to create git credential' }, { status: 500 });
+		return json({ error: '创建 Git 凭据失败' }, { status: 500 });
 	}
 };

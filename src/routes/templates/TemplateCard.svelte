@@ -74,7 +74,7 @@
 		<Card.Content class="px-3 pb-2 pt-0" onclick={(e: MouseEvent) => { if ((e.target as HTMLElement).tagName === 'A') e.stopPropagation(); }}>
 			<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 			<p class="text-xs text-muted-foreground line-clamp-2">
-				{@html renderDescription(template.description) || 'No description available'}
+				{@html renderDescription(template.description) || '暂无描述信息'}
 			</p>
 		</Card.Content>
 		<Card.Footer class="px-3 pb-3 pt-0 flex items-center gap-1.5 flex-wrap">

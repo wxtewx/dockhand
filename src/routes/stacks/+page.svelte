@@ -1,5 +1,5 @@
 <svelte:head>
-	<title>Stacks - Dockhand</title>
+	<title>堆栈 - Dockhand</title>
 </svelte:head>
 
 <script lang="ts">
@@ -24,6 +24,7 @@
 	import ConfirmPopover from '$lib/components/ConfirmPopover.svelte';
 	import BatchOperationModal from '$lib/components/BatchOperationModal.svelte';
 	import type { ComposeStackInfo, ContainerStats } from '$lib/types';
+	import { getLabelText } from '$lib/types';
 	import StackModal from './StackModal.svelte';
 	import GitStackModal from './GitStackModal.svelte';
 	import ImportStackModal from './ImportStackModal.svelte';
@@ -115,12 +116,36 @@
 
 	// Helper: format uptime from status string
 	function formatUptime(status: string): string {
-		if (!status) return '-';
-		const upMatch = status.match(/Up\s+(.+?)(?:\s+\(|$)/i);
-		if (upMatch) return upMatch[1].trim();
-		const exitMatch = status.match(/Exited.+?(\d+\s+\w+)\s+ago/i);
-		if (exitMatch) return exitMatch[1] + ' ago';
-		return '-';
+  		if (!status) return '-';
+  			const upMatch = status.match(/Up\s+(.+?)(?:\s+\(|$)/i);
+  		if (upMatch) {
+    		let uptime = upMatch[1].trim();
+				 uptime = uptime
+				 	.replace(/\ban\b/gi, '1')
+      				.replace(/\ba\b/gi, '1')
+      				.replace(/^About\s+/i, '约 ')
+      				.replace(/^Less than\s+/i, '不足 ')
+      				.replace(/^Less than an?\s+/i, '不足1');
+    			uptime = uptime
+      				.replace(/seconds?/g, '秒')
+      				.replace(/minutes?/g, '分钟')
+      				.replace(/hours?/g, '小时')
+      				.replace(/days?/g, '天')
+      				.replace(/weeks?/g, '周');
+    			return uptime;
+  			}
+  		const exitMatch = status.match(/Exited.+?(\d+\s+\w+)\s+ago/i);
+  		if (exitMatch) {
+    		let exitTime = exitMatch[1];
+   			exitTime = exitTime
+      			.replace(/seconds?/g, '秒')
+      			.replace(/minutes?/g, '分钟')
+      			.replace(/hours?/g, '小时')
+      			.replace(/days?/g, '天')
+      			.replace(/weeks?/g, '周');
+    		return `${exitTime} 前`;
+  		}
+  		return '-';
 	}
 
 	// Helper: get container's primary IP address
@@ -201,7 +226,7 @@
 			}
 		} catch (error: any) {
 			if (error?.name !== 'AbortError') {
-				console.error('Failed to fetch container stats:', error);
+				console.error('获取容器统计信息失败:', error);
 			}
 		} finally {
 			statsFetching = false;
@@ -292,11 +317,11 @@
 
 	// Stack status types with icons and colors
 	const stackStatusTypes = [
-		{ value: 'running', label: 'Running', icon: Play, color: 'text-emerald-500' },
-		{ value: 'partial', label: 'Partial', icon: CircleDashed, color: 'text-amber-500' },
-		{ value: 'stopped', label: 'Stopped', icon: Square, color: 'text-rose-500' },
-		{ value: 'created', label: 'Created', icon: CircleDashed, color: 'text-slate-500' },
-		{ value: 'not deployed', label: 'Not deployed', icon: Rocket, color: 'text-violet-500' }
+		{ value: 'running', label: '运行中', icon: Play, color: 'text-emerald-500' },
+		{ value: 'partial', label: '部分运行', icon: CircleDashed, color: 'text-amber-500' },
+		{ value: 'stopped', label: '已停止', icon: Square, color: 'text-rose-500' },
+		{ value: 'created', label: '已创建', icon: CircleDashed, color: 'text-slate-500' },
+		{ value: 'not deployed', label: '未部署', icon: Rocket, color: 'text-violet-500' }
 	];
 
 	function getStackStatusIcon(status: string) {
@@ -560,35 +585,35 @@
 	}
 
 	function bulkStart() {
-		batchOpTitle = `Starting ${selectedStopped.length} stack${selectedStopped.length !== 1 ? 's' : ''}`;
+		batchOpTitle = `启动 ${selectedStopped.length} 个堆栈`;
 		batchOpOperation = 'start';
 		batchOpItems = selectedStopped.map(s => ({ id: s.name, name: s.name }));
 		showBatchOpModal = true;
 	}
 
 	function bulkStop() {
-		batchOpTitle = `Stopping ${selectedRunning.length} stack${selectedRunning.length !== 1 ? 's' : ''}`;
+		batchOpTitle = `停止 ${selectedRunning.length} 个堆栈`;
 		batchOpOperation = 'stop';
 		batchOpItems = selectedRunning.map(s => ({ id: s.name, name: s.name }));
 		showBatchOpModal = true;
 	}
 
 	function bulkDown() {
-		batchOpTitle = `Bringing down ${selectedRunning.length} stack${selectedRunning.length !== 1 ? 's' : ''}`;
+		batchOpTitle = `销毁 ${selectedRunning.length} 个堆栈`;
 		batchOpOperation = 'down';
 		batchOpItems = selectedRunning.map(s => ({ id: s.name, name: s.name }));
 		showBatchOpModal = true;
 	}
 
 	function bulkRestart() {
-		batchOpTitle = `Restarting ${selectedRunning.length} stack${selectedRunning.length !== 1 ? 's' : ''}`;
+		batchOpTitle = `重启 ${selectedRunning.length} 个堆栈`;
 		batchOpOperation = 'restart';
 		batchOpItems = selectedRunning.map(s => ({ id: s.name, name: s.name }));
 		showBatchOpModal = true;
 	}
 
 	function bulkRemove() {
-		batchOpTitle = `Removing ${selectedInFilter.length} stack${selectedInFilter.length !== 1 ? 's' : ''}`;
+		batchOpTitle = `删除 ${selectedInFilter.length} 个堆栈`;
 		batchOpOperation = 'remove';
 		batchOpItems = selectedInFilter.map(s => ({ id: s.name, name: s.name }));
 		showBatchOpModal = true;
@@ -713,7 +738,7 @@
 
 			// Handle stale environment ID (e.g., after database reset)
 			if (stacksRes.status === 404 && envId) {
-				console.warn(`[Stacks] Got 404 for env ${envId}, refreshing environments`);
+				console.warn(`[堆栈] 环境 ${envId} 返回404，正在刷新环境列表`);
 				clearStaleEnvironment(envId);
 				environments.refresh();
 				return;
@@ -724,7 +749,7 @@
 				try {
 					return await res.json();
 				} catch {
-					console.warn(`[Stacks] Failed to parse response from ${res.url}`);
+					console.warn(`[堆栈] 解析接口 ${res.url} 响应失败`);
 					return fallback;
 				}
 			};
@@ -735,7 +760,7 @@
 
 			// Debug logging
 			if (gitStacksData?.error) {
-				console.error('Git stacks API error:', gitStacksData.error, 'Status:', gitStacksRes.status);
+				console.error('Git堆栈接口错误:', gitStacksData.error, '状态码:', gitStacksRes.status);
 			}
 
 			// Ensure responses are valid before using them
@@ -765,8 +790,8 @@
 			const allStackNames = stacks.map(s => s.name);
 			fetchEnvVarCounts(allStackNames, sourcesData);
 		} catch (error) {
-			console.error('Failed to fetch stacks:', error);
-			toast.error('Failed to load stacks');
+			console.error('获取堆栈列表失败:', error);
+			toast.error('加载堆栈失败');
 		} finally {
 			loading = false;
 			lastLoadedEnvId = envId;
@@ -838,7 +863,7 @@
 			gitRepositories = await reposRes.json();
 			gitCredentials = await credsRes.json();
 		} catch (error) {
-			console.error('Failed to fetch git data:', error);
+			console.error('获取 Git 数据失败:', error);
 			gitRepositories = [];
 			gitCredentials = [];
 		}
@@ -852,15 +877,15 @@
 			const response = await fetch(appendEnvParam(`/api/stacks/${encodeURIComponent(name)}/start`, envId), { method: 'POST' });
 			const data = await readJobResponse(response);
 			if (!data.success) {
-				showErrorDialog(`Failed to start ${name}`, data.error || 'Failed to start stack');
+				showErrorDialog(`启动堆栈 ${name} 失败`, data.error || '启动堆栈失败');
 				return;
 			}
-			toast.success(`Started ${name}`);
+			toast.success(`已启动 ${name}`);
 			await fetchStacks();
 		} catch (error) {
-			console.error('Failed to start stack:', error);
-			const errorMsg = error instanceof Error ? error.message : 'Failed to start stack';
-			showErrorDialog(`Failed to start ${name}`, errorMsg);
+			console.error('启动堆栈失败:', error);
+			const errorMsg = error instanceof Error ? error.message : '启动堆栈失败';
+			showErrorDialog(`启动堆栈 ${name} 失败`, errorMsg);
 		} finally {
 			stackActionLoading = null;
 		}
@@ -873,15 +898,15 @@
 			const response = await fetch(appendEnvParam(`/api/stacks/${encodeURIComponent(name)}/stop`, envId), { method: 'POST' });
 			const data = await readJobResponse(response);
 			if (!data.success) {
-				showErrorDialog(`Failed to stop ${name}`, data.error || 'Failed to stop stack');
+				showErrorDialog(`停止堆栈 ${name} 失败`, data.error || '停止堆栈失败');
 				return;
 			}
-			toast.success(`Stopped ${name}`);
+			toast.success(`已停止 ${name}`);
 			await fetchStacks();
 		} catch (error) {
-			console.error('Failed to stop stack:', error);
-			const errorMsg = error instanceof Error ? error.message : 'Failed to stop stack';
-			showErrorDialog(`Failed to stop ${name}`, errorMsg);
+			console.error('停止堆栈失败:', error);
+			const errorMsg = error instanceof Error ? error.message : '停止堆栈失败';
+			showErrorDialog(`停止堆栈 ${name} 失败`, errorMsg);
 		} finally {
 			stackActionLoading = null;
 		}
@@ -898,15 +923,15 @@
 			const response = await fetch(url, { method: 'POST' });
 			const data = await readJobResponse(response);
 			if (!data.success) {
-				showErrorDialog(`Failed to restart ${name}`, data.error || 'Failed to restart stack');
+				showErrorDialog(`重启堆栈 ${name} 失败`, data.error || '重启堆栈失败');
 				return;
 			}
-			toast.success(mode === 'recreate' ? `Recreated ${name}` : `Restarted ${name}`);
+			toast.success(mode === 'recreate' ? `已重新创建 ${name}` : `已重启 ${name}`);
 			await fetchStacks();
 		} catch (error) {
-			console.error('Failed to restart stack:', error);
-			const errorMsg = error instanceof Error ? error.message : 'Failed to restart stack';
-			showErrorDialog(`Failed to restart ${name}`, errorMsg);
+			console.error('重启堆栈失败:', error);
+			const errorMsg = error instanceof Error ? error.message : '重启堆栈失败';
+			showErrorDialog(`重启堆栈 ${name} 失败`, errorMsg);
 		} finally {
 			stackActionLoading = null;
 		}
@@ -923,15 +948,15 @@
 			});
 			const data = await readJobResponse(response);
 			if (!data.success) {
-				showErrorDialog(`Failed to redeploy ${name}`, data.error || 'Failed to redeploy stack');
+				showErrorDialog(`重新部署 ${name} 失败`, data.error || '重新部署堆栈失败');
 				return;
 			}
-			toast.success(`Redeployed ${name}`);
+			toast.success(`已重新部署 ${name}`);
 			await fetchStacks();
 		} catch (error) {
-			console.error('Failed to redeploy stack:', error);
-			const errorMsg = error instanceof Error ? error.message : 'Failed to redeploy stack';
-			showErrorDialog(`Failed to redeploy ${name}`, errorMsg);
+			console.error('重新部署堆栈失败：', error);
+			const errorMsg = error instanceof Error ? error.message : '重新部署堆栈失败';
+			showErrorDialog(`重新部署 ${name} 失败`, errorMsg);
 		} finally {
 			stackActionLoading = null;
 		}
@@ -945,15 +970,15 @@
 			const response = await fetch(appendEnvParam(`/api/stacks/${encodeURIComponent(name)}/down`, envId), { method: 'POST' });
 			const data = await readJobResponse(response);
 			if (!data.success) {
-				showErrorDialog(`Failed to bring down ${name}`, data.error || 'Failed to bring down stack');
+				showErrorDialog(`销毁堆栈 ${name} 失败`, data.error || '销毁堆栈失败');
 				return;
 			}
-			toast.success(`Brought down ${name}`);
+			toast.success(`已销毁 ${name}`);
 			await fetchStacks();
 		} catch (error) {
-			console.error('Failed to bring down stack:', error);
-			const errorMsg = error instanceof Error ? error.message : 'Failed to bring down stack';
-			showErrorDialog(`Failed to bring down ${name}`, errorMsg);
+			console.error('销毁堆栈失败:', error);
+			const errorMsg = error instanceof Error ? error.message : '销毁堆栈失败';
+			showErrorDialog(`销毁堆栈 ${name} 失败`, errorMsg);
 		} finally {
 			stackActionLoading = null;
 			stackDownLoading = null;
@@ -982,16 +1007,16 @@
 			const response = await fetch(appendEnvParam(`/api/stacks/${encodeURIComponent(name)}?${params}`, envId), { method: 'DELETE' });
 			if (!response.ok) {
 				const data = await response.json();
-				const errorMsg = data.error || 'Failed to remove stack';
-				showErrorDialog(`Failed to remove ${name}`, errorMsg);
+				const errorMsg = data.error || '删除堆栈失败';
+				showErrorDialog(`删除堆栈 ${name} 失败`, errorMsg);
 				return;
 			}
-			toast.success(`Removed ${name}${withVolumes ? ' (volumes deleted)' : ''}`);
+			toast.success(`已删除 ${name}`);
 			await fetchStacks();
 		} catch (error) {
-			console.error('Failed to remove stack:', error);
-			const errorMsg = error instanceof Error ? error.message : 'Failed to remove stack';
-			showErrorDialog(`Failed to remove ${name}`, errorMsg);
+			console.error('删除堆栈失败:', error);
+			const errorMsg = error instanceof Error ? error.message : '删除堆栈失败';
+			showErrorDialog(`删除堆栈 ${name} 失败`, errorMsg);
 		}
 	}
 
@@ -1038,17 +1063,17 @@
 			const response = await fetch(appendEnvParam(`/api/containers/${containerId}/start`, envId), { method: 'POST' });
 			if (!response.ok) {
 				const data = await response.json();
-				const errorMsg = data.error || 'Failed to start container';
+				const errorMsg = data.error || '启动容器失败';
 				operationError = { id: containerId, message: errorMsg };
 				toast.error(errorMsg);
 				clearErrorAfterDelay(containerId);
 				return;
 			}
-			toast.success('Container started');
+			toast.success('容器已启动');
 			await fetchStacks();
 		} catch (error) {
-			console.error('Failed to start container:', error);
-			const errorMsg = error instanceof Error ? error.message : 'Failed to start container';
+			console.error('启动容器失败:', error);
+			const errorMsg = error instanceof Error ? error.message : '启动容器失败';
 			operationError = { id: containerId, message: errorMsg };
 			toast.error(errorMsg);
 			clearErrorAfterDelay(containerId);
@@ -1064,17 +1089,17 @@
 			const response = await fetch(appendEnvParam(`/api/containers/${containerId}/stop`, envId), { method: 'POST' });
 			if (!response.ok) {
 				const data = await response.json();
-				const errorMsg = data.error || 'Failed to stop container';
+				const errorMsg = data.error || '停止容器失败';
 				operationError = { id: containerId, message: errorMsg };
 				toast.error(errorMsg);
 				clearErrorAfterDelay(containerId);
 				return;
 			}
-			toast.success('Container stopped');
+			toast.success('容器已停止');
 			await fetchStacks();
 		} catch (error) {
-			console.error('Failed to stop container:', error);
-			const errorMsg = error instanceof Error ? error.message : 'Failed to stop container';
+			console.error('停止容器失败:', error);
+			const errorMsg = error instanceof Error ? error.message : '停止容器失败';
 			operationError = { id: containerId, message: errorMsg };
 			toast.error(errorMsg);
 			clearErrorAfterDelay(containerId);
@@ -1090,17 +1115,17 @@
 			const response = await fetch(appendEnvParam(`/api/containers/${containerId}/restart`, envId), { method: 'POST' });
 			if (!response.ok) {
 				const data = await response.json();
-				const errorMsg = data.error || 'Failed to restart container';
+				const errorMsg = data.error || '重启容器失败';
 				operationError = { id: containerId, message: errorMsg };
 				toast.error(errorMsg);
 				clearErrorAfterDelay(containerId);
 				return;
 			}
-			toast.success('Container restarted');
+			toast.success('容器已重启');
 			await fetchStacks();
 		} catch (error) {
-			console.error('Failed to restart container:', error);
-			const errorMsg = error instanceof Error ? error.message : 'Failed to restart container';
+			console.error('重启容器失败:', error);
+			const errorMsg = error instanceof Error ? error.message : '重启容器失败';
 			operationError = { id: containerId, message: errorMsg };
 			toast.error(errorMsg);
 			clearErrorAfterDelay(containerId);
@@ -1116,17 +1141,17 @@
 			const response = await fetch(appendEnvParam(`/api/containers/${containerId}/pause`, envId), { method: 'POST' });
 			if (!response.ok) {
 				const data = await response.json();
-				const errorMsg = data.error || 'Failed to pause container';
+				const errorMsg = data.error || '暂停容器失败';
 				operationError = { id: containerId, message: errorMsg };
 				toast.error(errorMsg);
 				clearErrorAfterDelay(containerId);
 				return;
 			}
-			toast.success('Container paused');
+			toast.success('容器已暂停');
 			await fetchStacks();
 		} catch (error) {
-			console.error('Failed to pause container:', error);
-			const errorMsg = error instanceof Error ? error.message : 'Failed to pause container';
+			console.error('暂停容器失败:', error);
+			const errorMsg = error instanceof Error ? error.message : '暂停容器失败';
 			operationError = { id: containerId, message: errorMsg };
 			toast.error(errorMsg);
 			clearErrorAfterDelay(containerId);
@@ -1143,17 +1168,17 @@
 			const response = await fetch(appendEnvParam(`/api/containers/${containerId}/unpause`, envId), { method: 'POST' });
 			if (!response.ok) {
 				const data = await response.json();
-				const errorMsg = data.error || 'Failed to unpause container';
+				const errorMsg = data.error || '恢复容器失败';
 				operationError = { id: containerId, message: errorMsg };
 				toast.error(errorMsg);
 				clearErrorAfterDelay(containerId);
 				return;
 			}
-			toast.success('Container unpaused');
+			toast.success('容器已恢复');
 			await fetchStacks();
 		} catch (error) {
-			console.error('Failed to unpause container:', error);
-			const errorMsg = error instanceof Error ? error.message : 'Failed to unpause container';
+			console.error('恢复容器失败:', error);
+			const errorMsg = error instanceof Error ? error.message : '恢复容器失败';
 			operationError = { id: containerId, message: errorMsg };
 			toast.error(errorMsg);
 			clearErrorAfterDelay(containerId);
@@ -1169,17 +1194,17 @@
 			const response = await fetch(appendEnvParam(`/api/containers/${containerId}?force=true`, envId), { method: 'DELETE' });
 			if (!response.ok) {
 				const data = await response.json();
-				const errorMsg = data.error || 'Failed to remove container';
+				const errorMsg = data.error || '删除容器失败';
 				operationError = { id: containerId, message: errorMsg };
 				toast.error(errorMsg);
 				clearErrorAfterDelay(containerId);
 				return;
 			}
-			toast.success('Container removed');
+			toast.success('容器已删除');
 			await fetchStacks();
 		} catch (error) {
-			console.error('Failed to remove container:', error);
-			const errorMsg = error instanceof Error ? error.message : 'Failed to remove container';
+			console.error('删除容器失败:', error);
+			const errorMsg = error instanceof Error ? error.message : '删除容器失败';
 			operationError = { id: containerId, message: errorMsg };
 			toast.error(errorMsg);
 			clearErrorAfterDelay(containerId);
@@ -1310,20 +1335,20 @@
 
 <div class="flex-1 min-h-0 flex flex-col gap-3 overflow-hidden">
 	<div class="shrink-0 flex flex-wrap justify-between items-center gap-3 min-h-8">
-		<PageHeader icon={Layers} title="Compose stacks" count={stacks.length}>
+		<PageHeader icon={Layers} title="Compose 堆栈" count={stacks.length}>
 			{#if stacks.length > 0}
 				<button
 					type="button"
 					onclick={allExpanded ? collapseAll : expandAll}
 					class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full border border-border hover:border-foreground/30 hover:shadow-sm transition-all cursor-pointer text-muted-foreground hover:text-foreground"
-					title={allExpanded ? 'Collapse all' : 'Expand all'}
+					title={allExpanded ? '全部折叠' : '全部展开'}
 				>
 					{#if allExpanded}
 						<ChevronsDownUp class="w-3 h-3" />
-						Collapse
+						折叠
 					{:else}
 						<ChevronsUpDown class="w-3 h-3" />
-						Expand
+						展开
 					{/if}
 				</button>
 			{/if}
@@ -1333,7 +1358,7 @@
 				<Search class="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
 				<Input
 					type="text"
-					placeholder="Search stacks..."
+					placeholder="搜索堆栈..."
 					bind:value={searchInput}
 					onkeydown={(e) => e.key === 'Escape' && (searchInput = '')}
 					class="pl-8 h-8 w-48 text-sm"
@@ -1342,21 +1367,21 @@
 			<MultiSelectFilter
 				bind:value={statusFilter}
 				options={stackStatusTypes}
-				placeholder="All statuses"
-				pluralLabel="statuses"
+				placeholder="全部状态"
+				pluralLabel="状态"
 				width="w-44"
 				defaultIcon={Layers}
 			/>
 			<Button size="sm" variant="outline" onclick={fetchStacks}>
 				<RefreshCw class="w-3.5 h-3.5" />
-				Refresh
+				刷新
 			</Button>
 			<Button
 				size="sm"
 				variant="outline"
 				onclick={toggleLayoutMode}
 				class="h-8 w-8 p-0"
-				title={layoutMode === 'horizontal' ? 'Switch to vertical layout (logs on side)' : 'Switch to horizontal layout (logs below)'}
+				title={layoutMode === 'horizontal' ? '切换到垂直布局 (日志在侧边)' : '切换到水平布局 (日志在下方)'}
 			>
 				{#if layoutMode === 'horizontal'}
 					<LayoutPanelLeft class="w-4 h-4" />
@@ -1367,15 +1392,19 @@
 			{#if $canAccess('stacks', 'create')}
 				<Button size="sm" variant="outline" onclick={() => openGitModal()}>
 					<GitBranch class="w-3.5 h-3.5" />
-					From Git
+					从 Git 创建
 				</Button>
 				<Button size="sm" variant="secondary" onclick={() => showCreateModal = true}>
 					<Plus class="w-3.5 h-3.5" />
-					Create
+					创建
 				</Button>
 				<Button size="sm" variant="outline" onclick={() => showImportModal = true}>
 					<Import class="w-3.5 h-3.5" />
-					Adopt
+					接管
+				</Button>
+				<Button size="sm" variant="outline" onclick={() => showImportModal = true}>
+					<Import class="w-3.5 h-3.5" />
+					导入
 				</Button>
 			{/if}
 		</div>
@@ -1385,21 +1414,21 @@
 	<div class="h-4 shrink-0">
 		{#if selectedStacks.size > 0}
 			<div class="flex items-center gap-1 text-xs text-muted-foreground h-full">
-			<span>{selectedInFilter.length} selected</span>
+			<span>已选择 {selectedInFilter.length} 项</span>
 			<button
 				type="button"
 				class="inline-flex items-center gap-1 px-1.5 py-0 rounded border border-border hover:border-foreground/30 hover:shadow transition-all"
 				onclick={selectNone}
 			>
-				Clear
+				清空
 			</button>
 			{#if selectedStopped.length > 0 && $canAccess('stacks', 'start')}
 				<ConfirmPopover
 					open={confirmBulkStart}
-					action="Start"
-					itemType="stacks"
-					itemName="{selectedStopped.length} stack{selectedStopped.length !== 1 ? 's' : ''}"
-					title="Start {selectedStopped.length}"
+					action="启动"
+					itemType="堆栈"
+					itemName="{selectedStopped.length} 个堆栈"
+					title="启动 {selectedStopped.length}"
 					variant="secondary"
 					unstyled
 					onConfirm={bulkStart}
@@ -1408,7 +1437,7 @@
 					{#snippet children({ open })}
 						<span class="inline-flex items-center gap-1 px-1.5 py-0 rounded border border-border hover:text-green-600 hover:border-green-500/40 hover:shadow transition-all cursor-pointer">
 							<Play class="w-3 h-3" />
-							Start
+							启动
 						</span>
 					{/snippet}
 				</ConfirmPopover>
@@ -1416,10 +1445,10 @@
 			{#if selectedRunning.length > 0 && $canAccess('stacks', 'restart')}
 				<ConfirmPopover
 					open={confirmBulkRestart}
-					action="Restart"
-					itemType="stacks"
-					itemName="{selectedRunning.length} stack{selectedRunning.length !== 1 ? 's' : ''}"
-					title="Restart {selectedRunning.length}"
+					action="重启"
+					itemType="堆栈"
+					itemName="{selectedRunning.length} 个堆栈"
+					title="重启 {selectedRunning.length}"
 					variant="secondary"
 					unstyled
 					onConfirm={bulkRestart}
@@ -1428,7 +1457,7 @@
 					{#snippet children({ open })}
 						<span class="inline-flex items-center gap-1 px-1.5 py-0 rounded border border-border hover:text-amber-600 hover:border-amber-500/40 hover:shadow transition-all cursor-pointer">
 							<RotateCcw class="w-3 h-3" />
-							Restart
+							重启
 						</span>
 					{/snippet}
 				</ConfirmPopover>
@@ -1436,10 +1465,10 @@
 			{#if selectedRunning.length > 0 && $canAccess('stacks', 'stop')}
 				<ConfirmPopover
 					open={confirmBulkStop}
-					action="Stop"
-					itemType="stacks"
-					itemName="{selectedRunning.length} stack{selectedRunning.length !== 1 ? 's' : ''}"
-					title="Stop {selectedRunning.length}"
+					action="停止"
+					itemType="堆栈"
+					itemName="{selectedRunning.length} 个堆栈"
+					title="停止 {selectedRunning.length}"
 					unstyled
 					onConfirm={bulkStop}
 					onOpenChange={(open) => confirmBulkStop = open}
@@ -1447,7 +1476,7 @@
 					{#snippet children({ open })}
 						<span class="inline-flex items-center gap-1 px-1.5 py-0 rounded border border-border hover:text-red-600 hover:border-red-500/40 hover:shadow transition-all cursor-pointer">
 							<Square class="w-3 h-3" />
-							Stop
+							停止
 						</span>
 					{/snippet}
 				</ConfirmPopover>
@@ -1455,10 +1484,10 @@
 			{#if selectedRunning.length > 0 && $canAccess('stacks', 'stop')}
 				<ConfirmPopover
 					open={confirmBulkDown}
-					action="Down"
-					itemType="stacks"
-					itemName="{selectedRunning.length} stack{selectedRunning.length !== 1 ? 's' : ''}"
-					title="Down {selectedRunning.length}"
+					action="销毁"
+					itemType="堆栈"
+					itemName="{selectedRunning.length} 个堆栈"
+					title="销毁 {selectedRunning.length}"
 					unstyled
 					onConfirm={bulkDown}
 					onOpenChange={(open) => confirmBulkDown = open}
@@ -1466,7 +1495,7 @@
 					{#snippet children({ open })}
 						<span class="inline-flex items-center gap-1 px-1.5 py-0 rounded border border-border hover:text-orange-600 hover:border-orange-500/40 hover:shadow transition-all cursor-pointer">
 							<ArrowBigDown class="w-3 h-3" />
-							Down
+							销毁
 						</span>
 					{/snippet}
 				</ConfirmPopover>
@@ -1474,10 +1503,10 @@
 			{#if $canAccess('stacks', 'remove')}
 			<ConfirmPopover
 				open={confirmBulkRemove}
-				action="Remove"
-				itemType="stacks"
-				itemName="{selectedInFilter.length} stack{selectedInFilter.length !== 1 ? 's' : ''}"
-				title="Remove {selectedInFilter.length}"
+				action="删除"
+				itemType="堆栈"
+				itemName="{selectedInFilter.length} 个堆栈"
+				title="删除 {selectedInFilter.length}"
 				unstyled
 				onConfirm={bulkRemove}
 				onOpenChange={(open) => confirmBulkRemove = open}
@@ -1485,7 +1514,7 @@
 				{#snippet children({ open })}
 					<span class="inline-flex items-center gap-1 px-1.5 py-0 rounded border border-border hover:text-destructive hover:border-destructive/40 hover:shadow transition-all cursor-pointer">
 						<Trash2 class="w-3 h-3" />
-						Remove
+						删除
 					</span>
 				{/snippet}
 			</ConfirmPopover>
@@ -1499,8 +1528,8 @@
 	{:else if !loading && stacks.length === 0}
 		<EmptyState
 			icon={Layers}
-			title="No compose stacks found"
-			description="Create a stack or deploy from Git to get started"
+			title="未找到任何 Compose 堆栈"
+			description="创建堆栈或从 Git 部署以开始使用"
 		/>
 	{:else}
 		<!-- Main content area - changes layout based on mode -->
@@ -1562,7 +1591,7 @@
 								</Badge>
 							</Tooltip.Trigger>
 							<Tooltip.Content>
-								<p class="text-sm whitespace-nowrap">{systemType === 'dockhand' ? 'Dockhand management container' : 'Hawser remote agent'}</p>
+								<p class="text-sm whitespace-nowrap">{systemType === 'dockhand' ? 'Dockhand 管理容器' : 'Hawser 远程代理'}</p>
 							</Tooltip.Content>
 						</Tooltip.Root>
 					{/if}
@@ -1575,7 +1604,7 @@
 								</span>
 							</Tooltip.Trigger>
 							<Tooltip.Content class="whitespace-nowrap">
-								{stackEnvVarCounts[stack.name]} environment variable{stackEnvVarCounts[stack.name] !== 1 ? 's' : ''} configured
+								已配置 {stackEnvVarCounts[stack.name]} 个环境变量
 							</Tooltip.Content>
 						</Tooltip.Root>
 					{/if}
@@ -1583,7 +1612,7 @@
 					{#if source.sourceType === 'git'}
 						<span
 							class="inline-flex items-center justify-center gap-1 text-xs px-1.5 py-0.5 rounded-sm bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 shadow-sm min-w-[5.5rem]"
-							title={source.repository ? `${source.repository.url} (${source.repository.branch})` : 'Deployed from Git repository'}
+							title={source.repository ? `${source.repository.url} (${source.repository.branch})` : '从 Git 仓库部署'}
 						>
 							<GitBranch class="w-3 h-3" />
 							Git
@@ -1591,10 +1620,10 @@
 					{:else if source.sourceType === 'internal'}
 						<span
 							class="inline-flex items-center justify-center gap-1 text-xs px-1.5 py-0.5 rounded-sm bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 shadow-sm min-w-[5.5rem]"
-							title="Managed by Dockhand"
+							title="由 Dockhand 管理"
 						>
 							<FileCode class="w-3 h-3" />
-							Internal
+							内部
 						</span>
 					{:else}
 						<Tooltip.Root>
@@ -1603,11 +1632,11 @@
 									class="inline-flex items-center justify-center gap-1 text-xs px-1.5 py-0.5 rounded-sm bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200 shadow-sm min-w-[5.5rem]"
 								>
 									<ExternalLink class="w-3 h-3" />
-									Untracked
+									未跟踪
 								</span>
 							</Tooltip.Trigger>
 							<Tooltip.Content class="whitespace-nowrap">
-								Compose file location unknown. Click the stack name or edit button to locate it.
+								Compose 文件位置未知。点击堆栈名称或编辑按钮定位文件。
 							</Tooltip.Content>
 						</Tooltip.Root>
 					{/if}
@@ -1625,42 +1654,42 @@
 							</Tooltip.Content>
 						</Tooltip.Root>
 					{:else}
-						<span class="text-xs text-muted-foreground/50 italic">Not set</span>
+						<span class="text-xs text-muted-foreground/50 italic">未设置</span>
 					{/if}
 				{:else if column.id === 'containers'}
 					<div class="flex items-center gap-1">
 						{#if getContainerStateCounts(stack).running}
-							<span class="inline-flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400" title="Running">
+							<span class="inline-flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400" title="运行中">
 								<Play class="w-3.5 h-3.5" />
 								<span class="text-xs font-medium">{getContainerStateCounts(stack).running}</span>
 							</span>
 						{/if}
 						{#if getContainerStateCounts(stack).exited}
-							<span class="inline-flex items-center gap-0.5 text-red-600 dark:text-red-400" title="Exited">
+							<span class="inline-flex items-center gap-0.5 text-red-600 dark:text-red-400" title="已退出">
 								<Square class="w-3.5 h-3.5" />
 								<span class="text-xs font-medium">{getContainerStateCounts(stack).exited}</span>
 							</span>
 						{/if}
 						{#if getContainerStateCounts(stack).paused}
-							<span class="inline-flex items-center gap-0.5 text-amber-600 dark:text-amber-400" title="Paused">
+							<span class="inline-flex items-center gap-0.5 text-amber-600 dark:text-amber-400" title="已暂停">
 								<Pause class="w-3.5 h-3.5" />
 								<span class="text-xs font-medium">{getContainerStateCounts(stack).paused}</span>
 							</span>
 						{/if}
 						{#if getContainerStateCounts(stack).restarting}
-							<span class="inline-flex items-center gap-0.5 text-blue-600 dark:text-blue-400" title="Restarting">
+							<span class="inline-flex items-center gap-0.5 text-blue-600 dark:text-blue-400" title="重启中">
 								<span class="w-3.5 h-3.5 flex items-center justify-center"><RefreshCw class="w-3.5 h-3.5 animate-spin" /></span>
 								<span class="text-xs font-medium">{getContainerStateCounts(stack).restarting}</span>
 							</span>
 						{/if}
 						{#if getContainerStateCounts(stack).created}
-							<span class="inline-flex items-center gap-0.5 text-slate-500 dark:text-slate-400" title="Created">
+							<span class="inline-flex items-center gap-0.5 text-slate-500 dark:text-slate-400" title="已创建">
 								<CircleDashed class="w-3.5 h-3.5" />
 								<span class="text-xs font-medium">{getContainerStateCounts(stack).created}</span>
 							</span>
 						{/if}
 						{#if getContainerStateCounts(stack).dead}
-							<span class="inline-flex items-center gap-0.5 text-rose-700 dark:text-rose-400" title="Dead">
+							<span class="inline-flex items-center gap-0.5 text-rose-700 dark:text-rose-400" title="已失效">
 								<Skull class="w-3.5 h-3.5" />
 								<span class="text-xs font-medium">{getContainerStateCounts(stack).dead}</span>
 							</span>
@@ -1684,7 +1713,7 @@
 					{@const stats = getStackStats(stack)}
 					<div class="text-right">
 						{#if stats}
-							<span class="text-xs font-mono text-muted-foreground" title="{formatBytes(stats.memoryUsage)} / {formatBytes(stats.memoryLimit)}">{formatBytes(stats.memoryUsage)}<span class="text-muted-foreground/50">/{formatBytes(stats.memoryLimit, 0)}</span></span>
+							<span class="text-xs font-mono text-muted-foreground" title="{formatBytes(stats.memoryUsage)} / {formatBytes(stats.memoryLimit)}">{formatBytes(stats.memoryUsage)}</span>
 						{:else if stack.status === 'running' || stack.status === 'partial' || stack.status === 'restarting'}
 							<span class="text-xs text-muted-foreground/50">...</span>
 						{:else}
@@ -1695,7 +1724,7 @@
 					{@const stats = getStackStats(stack)}
 					<div class="text-right whitespace-nowrap">
 						{#if stats}
-							<span class="text-xs font-mono text-muted-foreground" title="↓{formatBytes(stats.networkRx)} received / ↑{formatBytes(stats.networkTx)} sent">
+							<span class="text-xs font-mono text-muted-foreground" title="↓接收 {formatBytes(stats.networkRx)} / ↑发送 {formatBytes(stats.networkTx)}">
 								<span class="text-2xs text-blue-400">↓</span>{formatBytes(stats.networkRx, 0)} <span class="text-2xs text-orange-400">↑</span>{formatBytes(stats.networkTx, 0)}
 							</span>
 						{:else if stack.status === 'running' || stack.status === 'partial' || stack.status === 'restarting'}
@@ -1708,8 +1737,8 @@
 					{@const stats = getStackStats(stack)}
 					<div class="text-right whitespace-nowrap">
 						{#if stats}
-							<span class="text-xs font-mono text-muted-foreground" title="↓{formatBytes(stats.blockRead)} read / ↑{formatBytes(stats.blockWrite)} written">
-								<span class="text-2xs text-green-400">r</span>{formatBytes(stats.blockRead, 0)} <span class="text-2xs text-yellow-400">w</span>{formatBytes(stats.blockWrite, 0)}
+							<span class="text-xs font-mono text-muted-foreground" title="↓读取 {formatBytes(stats.blockRead)} / ↑写入 {formatBytes(stats.blockWrite)}">
+								<span class="text-2xs text-green-400">读</span>{formatBytes(stats.blockRead, 0)} <span class="text-2xs text-yellow-400">写</span>{formatBytes(stats.blockWrite, 0)}
 							</span>
 						{:else if stack.status === 'running' || stack.status === 'partial' || stack.status === 'restarting'}
 							<span class="text-xs text-muted-foreground/50">...</span>
@@ -1730,7 +1759,7 @@
 					{@const StatusIcon = getStackStatusIcon(displayStatus)}
 					<span class={getStatusClasses(displayStatus)}>
 						<StatusIcon class="w-3 h-3" />
-						{displayStatus}
+						{getLabelText(displayStatus)}
 					</span>
 				{:else if column.id === 'actions'}
 					<div class="relative flex gap-1 justify-end">
@@ -1747,7 +1776,7 @@
 							<button
 								type="button"
 								onclick={() => openGitModal(source.gitStack)}
-								title="Edit git stack"
+								title="编辑 Git 堆栈"
 								class="p-1 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
 							>
 								<Pencil class="w-3 h-3 text-muted-foreground hover:text-purple-500" />
@@ -1760,7 +1789,7 @@
 								{#snippet children()}
 									<button
 										type="button"
-										title="Deploy"
+										title="部署"
 										class="p-1 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
 									>
 										<Rocket class="w-3 h-3 text-muted-foreground hover:text-violet-500" />
@@ -1777,7 +1806,7 @@
 									{#snippet children()}
 										<button
 											type="button"
-											title="Sync from Git"
+											title="从 Git 同步"
 											class="p-1 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
 										>
 											<RefreshCw class="w-3 h-3 text-muted-foreground hover:text-purple-500" />
@@ -1789,8 +1818,8 @@
 								{#if source.sourceType === 'git' && source.gitStack}
 									<button
 										type="button"
-										onclick={(e) => { e.stopPropagation(); openGitModal(source.gitStack); }}
-										title="Edit git stack"
+										onclick={() => openGitModal(source.gitStack)}
+										title="编辑 Git 堆栈"
 										class="p-1 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
 									>
 										<Pencil class="w-3 h-3 text-muted-foreground hover:text-purple-500" />
@@ -1799,8 +1828,8 @@
 									<!-- Internal stacks (including those needing file location) -->
 									<button
 										type="button"
-										onclick={(e) => { e.stopPropagation(); editStack(stack.name); }}
-										title="Edit"
+										onclick={() => editStack(stack.name)}
+										title="编辑"
 										class="p-1 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
 									>
 										<Pencil class="w-3 h-3 text-muted-foreground hover:text-blue-500" />
@@ -1810,8 +1839,8 @@
 							{#if stack.containers && stack.containers.length > 0}
 								<button
 									type="button"
-									onclick={(e) => { e.stopPropagation(); viewStackLogs(stack); }}
-									title="View logs"
+									onclick={() => viewStackLogs(stack)}
+									title="查看日志"
 									class="p-1 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
 								>
 									<ScrollText class="w-3 h-3 text-muted-foreground hover:text-blue-500" />
@@ -1838,7 +1867,7 @@
 									<button
 										type="button"
 										onclick={(e) => { e.stopPropagation(); startStack(stack.name); }}
-										title="Start"
+										title="启动"
 										class="p-1 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
 									>
 										<Play class="w-3 h-3 text-muted-foreground hover:text-green-500" />
@@ -1851,7 +1880,7 @@
 											{#snippet child({ props })}
 												<button
 													type="button"
-													title="Restart"
+													title="重启"
 													{...props}
 													onclick={(e) => { e.stopPropagation(); restartPopoverOpen[stack.name] = !restartPopoverOpen[stack.name]; }}
 													class="p-1 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer inline-flex items-center"
@@ -1867,13 +1896,13 @@
 											sideOffset={8}
 										>
 											<div class="flex flex-col gap-1.5">
-												<span class="text-xs text-muted-foreground">Restart stack <strong>{stack.name.length > 20 ? stack.name.slice(0, 20) + '...' : stack.name}</strong></span>
+												<span class="text-xs text-muted-foreground">重启堆栈 <strong>{stack.name.length > 20 ? stack.name.slice(0, 20) + '...' : stack.name}</strong></span>
 												<div class="flex items-center gap-1.5">
 													<Button size="sm" variant="secondary" class="h-6 px-2 text-xs" onclick={() => { restartPopoverOpen[stack.name] = false; restartStack(stack.name, 'restart'); }}>
-														Restart
+														重启
 													</Button>
 													<Button size="sm" variant="default" class="h-6 px-2 text-xs" onclick={() => { restartPopoverOpen[stack.name] = false; restartStack(stack.name, 'recreate'); }}>
-														Recreate (stop & up)
+														重新创建（停止并启动）
 													</Button>
 												</div>
 											</div>
@@ -1883,10 +1912,10 @@
 								{#if $canAccess('stacks', 'stop')}
 									<ConfirmPopover
 										open={confirmStopName === stack.name}
-										action="Stop"
-										itemType="stack"
+										action="停止"
+										itemType="堆栈"
 										itemName={stack.name}
-										title="Stop"
+										title="停止"
 										onConfirm={() => stopStack(stack.name)}
 										onOpenChange={(open) => confirmStopName = open ? stack.name : null}
 									>
@@ -1900,10 +1929,10 @@
 						{#if $canAccess('stacks', 'stop') && stack.status !== 'created' && stack.status !== 'not deployed'}
 							<ConfirmPopover
 								open={confirmDownName === stack.name}
-								action="Down"
-								itemType="stack"
+								action="销毁"
+								itemType="堆栈"
 								itemName={stack.name}
-								title="Down (remove containers)"
+								title="销毁 (删除容器)"
 								onConfirm={() => downStack(stack.name)}
 								onOpenChange={(open) => confirmDownName = open ? stack.name : null}
 							>
@@ -1915,17 +1944,17 @@
 						{#if $canAccess('stacks', 'remove')}
 							<ConfirmPopover
 								open={confirmDeleteName === stack.name}
-								action="Delete"
-								itemType="stack"
+								action="删除"
+								itemType="堆栈"
 								itemName={stack.name}
-								title="Remove"
+								title="删除"
 								onConfirm={() => removeStack(stack.name)}
 								onOpenChange={(open) => { confirmDeleteName = open ? stack.name : null; if (!open) deleteVolumes = false; }}
 							>
 								{#snippet extraContent()}
 									<label class="flex items-center gap-1.5 cursor-pointer">
 										<Checkbox bind:checked={deleteVolumes} />
-										<span class="text-xs text-muted-foreground">Also delete volumes</span>
+										<span class="text-xs text-muted-foreground">同时删除数据卷</span>
 									</label>
 								{/snippet}
 								{#snippet children({ open })}
@@ -1948,7 +1977,7 @@
 										<Box class="w-4 h-4 shrink-0 {container.state === 'running' ? 'text-emerald-500' : 'text-muted-foreground'}" />
 										<span class="font-medium truncate flex-1" title={container.name}>{container.service}</span>
 										{#if container.health}
-											<span title={container.health}>
+											<span title={getLabelText(container.health)}>
 												{#if container.health === 'healthy'}
 													<HeartPulse class="w-3.5 h-3.5 {getHealthClasses(container.health)}" />
 												{:else if container.health === 'unhealthy'}
@@ -1958,7 +1987,7 @@
 												{/if}
 											</span>
 										{/if}
-										<span class={getStatusClasses(container.state)}>{container.state}</span>
+										<span class={getStatusClasses(container.state)}>{getLabelText(container.state)}</span>
 									</div>
 									<div class="text-muted-foreground mb-2 space-y-0.5">
 										<div class="truncate" title={container.image}>{container.image}</div>
@@ -1968,7 +1997,7 @@
 												{formatUptime(container.status)}
 											</span>
 											{#if container.restartCount > 0}
-												<span class="inline-flex items-center gap-0.5 text-amber-600 dark:text-amber-400" title="{container.restartCount} restart{container.restartCount > 1 ? 's' : ''}">
+												<span class="inline-flex items-center gap-0.5 text-amber-600 dark:text-amber-400" title="{container.restartCount} 次重启">
 													<RotateCw class="w-2.5 h-2.5" />
 													{container.restartCount}
 												</span>
@@ -1999,7 +2028,7 @@
 											<!-- Memory sparkline -->
 											<div class="space-y-0">
 												<div class="flex justify-between text-2xs">
-													<span class="text-muted-foreground">Mem</span>
+													<span class="text-muted-foreground">内存</span>
 													<span class="font-mono text-muted-foreground">{stats ? formatBytes(stats.memoryUsage) : '-'}</span>
 												</div>
 												{#if history?.mem && history.mem.length >= 2}
@@ -2014,7 +2043,7 @@
 											<!-- Network I/O sparkline -->
 											<div class="space-y-0">
 												<div class="flex justify-between text-2xs">
-													<span class="text-muted-foreground">Net</span>
+													<span class="text-muted-foreground">网络</span>
 													<span class="font-mono text-muted-foreground">{stats ? formatBytes(stats.networkRx + stats.networkTx) : '-'}</span>
 												</div>
 												{#if history?.netRx && history.netRx.length >= 2}
@@ -2029,7 +2058,7 @@
 											<!-- Disk I/O sparkline -->
 											<div class="space-y-0">
 												<div class="flex justify-between text-2xs">
-													<span class="text-muted-foreground">Disk</span>
+													<span class="text-muted-foreground">磁盘</span>
 													<span class="font-mono text-muted-foreground">{stats ? formatBytes(stats.blockRead + stats.blockWrite) : '-'}</span>
 												</div>
 												{#if history?.diskR && history.diskR.length >= 2}
@@ -2055,7 +2084,7 @@
 													rel="noopener noreferrer"
 													onclick={(e) => e.stopPropagation()}
 													class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-													title="Open {stackParsedUrl.url} in new tab"
+													title="在新标签页中打开 {stackParsedUrl.url}"
 												>
 													<Globe class="w-2.5 h-2.5" />
 													<span class="max-w-[120px] truncate">{stackParsedUrl.name || stackParsedUrl.url.replace(/^https?:\/\//, '')}</span>
@@ -2072,7 +2101,7 @@
 													rel="noopener noreferrer"
 													onclick={(e) => e.stopPropagation()}
 													class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-													title="Traefik router {t.router} → {t.url}"
+													title="Traefik 路由 {t.router} → {t.url}"
 												>
 													<Globe class="w-2.5 h-2.5" />
 													<span class="max-w-[120px] truncate">{t.url.replace(/^https?:\/\//, '')}</span>
@@ -2087,7 +2116,7 @@
 													rel="noopener noreferrer"
 													onclick={(e) => e.stopPropagation()}
 													class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-													title="Pangolin resource {p.resource} → {p.url}"
+													title="Pangolin 资源 {p.resource} → {p.url}"
 												>
 													<Globe class="w-2.5 h-2.5" />
 													<span class="max-w-[120px] truncate">{p.displayName ?? p.url.replace(/^https?:\/\//, '')}</span>
@@ -2109,7 +2138,7 @@
 														rel="noopener noreferrer"
 														onclick={(e) => e.stopPropagation()}
 														class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded {portUrl ? 'bg-primary/10 text-primary hover:bg-primary/20' : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-800'} transition-colors"
-														title="Open {url} in new tab"
+														title="在新标签页打开 {url}"
 													>
 														<code>{portParsed?.name ?? port.display}</code>
 														<ExternalLink class="w-2.5 h-2.5 {portUrl ? 'opacity-60' : ''}" />
@@ -2133,14 +2162,14 @@
 												</Tooltip.Trigger>
 												<Tooltip.Content class="whitespace-nowrap max-w-none">
 													{#each container.networks as net}
-														<div class="font-mono text-xs">{net.name}: {net.ipAddress || 'no IP'}</div>
+														<div class="font-mono text-xs">{net.name}: {net.ipAddress || '无 IP'}</div>
 													{/each}
 												</Tooltip.Content>
 											</Tooltip.Root>
 										{/if}
 										<!-- Volumes -->
 										{#if container.volumeCount > 0}
-											<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200" title="{container.volumeCount} volume{container.volumeCount > 1 ? 's' : ''} mounted">
+											<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200" title="{container.volumeCount} 个数据卷已挂载">
 												<HardDrive class="w-2.5 h-2.5" />
 												{container.volumeCount}
 											</span>
@@ -2150,7 +2179,7 @@
 										<div class="flex gap-1">
 											<button
 												type="button"
-												title="Open logs inline"
+												title="内联查看日志"
 												onclick={(e) => { e.stopPropagation(); showContainerLogs(container); }}
 												class="p-1 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer {currentLogsContainerId === container.id ? 'bg-muted text-blue-500' : ''}"
 											>
@@ -2158,7 +2187,7 @@
 											</button>
 											<button
 												type="button"
-												title="Open logs in full view"
+												title="全屏查看日志"
 												onclick={(e) => { e.stopPropagation(); goto(appendEnvParam(`/logs?container=${container.id}`, envId)); }}
 												class="p-1 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
 											>
@@ -2167,7 +2196,7 @@
 											{#if container.state === 'running' && $canAccess('containers', 'exec')}
 												<button
 													type="button"
-													title="Open terminal"
+													title="打开终端"
 													onclick={(e) => { e.stopPropagation(); goto(appendEnvParam(`/terminal?container=${container.id}`, envId)); }}
 													class="p-1 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
 												>
@@ -2177,7 +2206,7 @@
 											{#if container.state === 'running' && $canAccess('containers', 'files')}
 												<button
 													type="button"
-													title="Browse files"
+													title="浏览文件"
 													onclick={(e) => { e.stopPropagation(); browseFiles(container.id, container.name); }}
 													class="p-1 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
 												>
@@ -2186,7 +2215,7 @@
 											{/if}
 											<button
 												type="button"
-												title="Inspect container"
+												title="检查容器"
 												onclick={(e) => { e.stopPropagation(); inspectContainer(container.id, container.name); }}
 												class="p-1 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
 											>
@@ -2210,7 +2239,7 @@
 													{#if $canAccess('containers', 'unpause')}
 														<button
 															type="button"
-															title="Unpause"
+															title="解除暂停"
 															onclick={(e) => unpauseContainer(container.id, e)}
 															class="p-1 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
 														>
@@ -2221,7 +2250,7 @@
 													{#if $canAccess('containers', 'start')}
 														<button
 															type="button"
-															title="Start"
+															title="启动"
 															onclick={(e) => startContainer(container.id, e)}
 															class="p-1 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
 														>
@@ -2233,10 +2262,10 @@
 													{#if $canAccess('containers', 'restart')}
 														<ConfirmPopover
 															open={confirmRestartContainerId === container.id}
-															action="Restart"
-															itemType="container"
+															action="重启"
+															itemType="容器"
 															itemName={container.service}
-															title="Restart"
+															title="重启"
 															onConfirm={() => restartContainer(container.id)}
 															onOpenChange={(open) => confirmRestartContainerId = open ? container.id : null}
 														>
@@ -2248,10 +2277,10 @@
 													{#if $canAccess('containers', 'pause')}
 														<ConfirmPopover
 															open={confirmPauseContainerId === container.id}
-															action="Pause"
-															itemType="container"
+															action="暂停"
+															itemType="容器"
 															itemName={container.service}
-															title="Pause"
+															title="暂停"
 															onConfirm={() => pauseContainer(container.id)}
 															onOpenChange={(open) => confirmPauseContainerId = open ? container.id : null}
 														>
@@ -2263,10 +2292,10 @@
 													{#if $canAccess('containers', 'stop')}
 														<ConfirmPopover
 															open={confirmStopContainerId === container.id}
-															action="Stop"
-															itemType="container"
+															action="停止"
+															itemType="容器"
 															itemName={container.service}
-															title="Stop"
+															title="停止"
 															onConfirm={() => stopContainer(container.id)}
 															onOpenChange={(open) => confirmStopContainerId = open ? container.id : null}
 														>
@@ -2280,10 +2309,10 @@
 											{#if $canAccess('containers', 'remove')}
 												<ConfirmPopover
 													open={confirmRemoveContainerId === container.id}
-													action="Remove"
-													itemType="container"
+													action="移除"
+													itemType="容器"
 													itemName={container.service}
-													title="Remove"
+													title="移除"
 													onConfirm={() => removeContainer(container.id)}
 													onOpenChange={(open) => confirmRemoveContainerId = open ? container.id : null}
 												>
@@ -2302,7 +2331,7 @@
 					<div class="p-4 pl-12 shadow-inner bg-muted/30">
 						<div class="flex items-center justify-center gap-2 py-4 text-muted-foreground text-sm">
 							<Box class="w-4 h-4" />
-							<span>No containers</span>
+							<span>无容器</span>
 						</div>
 					</div>
 				{/if}

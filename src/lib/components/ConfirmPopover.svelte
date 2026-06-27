@@ -27,7 +27,7 @@
 		action,
 		itemName = '',
 		itemType,
-		confirmText = 'Confirm',
+		confirmText = '确认',
 		variant = 'destructive',
 		autoHideMs = 3000,
 		title = '',

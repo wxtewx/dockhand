@@ -94,20 +94,20 @@
 	}
 
 	const menuItems: readonly MenuItem[] = [
-		{ href: '/', Icon: LayoutDashboard, label: 'Dashboard', permission: 'always' },
-		{ href: '/containers', Icon: Box, label: 'Containers', permission: 'containers' },
-		{ href: '/logs', Icon: ScrollText, label: 'Logs', permission: 'containers' },
-		{ href: '/terminal', Icon: Terminal, label: 'Shell', permission: 'containers' },
-		{ href: '/stacks', Icon: Layers, label: 'Stacks', permission: 'stacks' },
-		{ href: '/images', Icon: Images, label: 'Images', permission: 'images' },
-		{ href: '/volumes', Icon: HardDrive, label: 'Volumes', permission: 'volumes' },
-		{ href: '/networks', Icon: Network, label: 'Networks', permission: 'networks' },
-		{ href: '/templates', Icon: LibraryBig, label: 'Templates', permission: 'templates' },
-		{ href: '/registry', Icon: Download, label: 'Registry', permission: 'registries' },
-		{ href: '/activity', Icon: Activity, label: 'Activity', permission: 'activity' },
-		{ href: '/schedules', Icon: Timer, label: 'Schedules', permission: 'schedules' },
-		{ href: '/audit', Icon: ClipboardList, label: 'Audit log', permission: 'audit_logs', enterpriseOnly: true },
-		{ href: '/settings', Icon: Settings, label: 'Settings', permission: 'settings' }
+		{ href: '/', Icon: LayoutDashboard, label: '仪表盘', permission: 'always' },
+		{ href: '/containers', Icon: Box, label: '容器', permission: 'containers' },
+		{ href: '/logs', Icon: ScrollText, label: '日志', permission: 'containers' },
+		{ href: '/terminal', Icon: Terminal, label: '终端', permission: 'containers' },
+		{ href: '/stacks', Icon: Layers, label: '堆栈', permission: 'stacks' },
+		{ href: '/images', Icon: Images, label: '镜像', permission: 'images' },
+		{ href: '/volumes', Icon: HardDrive, label: '数据卷', permission: 'volumes' },
+		{ href: '/networks', Icon: Network, label: '网络', permission: 'networks' },
+		{ href: '/templates', Icon: LibraryBig, label: '模板', permission: 'templates' },
+		{ href: '/registry', Icon: Download, label: '镜像仓库', permission: 'registries' },
+		{ href: '/activity', Icon: Activity, label: '活动记录', permission: 'activity' },
+		{ href: '/schedules', Icon: Timer, label: '定时任务', permission: 'schedules' },
+		{ href: '/audit', Icon: ClipboardList, label: '审计日志', permission: 'audit_logs', enterpriseOnly: true },
+		{ href: '/settings', Icon: Settings, label: '设置', permission: 'settings' }
 	] as const;
 </script>
 
@@ -116,8 +116,8 @@
 		<!-- Expanded state: logo + collapse button -->
 		<div class="relative flex items-center justify-center w-full group-data-[state=collapsed]:hidden">
 			<a href="/" class="flex justify-center relative">
-				<img src="/logo-light.webp" alt="Dockhand Logo" class="h-[52px] w-auto object-contain mt-2 mb-1 dark:hidden" style="filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.3)) drop-shadow(-1px -1px 1px rgba(255,255,255,0.9));" />
-				<img src="/logo-dark.webp" alt="Dockhand Logo" class="h-[52px] w-auto object-contain mt-2 mb-1 hidden dark:block" style="filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.6)) drop-shadow(-1px -1px 1px rgba(255,255,255,0.2));" />
+				<img src="/logo-light.webp" alt="Dockhand 标志" class="h-[52px] w-auto object-contain mt-2 mb-1 dark:hidden" style="filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.3)) drop-shadow(-1px -1px 1px rgba(255,255,255,0.9));" />
+				<img src="/logo-dark.webp" alt="Dockhand 标志" class="h-[52px] w-auto object-contain mt-2 mb-1 hidden dark:block" style="filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.6)) drop-shadow(-1px -1px 1px rgba(255,255,255,0.2));" />
 				{#if $licenseStore.isEnterprise}
 					<Crown class="w-4 h-4 absolute top-0 -right-[6px] text-amber-500 fill-amber-400 drop-shadow-sm rotate-[20deg]" />
 				{/if}
@@ -126,8 +126,8 @@
 				type="button"
 				onclick={() => sidebar.toggle()}
 				class="absolute right-1 p-1.5 rounded-md hover:bg-sidebar-accent text-gray-300 hover:text-gray-400 transition-colors"
-				title="Collapse sidebar"
-				aria-label="Collapse sidebar"
+				title="收起侧边栏"
+				aria-label="收起侧边栏"
 			>
 				<PanelLeftClose class="w-4 h-4" aria-hidden="true" />
 			</button>
@@ -137,8 +137,8 @@
 			type="button"
 			onclick={() => sidebar.toggle()}
 			class="hidden group-data-[state=collapsed]:flex p-1.5 rounded-md hover:bg-sidebar-accent text-muted-foreground hover:text-foreground transition-colors"
-			title="Expand sidebar"
-			aria-label="Expand sidebar"
+			title="展开侧边栏"
+			aria-label="展开侧边栏"
 		>
 			<PanelLeft class="w-4 h-4" aria-hidden="true" />
 		</button>
@@ -173,7 +173,7 @@
 				<div class="space-y-0.5">
 					<div class="flex items-center gap-1.5"><svg class="w-4 h-4 shrink-0" viewBox="0 0 24 18" fill="currentColor"><path d="M23.76 8.68c-.26-.18-.86-.58-1.53-.58-.24 0-.48.04-.72.12-.12-.84-.68-1.56-1.34-2.14l-.28-.22-.24.26c-.28.34-.48.72-.56 1.14-.1.42-.06.82.1 1.2-.42.22-.88.36-1.32.42-.24.04-.48.06-.72.06H.78a.77.77 0 0 0-.78.78c-.02 1.46.22 2.9.72 4.24.56 1.44 1.4 2.5 2.5 3.16 1.26.74 3.32 1.16 5.64 1.16.98 0 2-.1 2.98-.3a11.5 11.5 0 0 0 3.3-1.3 9.67 9.67 0 0 0 2.54-2.34c1.16-1.42 1.86-3.02 2.34-4.38h.2c1.22 0 1.98-.48 2.4-.9.28-.26.5-.58.64-.94l.08-.24-.28-.2zM2.74 8.84H4.7c.1 0 .18-.08.18-.18V7.02c0-.1-.08-.18-.18-.18H2.74c-.1 0-.18.08-.18.18v1.64c0 .1.08.18.18.18zm2.72 0h1.96c.1 0 .18-.08.18-.18V7.02c0-.1-.08-.18-.18-.18H5.46c-.1 0-.18.08-.18.18v1.64c0 .1.08.18.18.18zm2.76 0h1.96c.1 0 .18-.08.18-.18V7.02c0-.1-.08-.18-.18-.18H8.22c-.1 0-.18.08-.18.18v1.64c0 .1.08.18.18.18zm2.76 0h1.96c.1 0 .18-.08.18-.18V7.02c0-.1-.08-.18-.18-.18h-1.96c-.1 0-.18.08-.18.18v1.64c0 .1.08.18.18.18zM5.46 6.2h1.96c.1 0 .18-.08.18-.18V4.38c0-.1-.08-.18-.18-.18H5.46c-.1 0-.18.08-.18.18v1.64c0 .1.08.18.18.18zm2.76 0h1.96c.1 0 .18-.08.18-.18V4.38c0-.1-.08-.18-.18-.18H8.22c-.1 0-.18.08-.18.18v1.64c0 .1.08.18.18.18zm2.76 0h1.96c.1 0 .18-.08.18-.18V4.38c0-.1-.08-.18-.18-.18h-1.96c-.1 0-.18.08-.18.18v1.64c0 .1.08.18.18.18zm0-2.64h1.96c.1 0 .18-.08.18-.18V1.74c0-.1-.08-.18-.18-.18h-1.96c-.1 0-.18.08-.18.18v1.64c0 .1.08.18.18.18zm2.76 5.28h1.96c.1 0 .18-.08.18-.18V7.02c0-.1-.08-.18-.18-.18h-1.96c-.1 0-.18.08-.18.18v1.64c0 .1.08.18.18.18z"/></svg><span class="font-mono">fnsys/dockhand:{appVersion}</span></div>
 					{#if buildCommit}
-						<div>Commit: <span class="font-mono">{buildCommit.slice(0, 7)}</span></div>
+						<div>提交: <span class="font-mono">{buildCommit.slice(0, 7)}</span></div>
 					{/if}
 				</div>
 			</Tooltip.Content>
@@ -189,7 +189,7 @@
 						href="/profile"
 						onclick={() => sidebar.setOpenMobile(false)}
 						class="flex items-center gap-2 px-2 py-1.5 group-data-[state=collapsed]:px-1 group-data-[state=collapsed]:py-1 rounded-md hover:bg-sidebar-accent transition-colors group-data-[state=collapsed]:justify-center"
-						title="View profile"
+						title="查看个人资料"
 					>
 						<Avatar.Root class="w-8 h-8 group-data-[state=collapsed]:w-6 group-data-[state=collapsed]:h-6 shrink-0 transition-all">
 							<Avatar.Image src={$authStore.user.avatar} alt={$authStore.user.username} />
@@ -199,7 +199,7 @@
 						</Avatar.Root>
 						<div class="flex flex-col min-w-0 group-data-[state=collapsed]:hidden">
 							<span class="text-sm font-medium truncate">{$authStore.user.displayName || $authStore.user.username}</span>
-							<span class="text-xs text-muted-foreground truncate">{$authStore.user.isAdmin ? 'Admin' : 'User'}</span>
+							<span class="text-xs text-muted-foreground truncate">{$authStore.user.isAdmin ? '管理员' : '普通用户'}</span>
 						</div>
 					</a>
 				</Sidebar.MenuItem>
@@ -208,10 +208,10 @@
 						type="button"
 						onclick={handleLogout}
 						class="flex items-center gap-2 w-full px-2 py-1.5 group-data-[state=collapsed]:px-1 group-data-[state=collapsed]:py-1 text-sm text-muted-foreground hover:text-foreground hover:bg-sidebar-accent rounded-md transition-colors group-data-[state=collapsed]:justify-center"
-						title="Sign out"
+						title="退出登录"
 					>
 						<LogOut class="w-4 h-4 shrink-0 group-data-[state=collapsed]:w-3.5 group-data-[state=collapsed]:h-3.5" />
-						<span class="group-data-[state=collapsed]:hidden">Sign out</span>
+						<span class="group-data-[state=collapsed]:hidden">退出登录</span>
 					</button>
 				</Sidebar.MenuItem>
 			</Sidebar.Menu>
