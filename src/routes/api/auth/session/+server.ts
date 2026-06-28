@@ -40,7 +40,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
 			}
 		});
 	} catch (error) {
-		console.error('Session check error:', error);
-		return json({ error: 'Failed to check session' }, { status: 500 });
+		console.error('会话检查错误:', error);
+		return json({ error: '检查会话失败' }, { status: 500 });
 	}
 };

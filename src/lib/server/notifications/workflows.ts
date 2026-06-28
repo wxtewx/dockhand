@@ -5,7 +5,7 @@ import { drainResponse, type NotificationPayload, type NotificationResult } from
 export async function sendWorkflows(appriseUrl: string, payload: NotificationPayload): Promise<NotificationResult> {
 	const parsed = parseWorkflowsUrl(appriseUrl);
 	if (!parsed) {
-		return { success: false, error: 'Invalid Workflows URL format. Expected: workflows://hostname/workflow/signature' };
+		return { success: false, error: '无效的 Workflows 地址格式，标准格式: workflows://hostname/workflow/signature' };
 	}
 
 	const url = buildWorkflowsHttpUrl(parsed.hostname, parsed.workflow, parsed.signature);
@@ -46,11 +46,11 @@ export async function sendWorkflows(appriseUrl: string, payload: NotificationPay
 
 		if (!response.ok) {
 			const text = await response.text().catch(() => '');
-			return { success: false, error: `Workflows error ${response.status}: ${text || response.statusText}` };
+			return { success: false, error: `Workflows 请求异常 ${response.status}: ${text || response.statusText}` };
 		}
 		await drainResponse(response);
 		return { success: true };
 	} catch (error) {
-		return { success: false, error: `Workflows connection failed: ${error instanceof Error ? error.message : String(error)}` };
+		return { success: false, error: `Workflows 连接失败: ${error instanceof Error ? error.message : String(error)}` };
 	}
 }

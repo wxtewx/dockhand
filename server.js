@@ -41,13 +41,13 @@ if (useHttps) {
 	const keyPath = process.env.HTTPS_KEY_PATH;
 	const caPath = process.env.HTTPS_CA_PATH;
 
-	console.log('[HTTPS] mode=on');
-	console.log(`[HTTPS] cert=${certPath || '(missing)'}`);
-	console.log(`[HTTPS] key=${keyPath || '(missing)'}`);
-	console.log(`[HTTPS] ca=${caPath || '(none)'}`);
+	console.log('[HTTPS] 模式=开启');
+	console.log(`[HTTPS] 证书文件=${certPath || '(缺失)'}`);
+	console.log(`[HTTPS] 私钥文件=${keyPath || '(缺失)'}`);
+	console.log(`[HTTPS] CA 证书=${caPath || '(无)'}`);
 
 	if (!certPath || !keyPath) {
-		console.error('[HTTPS] HTTPS_MODE=on requires HTTPS_CERT_PATH and HTTPS_KEY_PATH');
+		console.error('[HTTPS] 当 HTTPS_MODE=开启时，必须配置 HTTPS_CERT_PATH 与 HTTPS_KEY_PATH');
 		process.exit(1);
 	}
 
@@ -57,28 +57,28 @@ if (useHttps) {
 		keyPem = readFileSync(keyPath);
 		if (caPath) caPem = readFileSync(caPath);
 	} catch (e) {
-		console.error(`[HTTPS] Failed to read cert/key file: ${e.message}`);
+		console.error(`[HTTPS] 读取证书/私钥文件失败: ${e.message}`);
 		process.exit(1);
 	}
 
 	// Parse cert metadata so operators can confirm they mounted the right file.
 	try {
 		const x509 = new X509Certificate(certPem);
-		console.log(`[HTTPS] cert subject: ${x509.subject.replace(/\n/g, ', ')}`);
-		console.log(`[HTTPS] cert issuer:  ${x509.issuer.replace(/\n/g, ', ')}`);
-		console.log(`[HTTPS] cert SAN:     ${x509.subjectAltName || '(none)'}`);
-		console.log(`[HTTPS] cert valid:   ${x509.validFrom} → ${x509.validTo}`);
+		console.log(`[HTTPS] 证书主题: ${x509.subject.replace(/\n/g, ', ')}`);
+		console.log(`[HTTPS] 颁发机构:  ${x509.issuer.replace(/\n/g, ', ')}`);
+		console.log(`[HTTPS] 证书 SAN:     ${x509.subjectAltName || '(无)'}`);
+		console.log(`[HTTPS] 有效期限:   ${x509.validFrom} → ${x509.validTo}`);
 		const expiresAt = new Date(x509.validTo).getTime();
 		const daysLeft = Math.floor((expiresAt - Date.now()) / 86400000);
 		if (daysLeft < 0) {
-			console.warn(`[HTTPS] WARNING: certificate expired ${-daysLeft} day(s) ago`);
+			console.warn(`[HTTPS] 警告：证书已过期 ${-daysLeft} 天`);
 		} else if (daysLeft < 30) {
-			console.warn(`[HTTPS] WARNING: certificate expires in ${daysLeft} day(s)`);
+			console.warn(`[HTTPS] 警告：证书将在 ${daysLeft} 天后过期`);
 		} else {
-			console.log(`[HTTPS] cert expires in ${daysLeft} day(s)`);
+			console.log(`[HTTPS] 证书剩余有效期 ${daysLeft} 天`);
 		}
 	} catch (e) {
-		console.error(`[HTTPS] Failed to parse certificate: ${e.message}`);
+		console.error(`[HTTPS] 解析证书信息失败: ${e.message}`);
 		process.exit(1);
 	}
 
@@ -90,9 +90,9 @@ if (useHttps) {
 	const hstsMaxAge = parseInt(process.env.HSTS_MAX_AGE ?? '31536000', 10);
 	const hstsHeader = hstsMaxAge > 0 ? `max-age=${hstsMaxAge}` : null;
 	if (hstsHeader) {
-		console.log(`[HTTPS] HSTS enabled: ${hstsHeader}`);
+		console.log(`[HTTPS] HSTS 已启用: ${hstsHeader}`);
 	} else {
-		console.log('[HTTPS] HSTS disabled (HSTS_MAX_AGE=0)');
+		console.log('[HTTPS] HSTS 已关闭 (HSTS_MAX_AGE=0)');
 	}
 
 	server = createHttpsServer(tlsOptions, (req, res) => {
@@ -100,7 +100,7 @@ if (useHttps) {
 		handler(req, res);
 	});
 } else {
-	console.log(`[HTTPS] mode=off (set HTTPS_MODE=on to enable native TLS)`);
+	console.log(`[HTTPS] 模式=关闭 设置 HTTPS_MODE=on 可启用原生 TLS)`);
 	server = createHttpServer((req, res) => {
 		handler(req, res);
 	});
@@ -128,7 +128,7 @@ globalThis.__hawserSendMessage = (envId, message) => {
 		conn.ws.send(message);
 		return true;
 	} catch (e) {
-		console.error('[Hawser WS] sendMessage error:', e);
+		console.error('[Hawser WS] 发送消息错误:', e);
 		return false;
 	}
 };
@@ -195,7 +195,7 @@ server.on('upgrade', async (req, socket, head) => {
 				return;
 			}
 		} catch (err) {
-			console.error('[WS] auth error during upgrade:', err);
+			console.error('[WS] 握手阶段身份验证异常:', err);
 			socket.write('HTTP/1.1 500 Internal Server Error\r\nConnection: close\r\n\r\n');
 			socket.destroy();
 			return;
@@ -241,7 +241,7 @@ async function handleTerminalConnection(ws, url, connId) {
 	const envId = envIdParam ? parseInt(envIdParam, 10) : undefined;
 
 	if (!containerId) {
-		ws.send(JSON.stringify({ type: 'error', message: 'No container ID' }));
+		ws.send(JSON.stringify({ type: 'error', message: '未传入容器 ID' }));
 		ws.close();
 		return;
 	}
@@ -250,13 +250,13 @@ async function handleTerminalConnection(ws, url, connId) {
 		try {
 			const ok = await globalThis.__canAccessEnvForUser(ws.__auth, envId);
 			if (!ok) {
-				console.warn(`[WS] env access denied: user=${ws.__auth.username} envId=${envId}`);
-				ws.send(JSON.stringify({ type: 'error', message: 'Access denied for this environment' }));
+				console.warn(`[WS] 环境访问权限拒绝：用户=${ws.__auth.username} 环境 ID=${envId}`);
+				ws.send(JSON.stringify({ type: 'error', message: '无该环境的访问权限' }));
 				ws.close(1008, 'env access denied');
 				return;
 			}
 		} catch (err) {
-			console.error('[WS] env access check failed:', err);
+			console.error('[WS] 环境权限校验失败:', err);
 			ws.close(1011, 'internal error');
 			return;
 		}
@@ -361,7 +361,7 @@ async function handleTerminalConnection(ws, url, connId) {
 		});
 
 		dockerStream.on('error', (err) => {
-			console.error('[Terminal WS] Socket error:', err.message);
+			console.error('[Terminal WS] Socket 错误:', err.message);
 			if (ws.readyState === 1) {
 				ws.send(JSON.stringify({ type: 'error', message: err.message }));
 			}
@@ -398,7 +398,7 @@ async function handleTerminalConnection(ws, url, connId) {
 
 		wsConnections.set(connId, { stream: dockerStream, ws });
 	} catch (err) {
-		console.error('[Terminal WS] Error:', err.message);
+		console.error('[Terminal WS] 错误:', err.message);
 		if (ws.readyState === 1) {
 			ws.send(JSON.stringify({ type: 'error', message: err.message }));
 			ws.close();
@@ -416,7 +416,7 @@ async function handleTerminalConnection(ws, url, connId) {
  */
 function handleEdgeExec(ws, connId, containerId, shell, user, environmentId) {
 	if (typeof globalThis.__hawserSendMessage !== 'function') {
-		ws.send(JSON.stringify({ type: 'error', message: 'Edge agent handler not ready' }));
+		ws.send(JSON.stringify({ type: 'error', message: '边缘代理处理程序未就绪' }));
 		ws.close();
 		return;
 	}
@@ -438,7 +438,7 @@ function handleEdgeExec(ws, connId, containerId, shell, user, environmentId) {
 	const sent = globalThis.__hawserSendMessage(environmentId, execStartMsg);
 	if (!sent) {
 		edgeExecSessions.delete(execId);
-		ws.send(JSON.stringify({ type: 'error', message: 'Edge agent not connected' }));
+		ws.send(JSON.stringify({ type: 'error', message: '边缘代理未连接' }));
 		ws.close();
 		return;
 	}
@@ -514,10 +514,10 @@ function createExecLocal(containerId, shell, user, socketPath) {
 					if (res.statusCode === 201 && body.Id) {
 						resolve(body.Id);
 					} else {
-						reject(new Error(body.message || `Exec create failed: ${res.statusCode}`));
+						reject(new Error(body.message || `执行创建失败: ${res.statusCode}`));
 					}
 				} catch (e) {
-					reject(new Error('Failed to parse exec response'));
+					reject(new Error('解析执行响应失败'));
 				}
 			});
 			res.on('error', reject);
@@ -534,7 +534,7 @@ function createExecLocal(containerId, shell, user, socketPath) {
  * via the global hawser connection manager.
  */
 function handleHawserConnection(ws, connId, remoteIp) {
-	console.log('[Hawser WS] New connection pending authentication');
+	console.log('[Hawser WS] 新连接等待认证');
 
 	ws.on('message', async (data) => {
 		try {
@@ -549,11 +549,11 @@ function handleHawserConnection(ws, connId, remoteIp) {
 					// Don't close connection - let it recover
 				}
 			} else {
-				console.warn('[Hawser WS] No global handler registered');
-				ws.send(JSON.stringify({ type: 'error', message: 'Server not ready' }));
+				console.warn('[Hawser WS] 未注册全局处理程序');
+				ws.send(JSON.stringify({ type: 'error', message: '服务器未就绪' }));
 			}
 		} catch (err) {
-			console.error('[Hawser WS] Message parse error:', err.message);
+			console.error('[Hawser WS] 消息解析错误:', err.message);
 		}
 	});
 
@@ -564,14 +564,14 @@ function handleHawserConnection(ws, connId, remoteIp) {
 	});
 
 	ws.on('error', (err) => {
-		console.error('[Hawser WS] Connection error:', err.message);
+		console.error('[Hawser WS] 连接错误:', err.message);
 	});
 }
 
 // Start the server
 server.listen(PORT, HOST, () => {
 	const scheme = useHttps ? 'https' : 'http';
-	console.log(`Listening on ${scheme}://${HOST}:${PORT}/ with WebSocket`);
+	console.log(`服务已监听地址：${scheme}://${HOST}:${PORT}/，已启用 WebSocket`);
 });
 
 

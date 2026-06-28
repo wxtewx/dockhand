@@ -9,6 +9,7 @@
 	import EnvironmentIcon from '$lib/components/EnvironmentIcon.svelte';
 	import * as Alert from '$lib/components/ui/alert';
 	import { focusFirstInput } from '$lib/utils';
+	import { getLabelText } from '$lib/types';
 
 	export interface Role {
 		id: number;
@@ -88,103 +89,103 @@
 	// Permission definitions - separated into system and environment categories
 	const systemPermissions = {
 		users: [
-			{ key: 'view', label: 'View users' },
-			{ key: 'create', label: 'Create users' },
-			{ key: 'edit', label: 'Edit users' },
-			{ key: 'delete', label: 'Delete users' }
+			{ key: 'view', label: '查看用户' },
+			{ key: 'create', label: '创建用户' },
+			{ key: 'edit', label: '编辑用户' },
+			{ key: 'delete', label: '删除用户' }
 		],
 		settings: [
-			{ key: 'view', label: 'View settings' },
-			{ key: 'edit', label: 'Edit settings' }
+			{ key: 'view', label: '查看设置' },
+			{ key: 'edit', label: '编辑设置' }
 		],
 		environments: [
-			{ key: 'view', label: 'View environments' },
-			{ key: 'create', label: 'Create environments' },
-			{ key: 'edit', label: 'Edit environments' },
-			{ key: 'delete', label: 'Delete environments' }
+			{ key: 'view', label: '查看环境' },
+			{ key: 'create', label: '创建环境' },
+			{ key: 'edit', label: '编辑环境' },
+			{ key: 'delete', label: '删除环境' }
 		],
 		registries: [
-			{ key: 'view', label: 'View registries' },
-			{ key: 'create', label: 'Create registries' },
-			{ key: 'edit', label: 'Edit registries' },
-			{ key: 'delete', label: 'Delete registries' }
+			{ key: 'view', label: '查看镜像仓库' },
+			{ key: 'create', label: '创建镜像仓库' },
+			{ key: 'edit', label: '编辑镜像仓库' },
+			{ key: 'delete', label: '删除镜像仓库' }
 		],
 		notifications: [
-			{ key: 'view', label: 'View notifications' },
-			{ key: 'create', label: 'Create notifications' },
-			{ key: 'edit', label: 'Edit notifications' },
-			{ key: 'delete', label: 'Delete notifications' },
-			{ key: 'test', label: 'Test notifications' }
+			{ key: 'view', label: '查看通知' },
+			{ key: 'create', label: '创建通知' },
+			{ key: 'edit', label: '编辑通知' },
+			{ key: 'delete', label: '删除通知' },
+			{ key: 'test', label: '测试通知' }
 		],
 		configsets: [
-			{ key: 'view', label: 'View config sets' },
-			{ key: 'create', label: 'Create config sets' },
-			{ key: 'edit', label: 'Edit config sets' },
-			{ key: 'delete', label: 'Delete config sets' }
+			{ key: 'view', label: '查看配置集' },
+			{ key: 'create', label: '创建配置集' },
+			{ key: 'edit', label: '编辑配置集' },
+			{ key: 'delete', label: '删除配置集' }
 		],
 		git: [
-			{ key: 'view', label: 'View credentials & repos' },
-			{ key: 'create', label: 'Create credentials & repos' },
-			{ key: 'edit', label: 'Edit credentials & repos' },
-			{ key: 'delete', label: 'Delete credentials & repos' }
+			{ key: 'view', label: '查看凭据与仓库' },
+			{ key: 'create', label: '创建凭据与仓库' },
+			{ key: 'edit', label: '编辑凭据与仓库' },
+			{ key: 'delete', label: '删除凭据与仓库' }
 		],
 		license: [
-			{ key: 'manage', label: 'Manage license' }
+			{ key: 'manage', label: '管理许可证' }
 		],
 		audit_logs: [
-			{ key: 'view', label: 'View audit logs' }
+			{ key: 'view', label: '查看审计日志' }
 		],
 		schedules: [
-			{ key: 'view', label: 'View schedules' },
-			{ key: 'edit', label: 'Edit schedules' },
-			{ key: 'run', label: 'Run schedules' }
+			{ key: 'view', label: '查看定时任务' },
+			{ key: 'edit', label: '编辑定时任务' },
+			{ key: 'run', label: '运行定时任务' }
 		]
 	};
 
 	const environmentPermissions = {
 		activity: [
-			{ key: 'view', label: 'View activity' }
+			{ key: 'view', label: '查看操作记录' }
 		],
 		containers: [
-			{ key: 'view', label: 'View containers' },
-			{ key: 'create', label: 'Create containers' },
-			{ key: 'start', label: 'Start containers' },
-			{ key: 'stop', label: 'Stop containers' },
-			{ key: 'restart', label: 'Restart containers' },
-			{ key: 'remove', label: 'Remove containers' },
-			{ key: 'exec', label: 'Execute terminal' },
-			{ key: 'logs', label: 'View logs' },
-			{ key: 'inspect', label: 'Inspect containers' }
+			{ key: 'view', label: '查看容器' },
+			{ key: 'create', label: '创建容器' },
+			{ key: 'start', label: '启动容器' },
+			{ key: 'stop', label: '停止容器' },
+			{ key: 'restart', label: '重启容器' },
+			{ key: 'remove', label: '删除容器' },
+			{ key: 'exec', label: '执行终端命令' },
+			{ key: 'logs', label: '查看日志' },
+			{ key: 'inspect', label: '检查容器' }
 		],
 		images: [
-			{ key: 'view', label: 'View images' },
-			{ key: 'pull', label: 'Pull images' },
-			{ key: 'push', label: 'Push images' },
-			{ key: 'remove', label: 'Remove images' },
-			{ key: 'build', label: 'Build images' },
-			{ key: 'inspect', label: 'Inspect images' }
+			{ key: 'view', label: '查看镜像' },
+			{ key: 'pull', label: '拉取镜像' },
+			{ key: 'push', label: '推送镜像' },
+			{ key: 'remove', label: '删除镜像' },
+			{ key: 'build', label: '构建镜像' },
+			{ key: 'inspect', label: '检查镜像' }
 		],
 		volumes: [
-			{ key: 'view', label: 'View volumes' },
-			{ key: 'create', label: 'Create volumes' },
-			{ key: 'remove', label: 'Remove volumes' },
-			{ key: 'inspect', label: 'Inspect volumes' }
+			{ key: 'view', label: '查看数据卷' },
+			{ key: 'create', label: '创建数据卷' },
+			{ key: 'remove', label: '删除数据卷' },
+			{ key: 'inspect', label: '检查数据卷' }
 		],
 		networks: [
-			{ key: 'view', label: 'View networks' },
-			{ key: 'create', label: 'Create networks' },
-			{ key: 'remove', label: 'Remove networks' },
-			{ key: 'inspect', label: 'Inspect networks' },
-			{ key: 'connect', label: 'Connect containers' },
-			{ key: 'disconnect', label: 'Disconnect containers' }
+			{ key: 'view', label: '查看网络' },
+			{ key: 'create', label: '创建网络' },
+			{ key: 'remove', label: '删除网络' },
+			{ key: 'inspect', label: '检查网络' },
+			{ key: 'connect', label: '连接容器' },
+			{ key: 'disconnect', label: '断开容器连接' }
 		],
 		stacks: [
-			{ key: 'view', label: 'View stacks' },
-			{ key: 'create', label: 'Create stacks' },
-			{ key: 'start', label: 'Start stacks' },
-			{ key: 'stop', label: 'Stop stacks' },
-			{ key: 'remove', label: 'Remove stacks' },
-			{ key: 'edit', label: 'Edit stacks' }
+			{ key: 'view', label: '查看堆栈' },
+			{ key: 'create', label: '创建堆栈' },
+			{ key: 'start', label: '启动堆栈' },
+			{ key: 'stop', label: '停止堆栈' },
+			{ key: 'remove', label: '删除堆栈' },
+			{ key: 'edit', label: '编辑堆栈' }
 		]
 	};
 
@@ -369,7 +370,7 @@
 	async function save() {
 		formErrors = {};
 		if (!formName.trim()) {
-			formErrors.name = 'Role name is required';
+			formErrors.name = '角色名称为必填项';
 			return;
 		}
 
@@ -400,13 +401,13 @@
 			} else {
 				const data = await response.json();
 				if (data.error?.includes('already exists')) {
-					formErrors.name = 'Role name already exists';
+					formErrors.name = '角色名称已存在';
 				} else {
-					formError = data.error || `Failed to ${isEditing ? 'update' : 'create'} role`;
+					formError = data.error || `${isEditing ? '更新' : '创建'}角色失败`;
 				}
 			}
 		} catch {
-			formError = `Failed to ${isEditing ? 'update' : 'create'} role`;
+			formError = `${isEditing ? '更新' : '创建'}角色失败`;
 		} finally {
 			formSaving = false;
 		}
@@ -424,22 +425,22 @@
 			<Dialog.Title class="flex items-center gap-2">
 				{#if isEditing}
 					<Pencil class="w-5 h-5" />
-					Edit role
+					编辑角色
 				{:else if isCopying}
 					<Copy class="w-5 h-5" />
-					Copy role
+					复制角色
 				{:else}
 					<Shield class="w-5 h-5" />
-					Create role
+					创建角色
 				{/if}
 			</Dialog.Title>
 			<Dialog.Description>
 				{#if isEditing}
-					Update role permissions
+					更新角色权限
 				{:else if isCopying}
-					Create a new role based on "{copyFrom?.name}"
+					基于 "{copyFrom?.name}" 创建新角色
 				{:else}
-					Define a new role with specific permissions
+					定义具有特定权限的新角色
 				{/if}
 			</Dialog.Description>
 		</Dialog.Header>
@@ -451,10 +452,10 @@
 		{/if}
 		<div class="flex-shrink-0 grid grid-cols-2 gap-4 py-4">
 			<div class="space-y-2">
-				<Label>Role name</Label>
+				<Label>角色名称</Label>
 				<Input
 					bind:value={formName}
-					placeholder="Developer"
+					placeholder="开发者"
 					class={formErrors.name ? 'border-destructive focus-visible:ring-destructive' : ''}
 					oninput={() => formErrors.name = undefined}
 				/>
@@ -463,10 +464,10 @@
 				{/if}
 			</div>
 			<div class="space-y-2">
-				<Label>Description (optional)</Label>
+				<Label>描述 (可选)</Label>
 				<Input
 					bind:value={formDescription}
-					placeholder="Access to development resources"
+					placeholder="开发资源访问权限"
 				/>
 			</div>
 		</div>
@@ -478,8 +479,8 @@
 				<div class="px-4 py-3 border-b bg-muted/30">
 					<div class="flex items-center gap-2">
 						<Building2 class="w-4 h-4" />
-						<span class="font-medium text-sm">System permissions</span>
-						<span class="text-xs text-muted-foreground">(always global)</span>
+						<span class="font-medium text-sm">系统权限</span>
+						<span class="text-xs text-muted-foreground">(全局生效)</span>
 					</div>
 				</div>
 				<div class="p-3 grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -489,7 +490,7 @@
 							<!-- Category pill on border -->
 							<div class="absolute -top-2.5 left-3 inline-flex items-center gap-1.5 px-2 py-0.5 rounded border {categoryColorsSolid[category] || 'bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-400 border-gray-300 dark:border-gray-700'}">
 								<IconComponent class="w-3.5 h-3.5" />
-								<span class="text-xs font-medium capitalize">{category}</span>
+								<span class="text-xs font-medium capitalize">{getLabelText(category)}</span>
 							</div>
 							<!-- Select all / Clear links -->
 							<div class="absolute -top-2 right-3 flex gap-2 bg-background px-1">
@@ -498,7 +499,7 @@
 									class="text-xs text-primary hover:underline"
 									onclick={() => toggleAllPermissions(category as keyof typeof formPermissions, true, permissions)}
 								>
-									All
+									全选
 								</button>
 								<span class="text-muted-foreground">|</span>
 								<button
@@ -506,7 +507,7 @@
 									class="text-xs text-muted-foreground hover:underline"
 									onclick={() => toggleAllPermissions(category as keyof typeof formPermissions, false, permissions)}
 								>
-									Clear
+									清空
 								</button>
 							</div>
 							<div class="flex flex-col gap-1.5">
@@ -535,11 +536,11 @@
 					<div class="flex items-center justify-between">
 						<div class="flex items-center gap-2">
 							<Globe class="w-4 h-4" />
-							<span class="font-medium text-sm">Environment permissions</span>
+							<span class="font-medium text-sm">环境权限</span>
 						</div>
 						{#if environments.length > 0}
 							<div class="flex items-center gap-2">
-								<span class="text-xs text-muted-foreground">All environments (incl. new)</span>
+								<span class="text-xs text-muted-foreground">所有环境 (包含新建)</span>
 								<TogglePill bind:checked={formAllEnvironments} />
 							</div>
 						{/if}
@@ -560,13 +561,13 @@
 								{/each}
 							</div>
 							{#if formEnvironmentIds.length === 0}
-								<p class="text-xs text-amber-600 mt-2">Select at least one environment for these permissions to be effective.</p>
+								<p class="text-xs text-amber-600 mt-2">请至少选择一个环境，这些权限才会生效。</p>
 							{/if}
 						{:else}
-							<p class="text-xs text-muted-foreground mt-1">Permissions apply to all environments, including future ones.</p>
+							<p class="text-xs text-muted-foreground mt-1">权限将应用于所有环境，包括未来创建的环境。</p>
 						{/if}
 					{:else}
-						<p class="text-xs text-muted-foreground mt-1">Permissions apply to all environments.</p>
+						<p class="text-xs text-muted-foreground mt-1">权限将应用于所有环境。</p>
 					{/if}
 				</div>
 				<div class="p-3 grid grid-cols-2 lg:grid-cols-5 gap-3">
@@ -576,7 +577,7 @@
 							<!-- Category pill on border -->
 							<div class="absolute -top-2.5 left-3 inline-flex items-center gap-1.5 px-2 py-0.5 rounded border {categoryColorsSolid[category] || 'bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-400 border-gray-300 dark:border-gray-700'}">
 								<IconComponent class="w-3.5 h-3.5" />
-								<span class="text-xs font-medium capitalize">{category}</span>
+								<span class="text-xs font-medium capitalize">{getLabelText(category)}</span>
 							</div>
 							<!-- Select all / Clear links -->
 							<div class="absolute -top-2 right-3 flex gap-2 bg-background px-1">
@@ -585,7 +586,7 @@
 									class="text-xs text-primary hover:underline"
 									onclick={() => toggleAllPermissions(category as keyof typeof formPermissions, true, permissions)}
 								>
-									All
+									全选
 								</button>
 								<span class="text-muted-foreground">|</span>
 								<button
@@ -593,7 +594,7 @@
 									class="text-xs text-muted-foreground hover:underline"
 									onclick={() => toggleAllPermissions(category as keyof typeof formPermissions, false, permissions)}
 								>
-									Clear
+									清空
 								</button>
 							</div>
 							<div class="flex flex-col gap-1.5">
@@ -618,7 +619,7 @@
 		</div>
 
 		<Dialog.Footer class="flex-shrink-0 pt-4">
-			<Button variant="outline" onclick={handleClose}>Cancel</Button>
+			<Button variant="outline" onclick={handleClose}>取消</Button>
 			<Button onclick={save} disabled={formSaving}>
 				{#if formSaving}
 					<RefreshCw class="w-4 h-4 mr-1 animate-spin" />
@@ -627,7 +628,7 @@
 				{:else}
 					<Plus class="w-4 h-4" />
 				{/if}
-				{isEditing ? 'Save' : 'Create role'}
+				{isEditing ? '保存' : '创建角色'}
 			</Button>
 		</Dialog.Footer>
 	</Dialog.Content>

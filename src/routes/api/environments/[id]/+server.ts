@@ -20,7 +20,7 @@ import { deleteEnvironmentIcon } from '$lib/server/env-icons';
 export const GET: RequestHandler = async ({ params, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('environments', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -28,7 +28,7 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 		const env = await getEnvironment(id);
 
 		if (!env) {
-			return json({ error: 'Environment not found' }, { status: 404 });
+			return json({ error: '环境不存在' }, { status: 404 });
 		}
 
 		// Get public IP for this environment
@@ -42,8 +42,8 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 			publicIp
 		});
 	} catch (error) {
-		console.error('Failed to get environment:', error);
-		return json({ error: 'Failed to get environment' }, { status: 500 });
+		console.error('获取环境信息失败:', error);
+		return json({ error: '获取环境信息失败' }, { status: 500 });
 	}
 };
 
@@ -51,7 +51,7 @@ export const PUT: RequestHandler = async (event) => {
 	const { params, request, cookies } = event;
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('environments', 'edit')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -60,7 +60,7 @@ export const PUT: RequestHandler = async (event) => {
 		// Get old values before update for diff
 		const oldEnv = await getEnvironment(id);
 		if (!oldEnv) {
-			return json({ error: 'Environment not found' }, { status: 404 });
+			return json({ error: '环境不存在' }, { status: 404 });
 		}
 
 		const data = await request.json();
@@ -100,12 +100,12 @@ export const PUT: RequestHandler = async (event) => {
 			// else's data.
 			if (existsSync(oldStacks) && existsSync(newStacks)) {
 				return json({
-					error: `Cannot rename: ${newStacks} already exists. Pick a different name or move that directory out of the way.`
+					error: `无法重命名：${newStacks} 目录已存在。请更换名称或将该目录移至其他位置。`
 				}, { status: 409 });
 			}
 			if (existsSync(oldRepos) && existsSync(newRepos)) {
 				return json({
-					error: `Cannot rename: ${newRepos} already exists. Pick a different name or move that directory out of the way.`
+					error: `无法重命名：${newRepos} 目录已存在。请更换名称或将该目录移至其他位置。`
 				}, { status: 409 });
 			}
 
@@ -118,8 +118,8 @@ export const PUT: RequestHandler = async (event) => {
 				try { if (existsSync(newStacks) && !existsSync(oldStacks)) renameSync(newStacks, oldStacks); } catch {}
 				try { if (existsSync(newRepos) && !existsSync(oldRepos)) renameSync(newRepos, oldRepos); } catch {}
 				const code = err?.code === 'EXDEV'
-					? 'EXDEV: stacks dir is on a different filesystem from the rename target. Move it back to the same filesystem to rename this environment.'
-					: (err?.message || 'Rename failed');
+					? 'EXDEV: 堆栈目录与重命名目标位于不同文件系统。请将目录迁移至同一文件系统后再执行该环境重命名操作。'
+					: (err?.message || '重命名操作失败');
 				return json({ error: code }, { status: 409 });
 			}
 		}
@@ -152,7 +152,7 @@ export const PUT: RequestHandler = async (event) => {
 		});
 
 		if (!env) {
-			return json({ error: 'Environment not found' }, { status: 404 });
+			return json({ error: '环境不存在' }, { status: 404 });
 		}
 
 		// Notify event collectors if collectActivity or collectMetrics setting changed
@@ -184,8 +184,8 @@ export const PUT: RequestHandler = async (event) => {
 			publicIp
 		});
 	} catch (error) {
-		console.error('Failed to update environment:', error);
-		return json({ error: 'Failed to update environment' }, { status: 500 });
+		console.error('更新环境失败:', error);
+		return json({ error: '更新环境失败' }, { status: 500 });
 	}
 };
 
@@ -193,24 +193,24 @@ export const DELETE: RequestHandler = async (event) => {
 	const { params, cookies } = event;
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('environments', 'delete')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const id = parseInt(params.id);
 		if (isNaN(id) || id <= 0) {
-			return json({ error: 'Invalid environment ID' }, { status: 400 });
+			return json({ error: '环境 ID 无效' }, { status: 400 });
 		}
 
 		// Get environment name before deletion for audit log
 		const env = await getEnvironment(id);
 		if (!env) {
-			return json({ error: 'Environment not found' }, { status: 404 });
+			return json({ error: '环境不存在' }, { status: 404 });
 		}
 
 		// Safety: never delete directories if env name is empty/whitespace
 		if (!env.name?.trim()) {
-			return json({ error: 'Cannot delete environment with empty name' }, { status: 500 });
+			return json({ error: '无法删除名称为空的环境' }, { status: 500 });
 		}
 
 		// Close Edge connection if this is a Hawser Edge environment
@@ -236,7 +236,7 @@ export const DELETE: RequestHandler = async (event) => {
 		const success = await deleteEnvironment(id);
 
 		if (!success) {
-			return json({ error: 'Cannot delete this environment' }, { status: 400 });
+			return json({ error: '无法删除此环境' }, { status: 400 });
 		}
 
 		// Clean up custom icon file if exists
@@ -262,7 +262,7 @@ export const DELETE: RequestHandler = async (event) => {
 				rmSync(envStackDir, { recursive: true, force: true });
 			}
 		} catch (err) {
-			console.error(`Failed to clean up stack directory for environment "${env.name}":`, err);
+			console.error(`清理环境 "${env.name}" 的堆栈目录失败:`, err);
 		}
 
 		// Clean up git-repos directory for this environment
@@ -273,7 +273,7 @@ export const DELETE: RequestHandler = async (event) => {
 				rmSync(envGitDir, { recursive: true, force: true });
 			}
 		} catch (err) {
-			console.error(`Failed to clean up git-repos directory for environment "${env.name}":`, err);
+			console.error(`清理环境 "${env.name}" 的 git-repos 目录失败:`, err);
 		}
 
 		// Notify event collectors to stop collecting from deleted environment
@@ -284,7 +284,7 @@ export const DELETE: RequestHandler = async (event) => {
 
 		return json({ success: true });
 	} catch (error) {
-		console.error('Failed to delete environment:', error);
-		return json({ error: 'Failed to delete environment' }, { status: 500 });
+		console.error('删除环境失败:', error);
+		return json({ error: '删除环境失败' }, { status: 500 });
 	}
 };

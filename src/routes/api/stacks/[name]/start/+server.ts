@@ -14,12 +14,12 @@ export const POST: RequestHandler = async (event) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !(await auth.can('stacks', 'start', envIdNum))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Environment access check (enterprise only)
 	if (envIdNum && auth.isEnterprise && !(await auth.canAccessEnvironment(envIdNum))) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问该环境' }, { status: 403 });
 	}
 
 	return createJobResponse(async (send) => {
@@ -40,8 +40,8 @@ export const POST: RequestHandler = async (event) => {
 				send('result', { success: false, error: error.message });
 				return;
 			}
-			console.error('Error starting compose stack:', error);
-			send('result', { success: false, error: 'Failed to start compose stack' });
+			console.error('启动 Compose 堆栈时出错：', error);
+			send('result', { success: false, error: '启动 Compose 堆栈失败' });
 		}
 	}, event.request);
 };

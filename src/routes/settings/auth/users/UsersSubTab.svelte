@@ -32,6 +32,7 @@
 	import { canAccess } from '$lib/stores/auth';
 	import { licenseStore } from '$lib/stores/license';
 	import UserModal from './UserModal.svelte';
+	import { getLabelText } from '$lib/types';
 
 	const MAX_VISIBLE_ROLES = 5;
 
@@ -95,8 +96,8 @@
 				localUsers = await response.json();
 			}
 		} catch (error) {
-			console.error('Failed to fetch users:', error);
-			toast.error('Failed to fetch users');
+			console.error('获取用户列表失败:', error);
+			toast.error('获取用户列表失败');
 		} finally {
 			usersLoading = false;
 		}
@@ -129,9 +130,9 @@
 				const data = await response.json();
 				await fetchUsers();
 				if (data.authDisabled) {
-					toast.success('User deleted. Authentication has been disabled.');
+					toast.success('用户已删除，身份验证已禁用');
 				} else {
-					toast.success('User deleted');
+					toast.success('用户已删除');
 				}
 				showLastAdminWarning = false;
 				lastAdminDeleteUserId = null;
@@ -143,15 +144,15 @@
 					lastAdminDeleteUserId = userId;
 					showLastAdminWarning = true;
 				} else {
-					toast.error(data.error || 'Failed to delete user');
+					toast.error(data.error || '删除用户失败');
 				}
 			} else {
 				const data = await response.json();
-				toast.error(data.error || 'Failed to delete user');
+				toast.error(data.error || '删除用户失败');
 			}
 		} catch (error) {
-			console.error('Failed to delete user:', error);
-			toast.error('Failed to delete user');
+			console.error('删除用户失败:', error);
+			toast.error('删除用户失败');
 		} finally {
 			confirmDeleteUserId = null;
 		}
@@ -180,7 +181,7 @@
 	// Get provider display info
 	function getProviderInfo(user: LocalUser): { icon: typeof KeyRound; label: string; class: string; sortKey: string } {
 		if (!user.isSso) {
-			return { icon: KeyRound, label: 'Local', class: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/30', sortKey: 'local' };
+			return { icon: KeyRound, label: '本地', class: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/30', sortKey: 'local' };
 		}
 		const providerParts = user.authProvider?.split(':') || [];
 		const providerType = providerParts[0]?.toLowerCase() || 'sso';
@@ -255,14 +256,14 @@
 				<div>
 					<Card.Title class="text-sm font-medium flex items-center gap-2">
 						<Users class="w-4 h-4" />
-						Users
+						用户管理
 					</Card.Title>
-					<p class="text-xs text-muted-foreground mt-1">Manage user accounts for local authentication, SSO, and LDAP.</p>
+					<p class="text-xs text-muted-foreground mt-1">管理本地认证、SSO 和 LDAP 的用户账户。</p>
 				</div>
 				{#if $canAccess('users', 'create')}
 					<Button size="sm" onclick={() => openUserModal(null)}>
 						<UserPlus class="w-4 h-4" />
-						Add user
+						添加用户
 					</Button>
 				{/if}
 			</div>
@@ -275,8 +276,8 @@
 			{:else if localUsers.length === 0}
 				<EmptyState
 					icon={Users}
-					title="No users configured"
-					description="Create the first user to enable login"
+					title="未配置任何用户"
+					description="创建第一个用户以启用登录功能"
 				/>
 			{:else}
 				<!-- Filter bar -->
@@ -285,13 +286,13 @@
 						<Search class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
 						<Input
 							type="text"
-							placeholder="Search users..."
+							placeholder="搜索用户..."
 							bind:value={searchQuery}
 							class="pl-8 h-8 text-sm"
 						/>
 					</div>
 					<div class="flex items-center gap-1 text-xs text-muted-foreground ml-auto">
-						<span>{filteredAndSortedUsers.length} of {localUsers.length} users</span>
+						<span>共 {localUsers.length} 位用户，显示 {filteredAndSortedUsers.length} 位</span>
 					</div>
 				</div>
 				<!-- Table -->
@@ -305,7 +306,7 @@
 										class="flex items-center gap-1 hover:text-foreground transition-colors"
 										onclick={() => toggleSort('username')}
 									>
-										User
+										用户
 										{#if sortField === 'username'}
 											{#if sortDirection === 'asc'}<ArrowUp class="w-3 h-3" />{:else}<ArrowDown class="w-3 h-3" />{/if}
 										{:else}
@@ -319,7 +320,7 @@
 										class="flex items-center gap-1 hover:text-foreground transition-colors"
 										onclick={() => toggleSort('email')}
 									>
-										Email
+										邮箱
 										{#if sortField === 'email'}
 											{#if sortDirection === 'asc'}<ArrowUp class="w-3 h-3" />{:else}<ArrowDown class="w-3 h-3" />{/if}
 										{:else}
@@ -327,9 +328,9 @@
 										{/if}
 									</button>
 								</th>
-								<th class="text-left py-1.5 px-3 font-medium w-[8%]">MFA</th>
+								<th class="text-left py-1.5 px-3 font-medium w-[8%]">双因素认证</th>
 								{#if $licenseStore.isEnterprise}
-									<th class="text-left py-1.5 px-3 font-medium w-[25%]">Roles</th>
+									<th class="text-left py-1.5 px-3 font-medium w-[25%]">角色</th>
 								{/if}
 								<th class="text-left py-1.5 px-3 font-medium w-[15%]">
 									<button
@@ -337,7 +338,7 @@
 										class="flex items-center gap-1 hover:text-foreground transition-colors"
 										onclick={() => toggleSort('provider')}
 									>
-										Provider
+										认证来源
 										{#if sortField === 'provider'}
 											{#if sortDirection === 'asc'}<ArrowUp class="w-3 h-3" />{:else}<ArrowDown class="w-3 h-3" />{/if}
 										{:else}
@@ -364,7 +365,7 @@
 											<div class="flex items-center gap-1.5">
 												<span class="font-medium">{user.username}</span>
 												{#if !user.isActive}
-													<Badge variant="destructive" class="text-2xs px-1 py-0 h-4">Disabled</Badge>
+													<Badge variant="destructive" class="text-2xs px-1 py-0 h-4">已禁用</Badge>
 												{/if}
 											</div>
 										</div>
@@ -378,7 +379,7 @@
 										{#if user.mfaEnabled}
 											<Badge variant="outline" class="text-2xs px-1.5 py-0 h-4 gap-1 rounded-sm bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30">
 												<Shield class="w-2.5 h-2.5" />
-												Enabled
+												已启用
 											</Badge>
 										{:else}
 											<span class="text-muted-foreground">—</span>
@@ -393,11 +394,11 @@
 														{@const RoleIcon = getRoleIcon(role.name)}
 														<Badge variant="outline" class="text-2xs px-1.5 py-0 h-4 gap-1 rounded-sm bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/30">
 															<RoleIcon class="w-2.5 h-2.5" />
-															{role.name}
+															{getLabelText(role.name)}
 														</Badge>
 													{/each}
 													{#if hiddenRolesCount > 0}
-														<span class="text-2xs text-muted-foreground">+{hiddenRolesCount} more</span>
+														<span class="text-2xs text-muted-foreground">+{hiddenRolesCount} 个</span>
 													{/if}
 												</div>
 											{:else}
@@ -428,8 +429,8 @@
 											{#if $canAccess('users', 'delete')}
 												<ConfirmPopover
 													open={confirmDeleteUserId === user.id}
-													action="Delete"
-													itemType="user"
+													action="删除"
+													itemType="用户"
 													itemName={user.username}
 													onConfirm={() => deleteLocalUser(user.id)}
 													onOpenChange={(open) => { if (!open) confirmDeleteUserId = null; else confirmDeleteUserId = user.id; }}
@@ -446,7 +447,7 @@
 								<tr>
 									<td colspan={$licenseStore.isEnterprise ? 6 : 5} class="py-8 text-center text-muted-foreground">
 										<Search class="w-8 h-8 mx-auto mb-2 opacity-50" />
-										<p>No users found matching "{searchQuery}"</p>
+										<p>未找到匹配 "{searchQuery}" 的用户</p>
 									</td>
 								</tr>
 							{/each}
@@ -473,17 +474,17 @@
 		<Dialog.Header>
 			<Dialog.Title class="flex items-center gap-2 text-destructive">
 				<AlertTriangle class="w-5 h-5" />
-				Delete last admin?
+				删除最后一位管理员？
 			</Dialog.Title>
 			<Dialog.Description class="text-left">
-				This is the only admin account. Deleting it will <strong>disable authentication</strong> and allow anyone to access Dockhand without logging in.
+				这是唯一的管理员账户。删除后将<strong>禁用身份验证</strong>，允许任何人无需登录即可访问系统。
 			</Dialog.Description>
 		</Dialog.Header>
 		<Dialog.Footer>
 			<Button variant="outline" onclick={cancelLastAdminDelete}>Cancel</Button>
 			<Button variant="destructive" onclick={confirmLastAdminDelete}>
 				<Trash2 class="w-4 h-4" />
-				Delete and disable auth
+				确认删除并禁用认证
 			</Button>
 		</Dialog.Footer>
 	</Dialog.Content>

@@ -66,8 +66,8 @@
 	// Format host with port for display
 	const hostDisplay = $derived(
 		connectionType === 'socket' ? (socketPath || '/var/run/docker.sock') :
-		connectionType === 'hawser-edge' ? 'Edge connection' :
-		(port ? `${host}:${port}` : host || 'Unknown host')
+		connectionType === 'hawser-edge' ? '边缘连接' :
+		(port ? `${host}:${port}` : host || '未知主机')
 	);
 
 	const canEdit = $derived($canAccess('environments', 'edit'));
@@ -110,19 +110,19 @@
 				<EnvironmentIcon {icon} envId={environmentId} class="w-4 h-4 {online ? 'text-primary' : 'text-muted-foreground'}" />
 			</div>
 			{#if connectionType === 'socket' || !connectionType}
-				<span title="Unix socket connection">
+				<span title="Unix socket 连接">
 					<Unplug class="w-4 h-4 text-cyan-500 glow-cyan" />
 				</span>
 			{:else if connectionType === 'direct'}
-				<span title="Direct Docker connection">
+				<span title="直接 Docker 连接">
 					<Icon iconNode={whale} class="w-4 h-4 text-blue-500 glow-blue" />
 				</span>
 			{:else if connectionType === 'hawser-standard'}
-				<span title="Hawser agent (standard mode)">
+				<span title="Hawser 代理 (标准模式)">
 					<Route class="w-4 h-4 text-purple-500 glow-purple" />
 				</span>
 			{:else if connectionType === 'hawser-edge'}
-				<span title="Hawser agent (edge mode)">
+				<span title="Hawser 代理 (边缘模式)">
 					<UndoDot class="w-4 h-4 text-green-500 glow-green" />
 				</span>
 			{/if}
@@ -143,7 +143,7 @@
 
 		<div class="flex items-center gap-1.5">
 			{#if updateCheckEnabled}
-				<span title={updateCheckAutoUpdate ? "Auto-update enabled" : "Update check enabled (notify only)"}>
+				<span title={updateCheckAutoUpdate ? "已启用自动更新" : "已启用更新检查 (仅通知)"}>
 					{#if updateCheckAutoUpdate}
 						<CircleArrowUp class="w-4 h-4 text-green-500 glow-green" />
 					{:else}
@@ -152,17 +152,17 @@
 				</span>
 			{/if}
 			{#if scannerEnabled}
-				<span title="Vulnerability scanning enabled">
+				<span title="已启用漏洞扫描">
 					<ShieldCheck class="w-4 h-4 text-green-500 glow-green" />
 				</span>
 			{/if}
 			{#if collectActivity}
-				<span title="Activity collection enabled">
+				<span title="已启用活动收集">
 					<Activity class="w-4 h-4 text-amber-500 glow-amber" />
 				</span>
 			{/if}
 			{#if collectMetrics}
-				<span title="Metrics collection enabled">
+				<span title="已启用指标收集">
 					<Cpu class="w-4 h-4 text-sky-400 glow-sky" />
 				</span>
 			{/if}
@@ -171,7 +171,7 @@
 					onpointerdown={stopPointerPropagation}
 					onclick={openSettings}
 					class="p-0.5 rounded hover:bg-muted transition-colors"
-					title="Edit environment settings"
+					title="编辑环境设置"
 				>
 					<Settings class="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" />
 				</button>

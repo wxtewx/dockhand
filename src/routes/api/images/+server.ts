@@ -12,12 +12,12 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('images', 'view', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Environment access check (enterprise only)
 	if (envIdNum && auth.isEnterprise && !await auth.canAccessEnvironment(envIdNum)) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问此环境' }, { status: 403 });
 	}
 
 	// Early return if no environment specified
@@ -30,10 +30,13 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 		return json(images);
 	} catch (error) {
 		if (error instanceof EnvironmentNotFoundError) {
-			return json({ error: 'Environment not found' }, { status: 404 });
+			return json({ error: '环境不存在' }, { status: 404 });
 		}
 		if (!(error instanceof DockerConnectionError)) {
-			console.error('Error listing images:', error);
+			console.error('获取镜像列表失败:', error);
+		}
+		if (!(error instanceof DockerConnectionError)) {
+			console.error('列出镜像时出错:', error);
 		}
 		// Return empty array instead of error to allow UI to load
 		return json([]);

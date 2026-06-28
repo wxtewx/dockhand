@@ -163,7 +163,7 @@ function createDashboardStore() {
 				set(defaultPreferences);
 			}
 		} catch (error) {
-			console.error('Failed to load dashboard preferences:', error);
+			console.error('加载仪表板偏好设置失败:', error);
 			set(defaultPreferences);
 		} finally {
 			// Always mark as initialized so saves can proceed
@@ -179,7 +179,7 @@ function createDashboardStore() {
 				body: JSON.stringify(prefs)
 			});
 		} catch (error) {
-			console.error('Failed to save dashboard preferences:', error);
+			console.error('保存仪表板偏好设置失败:', error);
 		}
 	}
 

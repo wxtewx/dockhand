@@ -9,7 +9,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
 
 	// Permission check for activity viewing
 	if (auth.authEnabled && !await auth.can('activity', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Get accessible environment IDs for filtering (enterprise only)

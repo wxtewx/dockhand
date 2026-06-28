@@ -19,7 +19,7 @@ export async function sendMattermost(appriseUrl: string, payload: NotificationPa
 	// The token is the last segment, everything else is hostname[:port][/path]
 	const lastSlashIndex = urlPart.lastIndexOf('/');
 	if (lastSlashIndex === -1) {
-		return { success: false, error: 'Invalid Mattermost URL format. Expected: mmost://[botname@]hostname[:port][/path]/token' };
+		return { success: false, error: '无效的 Mattermost 地址格式，标准格式: mmost://[botname@]hostname[:port][/path]/token' };
 	}
 
 	const token = urlPart.substring(lastSlashIndex + 1);
@@ -45,11 +45,11 @@ export async function sendMattermost(appriseUrl: string, payload: NotificationPa
 
 		if (!response.ok) {
 			const text = await response.text().catch(() => '');
-			return { success: false, error: `Mattermost error ${response.status}: ${text || response.statusText}` };
+			return { success: false, error: `Mattermost 请求异常 ${response.status}: ${text || response.statusText}` };
 		}
 		await drainResponse(response);
 		return { success: true };
 	} catch (error) {
-		return { success: false, error: `Mattermost connection failed: ${error instanceof Error ? error.message : String(error)}` };
+		return { success: false, error: `Mattermost 连接失败: ${error instanceof Error ? error.message : String(error)}` };
 	}
 }

@@ -18,7 +18,7 @@
 		onchange,
 		id,
 		class: className,
-		placeholder = 'Select timezone...'
+		placeholder = '选择时区...'
 	}: Props = $props();
 
 	let open = $state(false);
@@ -156,11 +156,11 @@
 	</Popover.Trigger>
 	<Popover.Content class="w-[350px] p-0 z-[200]" align="start">
 		<Command.Root shouldFilter={false}>
-			<Command.Input bind:value={searchQuery} placeholder="Search timezone..." />
+			<Command.Input bind:value={searchQuery} placeholder="搜索时区..." />
 			<Command.List class="max-h-[300px]">
-				<Command.Empty>No timezone found.</Command.Empty>
+				<Command.Empty>未找到时区。</Command.Empty>
 				{#if filteredCommon.length > 0}
-					<Command.Group heading="Common">
+					<Command.Group heading="常用">
 						{#each filteredCommon as tz}
 							<Command.Item value={tz} onSelect={() => selectTimezone(tz)}>
 								<Check class={cn('mr-2 h-4 w-4', value === tz ? 'opacity-100' : 'opacity-0')} />
@@ -170,7 +170,7 @@
 					</Command.Group>
 				{/if}
 				{#if filteredOther.length > 0}
-					<Command.Group heading="All timezones">
+					<Command.Group heading="全部时区">
 						{#each filteredOther as tz}
 							<Command.Item value={tz} onSelect={() => selectTimezone(tz)}>
 								<Check class={cn('mr-2 h-4 w-4', value === tz ? 'opacity-100' : 'opacity-0')} />
