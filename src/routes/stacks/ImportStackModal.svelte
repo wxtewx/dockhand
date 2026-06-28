@@ -503,7 +503,7 @@
 					{#if isRemoteEnv}
 						<div class="flex items-start gap-2.5 text-xs bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md px-3 py-2.5">
 							<ServerCog class="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-							<span class="text-blue-700 dark:text-blue-300">This compose file is on the <span class="font-medium">Dockhand host</span>, not on {envName}. Docker commands will be sent to {envName} via Hawser, but the file is managed locally.</span>
+							<span class="text-blue-700 dark:text-blue-300">此编排文件存储在<span class="font-medium">Dockhand 主机</span>上，而非 {envName}。Docker 指令将通过 Hawser 发送至 {envName}，但该文件由本地管理。</span>
 						</div>
 					{/if}
 					<div class="flex items-start gap-2.5 text-xs bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-md px-3 py-2.5">
