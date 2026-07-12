@@ -128,7 +128,7 @@
 	let batchOpItems = $state<Array<{ id: string; name: string }>>([]);
 
 	function bulkRemove() {
-		batchOpTitle = `Removing ${selectedInFilter.length} network${selectedInFilter.length !== 1 ? 's' : ''}`;
+		batchOpTitle = `移除 ${selectedInFilter.length} 个网络${selectedInFilter.length !== 1 ? '' : ''}`;
 		batchOpOperation = 'remove';
 		batchOpItems = selectedInFilter.map(n => ({ id: n.id, name: n.name }));
 		showBatchOpModal = true;

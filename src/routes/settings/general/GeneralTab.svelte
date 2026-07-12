@@ -729,7 +729,7 @@ services:
 									<Select.Item value="none">none</Select.Item>
 								</Select.Content>
 							</Select.Root>
-							<p class="text-xs text-muted-foreground">为漏洞扫描容器自定义 Docker 网络模式。当默认 bridge 网络无法访问网络时请使用 <code class="bg-muted px-1 rounded">host</code> (例如：iptables 未启用、SELinux 限制场景，例如：)。</p>
+							<p class="text-xs text-muted-foreground">为漏洞扫描容器自定义 Docker 网络模式。当默认 bridge 网络无法访问网络时请使用 <code class="bg-muted px-1 rounded">host</code> (例如：iptables 未启用、SELinux 限制场景)。</p>
 						</div>
 						<div class="space-y-2">
 							<Label for="scanner-dns">DNS 服务器</Label>
