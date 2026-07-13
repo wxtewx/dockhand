@@ -13,7 +13,7 @@ import { getRegistry } from '$lib/server/db';
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('registries', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const data = await request.json();
@@ -24,7 +24,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 	if (data.registryId) {
 		// Test a saved registry — fetch credentials from DB
 		const reg = await getRegistry(data.registryId);
-		if (!reg) return json({ error: 'Registry not found' }, { status: 404 });
+		if (!reg) return json({ error: '镜像仓库不存在' }, { status: 404 });
 		url = reg.url;
 		username = reg.username || undefined;
 		password = reg.password || undefined;
@@ -35,7 +35,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 	}
 
 	if (!url) {
-		return json({ error: 'URL is required' }, { status: 400 });
+		return json({ error: '地址为必填项' }, { status: 400 });
 	}
 
 	const parsed = parseRegistryUrl(url);
@@ -56,7 +56,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			return json({
 				success: false,
 				connectivity: false,
-				message: `Registry returned HTTP ${pingResp.status}`
+				message: `镜像仓库返回 HTTP 状态码 ${pingResp.status}`
 			});
 		}
 
@@ -73,7 +73,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 					success: false,
 					connectivity: true,
 					authenticated: false,
-					message: 'Authentication failed — check username and password'
+					message: '身份验证失败，请检查用户名与密码'
 				});
 			}
 
@@ -92,7 +92,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 					success: false,
 					connectivity: true,
 					authenticated: false,
-					message: `Authentication token rejected (HTTP ${authResp.status})`
+					message: `身份令牌被拒绝 (HTTP ${authResp.status})`
 				});
 			}
 
@@ -102,8 +102,8 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 				connectivity: true,
 				authenticated: true,
 				message: isHub
-					? `Connected to Docker Hub as ${username}`
-					: `Connected and authenticated as ${username}`
+					? `已使用账号 ${username} 连接 Docker Hub`
+					: `连接成功，当前登录账号：${username}`
 			});
 		}
 
@@ -114,17 +114,17 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			connectivity: true,
 			authenticated: null,
 			message: isHub
-				? 'Docker Hub is reachable (no credentials to test)'
+				? '可访问 Docker Hub (未提供账号密码进行验证)'
 				: isOpen
-					? 'Registry is reachable (no auth required)'
-					: 'Registry is reachable (requires authentication)'
+					? '镜像仓库可访问 (无需身份验证)'
+					: '镜像仓库可访问 (需要身份验证)'
 		});
 	} catch (e: any) {
 		const msg = e?.cause?.code || e?.message || String(e);
 		return json({
 			success: false,
 			connectivity: false,
-			message: `Connection failed: ${msg}`
+			message: `连接失败: ${msg}`
 		});
 	}
 };

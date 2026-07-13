@@ -237,7 +237,7 @@ function createSettingsStore() {
 				});
 			}
 		} catch (error) {
-			console.error('Failed to save settings:', error);
+			console.error('保存设置失败:', error);
 		}
 	}
 

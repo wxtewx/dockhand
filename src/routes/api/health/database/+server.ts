@@ -44,7 +44,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
 			}
 		});
 	} catch (error) {
-		const message = error instanceof Error ? error.message : 'Unknown error';
+		const message = error instanceof Error ? error.message : '未知错误';
 
 		return json(
 			{

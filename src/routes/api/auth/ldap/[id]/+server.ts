@@ -11,22 +11,22 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 
 	// Allow access when auth is disabled (setup mode) or when user is admin
 	if (auth.authEnabled && (!auth.isAuthenticated || !auth.isAdmin)) {
-		return json({ error: 'Unauthorized' }, { status: 401 });
+		return json({ error: '未授权' }, { status: 401 });
 	}
 
 	if (!auth.isEnterprise) {
-		return json({ error: 'Enterprise license required' }, { status: 403 });
+		return json({ error: '需要企业版许可证' }, { status: 403 });
 	}
 
 	const id = parseInt(params.id!, 10);
 	if (isNaN(id)) {
-		return json({ error: 'Invalid ID' }, { status: 400 });
+		return json({ error: '无效的 ID' }, { status: 400 });
 	}
 
 	try {
 		const config = await getLdapConfig(id);
 		if (!config) {
-			return json({ error: 'LDAP configuration not found' }, { status: 404 });
+			return json({ error: '未找到 LDAP 配置' }, { status: 404 });
 		}
 
 		return json({
@@ -34,8 +34,8 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 			bindPassword: config.bindPassword ? '********' : undefined
 		});
 	} catch (error) {
-		console.error('Failed to get LDAP config:', error);
-		return json({ error: 'Failed to get LDAP configuration' }, { status: 500 });
+		console.error('获取LDAP配置失败: ', error);
+		return json({ error: '获取 LDAP 配置失败' }, { status: 500 });
 	}
 };
 
@@ -46,22 +46,22 @@ export const PUT: RequestHandler = async (event) => {
 
 	// Allow access when auth is disabled (setup mode) or when user is admin
 	if (auth.authEnabled && (!auth.isAuthenticated || !auth.isAdmin)) {
-		return json({ error: 'Unauthorized' }, { status: 401 });
+		return json({ error: '未授权' }, { status: 401 });
 	}
 
 	if (!auth.isEnterprise) {
-		return json({ error: 'Enterprise license required' }, { status: 403 });
+		return json({ error: '需要企业版许可证' }, { status: 403 });
 	}
 
 	const id = parseInt(params.id!, 10);
 	if (isNaN(id)) {
-		return json({ error: 'Invalid ID' }, { status: 400 });
+		return json({ error: '无效的 ID' }, { status: 400 });
 	}
 
 	try {
 		const existing = await getLdapConfig(id);
 		if (!existing) {
-			return json({ error: 'LDAP configuration not found' }, { status: 404 });
+			return json({ error: '未找到 LDAP 配置' }, { status: 404 });
 		}
 
 		const data = await request.json();
@@ -89,7 +89,7 @@ export const PUT: RequestHandler = async (event) => {
 
 		const config = await updateLdapConfig(id, updateData);
 		if (!config) {
-			return json({ error: 'Failed to update configuration' }, { status: 500 });
+			return json({ error: '更新配置失败' }, { status: 500 });
 		}
 
 		// Compute diff for audit (exclude sensitive fields)
@@ -105,8 +105,8 @@ export const PUT: RequestHandler = async (event) => {
 			bindPassword: config.bindPassword ? '********' : undefined
 		});
 	} catch (error) {
-		console.error('Failed to update LDAP config:', error);
-		return json({ error: 'Failed to update LDAP configuration' }, { status: 500 });
+		console.error('更新 LDAP 配置失败: ', error);
+		return json({ error: '更新 LDAP 配置失败' }, { status: 500 });
 	}
 };
 
@@ -117,28 +117,28 @@ export const DELETE: RequestHandler = async (event) => {
 
 	// Allow access when auth is disabled (setup mode) or when user is admin
 	if (auth.authEnabled && (!auth.isAuthenticated || !auth.isAdmin)) {
-		return json({ error: 'Unauthorized' }, { status: 401 });
+		return json({ error: '未授权' }, { status: 401 });
 	}
 
 	if (!auth.isEnterprise) {
-		return json({ error: 'Enterprise license required' }, { status: 403 });
+		return json({ error: '需要企业版许可证' }, { status: 403 });
 	}
 
 	const id = parseInt(params.id!, 10);
 	if (isNaN(id)) {
-		return json({ error: 'Invalid ID' }, { status: 400 });
+		return json({ error: '无效的 ID' }, { status: 400 });
 	}
 
 	try {
 		// Get config before deletion for audit
 		const config = await getLdapConfig(id);
 		if (!config) {
-			return json({ error: 'LDAP configuration not found' }, { status: 404 });
+			return json({ error: '未找到 LDAP 配置' }, { status: 404 });
 		}
 
 		const deleted = await deleteLdapConfig(id);
 		if (!deleted) {
-			return json({ error: 'Failed to delete LDAP configuration' }, { status: 500 });
+			return json({ error: '删除 LDAP 配置失败' }, { status: 500 });
 		}
 
 		// Audit log
@@ -146,7 +146,7 @@ export const DELETE: RequestHandler = async (event) => {
 
 		return json({ success: true });
 	} catch (error) {
-		console.error('Failed to delete LDAP config:', error);
-		return json({ error: 'Failed to delete LDAP configuration' }, { status: 500 });
+		console.error('删除 LDAP 配置失败: ', error);
+		return json({ error: '删除 LDAP 配置失败' }, { status: 500 });
 	}
 };

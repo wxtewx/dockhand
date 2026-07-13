@@ -25,7 +25,7 @@ export const POST: RequestHandler = async ({ params, cookies }) => {
 		const scheduleId = parseInt(id, 10);
 
 		if (isNaN(scheduleId)) {
-			return json({ error: 'Invalid schedule ID' }, { status: 400 });
+			return json({ error: '无效的定时任务 ID' }, { status: 400 });
 		}
 
 		// Resolve schedule → environmentId so we can enforce per-env access
@@ -35,13 +35,13 @@ export const POST: RequestHandler = async ({ params, cookies }) => {
 		switch (type) {
 			case 'container_update': {
 				const setting = await getAutoUpdateSettingById(scheduleId);
-				if (!setting) return json({ error: 'Schedule not found' }, { status: 404 });
+				if (!setting) return json({ error: '未找到该计划任务' }, { status: 404 });
 				scheduleEnvId = setting.environmentId;
 				break;
 			}
 			case 'git_stack_sync': {
 				const stack = await getGitStack(scheduleId);
-				if (!stack) return json({ error: 'Schedule not found' }, { status: 404 });
+				if (!stack) return json({ error: '未找到该计划任务' }, { status: 404 });
 				scheduleEnvId = stack.environmentId;
 				break;
 			}
@@ -53,7 +53,7 @@ export const POST: RequestHandler = async ({ params, cookies }) => {
 				scheduleEnvId = null;
 				break;
 			default:
-				return json({ error: 'Invalid schedule type' }, { status: 400 });
+				return json({ error: '无效的计划任务类型' }, { status: 400 });
 		}
 
 		const envDenied = await auth.requireEnvAccess(scheduleEnvId);
@@ -79,16 +79,16 @@ export const POST: RequestHandler = async ({ params, cookies }) => {
 				break;
 			default:
 				// Unreachable — validated in the resolution switch above.
-				return json({ error: 'Invalid schedule type' }, { status: 400 });
+				return json({ error: '无效的计划任务类型' }, { status: 400 });
 		}
 
 		if (!result.success) {
 			return json({ error: result.error }, { status: 400 });
 		}
 
-		return json({ success: true, message: 'Schedule triggered successfully' });
+		return json({ success: true, message: '计划任务触发成功' });
 	} catch (error: any) {
-		console.error('Failed to trigger schedule:', error);
+		console.error('触发计划任务失败:', error);
 		return json({ error: error.message }, { status: 500 });
 	}
 };

@@ -15,14 +15,14 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('networks', 'inspect', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const networkData = await inspectNetwork(params.id, envIdNum);
 		return json(networkData);
 	} catch (error) {
-		console.error('Failed to inspect network:', error);
-		return json({ error: 'Failed to inspect network' }, { status: 500 });
+		console.error('检查网络信息失败:', error);
+		return json({ error: '检查网络信息失败' }, { status: 500 });
 	}
 };

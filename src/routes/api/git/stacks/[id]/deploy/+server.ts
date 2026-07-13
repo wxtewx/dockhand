@@ -14,12 +14,12 @@ export const POST: RequestHandler = async (event) => {
 		const id = parseInt(params.id);
 		const gitStack = await getGitStack(id);
 		if (!gitStack) {
-			return json({ error: 'Git stack not found' }, { status: 404 });
+			return json({ error: 'Git 堆栈不存在' }, { status: 404 });
 		}
 
 		// Permission check with environment context
 		if (auth.authEnabled && !await auth.can('stacks', 'start', gitStack.environmentId || undefined)) {
-			return json({ error: 'Permission denied' }, { status: 403 });
+			return json({ error: '权限不足' }, { status: 403 });
 		}
 
 		return createJobResponse(async (send) => {
@@ -31,12 +31,12 @@ export const POST: RequestHandler = async (event) => {
 
 				send('result', result);
 			} catch (error) {
-				console.error('Failed to deploy git stack:', error);
-				send('result', { success: false, error: 'Failed to deploy git stack' });
+				console.error('部署 Git 堆栈失败:', error);
+				send('result', { success: false, error: '部署 Git 堆栈失败' });
 			}
 		}, event.request);
 	} catch (error) {
-		console.error('Failed to deploy git stack:', error);
-		return json({ error: 'Failed to deploy git stack' }, { status: 500 });
+		console.error('部署 Git 堆栈失败:', error);
+		return json({ error: '部署 Git 堆栈失败' }, { status: 500 });
 	}
 };

@@ -54,19 +54,19 @@ export class DockerConnectionError extends Error {
 		let friendlyMessage: string;
 
 		if (errorStr.includes('FailedToOpenSocket') || errorStr.includes('ECONNREFUSED')) {
-			friendlyMessage = 'Docker socket not accessible';
+			friendlyMessage = '无法访问 Docker socket';
 		} else if (errorStr.includes('ECONNRESET') || errorStr.includes('connection was closed')) {
-			friendlyMessage = 'Connection lost';
+			friendlyMessage = '连接已断开';
 		} else if (errorStr.includes('verbose') || errorStr.includes('typo')) {
-			friendlyMessage = 'Connection failed';
+			friendlyMessage = '连接失败';
 		} else if (errorStr.includes('timeout') || errorStr.includes('Timeout') || errorStr.includes('ETIMEDOUT')) {
-			friendlyMessage = 'Connection timeout';
+			friendlyMessage = '连接超时';
 		} else if (errorStr.includes('ENOTFOUND') || errorStr.includes('getaddrinfo')) {
-			friendlyMessage = 'Host not found';
+			friendlyMessage = '主机未找到';
 		} else if (errorStr.includes('EHOSTUNREACH')) {
-			friendlyMessage = 'Host unreachable';
+			friendlyMessage = '主机不可达';
 		} else {
-			friendlyMessage = 'Connection error';
+			friendlyMessage = '连接错误';
 		}
 
 		if (context) {
@@ -153,7 +153,7 @@ export interface ContainerInspectResult {
 function detectDockerSocket(): string {
 	// Check environment variable first
 	if (process.env.DOCKER_SOCKET && existsSync(process.env.DOCKER_SOCKET)) {
-		console.log(`Using Docker socket from DOCKER_SOCKET env: ${process.env.DOCKER_SOCKET}`);
+		console.log(`使用环境变量 DOCKER_SOCKET 指定的 Docker Socket：${process.env.DOCKER_SOCKET}`);
 		return process.env.DOCKER_SOCKET;
 	}
 
@@ -163,7 +163,7 @@ function detectDockerSocket(): string {
 		if (dockerHost.startsWith('unix://')) {
 			const socketPath = dockerHost.replace('unix://', '');
 			if (existsSync(socketPath)) {
-				console.log(`Using Docker socket from DOCKER_HOST: ${socketPath}`);
+				console.log(`使用 DOCKER_HOST 指定的 Docker Socket：${socketPath}`);
 				return socketPath;
 			}
 		}
@@ -179,13 +179,13 @@ function detectDockerSocket(): string {
 
 	for (const socket of possibleSockets) {
 		if (existsSync(socket)) {
-			console.log(`Detected Docker socket at: ${socket}`);
+			console.log(`检测到 Docker socket 位于：${socket}`);
 			return socket;
 		}
 	}
 
 	// Fallback to default
-	console.warn('No Docker socket found, using default /var/run/docker.sock');
+	console.warn('未找到 Docker socket，使用默认路径 /var/run/docker.sock');
 	return '/var/run/docker.sock';
 }
 
@@ -424,7 +424,7 @@ export function httpsAgentRequest(
 		// Honor AbortSignal from caller (e.g., AbortSignal.timeout(5000) for ping)
 		const signal = options.signal as AbortSignal | undefined;
 		if (signal?.aborted) {
-			reject(new Error('Request aborted'));
+			reject(new Error('请求已中止'));
 			return;
 		}
 
@@ -471,11 +471,11 @@ export function httpsAgentRequest(
 		});
 
 		req.on('error', reject);
-		req.on('timeout', () => { req.destroy(new Error('Request timeout')); });
+		req.on('timeout', () => { req.destroy(new Error('请求超时')); });
 
 		if (signal) {
 			signal.addEventListener('abort', () => {
-				req.destroy(new Error('Request aborted'));
+				req.destroy(new Error('请求已中止'));
 			}, { once: true });
 		}
 
@@ -573,7 +573,7 @@ function buildConfigFromEnv(env: Environment): DockerClientConfig {
  */
 async function getDockerConfig(envId?: number | null): Promise<DockerClientConfig> {
 	if (!envId) {
-		throw new Error('No environment specified');
+		throw new Error('未指定环境');
 	}
 
 	// Check cache first
@@ -644,7 +644,7 @@ export async function drainResponse(response: Response): Promise<void> {
  */
 async function throwDockerError(response: Response): Promise<never> {
 	const body = await response.text().catch(() => '');
-	let msg = `Docker API error: HTTP ${response.status}`;
+	let msg = `Docker API 错误：HTTP ${response.status}`;
 	if (body) {
 		try { msg = JSON.parse(body).message ?? body; } catch { msg = body; }
 	}
@@ -824,7 +824,7 @@ export async function dockerFetch(
 ): Promise<Response> {
 	// Guard against path traversal — legitimate Docker API paths never contain '..'
 	if (path.includes('..')) {
-		throw new Error('Invalid Docker API path');
+		throw new Error('无效的 Docker API 路径');
 	}
 
 	const startTime = Date.now();
@@ -836,9 +836,9 @@ export async function dockerFetch(
 	if (config.connectionType === 'hawser-edge' && config.environmentId) {
 		// Check if agent is connected
 		if (!isEdgeConnected(config.environmentId)) {
-			const error = new Error('Hawser Edge agent is not connected');
+			const error = new Error('Hawser 边缘代理未连接');
 			// Log without stack trace for cleaner output
-			console.warn(`[Docker] Edge env ${config.environmentId}: agent not connected for ${method} ${path}`);
+			console.warn(`[Docker] 边缘环境 ${config.environmentId}：代理未连接，请求 ${method} ${path}`);
 			throw error;
 		}
 
@@ -894,14 +894,14 @@ export async function dockerFetch(
 			const elapsed = Date.now() - startTime;
 			// Only warn for slow requests, but skip /stats which is expected to be slow (5-10s)
 			if (elapsed > 5000 && !path.includes('/stats')) {
-				console.warn(`[Docker] Edge env ${config.environmentId}: ${method} ${path} took ${elapsed}ms`);
+				console.warn(`[Docker] 边缘环境 ${config.environmentId}：${method} ${path} 耗时 ${elapsed}ms`);
 			}
 			return edgeResponseToResponse(edgeResponse);
 		} catch (error: any) {
 			const elapsed = Date.now() - startTime;
 			// Log error message only, not full stack trace
 			const msg = error?.message || String(error);
-			console.error(`[Docker] Edge env ${config.environmentId}: ${method} ${path} failed after ${elapsed}ms: ${msg}`);
+			console.error(`[Docker] 边缘环境 ${config.environmentId}：${method} ${path} 执行失败，耗时 ${elapsed}ms：${msg}`);
 			throw DockerConnectionError.fromError(error);
 		}
 	}
@@ -914,14 +914,14 @@ export async function dockerFetch(
 			const elapsed = Date.now() - startTime;
 			// Only warn for slow requests, but skip /stats which is expected to be slow (5-10s)
 			if (elapsed > 5000 && !path.includes('/stats')) {
-				console.warn(`[Docker] Socket: ${method} ${path} took ${elapsed}ms`);
+				console.warn(`[Docker] Socket: ${method} ${path} 耗时 ${elapsed}ms`);
 			}
 			return response;
 		} catch (error: any) {
 			const elapsed = Date.now() - startTime;
 			// Log error message only, not full stack trace
 			const msg = error?.message || String(error);
-			console.error(`[Docker] Socket: ${method} ${path} failed after ${elapsed}ms: ${msg}`);
+			console.error(`[Docker] Socket: ${method} ${path} 执行失败，耗时  ${elapsed}ms: ${msg}`);
 			throw DockerConnectionError.fromError(error);
 		}
 	} else {
@@ -948,13 +948,13 @@ export async function dockerFetch(
 				const response = await httpsAgentRequest(config, path, finalOptions, streaming || false, extraHeaders);
 				const elapsed = Date.now() - startTime;
 				if (elapsed > 5000 && !path.includes('/stats')) {
-					console.warn(`[Docker] ${config.connectionType || 'direct'} ${config.host}: ${method} ${path} took ${elapsed}ms`);
+					console.warn(`[Docker] ${config.connectionType || '直接连接'} ${config.host}: ${method} ${path} 耗时 ${elapsed}ms`);
 				}
 				return response;
 			} catch (error: any) {
 				const elapsed = Date.now() - startTime;
 				const msg = error?.message || String(error);
-				console.error(`[Docker] ${config.connectionType || 'direct'} ${config.host}: ${method} ${path} failed after ${elapsed}ms: ${msg}`);
+				console.error(`[Docker] ${config.connectionType || '直接连接'} ${config.host}: ${method} ${path} 执行失败，耗时 ${elapsed}ms: ${msg}`);
 				throw DockerConnectionError.fromError(error);
 			}
 		}
@@ -971,13 +971,13 @@ export async function dockerFetch(
 			const response = await fetch(url, finalOptions);
 			const elapsed = Date.now() - startTime;
 			if (elapsed > 5000 && !path.includes('/stats')) {
-				console.warn(`[Docker] ${config.connectionType || 'direct'} ${config.host}: ${method} ${path} took ${elapsed}ms`);
+				console.warn(`[Docker] ${config.connectionType || '直接连接'} ${config.host}: ${method} ${path} 耗时 ${elapsed}ms`);
 			}
 			return response;
 		} catch (error: any) {
 			const elapsed = Date.now() - startTime;
 			const msg = error?.message || String(error);
-			console.error(`[Docker] ${config.connectionType || 'direct'} ${config.host}: ${method} ${path} failed after ${elapsed}ms: ${msg}`);
+			console.error(`[Docker] ${config.connectionType || '直接连接'} ${config.host}: ${method} ${path} 执行失败，耗时 ${elapsed}ms: ${msg}`);
 			throw DockerConnectionError.fromError(error);
 		}
 	}
@@ -1008,7 +1008,7 @@ export async function dockerJsonRequest<T>(
 			// Not JSON, use text as message
 			errorJson = { message: errorText };
 		}
-		const error: any = new Error(errorJson.message || `Docker API error: ${response.status}`);
+		const error: any = new Error(errorJson.message || `Docker API 错误：${response.status}`);
 		error.statusCode = response.status;
 		error.json = errorJson;
 		throw error;
@@ -1265,7 +1265,7 @@ export async function updateContainerRuntime(
 		if (allowed.has(key) && value !== undefined) body[key] = value;
 	}
 	if (Object.keys(body).length === 0) {
-		throw new Error('No updatable fields provided');
+		throw new Error('无可更新的配置字段');
 	}
 	return dockerJsonRequest<UpdateContainerRuntimeResult>(
 		`/containers/${id}/update`,
@@ -1858,7 +1858,7 @@ export async function createContainer(options: CreateContainerOptions, envId?: n
 		try {
 			await connectContainerToNetworkRaw(extra.name, result.Id, extra.config, envId);
 		} catch (err: any) {
-			console.error(`Failed to attach additional network "${extra.name}":`, err?.message || err);
+			console.error(`附加网络 "${extra.name}" 挂载失败:`, err?.message || err);
 			// Don't fail the whole create — primary network is already connected.
 			// Caller (updateContainer rollback path) will surface this if needed.
 		}
@@ -1905,22 +1905,22 @@ export async function recreateContainerFromInspect(
 		networkMode === 'none';
 
 	if (isSharedNetwork) {
-		log?.(`Shared network mode detected: ${networkMode} — skipping network manipulation`);
+		log?.(`检测到共享网络模式：${networkMode} — 跳过网络操作`);
 	}
 
 	// 1. Stop the container
 	if (wasRunning) {
-		log?.('Stopping container...');
+		log?.('停止容器中...');
 		await stopContainer(oldContainerId, envId);
 	}
 
 	// 2. Rename old container to free the name
-	log?.('Renaming old container...');
+	log?.('重命名旧容器中...');
 	await dockerFetch(
 		`/containers/${oldContainerId}/rename?name=${encodeURIComponent(name + '-old')}`,
 		{ method: 'POST' },
 		envId
-	).then(async r => { if (!r.ok) throw new Error('Failed to rename old container'); await drainResponse(r); });
+	).then(async r => { if (!r.ok) throw new Error('旧容器重命名失败'); await drainResponse(r); });
 
 	// 3. Disconnect all networks from old container (frees static IPs)
 	// Skip for shared network modes (container:X, host, none) — Docker manages these
@@ -1950,7 +1950,7 @@ export async function recreateContainerFromInspect(
 	// Rollback helper: restore old container on failure
 	const rollback = async () => {
 		try {
-			log?.('Rolling back: restoring old container...');
+			log?.('回滚中：恢复旧容器...');
 			// Rename back
 			await dockerFetch(
 				`/containers/${oldContainerId}/rename?name=${encodeURIComponent(name)}`,
@@ -1973,7 +1973,7 @@ export async function recreateContainerFromInspect(
 				await startContainer(oldContainerId, envId).catch(() => {});
 			}
 		} catch {
-			log?.('Rollback failed');
+			log?.('回滚失败');
 		}
 	};
 
@@ -2023,12 +2023,12 @@ export async function recreateContainerFromInspect(
 				const refName = (refInspect as any).Name?.replace(/^\//, '');
 				if (refName) {
 					createConfig.HostConfig.NetworkMode = `container:${refName}`;
-					log?.(`Resolved network container ID to name: ${refName}`);
+					log?.(`已将网络容器 ID 解析为名称：${refName}`);
 				}
 			} catch {
 				// Container ID is stale — the referenced container was likely recreated
 				// with a new ID. We can't resolve without knowing the original name.
-				log?.(`WARNING: Network reference container:${containerRef.slice(0, 12)}... is stale (container not found). The container may fail to start if the referenced container was recreated.`);
+				log?.(`警告：网络引用容器: ${containerRef.slice(0, 12)}... 已失效 (容器未找到)。如果被引用的容器已重建，该容器可能启动失败。`);
 			}
 		}
 	}
@@ -2087,7 +2087,7 @@ export async function recreateContainerFromInspect(
 	}
 
 	// 5. Create new container
-	log?.('Creating new container...');
+	log?.('创建新容器中...');
 	let newContainerId: string;
 	try {
 		const result = await dockerJsonRequest<{ Id: string }>(
@@ -2100,7 +2100,7 @@ export async function recreateContainerFromInspect(
 		);
 		newContainerId = result.Id;
 	} catch (createError: any) {
-		log?.(`Create failed: ${createError.message}`);
+		log?.(`创建失败：${createError.message}`);
 		await rollback();
 		throw createError;
 	}
@@ -2116,7 +2116,7 @@ export async function recreateContainerFromInspect(
 				try {
 					await connectContainerToNetworkRaw(nc.NetworkID, newContainerId, nc, envId);
 				} catch (netError: any) {
-					log?.(`Warning: Failed to connect to network "${netName}": ${netError.message}`);
+					log?.(`警告：连接网络 "${netName}" 失败：${netError.message}`);
 				}
 			}
 		}
@@ -2124,11 +2124,11 @@ export async function recreateContainerFromInspect(
 
 	// 7. Start new container
 	if (wasRunning) {
-		log?.('Starting new container...');
+		log?.('启动新容器中...');
 		try {
 			await startContainer(newContainerId, envId);
 		} catch (startError: any) {
-			log?.(`Start failed: ${startError.message}, rolling back...`);
+			log?.(`启动失败：${startError.message}，正在回滚...`);
 			// Remove failed new container
 			await removeContainer(newContainerId, true, envId).catch(() => {});
 			await rollback();
@@ -2141,9 +2141,9 @@ export async function recreateContainerFromInspect(
 		const newInspect = await inspectContainer(newContainerId, envId);
 		const diffs = deepDiff(inspectData, newInspect);
 		if (diffs.length === 0) {
-			log?.(`[${name}] Config diff: no differences (all settings preserved)`);
+			log?.(`[${name}] 配置差异：无差异 (所有设置已保留)`);
 		} else {
-			log?.(`[${name}] Config diff: ${diffs.length} difference(s):`);
+			log?.(`[${name}] 配置差异：${diffs.length} 处差异：`);
 			for (const d of diffs) {
 				log?.(`  [${name}] ${d}`);
 			}
@@ -2153,10 +2153,10 @@ export async function recreateContainerFromInspect(
 	}
 
 	// 9. Remove old container (best effort)
-	log?.('Removing old container...');
+	log?.('删除旧容器中...');
 	await removeContainer(oldContainerId, true, envId).catch(() => {});
 
-	log?.('Container recreated successfully');
+	log?.('容器重建成功');
 	return { Id: newContainerId };
 }
 
@@ -2513,7 +2513,7 @@ export async function updateContainer(id: string, options: Partial<CreateContain
 		`/containers/${oldContainerId}/rename?name=${encodeURIComponent(name + '-old')}`,
 		{ method: 'POST' },
 		envId
-	).then(async r => { if (!r.ok) throw new Error('Failed to rename old container'); await drainResponse(r); });
+	).then(async r => { if (!r.ok) throw new Error('重命名旧容器失败'); await drainResponse(r); });
 
 	// 3. Disconnect networks from old container to free static IPs
 	if (!isSharedNetwork) {
@@ -2647,7 +2647,7 @@ export async function buildRegistryAuthHeader(imageName: string): Promise<Record
 			const isHub = DOCKER_HUB_HOSTS.has(registry);
 			const serveraddress = isHub ? 'https://index.docker.io/v1/' : registry;
 			if (isHub) {
-				console.log(`[Registry] docker-hub variant '${registry}' canonicalized to https://index.docker.io/v1/ for auth`);
+				console.log(`[镜像仓库] Docker Hub 地址 '${registry}' 已标准化为 https://index.docker.io/v1/ 用于身份验证`);
 			}
 			const authConfig = {
 				username: creds.username,
@@ -2658,11 +2658,11 @@ export async function buildRegistryAuthHeader(imageName: string): Promise<Record
 			headers['X-Registry-Auth'] = authHeader;
 			logAuthDiagnostics('[Pull]', registry, serveraddress, creds.username, creds.password, authHeader);
 		} else {
-			console.log(`[Pull] No credentials found for ${registry}`);
+			console.log(`[拉取] 未找到 ${registry} 的凭证`);
 		}
 	} catch (e) {
 		const errorMsg = e instanceof Error ? e.message : String(e);
-		console.error(`[Pull] Failed to lookup credentials:`, errorMsg);
+		console.error(`[拉取] 查找凭证失败:`, errorMsg);
 	}
 	return headers;
 }
@@ -2700,18 +2700,18 @@ export async function pullImage(imageName: string, onProgress?: (data: any) => v
 	const headers = await buildRegistryAuthHeader(imageName);
 
 	// Diagnostic logging (#1105): what we're sending to the daemon
-	console.log(`[Pull] POST ${url} headers=${Object.keys(headers).join(',') || '(none)'}`);
+	console.log(`[拉取] POST ${url} headers=${Object.keys(headers).join(',') || '(无)'}`);
 
 	// Use streaming: true for longer timeout on edge environments
 	const response = await dockerFetch(url, { method: 'POST', streaming: true, headers }, envId);
 
 	// Diagnostic logging (#1105): daemon response status
-	console.log(`[Pull] response status=${response.status} ${response.statusText}`);
+	console.log(`[拉取] 响应状态码=${response.status} ${response.statusText}`);
 
 	if (!response.ok) {
 		const body = await response.text();
-		console.error(`[Pull] error body: ${body}`);
-		throw new Error(`Failed to pull image: ${body}`);
+		console.error(`[拉取] 错误返回内容: ${body}`);
+		throw new Error(`拉取镜像失败: ${body}`);
 	}
 
 	// Stream the response for progress updates
@@ -2738,8 +2738,8 @@ export async function pullImage(imageName: string, onProgress?: (data: any) => v
 				try {
 					const data = JSON.parse(line);
 					if (data.error || data.errorDetail) {
-						console.error(`[Pull] stream error: ${line}`);
-						streamError = data.errorDetail?.message || data.error || 'Image pull failed';
+						console.error(`[拉取] 流式输出错误: ${line}`);
+						streamError = data.errorDetail?.message || data.error || '镜像拉取失败';
 					}
 					if (onProgress) onProgress(data);
 				} catch {
@@ -2750,7 +2750,7 @@ export async function pullImage(imageName: string, onProgress?: (data: any) => v
 	}
 
 	if (streamError) {
-		throw new Error(`Failed to pull image: ${streamError}`);
+		throw new Error(`镜像拉取失败: ${streamError}`);
 	}
 }
 
@@ -2758,7 +2758,7 @@ export async function removeImage(id: string, force = false, envId?: number | nu
 	const response = await dockerFetch(`/images/${encodeURIComponent(id)}?force=${force}`, { method: 'DELETE' }, envId);
 	if (!response.ok) {
 		const data = await response.json().catch(() => ({}));
-		const error: any = new Error(data.message || 'Failed to remove image');
+		const error: any = new Error(data.message || '删除镜像失败');
 		error.statusCode = response.status;
 		error.json = data;
 		throw error;
@@ -2882,7 +2882,7 @@ async function findRegistryCredentials(registryHost: string): Promise<{ username
 			    (stored.host === requested.host && !stored.path)) {
 				if (reg.username && reg.password) {
 					const via = stored.fullRegistry === requested.fullRegistry ? 'full' : 'host-only';
-					console.log(`[Registry] matched stored=${reg.url} requested=${registryHost} via=${via}`);
+					console.log(`[镜像仓库] 匹配成功 已存储地址=${reg.url} 请求地址=${registryHost} 匹配方式=${via}`);
 					// Normalize legacy creds saved before #1105 trim fix
 					return { username: reg.username.trim(), password: reg.password.trim() };
 				}
@@ -2896,7 +2896,7 @@ async function findRegistryCredentials(registryHost: string): Promise<{ username
 				const stored = parseRegistryUrl(reg.url);
 				if (DOCKER_HUB_HOSTS.has(stored.host)) {
 					if (reg.username && reg.password) {
-						console.log(`[Registry] matched stored=${reg.url} requested=${registryHost} via=hub-alias`);
+						console.log(`[镜像仓库] 匹配成功 已存储地址=${reg.url} 请求地址=${registryHost} 匹配方式=hub-alias`);
 						return { username: reg.username.trim(), password: reg.password.trim() };
 					}
 				}
@@ -2906,14 +2906,14 @@ async function findRegistryCredentials(registryHost: string): Promise<{ username
 		// No match — log what we tried so support cases are diagnosable
 		const candidates = registries.map(r => parseRegistryUrl(r.url).host).join(', ');
 		console.log(
-			`[Registry] no match for requested=${registryHost} ` +
+			`[镜像仓库] 未找到匹配 已存储地址=${registryHost} ` +
 			`(hub-alias=${DOCKER_HUB_HOSTS.has(requested.host)}); ` +
 			`candidates=[${candidates || 'none configured'}]`
 		);
 		return null;
 	} catch (e) {
 		const errorMsg = e instanceof Error ? e.message : String(e);
-		console.error('[Registry] Failed to lookup credentials:', errorMsg);
+		console.error('[镜像仓库] 查找凭证失败:', errorMsg);
 		return null;
 	}
 }
@@ -2947,7 +2947,7 @@ async function getRegistryBearerToken(registry: string, repo: string): Promise<s
 		// If not 401, something else is wrong
 		if (challengeResponse.status !== 401) {
 			await drainResponse(challengeResponse);
-			console.error(`Registry challenge failed: ${challengeResponse.status}`);
+			console.error(`镜像仓库验证请求失败: ${challengeResponse.status}`);
 			return null;
 		}
 
@@ -2967,7 +2967,7 @@ async function getRegistryBearerToken(registry: string, repo: string): Promise<s
 
 		if (!challenge.startsWith('bearer')) {
 			await drainResponse(challengeResponse);
-			console.error(`Unsupported auth type: ${wwwAuth}`);
+			console.error(`不支持的认证类型: ${wwwAuth}`);
 			return null;
 		}
 
@@ -2979,7 +2979,7 @@ async function getRegistryBearerToken(registry: string, repo: string): Promise<s
 		const serviceMatch = wwwAuth.match(/service="([^"]+)"/i);
 
 		if (!realmMatch) {
-			console.error('No realm in WWW-Authenticate header');
+			console.error('WWW-Authenticate 头中未包含 realm');
 			return null;
 		}
 
@@ -3010,7 +3010,7 @@ async function getRegistryBearerToken(registry: string, repo: string): Promise<s
 
 		if (!tokenResponse.ok) {
 			await tokenResponse.text(); // Consume body to release socket
-			console.error(`Token request failed: ${tokenResponse.status}`);
+			console.error(`令牌请求失败: ${tokenResponse.status}`);
 			return null;
 		}
 
@@ -3022,11 +3022,11 @@ async function getRegistryBearerToken(registry: string, repo: string): Promise<s
 	} catch (e) {
 		const errorMsg = e instanceof Error ? e.message : String(e);
 		const cause = (e as any)?.cause;
-		const causeMsg = cause ? ` (cause: ${cause})` : '';
-		console.error('[Registry] Failed to get bearer token:', errorMsg + causeMsg);
+		const causeMsg = cause ? ` (原因: ${cause})` : '';
+		console.error('[镜像仓库] 获取令牌失败:', errorMsg + causeMsg);
 		const causeStr = String(cause ?? errorMsg);
 		if (causeStr.includes('EAI_AGAIN') || causeStr.includes('ENOTFOUND')) {
-			console.error('[Registry] DNS resolution failed. If you are on a NAS (Synology, uGreen, QNAP), try adding --dns=8.8.8.8 to your docker run command or set {"dns": ["8.8.8.8"]} in /etc/docker/daemon.json');
+			console.error('[镜像仓库] DNS 解析失败。如果你使用群晖、绿联、威联通等 NAS，请尝试在 docker run 命令中添加 --dns=8.8.8.8 或在 /etc/docker/daemon.json 中设置 {"dns": ["8.8.8.8"]}');
 		}
 		return null;
 	}
@@ -3069,7 +3069,7 @@ export async function getRegistryAuthHeader(
 		// If not 401, something else is wrong
 		if (challengeResponse.status !== 401) {
 			await drainResponse(challengeResponse);
-			console.error(`Registry challenge failed: ${challengeResponse.status}`);
+			console.error(`镜像仓库验证请求失败: ${challengeResponse.status}`);
 			return null;
 		}
 
@@ -3089,7 +3089,7 @@ export async function getRegistryAuthHeader(
 
 		if (!challenge.startsWith('bearer')) {
 			await drainResponse(challengeResponse);
-			console.error(`Unsupported auth type: ${wwwAuth}`);
+			console.error(`不支持的认证类型: ${wwwAuth}`);
 			return null;
 		}
 
@@ -3101,7 +3101,7 @@ export async function getRegistryAuthHeader(
 		const serviceMatch = wwwAuth.match(/service="([^"]+)"/i);
 
 		if (!realmMatch) {
-			console.error('No realm in WWW-Authenticate header');
+			console.error('WWW-Authenticate 头中未包含 realm');
 			return null;
 		}
 
@@ -3131,7 +3131,7 @@ export async function getRegistryAuthHeader(
 
 		if (!tokenResponse.ok) {
 			const errorBody = await tokenResponse.text().catch(() => '');
-			console.error(`Token request failed: ${tokenResponse.status} - ${errorBody}`);
+			console.error(`令牌请求失败: ${tokenResponse.status} - ${errorBody}`);
 			return null;
 		}
 
@@ -3143,8 +3143,8 @@ export async function getRegistryAuthHeader(
 	} catch (e) {
 		const errorMsg = e instanceof Error ? e.message : String(e);
 		const cause = (e as any)?.cause;
-		const causeMsg = cause ? ` (cause: ${cause})` : '';
-		console.error('[Registry] Failed to get auth header:', errorMsg + causeMsg);
+		const causeMsg = cause ? ` (原因: ${cause})` : '';
+		console.error('[镜像仓库] 获取认证头失败:', errorMsg + causeMsg);
 		return null;
 	}
 }
@@ -3449,9 +3449,9 @@ export async function getRegistryManifestDigest(imageName: string): Promise<stri
 			await drainResponse(response);
 			if (response.status === 429) {
 				const retryAfter = response.headers.get('Retry-After');
-				console.warn(`[Registry] ${imageName}: rate limited (429)${retryAfter ? `, retry after ${retryAfter}s` : ''}`);
+				console.warn(`[镜像仓库] ${imageName}: 已限流 (429)${retryAfter ? `, ${retryAfter}秒后重试` : ''}`);
 			} else {
-				console.error(`[Registry] ${imageName}: ${response.status}`);
+				console.error(`[镜像仓库] ${imageName}: ${response.status}`);
 			}
 			return null;
 		}
@@ -3462,9 +3462,9 @@ export async function getRegistryManifestDigest(imageName: string): Promise<stri
 	} catch (e) {
 		const causeStr = String((e as any)?.cause ?? e);
 		if (causeStr.includes('EAI_AGAIN') || causeStr.includes('ENOTFOUND')) {
-			console.error(`[Registry] ${imageName}: DNS resolution failed. If you are on a NAS (Synology, uGreen, QNAP), add --dns=8.8.8.8 to your docker run command.`);
+			console.error(`[镜像仓库] ${imageName}: ${imageName}: DNS 解析失败。如果你使用群晖、绿联、威联通等 NAS，请在 docker run 命令中添加 --dns=8.8.8.8。`);
 		} else {
-			console.error(`[Registry] ${imageName}: ${e}`);
+			console.error(`[镜像仓库] ${imageName}: ${e}`);
 		}
 		return null;
 	}
@@ -3520,7 +3520,7 @@ export async function checkImageUpdateAvailable(
 		try {
 			currentImageInfo = await inspectImage(currentImageId, envId);
 		} catch {
-			return { hasUpdate: false, error: 'Could not inspect current image' };
+			return { hasUpdate: false, error: '无法检查当前镜像' };
 		}
 
 		const currentRepoDigests: string[] = currentImageInfo?.RepoDigests || [];
@@ -3554,7 +3554,7 @@ export async function checkImageUpdateAvailable(
 			return {
 				hasUpdate: false,
 				currentDigest: currentRepoDigests[0],
-				error: 'Could not query registry'
+				error: '无法查询仓库'
 			};
 		}
 
@@ -3700,7 +3700,7 @@ export async function removeTempImage(imageIdOrTag: string, envId?: number | nul
 		await removeImage(imageIdOrTag, force, envId);
 	} catch (error: any) {
 		// Log but don't throw - cleanup failure shouldn't break the flow
-		console.warn(`[Docker] Failed to remove temp image ${imageIdOrTag}: ${error.message}`);
+		console.warn(`[Docker] 移除临时镜像 ${imageIdOrTag} 失败：${error.message}`);
 	}
 }
 
@@ -3717,8 +3717,8 @@ export async function exportImage(id: string, envId?: number | null): Promise<Re
 	);
 
 	if (!response.ok) {
-		const error = await response.text().catch(() => 'Unknown error');
-		throw new Error(`Failed to export image: ${response.status} - ${error}`);
+		const error = await response.text().catch(() => '未知错误');
+		throw new Error(`导出镜像失败：${response.status} - ${error}`);
 	}
 
 	return response;
@@ -3768,7 +3768,7 @@ export async function dockerPing(envId: number): Promise<boolean> {
 	} catch (error: any) {
 		const msg = error?.message || String(error);
 		if (msg.includes('unreachable')) {
-			console.warn(`[Docker] ${config?.connectionType || 'direct'} ${config?.host || envId}: /_ping failed - host unreachable`);
+			console.warn(`[Docker] ${config?.connectionType || '直接连接'} ${config?.host || envId}: /_ping 失败 - 主机不可达`);
 		}
 		return false;
 	}
@@ -3793,10 +3793,10 @@ export async function getHawserInfo(envId: number): Promise<{
 				return await response.json();
 			}
 			await drainResponse(response);
-			console.warn(`[Hawser] Info endpoint returned ${response.status} for env ${envId}`);
+			console.warn(`[Hawser] 信息接口返回 ${response.status}，环境 ID：${envId}`);
 		} catch (error) {
 			const msg = error instanceof Error ? error.message : String(error);
-			console.warn(`[Hawser] Failed to fetch info for env ${envId} (attempt ${attempt + 1}): ${msg}`);
+			console.warn(`[Hawser] 获取环境 ${envId} 信息失败 (第 ${attempt + 1} 次尝试): ${msg}`);
 		}
 	}
 	return null;
@@ -3823,7 +3823,7 @@ export async function listVolumes(envId?: number | null): Promise<VolumeInfo[]> 
 	const volumeUsageMap = new Map<string, { containerId: string; containerName: string }[]>();
 
 	for (const container of containers) {
-		const containerName = container.Names?.[0]?.replace(/^\//, '') || 'unnamed';
+		const containerName = container.Names?.[0]?.replace(/^\//, '') || '未命名';
 		const containerId = container.Id;
 
 		for (const mount of container.Mounts || []) {
@@ -3870,9 +3870,9 @@ export async function getVolumeUsage(
 			continue;
 		}
 
-		const containerName = container.Names?.[0]?.replace(/^\//, '') || 'unnamed';
+		const containerName = container.Names?.[0]?.replace(/^\//, '') || '未命名';
 		const containerId = container.Id;
-		const state = container.State || 'unknown';
+		const state = container.State || '未知';
 
 		for (const mount of container.Mounts || []) {
 			if (mount.Type === 'volume' && mount.Name === volumeName) {
@@ -3889,7 +3889,7 @@ export async function removeVolume(name: string, force = false, envId?: number |
 	const response = await dockerFetch(`/volumes/${encodeURIComponent(name)}?force=${force}`, { method: 'DELETE' }, envId);
 	if (!response.ok) {
 		const data = await response.json().catch(() => ({}));
-		const error: any = new Error(data.message || 'Failed to remove volume');
+		const error: any = new Error(data.message || '删除数据卷失败');
 		error.statusCode = response.status;
 		error.json = data;
 		throw error;
@@ -3984,7 +3984,7 @@ export async function removeNetwork(id: string, envId?: number | null) {
 	const response = await dockerFetch(`/networks/${id}`, { method: 'DELETE' }, envId);
 	if (!response.ok) {
 		const data = await response.json().catch(() => ({}));
-		const error: any = new Error(data.message || 'Failed to remove network');
+		const error: any = new Error(data.message || '删除网络失败');
 		error.statusCode = response.status;
 		error.json = data;
 		throw error;
@@ -4099,7 +4099,7 @@ export async function connectContainerToNetwork(
 	);
 	if (!response.ok) {
 		const data = await response.json().catch(() => ({}));
-		throw new Error(data.message || 'Failed to connect container to network');
+		throw new Error(data.message || '容器连接网络失败');
 	}
 	await drainResponse(response);
 }
@@ -4131,7 +4131,7 @@ export async function connectContainerToNetworkRaw(
 	);
 	if (!response.ok) {
 		const data = await response.json().catch(() => ({}));
-		throw new Error(data.message || 'Failed to connect container to network');
+		throw new Error(data.message || '容器连接网络失败');
 	}
 	await drainResponse(response);
 }
@@ -4153,7 +4153,7 @@ export async function disconnectContainerFromNetwork(
 	);
 	if (!response.ok) {
 		const data = await response.json().catch(() => ({}));
-		throw new Error(data.message || 'Failed to disconnect container from network');
+		throw new Error(data.message || '容器断开网络失败');
 	}
 	await drainResponse(response);
 }
@@ -4440,7 +4440,7 @@ export async function execInContainer(
 	);
 
 	if (execInfo.ExitCode !== 0) {
-		const errorMsg = output.trim() || `Command failed with exit code ${execInfo.ExitCode}`;
+		const errorMsg = output.trim() || `命令执行失败，退出码： ${execInfo.ExitCode}`;
 		throw new Error(errorMsg);
 	}
 
@@ -4477,7 +4477,7 @@ export async function getDockerEvents(
 
 		if (!response.ok) {
 			await drainResponse(response);
-			throw new Error(`Docker events API returned ${response.status}`);
+			throw new Error(`Docker 事件接口返回状态码：${response.status}`);
 		}
 
 		return response.body;
@@ -4553,22 +4553,22 @@ export async function runContainer(options: {
 	);
 
 	const containerId = createResult.Id;
-	console.log(`[runContainer] Created container ${containerId} for image ${options.image}`);
+	console.log(`[runContainer] 为镜像 ${options.image} 创建容器 ${containerId}`);
 
 	try {
 		// Start container
-		console.log(`[runContainer] Starting container ${containerId}...`);
+		console.log(`[runContainer] 启动容器 ${containerId}...`);
 		await assertDockerResponse(await dockerFetch(`/containers/${containerId}/start`, { method: 'POST' }, options.envId));
 
 		// Wait for container to finish
-		console.log(`[runContainer] Waiting for container ${containerId} to finish...`);
+		console.log(`[runContainer] 等待容器 ${containerId} 执行完成...`);
 		const waitResponse = await dockerFetch(`/containers/${containerId}/wait`, { method: 'POST', streaming: true }, options.envId);
 		if (!waitResponse.ok) await throwDockerError(waitResponse);
 		const waitResult = await waitResponse.json().catch(() => ({}));
-		console.log(`[runContainer] Container ${containerId} finished with exit code:`, waitResult?.StatusCode);
+		console.log(`[runContainer] 容器 ${containerId} 执行完成，退出码：`, waitResult?.StatusCode);
 
 		// Get logs - container is stopped but NOT removed yet since AutoRemove is false
-		console.log(`[runContainer] Fetching logs for container ${containerId}...`);
+		console.log(`[runContainer] 获取容器 ${containerId} 日志...`);
 		const logsResponse = await dockerFetch(
 			`/containers/${containerId}/logs?stdout=true&stderr=true`,
 			{},
@@ -4578,12 +4578,12 @@ export async function runContainer(options: {
 		if (!logsResponse.ok) await throwDockerError(logsResponse);
 
 		const buffer = Buffer.from(await logsResponse.arrayBuffer());
-		console.log(`[runContainer] Got logs buffer, size: ${buffer.length} bytes`);
+		console.log(`[runContainer] 已获取日志缓冲区，大小：${buffer.length} 字节`);
 
 		const result = demuxDockerStream(buffer, { separateStreams: true }) as { stdout: string; stderr: string };
-		console.log(`[runContainer] Demuxed: stdout=${result.stdout.length} chars, stderr=${result.stderr.length} chars`);
+		console.log(`[runContainer] 解析完成：标准输出=${result.stdout.length} 字符，标准错误=${result.stderr.length} 字符`);
 		if (result.stdout.length === 0 && result.stderr.length === 0 && buffer.length > 0) {
-			console.log(`[runContainer] WARNING: Buffer has data but demux returned empty. First 100 bytes:`, buffer.slice(0, 100));
+			console.log(`[runContainer] 警告：缓冲区有数据但解析结果为空。前 100 字节：`, buffer.slice(0, 100));
 		}
 		return result;
 	} finally {
@@ -4681,9 +4681,9 @@ export async function runContainerWithStreaming(options: {
 				if (!waitResult.ok) await throwDockerError(waitResult);
 				const waitData = await waitResult.json() as { StatusCode?: number };
 				exitCode = waitData.StatusCode;
-				console.log(`[runContainerWithStreaming] Container exited with code: ${exitCode}`);
+				console.log(`[runContainerWithStreaming] 容器退出，退出码：${exitCode}`);
 			} catch (err) {
-				console.warn(`[runContainerWithStreaming] Wait warning: ${(err as Error).message}`);
+				console.warn(`[runContainerWithStreaming] 等待警告：${(err as Error).message}`);
 			}
 
 			// Container exited - abort stderr stream (it may be hanging on some Docker hosts)
@@ -4709,8 +4709,8 @@ export async function runContainerWithStreaming(options: {
 				} catch {
 					// Ignore stderr fetch errors
 				}
-				const detail = stderrText ? stderrText.substring(0, 1000) : 'no stderr output';
-				throw new Error(`Container exited with code ${exitCode}: ${detail}`);
+				const detail = stderrText ? stderrText.substring(0, 1000) : '无标准错误输出';
+				throw new Error(`容器退出，退出码 ${exitCode}: ${detail}`);
 			}
 
 			return stdout;
@@ -4722,7 +4722,7 @@ export async function runContainerWithStreaming(options: {
 				doWork(),
 				new Promise<never>((_, reject) =>
 					setTimeout(() => reject(new Error(
-						`Container execution timed out after ${Math.round(effectiveTimeout / 1000)}s`
+						`容器执行超时，超时时间：${Math.round(effectiveTimeout / 1000)}秒`
 					)), effectiveTimeout)
 				)
 			]);
@@ -4827,15 +4827,15 @@ function extractStdoutFromBuffer(buffer: Buffer): string {
 
 	if (buffer.length > 100000) {
 		console.log(
-			`[extractStdoutFromBuffer] Raw buffer: ${buffer.length} bytes, stdout: ${result.stdout.length} chars, ` +
-			`remaining: ${result.remaining.length} bytes`
+			`[extractStdoutFromBuffer] 原始缓冲区：${buffer.length} 字节，标准输出：${result.stdout.length} 字符，` +
+			`剩余：${result.remaining.length} 字节`
 		);
 	}
 
 	if (result.stdout.length === 0 && buffer.length > 0) {
 		console.warn(
-			`[extractStdoutFromBuffer] Frame parsing empty but buffer has ${buffer.length} bytes. ` +
-			`First 16 bytes: [${Array.from(buffer.slice(0, 16)).join(', ')}]. Falling back to raw.`
+			`[extractStdoutFromBuffer] 帧解析为空，但缓冲区存在 ${buffer.length} 字节数据。 ` +
+			`前 16 个字节：[${Array.from(buffer.slice(0, 16)).join(', ')}]。回退至原始数据。`
 		);
 		return buffer.toString('utf-8').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
 	}
@@ -4843,7 +4843,7 @@ function extractStdoutFromBuffer(buffer: Buffer): string {
 	// If there's remaining data after frame parsing, append it as raw text
 	if (result.remaining.length > 0) {
 		console.warn(
-			`[extractStdoutFromBuffer] ${result.remaining.length} bytes remaining after frame parsing, appending as raw`
+			`[extractStdoutFromBuffer] 帧解析后剩余 ${result.remaining.length} 字节数据，追加为原始文本`
 		);
 		const rawTail = result.remaining.toString('utf-8').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
 		return result.stdout + rawTail;
@@ -4921,7 +4921,7 @@ export async function pushImage(
 	);
 
 	const pushUrl = `/images/${encodeURIComponent(imageTag)}/push`;
-	console.log(`[Push] POST ${pushUrl} headers=X-Registry-Auth`);
+	console.log(`[镜像推送] POST ${pushUrl} 请求头=X-Registry-Auth`);
 
 	const response = await dockerFetch(
 		pushUrl,
@@ -4935,12 +4935,12 @@ export async function pushImage(
 		envId
 	);
 
-	console.log(`[Push] response status=${response.status} ${response.statusText}`);
+	console.log(`[镜像推送] 响应状态码=${response.status} ${response.statusText}`);
 
 	if (!response.ok) {
 		const error = await response.text();
-		console.error(`[Push] error body: ${error}`);
-		throw new Error(`Failed to push image: ${error}`);
+		console.error(`[镜像推送] 错误返回内容: ${error}`);
+		throw new Error(`推送镜像失败: ${error}`);
 	}
 
 	// Stream the response for progress updates
@@ -4963,7 +4963,7 @@ export async function pushImage(
 				try {
 					const data = JSON.parse(line);
 					if (data.error) {
-						console.error(`[Push] stream error: ${line}`);
+						console.error(`[镜像推送] 流式错误信息: ${line}`);
 						throw new Error(data.error);
 					}
 					if (onProgress) onProgress(data);
@@ -5197,7 +5197,7 @@ export async function listContainerDirectory(
 		}
 	}
 
-	throw lastError || new Error('Failed to list directory: no working ls command found');
+	throw lastError || new Error('列出目录失败：未找到可用的 ls 命令');
 }
 
 /**
@@ -5220,7 +5220,7 @@ export async function getContainerArchive(
 
 	if (!response.ok) {
 		const error = await response.text();
-		throw new Error(`Failed to get archive: ${error}`);
+		throw new Error(`获取归档文件失败：${error}`);
 	}
 
 	return response;
@@ -5252,7 +5252,7 @@ export async function putContainerArchive(
 
 	if (!response.ok) {
 		const error = await response.text();
-		throw new Error(`Failed to upload archive: ${error}`);
+		throw new Error(`上传归档文件失败：${error}`);
 	}
 	await drainResponse(response);
 }
@@ -5276,13 +5276,13 @@ export async function statContainerPath(
 
 	if (!response.ok) {
 		await drainResponse(response);
-		throw new Error(`Path not found: ${safePath}`);
+		throw new Error(`路径不存在：${safePath}`);
 	}
 
 	// Docker returns stat info in X-Docker-Container-Path-Stat header as base64 JSON
 	const statHeader = response.headers.get('X-Docker-Container-Path-Stat');
 	if (!statHeader) {
-		throw new Error('No stat info returned');
+		throw new Error('未返回状态信息');
 	}
 
 	const statJson = Buffer.from(statHeader, 'base64').toString('utf-8');
@@ -5438,7 +5438,7 @@ export async function deleteContainerPath(
 	// Safety check: don't allow deleting root or critical paths
 	const dangerousPaths = ['/', '/bin', '/sbin', '/usr', '/lib', '/lib64', '/etc', '/var', '/root', '/home'];
 	if (dangerousPaths.includes(safePath) || safePath === '') {
-		throw new Error('Cannot delete critical system path');
+		throw new Error('无法删除关键系统路径');
 	}
 
 	// Use rm -rf to delete file or directory
@@ -5477,7 +5477,7 @@ export async function chmodContainerPath(
 
 	// Validate mode (should be octal like 755 or symbolic like u+x)
 	if (!/^[0-7]{3,4}$/.test(mode) && !/^[ugoa]*[+-=][rwxXst]+$/.test(mode)) {
-		throw new Error('Invalid chmod mode');
+		throw new Error('无效的权限模式');
 	}
 
 	// Build command
@@ -5514,7 +5514,7 @@ export async function ensureVolumeHelperImage(envId?: number | null): Promise<vo
 	}
 
 	// Image not found, pull it
-	console.log(`Pulling ${VOLUME_HELPER_IMAGE} for volume browsing...`);
+	console.log(`正在拉取 ${VOLUME_HELPER_IMAGE} 用于数据卷浏览...`);
 	const authHeaders = await buildRegistryAuthHeader(VOLUME_HELPER_IMAGE);
 	const pullResponse = await dockerFetch(
 		`/images/create?fromImage=${encodeURIComponent(VOLUME_HELPER_IMAGE)}`,
@@ -5524,7 +5524,7 @@ export async function ensureVolumeHelperImage(envId?: number | null): Promise<vo
 
 	if (!pullResponse.ok) {
 		const error = await pullResponse.text();
-		throw new Error(`Failed to pull ${VOLUME_HELPER_IMAGE}: ${error}`);
+		throw new Error(`拉取 ${VOLUME_HELPER_IMAGE} 失败：${error}`);
 	}
 
 	// Wait for pull to complete by consuming the stream
@@ -5536,7 +5536,7 @@ export async function ensureVolumeHelperImage(envId?: number | null): Promise<vo
 		}
 	}
 
-	console.log(`Successfully pulled ${VOLUME_HELPER_IMAGE}`);
+	console.log(`成功拉取 ${VOLUME_HELPER_IMAGE}`);
 }
 
 /**
@@ -5665,7 +5665,7 @@ export async function releaseVolumeHelperContainer(
 		if (cached) {
 			volumeHelperCache.delete(cacheKey);
 			await removeVolumeHelperContainer(cached.containerId, envId).catch(err => {
-				console.warn('Failed to cleanup volume helper container:', err);
+				console.warn('清理数据卷辅助容器失败：', err);
 			});
 		}
 	}
@@ -5692,12 +5692,12 @@ export async function cleanupExpiredVolumeHelpers(): Promise<void> {
 	for (const { key, containerId, envId } of expiredEntries) {
 		volumeHelperCache.delete(key);
 		removeVolumeHelperContainer(containerId, envId ?? undefined).catch(err => {
-			console.warn('Failed to cleanup expired volume helper container:', err);
+			console.warn('清理过期数据卷辅助容器失败：', err);
 		});
 	}
 
 	if (expiredEntries.length > 0) {
-		console.log(`Cleaned up ${expiredEntries.length} expired volume helper container(s)`);
+		console.log(`已清理 ${expiredEntries.length} 个过期的数据卷辅助容器`);
 	}
 }
 
@@ -5747,7 +5747,7 @@ async function cleanupStaleVolumeHelpersForEnv(envId?: number | null): Promise<n
 				await removeVolumeHelperContainer(container.Id, envId);
 				removed++;
 			} catch (err) {
-				console.warn(`Failed to remove stale helper container ${container.Names?.[0] || container.Id}:`, err);
+				console.warn(`删除过期辅助容器 ${container.Names?.[0] || container.Id}失败：`, err);
 			}
 		}
 
@@ -5757,7 +5757,7 @@ async function cleanupStaleVolumeHelpersForEnv(envId?: number | null): Promise<n
 		const msg = err?.message || String(err);
 		const isExpected = /not connected|offline|unreachable|fetch failed|EPROTO|ECONNREFUSED|ECONNRESET|ETIMEDOUT|EHOSTUNREACH/i.test(msg);
 		if (!isExpected) {
-			console.warn(`Failed to query stale volume helpers for env ${envId}:`, msg);
+			console.warn(`查询环境 ${envId} 过期数据卷辅助容器失败：`, msg);
 		}
 		return 0;
 	}
@@ -5778,7 +5778,7 @@ export async function cleanupStaleVolumeHelpers(environments: Array<{ id: number
 	}
 
 	if (totalRemoved > 0) {
-		console.log(`[Volume Helper] Removed ${totalRemoved} stale container(s)`);
+		console.log(`[数据卷辅助容器] 已删除 ${totalRemoved} 个过期容器`);
 	}
 }
 
@@ -5835,7 +5835,7 @@ export async function getVolumeArchive(
 
 	if (!response.ok) {
 		const error = await response.text();
-		throw new Error(`Failed to get archive: ${error}`);
+		throw new Error(`获取归档文件失败：${error}`);
 	}
 
 	return { response, containerId };

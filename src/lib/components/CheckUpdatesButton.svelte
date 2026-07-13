@@ -64,12 +64,12 @@
 
 	function showFailedChecksToast(failed: FailedCheckItem[], prefix: string) {
 		const details = failed.map((f) => `• ${f.containerName}: ${f.error}`).join('\n');
-		toast.warning(`${prefix} (${failed.length} failed to check)`, {
+		toast.warning(`${prefix} (${failed.length} 个容器检测失败)`, {
 			description: details,
 			descriptionClass: 'whitespace-pre-line',
 			class: '!w-[28rem] !max-w-[28rem]',
 			duration: Infinity,
-			action: { label: 'OK', onClick: () => {} }
+			action: { label: '确定', onClick: () => {} }
 		});
 	}
 
@@ -123,16 +123,16 @@
 				// Keep the "Latest" status until re-check / env-switch — don't auto-revert (#1019)
 				status = 'none';
 				if (failed.length > 0) {
-					showFailedChecksToast(failed, 'All containers are up to date');
+					showFailedChecksToast(failed, '所有容器均已是最新版本');
 				} else {
-					toast.success('All containers are up to date');
+					toast.success('所有容器均已是最新版本');
 				}
 			} else {
 				status = 'found';
 				if (failed.length > 0) {
-					showFailedChecksToast(failed, `${withUpdates.length} update(s) available`);
+					showFailedChecksToast(failed, `检测到 ${withUpdates.length} 项可用更新`);
 				} else {
-					toast.info(`${withUpdates.length} update(s) available`);
+					toast.info(`检测到 ${withUpdates.length} 项可用更新`);
 				}
 			}
 
@@ -149,28 +149,28 @@
 	variant="outline"
 	onclick={checkForUpdates}
 	disabled={status === 'checking'}
-	title="Check for available updates"
+	title="检测可用更新"
 	class="relative overflow-hidden"
 >
 	{#if displayStatus === 'checking'}
 		<CircleArrowUp class="w-3.5 h-3.5 animate-spin" />
 		{#if progress.total > 0}
-			<span class="tabular-nums">Checking {String(progress.checked).padStart(String(progress.total).length, ' ')}/{progress.total}</span>
+			<span class="tabular-nums">正在检测 {String(progress.checked).padStart(String(progress.total).length, ' ')}/{progress.total}</span>
 			<div
 				class="absolute bottom-0 left-0 h-px bg-foreground transition-[width] duration-150 ease-out"
 				style="width: {(progress.checked / progress.total) * 100}%"
 			></div>
 		{:else}
-			Check for updates
+			检测更新
 		{/if}
 	{:else if displayStatus === 'none' || displayStatus === 'found'}
 		<Check class="w-3.5 h-3.5 mr-1 text-green-600" />
-		Check for updates
+		检测更新
 	{:else if displayStatus === 'error'}
 		<XCircle class="w-3.5 h-3.5 mr-1 text-destructive" />
-		Check for updates
+		检测更新
 	{:else}
 		<CircleArrowUp class="w-3.5 h-3.5" />
-		Check for updates
+		检测更新
 	{/if}
 </Button>
