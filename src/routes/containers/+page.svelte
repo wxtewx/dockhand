@@ -315,7 +315,7 @@
 					...statusTypes,
 					{
 						value: UPDATE_AVAILABLE_FILTER_VALUE,
-						label: 'Update available',
+						label: '存在可用更新',
 						icon: CircleArrowUp,
 						color: 'text-amber-500'
 					}

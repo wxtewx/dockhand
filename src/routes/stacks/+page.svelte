@@ -2093,11 +2093,11 @@
 											<span class="inline-flex items-center gap-0.5 shrink-0">
 												{#if $canAccess('containers', 'manage')}
 													<ConfirmPopover
-														action="Update"
-														itemType="container"
+														action="更新"
+														itemType="容器"
 														itemName={container.name}
 														position="left"
-														title="Update available - click to update"
+														title="存在可用更新 — 点击执行更新"
 														onConfirm={() => updateSingleContainer(container.id, container.name)}
 													>
 														{#snippet children({ open })}
@@ -2113,7 +2113,7 @@
 															target="_blank"
 															rel="noopener noreferrer"
 															onclick={(e) => e.stopPropagation()}
-															title="View changelog"
+															title="查看更新日志"
 															class="shrink-0 text-amber-500 hover:text-amber-400 transition-colors"
 														>
 															<NotepadText class="w-3 h-3" />
