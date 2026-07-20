@@ -430,10 +430,13 @@
 	}
 
 	function formatTimestamp(ts: string): string {
-		const date = new Date(ts); 
-  		if (isNaN(date.getTime())) return ts;
-		const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-		return formatDateTime(localDate, true);
+		if (!ts) return '-';
+		let fixedIso = ts.trim();
+		if (!fixedIso.includes('T')) fixedIso = fixedIso.replace(' ', 'T');
+		if (!fixedIso.endsWith('Z') && !fixedIso.includes('+') && !fixedIso.includes('-', 10)) {
+			fixedIso += 'Z';
+		}
+		return formatDateTime(fixedIso, true);
 	}
 
 	function getActionIcon(action: string) {

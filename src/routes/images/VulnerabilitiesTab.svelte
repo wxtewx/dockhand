@@ -70,6 +70,16 @@
 		onSortChange?.(field, dir);
 	}
 
+	function formatTimestamp(ts: string): string {
+		if (!ts) return '-';
+		let fixedIso = ts.trim();
+		if (!fixedIso.includes('T')) fixedIso = fixedIso.replace(' ', 'T');
+		if (!fixedIso.endsWith('Z') && !fixedIso.includes('+') && !fixedIso.includes('-', 10)) {
+			fixedIso += 'Z';
+		}
+		return formatDateTime(fixedIso, true);
+	}
+
 </script>
 
 <div class="flex-1 min-h-0 flex flex-col gap-2">
@@ -217,7 +227,7 @@
 							{/if}
 						{:else if column.id === 'scannedAt'}
 							{#if finding.scannedAt}
-								<span class="text-xs text-muted-foreground whitespace-nowrap" title={finding.scannedAt}>{formatDateTime(finding.scannedAt)}</span>
+								<span class="text-xs text-muted-foreground whitespace-nowrap" title={finding.scannedAt}>{formatTimestamp(finding.scannedAt)}</span>
 							{:else}
 								<span class="text-xs text-muted-foreground">—</span>
 							{/if}

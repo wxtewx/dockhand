@@ -749,25 +749,18 @@
 	}
 
 	function formatTimestamp(iso: string | null, tz?: string): string {
-		if (!iso) return '-';
-		let fixedIso = iso;
-		if (!iso.endsWith('Z') && !iso.includes('+') && !iso.includes('-', 10)) {
-			fixedIso = iso.replace(' ', 'T') + 'Z';
-		}
-		if (tz) return formatDateTime(fixedIso, true);
-		const d = new Date(fixedIso);
-		if (isNaN(d.getTime())) return iso;
-		return new Intl.DateTimeFormat('en-GB', {
-			timeZone: tz,
-			year: 'numeric',
-			month: '2-digit',
-			day: '2-digit',
-			hour: '2-digit',
-			minute: '2-digit',
-			second: '2-digit',
-			hour12: getTimeFormat() === '12h'
-		}).format(d);
+	if (!iso) return '-';
+	let fixedIso = iso.trim();
+
+	if (!fixedIso.includes('T')) {
+		fixedIso = fixedIso.replace(' ', 'T');
 	}
+
+	if (!fixedIso.endsWith('Z') && !fixedIso.includes('+') && !fixedIso.includes('-', 10)) {
+		fixedIso += 'Z';
+	}
+	return formatDateTime(fixedIso, true);
+}
 
 	function formatDuration(ms: number | null): string {
 		if (ms === null) return '-';
@@ -777,17 +770,18 @@
 	}
 
 	function formatNextRun(iso: string | null): string {
-		if (!iso) return '-';
-		const date = new Date(iso);
-		const now = new Date();
-		const diff = date.getTime() - now.getTime();
+	if (!iso) return '-';
+	const date = new Date(iso);
+	const now = new Date();
+	const diff = date.getTime() - now.getTime();
 
-		if (diff < 0) return '已逾期';
-		if (diff < 60000) return '小于 1 分钟';
-		if (diff < 3600000) return `${Math.floor(diff / 60000)} 分钟后`;
-		if (diff < 86400000) return `${Math.floor(diff / 3600000)} 小时后`;
-		return formatTimestamp(iso);
-	}
+	if (diff < 0) return '已逾期';
+	if (diff < 60000) return '小于 1 分钟';
+	if (diff < 3600000) return `${Math.floor(diff / 60000)} 分钟后`;
+	if (diff < 86400000) return `${Math.floor(diff / 3600000)} 小时后`;
+	
+	return formatDateTime(iso, true);
+}
 
 	function getStatusBadge(status: string) {
 		switch (status) {

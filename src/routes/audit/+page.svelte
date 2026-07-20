@@ -469,9 +469,7 @@
 	}
 
 	function formatTimestamp(ts: string): string {
-		const date = new Date(ts);
-		if (isNaN(date.getTime())) return ts;
-		return formatDateTime(date, true);
+		return formatDateTime(ts, true);
 	}
 
 	function getEntityIcon(entityType: string) {
