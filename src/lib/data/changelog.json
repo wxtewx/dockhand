@@ -5,15 +5,15 @@
     "changes": [
       {
         "type": "fix",
-        "text": "regression: stacks with relative bind mounts deployment fails (#1310)"
+        "text": "功能退化：包含相对绑定挂载的堆栈部署失败 (#1310)"
       },
       {
         "type": "fix",
-        "text": "redeploying a stack with pull now clears the dashboard pending-update badge for containers it updated (#1311)"
+        "text": "拉取镜像并重新部署堆栈时，将清除仪表板中已更新容器的待更新标记 (#1311)"
       },
       {
         "type": "fix",
-        "text": "stack backups no longer fail on deeply nested files whose path exceeds 100 bytes"
+        "text": "堆栈备份不再因路径长度超过 100 字节的深层嵌套文件而失败"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.39"
@@ -24,75 +24,75 @@
     "changes": [
       {
         "type": "feature",
-        "text": "container/stacks backups (beta), gated with FEAT_BACKUPS_ENABLED"
+        "text": "容器/堆栈备份 (测试版) ，由 FEAT_BACKUPS_ENABLED 控制启用"
       },
       {
         "type": "feature",
-        "text": "view a Git stack's compose YAML and dependency graph read-only by clicking its name (PR#1294, @nenad)"
+        "text": "点击名称即可只读查看 Git 堆栈的 compose YAML 与依赖关系图 (PR#1294, @nenad)"
       },
       {
         "type": "fix",
-        "text": "deploy on a plain internal stack no longer 500s when the request has no body (#1271)"
+        "text": "向普通内部堆栈执行部署时，若请求不含请求体将不再返回500错误 (#1271)"
       },
       {
         "type": "fix",
-        "text": "wider Activity event details modal (#1277)"
+        "text": "加宽活动记录事件详情弹窗 (#1277)"
       },
       {
         "type": "fix",
-        "text": "container updates refresh image-provided env vars and labels, overrides are kept (#1226, #1256)"
+        "text": "容器更新会刷新镜像内置环境变量与标签，同时保留自定义覆盖项 (#1226, #1256)"
       },
       {
         "type": "fix",
-        "text": "private repos with a token credential and no username now authenticate (#1273)"
+        "text": "配置令牌凭据且无用户名的私有仓库现已支持身份认证 (#1273)"
       },
       {
         "type": "fix",
-        "text": "dashboard CPU history no longer spikes past 100% on busy/churny hosts (#1279)"
+        "text": "仪表盘 CPU 历史曲线在高负载频繁变动的宿主机上不会再突破 100% 峰值 (#1279)"
       },
       {
         "type": "fix",
-        "text": "failed updates (e.g. Docker Hub limits) show a 'check failed' instead of silently reporting no update (#1255)"
+        "text": "更新失败场景 (例如：Docker Hub 限额限制) 将展示「检查失败」提示，不再静默判定无可用更新 (#1255)"
       },
       {
         "type": "fix",
-        "text": "git stacks reject uppercase names upfront instead of leaving an orphaned clone (#1284)"
+        "text": "Git 堆栈会提前拦截大写名称，避免产生孤立的克隆目录 (#1284)"
       },
       {
         "type": "fix",
-        "text": "scan all images now covers untagged digest-pinned images instead of skipping them (#1286)"
+        "text": "全部镜像扫描现已覆盖未打标签、基于摘要锁定的镜像，不再跳过 (#1286)"
       },
       {
         "type": "fix",
-        "text": "registry containers stuck on a moved tag are no longer misread as \"local\" and skipped from updates (#1288)"
+        "text": "镜像仓库容器对应的标签迁移后，不会被误识别为「本地镜像」而跳过更新检测 (#1288)"
       },
       {
         "type": "fix",
-        "text": "bump docker-compose 5.2.0-r0 -> 5.3.1-r1 (CVE-2026-42505)"
+        "text": "升级 docker-compose 5.2.0-r0 → 5.3.1-r1 (修复 CVE-2026-42505)"
       },
       {
         "type": "fix",
-        "text": "bump Go 1.25.11 -> 1.25.12 (patches 4 stdlib CVEs)"
+        "text": "升级 Go 1.25.11 → 1.25.12 (修复 4 个标准库 CVE 漏洞)"
       },
       {
         "type": "fix",
-        "text": "volume prune now removes named unused volumes, keeping scanner caches (#1289)"
+        "text": "数据卷清理功能现在可以移除未使用的命名数据卷，同时保留扫描器缓存 (#1289)"
       },
       {
         "type": "feature",
-        "text": "DNS_RESULT_ORDER=verbatim enables IPv6 fallback for outbound requests on IPv4-broken hosts (#1293)"
+        "text": "DNS_RESULT_ORDER=verbatim 参数可在 IPv4 网络异常的宿主机上启用 IPv6 出站请求降级方案 (#1293)"
       },
       {
         "type": "fix",
-        "text": "OIDC/network errors now show the underlying cause instead of a bare \"fetch failed\" (#1293)"
+        "text": "OIDC/网络错误现在会展示底层真实原因，不再只显示原始提示「获取失败」 (#1293)"
       },
       {
         "type": "fix",
-        "text": "ntfy webhook with a trailing slash on the topic no longer fails with a 404 (#1300)"
+        "text": "主题末尾带有斜杠的 ntfy Webhook 请求不会再返回404错误 (#1300)"
       },
       {
         "type": "fix",
-        "text": "stack deploy and git sync notifications now actually fire on real deploys (#1295)"
+        "text": "堆栈部署与Git同步通知现在会在真实部署操作时正常触发 (#1295)"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.38"
@@ -103,83 +103,83 @@
     "changes": [
       {
         "type": "feature",
-        "text": "Prometheus metrics at /metrics for env state and internals, gated by EXPORT_METRICS (#339)"
+        "text": "在 /metrics 路径提供 Prometheus 指标，包含环境状态与内部运行信息，由 EXPORT_METRICS 控制开关 (#339)"
       },
       {
         "type": "feature",
-        "text": "export scan results as SARIF 2.1.0, manual export and API for DefectDojo/Dependency-Track/GitHub (#415)"
+        "text": "支持将扫描结果导出为 SARIF 2.1.0 格式，提供手动导出与API接口，适配 DefectDojo/Dependency-Track/GitHub (#415)"
       },
       {
         "type": "feature",
-        "text": "bump bundled docker-compose to 5.2.0-r0 to clear known CVEs"
+        "text": "内置 docker-compose 升级至5.2.0-r0，修复已知安全漏洞"
       },
       {
         "type": "feature",
-        "text": "Vulnerabilities dashboard: aggregated CVE findings (#1038)"
+        "text": "漏洞仪表盘：汇总展示 CVE 风险条目 (#1038)"
       },
       {
         "type": "feature",
-        "text": "update container images directly from the Stack view (#1073)"
+        "text": "可直接在堆栈页面更新容器镜像 (#1073)"
       },
       {
         "type": "feature",
-        "text": "stacks list shows an update indicator for stacks with image updates (#504)"
+        "text": "堆栈列表为存在镜像更新的堆栈显示更新标记 (#504)"
       },
       {
         "type": "fix",
-        "text": "copying an image to another registry keeps its tag instead of defaulting to latest (#1243)"
+        "text": "将镜像复制至其他镜像仓库时保留原有标签，不再默认使用 latest (#1243)"
       },
       {
         "type": "fix",
-        "text": "`more-than-current image` re-scans the current image so a stale cached scan doesn't block (#1022)"
+        "text": "「高于当前版本镜像」模式会重新扫描当前镜像，防止过期缓存扫描结果造成阻塞 (#1022)"
       },
       {
         "type": "feature",
-        "text": "application logs now include the log level (INFO/WARN/ERROR) in the prefix (#1166)"
+        "text": "应用日志在前缀中包含日志级别 (INFO/WARN/ERROR)  (#1166)"
       },
       {
         "type": "feature",
-        "text": "option to suppress the \"What's New\" popup (#1235)"
+        "text": "新增选项，可关闭「更新公告」弹窗 (#1235)"
       },
       {
         "type": "fix",
-        "text": "ntfy notifications now forward the `email` query parameter so ntfy can send email (#1231)"
+        "text": "ntfy 通知支持转发 `email` 查询参数，实现ntfy邮件推送 (#1231)"
       },
       {
         "type": "feature",
-        "text": "default scanner images bumped to grype v0.115.0 and trivy 0.71.2 (#1241)"
+        "text": "默认扫描器镜像升级至 grype v0.115.0、trivy 0.71.2 (#1241)"
       },
       {
         "type": "fix",
-        "text": "the \"Latest\" update-check result now stays visible and doesn't revert (#1019)"
+        "text": "「最新版本」更新检测结果保持可见，不会自动重置消失 (#1019)"
       },
       {
         "type": "feature",
-        "text": "a stack with container label `dockhand.adopt=false` excluded from adoption (#998)"
+        "text": "带有容器标签 `dockhand.adopt=false` 的堆栈不会被自动接管 (#998)"
       },
       {
         "type": "fix",
-        "text": "dashboard daemon info shows the real host hostname, not Dockhand's container id (#1265)"
+        "text": "仪表盘守护进程信息展示宿主机真实主机名，而非 Dockhand 容器 ID (#1265)"
       },
       {
         "type": "feature",
-        "text": "file editor prompts to save/discard unsaved changes before closing (#1264)"
+        "text": "文件编辑器关闭前弹出提示，可选择保存或丢弃未保存修改 (#1264)"
       },
       {
         "type": "fix",
-        "text": "`GET /api/containers/check-updates` now lists pending updates (POST still triggers a check) (#1266)"
+        "text": "`GET /api/containers/check-updates` 接口可以列出待更新项 (POST 请求依旧触发更新检测)  (#1266)"
       },
       {
         "type": "feature",
-        "text": "sidebar menu customizable (order and visibility of items) (#1252)"
+        "text": "侧边栏菜单支持自定义 (调整菜单项顺序与显示状态)  (#1252)"
       },
       {
         "type": "fix",
-        "text": "activity and audit date filters respect the configured timezone instead of UTC (#1269)"
+        "text": "活动记录与审计日志日期筛选遵循配置时区，不再默认使用UTC (#1269)"
       },
       {
         "type": "feature",
-        "text": "git deploy progress shows the changed files before the deploy starts (#1260)"
+        "text": "Git 部署进度会在部署开始前展示变更文件列表 (#1260)"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.37"
@@ -190,63 +190,63 @@
     "changes": [
       {
         "type": "feature",
-        "text": "sidebar shows an amber update indicator when a newer Dockhand image is available (#1146)"
+        "text": "当存在新版本 Dockhand 镜像时，侧边栏展示橙色更新提示 (#1146)"
       },
       {
         "type": "fix",
-        "text": "Tag image modal too narrow for images identified only by SHA (#1205)"
+        "text": "镜像打标签弹窗宽度不足，无法完整展示仅依靠 SHA 标识的镜像 (#1205)"
       },
       {
         "type": "fix",
-        "text": "self-hosted ntfy: accept raw `tk_...` access tokens in `?auth=` (#1209)"
+        "text": "自建 ntfy：支持在 `?auth=` 参数直接填入原始 `tk_...` 访问令牌 (#1209)"
       },
       {
         "type": "fix",
-        "text": "dashboard: a single failed DB stats query no longer poisons the whole environment tile (#1210)"
+        "text": "仪表盘：单次数据库统计查询失败不会导致整个环境面板加载异常 (#1210)"
       },
       {
         "type": "fix",
-        "text": "UI dates and times now honor the configured default timezone instead of the browser's timezone (#1183)"
+        "text": "界面日期时间统一使用系统默认时区，不再跟随浏览器时区 (#1183)"
       },
       {
         "type": "fix",
-        "text": "add missing `reset-mfa.sh` emergency script referenced by the manual (#1214)"
+        "text": "补充文档提及的应急脚本 `reset-mfa.sh` (#1214)"
       },
       {
         "type": "fix",
-        "text": "registry browser: copy between registries no longer duplicates the host (#1220)"
+        "text": "镜像仓库浏览器：跨仓库复制镜像不会重复拼接域名地址 (#1220)"
       },
       {
         "type": "feature",
-        "text": "published image carries standard OCI annotations (source, url, title, description, vendor, licenses) (#1217)"
+        "text": "推送镜像携带标准 OCI 注释信息 (来源、链接、标题、描述、厂商、许可证) (#1217)"
       },
       {
         "type": "feature",
-        "text": "scanner: configurable network mode and DNS servers for vulnerability scans (#1219)"
+        "text": "扫描器：漏洞扫描可自定义网络模式与 DNS 服务器 (#1219)"
       },
       {
         "type": "feature",
-        "text": "template tiles now show a `Project` link that opens the upstream project page (#1211)"
+        "text": "模板卡片新增「项目」链接，跳转上游项目页面 (#1211)"
       },
       {
         "type": "fix",
-        "text": "cron picker: hour shows just `HH` (was `HH:00`), minute granularity bumped from 15 to 5 (#1198)"
+        "text": "定时选择器：小时仅显示 `HH` (原先为 `HH:00`) ，分钟步长由 15 分钟缩小至 5 分钟 (#1198)"
       },
       {
         "type": "feature",
-        "text": "grid buttons: configurable size and optional semantic colors (#1072)"
+        "text": "表格按钮：支持自定义尺寸以及可选语义配色 (#1072)"
       },
       {
         "type": "fix",
-        "text": "copy buttons (git deploy logs, API tokens) now work over plain HTTP (#1222)"
+        "text": "复制按钮 (Git 部署日志、API 令牌) 在纯 HTTP 环境下正常可用 (#1222)"
       },
       {
         "type": "fix",
-        "text": "Podman pod-infra containers no longer trigger update-check warnings (#1221)"
+        "text": "Podman 容器基础设施容器不会再触发更新检测告警 (#1221)"
       },
       {
         "type": "fix",
-        "text": "terminal exec works even when the browser sends a cookie with stray `%` characters (#1224)"
+        "text": "终端执行连接可以兼容浏览器携带多余 `%` 字符的 Cookie (#1224)"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.36"
@@ -257,27 +257,27 @@
     "changes": [
       {
         "type": "feature",
-        "text": "image prune skips Dockhand's scanner images (grype, trivy), configurable (#625)"
+        "text": "镜像清理默认跳过 Dockhand 扫描器镜像 (grype、trivy) ，支持自定义配置 (#625)"
       },
       {
         "type": "fix",
-        "text": "\"No archive\" download format selection not persisted (#1180)"
+        "text": "「不归档」下载格式选择状态无法持久保存 (#1180)"
       },
       {
         "type": "fix",
-        "text": "regression: vulnerability scans on direct-TCP envs (#1195)"
+        "text": "缺陷修复：直连 TCP 环境下漏洞扫描异常 (#1195)"
       },
       {
         "type": "fix",
-        "text": "Pangolin labels \u2014 recognise the real `public-resources` / `private-resources` namespaces (#2)"
+        "text": "适配 Pangolin 标签 — 正确识别 `public-resources` / `private-resources` 命名空间 (#2)"
       },
       {
         "type": "fix",
-        "text": "healthcheck uses HTTPS probe when HTTPS_MODE=on (#1191)"
+        "text": "当 HTTPS_MODE=on 时，健康检查使用 HTTPS 探测方式 (#1191)"
       },
       {
         "type": "fix",
-        "text": "shell detection improved for containers with non-standard PATH or shell locations (#1189)"
+        "text": "优化 Shell 识别逻辑，适配 PATH 或 Shell 路径非标准的容器 (#1189)"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.35"
@@ -288,51 +288,51 @@
     "changes": [
       {
         "type": "feature",
-        "text": "raw file download \u2014 no tar wrapping (#1180)"
+        "text": "原始文件直接下载 — 不使用 tar 打包封装 (#1180)"
       },
       {
         "type": "fix",
-        "text": "update modal stuck after closing mid-pull (#1094)"
+        "text": "更新弹窗在拉取镜像中途关闭后界面卡死 (#1094)"
       },
       {
         "type": "fix",
-        "text": "vulnerability scans on Podman hosts (direct TCP and Hawser) (#1076)"
+        "text": "支持在 Podman 宿主机执行漏洞扫描 (直连 TCP 与 Hawser 模式)  (#1076)"
       },
       {
         "type": "fix",
-        "text": "crash-looping containers now appear in the logs page list (#227)"
+        "text": "持续重启的容器将展示在日志页面列表中 (#227)"
       },
       {
         "type": "feature",
-        "text": "filter containers by \"Update available\" (#1063)"
+        "text": "支持按「存在可用更新」筛选容器 (#1063)"
       },
       {
         "type": "feature",
-        "text": "show hostname / IP of the selected environment in the top header (#962)"
+        "text": "顶部标题栏展示当前所选环境的 主机名/IP 地址 (#962)"
       },
       {
         "type": "feature",
-        "text": "internal auth and validation hardening and dependency bumps"
+        "text": "强化内置身份认证与数据校验，升级依赖组件"
       },
       {
         "type": "feature",
-        "text": "Traefik and Pangolin integration \u2014 surface proxy URLs on container and stack panels (#2)"
+        "text": "集成 Traefik 与 Pangolin — 在容器与堆栈面板展示代理访问地址 (#2)"
       },
       {
         "type": "feature",
-        "text": "release-notes link next to images with updates available (#538)"
+        "text": "存在更新的镜像旁增加更新日志链接 (#538)"
       },
       {
         "type": "feature",
-        "text": "lifecycle action buttons in the container details modal (#461)"
+        "text": "容器详情弹窗提供生命周期快捷操作按钮 (#461)"
       },
       {
         "type": "feature",
-        "text": "template library \u2014 browse and deploy compose templates from configurable sources (#48)"
+        "text": "模板库 — 从自定义源浏览并部署 compose 模板 (#48)"
       },
       {
         "type": "fix",
-        "text": "file browser fails on containers with ls in /usr/sbin (#1185)"
+        "text": "文件浏览器在 ls 位于 /usr/sbin 的容器中无法正常工作 (#1185)"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.34"
@@ -343,83 +343,83 @@
     "changes": [
       {
         "type": "feature",
-        "text": "in-place container property updates without restart \u2014 restart policy, CPU/memory limits (#1153)"
+        "text": "无需重启容器即可就地修改容器配置 — 重启策略、CPU/内存限制 (#1153)"
       },
       {
         "type": "feature",
-        "text": "clickable stack badge in container and volume inspect modals (#1121)"
+        "text": "容器与数据卷详情弹窗内提供可点击堆栈标签 (#1121)"
       },
       {
         "type": "feature",
-        "text": "clickable stack badge in volumes list row (#1122)"
+        "text": "数据卷列表行展示可点击堆栈标签 (#1122)"
       },
       {
         "type": "feature",
-        "text": "volumes list shows driver_opts type (NFS, CIFS, etc.) with sort and filter (#1123)"
+        "text": "数据卷列表展示驱动参数类型 (NFS、CIFS等) ，支持排序与筛选 (#1123)"
       },
       {
         "type": "feature",
-        "text": "Bark iOS notifications (#1095, PR#1097, @undirectlookable)"
+        "text": "支持 Bark iOS 通知推送 (#1095, PR#1097, @undirectlookable)"
       },
       {
         "type": "feature",
-        "text": "Signal notifications via signal-cli-rest-api (#1099)"
+        "text": "通过 signal-cli-rest-api 实现 Signal 消息通知 (#1099)"
       },
       {
         "type": "feature",
-        "text": "Apprise passthrough \u2014 forward to a self-hosted caronc/apprise-api server (#1099)"
+        "text": "Apprise 透传 — 将消息转发至自建 caronc/apprise-api 服务端 (#1099)"
       },
       {
         "type": "fix",
-        "text": "env editor flagged Docker/Compose built-ins as MISSING (#141)"
+        "text": "环境变量编辑器误将 Docker/Compose 内置变量标记为缺失 (#141)"
       },
       {
         "type": "fix",
-        "text": "YAML editor indentation was inconsistent when pressing Enter (#1156)"
+        "text": "YAML 编辑器回车换行时缩进不一致 (#1156)"
       },
       {
         "type": "feature",
-        "text": "`dockhand.update=false`, `dockhand.hidden=true` and `localhost/*` images skip registry polling (#1083)"
+        "text": "带有 `dockhand.update=false`、`dockhand.hidden=true` 标签以及 `localhost/*` 的镜像将跳过镜像仓库轮询检测 (#1083)"
       },
       {
         "type": "fix",
-        "text": "registry authentication for image pulls (#1105)"
+        "text": "修复镜像拉取时镜像仓库身份认证问题 (#1105)"
       },
       {
         "type": "feature",
-        "text": "native HTTPS listener, off by default (#1102)"
+        "text": "原生HTTPS 监听端口，默认关闭 (#1102)"
       },
       {
         "type": "fix",
-        "text": "environments stuck \"Failed\" after VPN/Tailscale tunnel drops until agent restart (#1160)"
+        "text": "VPN/Tailscale 隧道断开后环境持续显示「连接失败」，直到代理重启 (#1160)"
       },
       {
         "type": "fix",
-        "text": "health_status events flooding container_events table (#1165)"
+        "text": "健康状态事件大量写入容器事件数据表 (#1165)"
       },
       {
         "type": "fix",
-        "text": "git stack sync removes files deleted from the repo (hash-verified) (#966, #1162)"
+        "text": "Git 堆栈同步会删除代码仓库内已移除的文件，并进行哈希校验 (#966, #1162)"
       },
       {
         "type": "feature",
-        "text": "upload TLS/mTLS certificate files in environment editor (#125)"
+        "text": "环境编辑器支持上传 TLS/mTLS 证书文件 (#125)"
       },
       {
         "type": "feature",
-        "text": "syntax highlighting for shell, Dockerfile, TOML, INI/conf and .env files in the file browser viewer (#1055)"
+        "text": "文件预览器为 shell、Dockerfile、TOML、INI/conf、.env 文件提供语法高亮 (#1055)"
       },
       {
         "type": "feature",
-        "text": "Animated icons now configurable (#1169)"
+        "text": "动态图标支持开关配置 (#1169)"
       },
       {
         "type": "fix",
-        "text": "stack deploys ignored the env's configured socket path (#1172)"
+        "text": "堆栈部署操作忽略环境配置的 socket 路径 (#1172)"
       },
       {
         "type": "fix",
-        "text": "environment names with characters that break path resolution (e.g. `*`) are now rejected (#1179)"
+        "text": "包含破坏路径解析字符 (例如：`*`) 的环境名将被拦截拒绝 (#1179)"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.33"
@@ -430,47 +430,47 @@
     "changes": [
       {
         "type": "feature",
-        "text": "container details tweaks: process count, label filter, copy all labels (#812)"
+        "text": "容器详情优化：进程数量展示、标签筛选、一键复制全部标签 (#812)"
       },
       {
         "type": "feature",
-        "text": "log improvements (#1130)"
+        "text": "日志功能优化 (#1130)"
       },
       {
         "type": "fix",
-        "text": "cleared Resources fields not persisted on container edit (#1119)"
+        "text": "容器编辑时清空资源限制字段无法保存 (#1119)"
       },
       {
         "type": "fix",
-        "text": "long container names overflowed in activity event details dialog (#1129)"
+        "text": "超长容器名称在活动事件详情弹窗内出现文本溢出 (#1129)"
       },
       {
         "type": "fix",
-        "text": "git stack recreate and start operations ignored Dockhand-stored env vars (#1132)"
+        "text": "Git 堆栈重建与启动操作忽略 Dockhand 存储的环境变量 (#1132)"
       },
       {
         "type": "fix",
-        "text": "dashboard stopped count reset to 0 after refresh for gracefully stopped containers (#1133)"
+        "text": "正常停止容器数量统计在页面刷新后重置为 0 (#1133)"
       },
       {
         "type": "fix",
-        "text": "auto-update preserves runtime `-e` env and `-l` label overrides (#1135)"
+        "text": "自动更新保留运行时 `-e` 环境变量与 `-l` 标签自定义覆盖项 (#1135)"
       },
       {
         "type": "fix",
-        "text": "git stack volume binds resolved to wrong host path when compose was in a subdirectory (#1139)"
+        "text": "当 compose 文件位于子目录时，Git 堆栈数据卷绑定路径解析指向错误宿主机目录 (#1139)"
       },
       {
         "type": "fix",
-        "text": "git stacks: subdir compose files now find their adjacent env files (#1136)"
+        "text": "Git 堆栈：子目录内 compose 文件可正常读取同目录环境变量文件 (#1136)"
       },
       {
         "type": "feature",
-        "text": "env editor doesn't flag Docker/Compose built-in variables as unused (#141)"
+        "text": "环境变量编辑器不再将 Docker/Compose 内置变量判定为未使用 (#141)"
       },
       {
         "type": "feature",
-        "text": "container network mode: share another container's network namespace (#161)"
+        "text": "容器网络模式：共享其他容器网络命名空间 (#161)"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.32"
@@ -481,7 +481,7 @@
     "changes": [
       {
         "type": "fix",
-        "text": "502 Bad Gateway behind nginx-based reverse proxies \u2014 SvelteKit 2.51+ bloated the Link response header, pinned to 2.50.0 (#1114)"
+        "text": "Nginx 反向代理场景出现 502 网关异常 — SvelteKit 2.51+ 膨胀 Link 响应头，已锁定版本至 2.50.0 (#1114)"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.31"
@@ -492,71 +492,71 @@
     "changes": [
       {
         "type": "feature",
-        "text": "time range filter for log viewer \u2014 filter logs by From/To date and time (#1068)"
+        "text": "日志查看器时间范围筛选 — 通过起止日期时间过滤日志 (#1068)"
       },
       {
         "type": "feature",
-        "text": "configurable tail line count in log viewer \u2014 choose from 100 to all lines (#1066)"
+        "text": "日志查看器可自定义初始加载行数 — 可选100行至全部日志 (#1066)"
       },
       {
         "type": "feature",
-        "text": "toggleable line numbers in log viewer (#1067)"
+        "text": "日志查看器支持切换行号显示 (#1067)"
       },
       {
         "type": "feature",
-        "text": "\"some unused\" image filter \u2014 show images with both used and unused tags for selective cleanup (#621)"
+        "text": "「部分未使用」镜像筛选 — 展示同时包含在用与闲置标签的镜像，支持选择性清理 (#621)"
       },
       {
         "type": "feature",
-        "text": "IP binding and port ranges in container port mappings (#581)"
+        "text": "容器端口映射支持绑定指定IP与端口区间 (#581)"
       },
       {
         "type": "feature",
-        "text": "remove individual containers directly from stacks page (#576)"
+        "text": "支持在堆栈页面直接删除单个容器 (#576)"
       },
       {
         "type": "fix",
-        "text": "scan cache lookup by tag name never matched \u2014 results now resolved via image digest (#1064)"
+        "text": "通过标签名称查询扫描缓存无法匹配 — 现在依靠镜像摘要完成结果匹配 (#1064)"
       },
       {
         "type": "fix",
-        "text": "image-baked env vars not updated during auto-update container recreation (#1061)"
+        "text": "自动重建容器时不会更新镜像内置环境变量 (#1061)"
       },
       {
         "type": "fix",
-        "text": "git stack deploy via Hawser fails with \"Invalid string length\" when repo has large files (#1040)"
+        "text": "当代码仓库包含大文件时，通过 Hawser 部署 Git 堆栈报「字符串长度无效」(#1040)"
       },
       {
         "type": "feature",
-        "text": "Gotify notification priority via URL query param \u2014 gotify://host/token?priority=5 (#1033)"
+        "text": "Gotify 通知支持通过 URL 查询参数设置优先级 — gotify://host/token?priority=5 (#1033)"
       },
       {
         "type": "fix",
-        "text": "consistent action button order across container and stack views (#1079)"
+        "text": "容器与堆栈视图内操作按钮顺序保持统一 (#1079)"
       },
       {
         "type": "feature",
-        "text": "named custom URL labels \u2014 dockhand.url=[Name](https://...) markdown syntax (#1065)"
+        "text": "命名自定义URL标签 — dockhand.url=[名称](https://...) Markdown语法 (#1065)"
       },
       {
         "type": "fix",
-        "text": "HTTPS git credentials no longer leaked in process arguments (#1081)"
+        "text": "HTTPS Git 凭据不再在进程参数中泄露 (#1081)"
       },
       {
         "type": "feature",
-        "text": "bump Docker Compose to 5.1.4 (GHSA-pmwq-pjrm-6p5r)"
+        "text": "升级 Docker Compose 至 5.1.4 (GHSA-pmwq-pjrm-6p5r)"
       },
       {
         "type": "feature",
-        "text": "dockhand.order label to control container display order within stacks (#847)"
+        "text": "使用 dockhand.order 标签控制堆栈内容器展示顺序 (#847)"
       },
       {
         "type": "feature",
-        "text": "live network attach/detach for running containers \u2014 join or leave Docker networks without restarting (#1051)"
+        "text": "运行中容器支持实时挂载/断开网络 — 无需重启即可加入或退出 Docker 网络 (#1051)"
       },
       {
         "type": "fix",
-        "text": "environment variable values with nested quotes progressively corrupted on each save (#1036, #1086)"
+        "text": "带有嵌套引号的环境变量值在每次保存时逐步损坏 (#1036, #1086)"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.30"
@@ -567,71 +567,71 @@
     "changes": [
       {
         "type": "feature",
-        "text": "optionally display internal (exposed) container ports alongside published ports (#193)"
+        "text": "可选择同时显示容器内部 (暴露端口) 与对外映射端口 (#193)"
       },
       {
         "type": "feature",
-        "text": "show app version in sidebar with build info tooltip (#209)"
+        "text": "侧边栏展示应用版本，鼠标悬浮显示编译信息提示框 (#209)"
       },
       {
         "type": "feature",
-        "text": "central label management \u2014 rename or delete labels across all environments (#661)"
+        "text": "统一标签管理 — 在全部环境内重命名或删除标签 (#661)"
       },
       {
         "type": "feature",
-        "text": "find next available host port when creating or editing containers (#116)"
+        "text": "创建或编辑容器时自动寻找下一个可用宿主机端口 (#116)"
       },
       {
         "type": "feature",
-        "text": "theme-aware scrollbar styling \u2014 scrollbars adapt to dark/light mode and color palettes (#462)"
+        "text": "滚动条适配主题 — 跟随深色/浅色模式 与配色方案自动调整样式 (#462)"
       },
       {
         "type": "fix",
-        "text": "update buttons (single, selected, and all) now respect the \"confirm dangerous actions\" setting (#638, #751)"
+        "text": "更新按钮 (单个、选中项、全部) 现在遵循「危险操作确认」设置 (#638, #751)"
       },
       {
         "type": "feature",
-        "text": "custom URL labels - dockhand.url or dockhand.port.{port}.url to add links alongside container ports (#266)"
+        "text": "自定义 URL 标签 - 使用 dockhand.url 或 dockhand.port.{port}.url 在容器端口旁添加链接 (#266)"
       },
       {
         "type": "feature",
-        "text": "generate and copy token for Hawser Standard mode with run command hint (#337)"
+        "text": "为 Hawser 标准模式生成并复制令牌，附带运行命令提示 (#337)"
       },
       {
         "type": "fix",
-        "text": "environment stack directory not cleaned up when environment is deleted (#1023)"
+        "text": "删除环境时不会清理环境对应的堆栈目录 (#1023)"
       },
       {
         "type": "feature",
-        "text": "toggle to hide timestamps and container name prefix in log viewer (#124)"
+        "text": "提供开关，可隐藏日志查看器内时间戳与容器名称前缀 (#124)"
       },
       {
         "type": "fix",
-        "text": "Podman containers health status not showing (#737)"
+        "text": "Podman 容器健康状态无法正常展示 (#737)"
       },
       {
         "type": "fix",
-        "text": "containers with exit code 0 (init/migration) no longer cause stack \"partial\" status (#1026)"
+        "text": "退出码为 0 的容器 (初始化/迁移容器) 不会导致堆栈显示「部分运行」状态 (#1026)"
       },
       {
         "type": "fix",
-        "text": "stats stream 400 on reconnect by skipping overlapping fetches (#1044)"
+        "text": "统计流重连时产生 400 错误，现已通过跳过重复请求修复 (#1044)"
       },
       {
         "type": "fix",
-        "text": "env var validation false positive for values containing $ followed by text (#1048)"
+        "text": "环境变量校验误判包含$后接文本的合法变量值 (#1048)"
       },
       {
         "type": "fix",
-        "text": "git-repos directory not cleaned up when environment is deleted (#1049)"
+        "text": "删除环境时不会清理 git-repos 目录 (#1049)"
       },
       {
         "type": "fix",
-        "text": "webhook secret auto-generated when left empty despite hint saying otherwise (#1050)"
+        "text": "Webhook 密钥留空时会自动生成，与界面提示不符 (#1050)"
       },
       {
         "type": "feature",
-        "text": "scan reports \u2014 combined or individual Grype/Trivy (#1056)"
+        "text": "扫描报告 — 支持合并查看或单独查看 Grype/Trivy 扫描结果 (#1056)"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.29"
@@ -642,75 +642,75 @@
     "changes": [
       {
         "type": "feature",
-        "text": "context directory for git stacks \u2014 reference files from anywhere in the repo (#864)"
+        "text": "Git 堆栈支持上下文目录 — 在代码仓库任意位置引用文件 (#864)"
       },
       {
         "type": "feature",
-        "text": "no-cache build option for git stacks (#880)"
+        "text": "Git 堆栈提供无缓存构建选项 (#880)"
       },
       {
         "type": "fix",
-        "text": "env vars lost when switching between raw/form view (#964)"
+        "text": "在原始视图与表单视图切换时环境变量丢失 (#964)"
       },
       {
         "type": "fix",
-        "text": "compose name property not respected during stack scan (#922)"
+        "text": "堆栈扫描时不会识别 compose 内的 name 属性 (#922)"
       },
       {
         "type": "feature",
-        "text": "editable schedule for scanner cache cleanup (#979)"
+        "text": "支持自定义扫描器缓存清理定时任务 (#979)"
       },
       {
         "type": "fix",
-        "text": "container labels cannot be deleted (#984)"
+        "text": "容器标签无法删除 (#984)"
       },
       {
         "type": "fix",
-        "text": "env var values leaked in deploy logs \u2014 now all values are redacted (#985)"
+        "text": "部署日志会泄露环境变量值 — 现在所有变量值自动脱敏 (#985)"
       },
       {
         "type": "fix",
-        "text": "volume export keeps helper container alive, preventing volume prune/deletion (#983)"
+        "text": "数据卷导出时辅助容器持续运行，导致数据卷无法清理与删除 (#983)"
       },
       {
         "type": "fix",
-        "text": "ntfy self-hosted notifications fail when using ?auth= query parameter (#840)"
+        "text": "自建 ntfy 通知使用 ?auth= 查询参数时推送失败 (#840)"
       },
       {
         "type": "fix",
-        "text": "scrollbar appears in dashboard tiles when content overflows (#969)"
+        "text": "面板内容溢出时仪表盘卡片会出现滚动条 (#969)"
       },
       {
         "type": "fix",
-        "text": "case-sensitive environment sort order \u2014 lowercase names sorted after uppercase (#975)"
+        "text": "环境排序区分大小写 — 小写名称会排在大写名称后方 (#975)"
       },
       {
         "type": "fix",
-        "text": "inaccurate dashboard CPU gauge caused by one-shot stats flag (#932)"
+        "text": "单次统计标识导致仪表盘 CPU 刻度数据不准确 (#932)"
       },
       {
         "type": "feature",
-        "text": "ntfy notifications support ?tags=, ?title=, and ?priority= URL query parameters (#689)"
+        "text": "ntfy通知支持 ?tags=、?title=、?priority= URL 查询参数 (#689)"
       },
       {
         "type": "fix",
-        "text": "stack .env file wiped when saving from graph view (#988)"
+        "text": "在图形视图保存堆栈时，堆栈 .env 文件被清空 (#988)"
       },
       {
         "type": "feature",
-        "text": "dismiss update available indicators without updating (#853)"
+        "text": "无需更新即可关闭可用更新提示标记 (#853)"
       },
       {
         "type": "feature",
-        "text": "public IP setting available for hawser-edge environments \u2014 enables clickable port links (#350)"
+        "text": "Hawser 边缘环境支持配置公网 IP — 启用可点击端口链接 (#350)"
       },
       {
         "type": "fix",
-        "text": "git stack creation silently destroys existing stacks with the same name (#1001)"
+        "text": "创建同名 Git 堆栈会静默覆盖已有堆栈 (#1001)"
       },
       {
         "type": "feature",
-        "text": "static IP/MAC address configuration for containers (#297)"
+        "text": "支持为容器配置静态 IP/MAC 地址 (#297)"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.28"
@@ -722,67 +722,67 @@
     "changes": [
       {
         "type": "feature",
-        "text": "network graph visualization on networks page (#894, @Penlane)"
+        "text": "网络页面增加网络拓扑可视化图表 (#894, @Penlane)"
       },
       {
         "type": "feature",
-        "text": "customizable compose template for new stacks in settings (#632, @oratory)"
+        "text": "设置页面支持自定义新建堆栈使用的 compose 模板 (#632, @oratory)"
       },
       {
         "type": "feature",
-        "text": "Microsoft Teams notifications via Power Automate Workflows (#355, @slokhorst)"
+        "text": "通过 Power Automate 工作流实现 Microsoft Teams 通知推送 (#355, @slokhorst)"
       },
       {
         "type": "feature",
-        "text": "container label controls: dockhand.update, dockhand.hidden, dockhand.notify (#6, #53, #94, #215)"
+        "text": "容器控制标签：dockhand.update、dockhand.hidden、dockhand.notify (#6, #53, #94, #215)"
       },
       {
         "type": "feature",
-        "text": "configurable label filter matching mode (any/all) for environment dashboard (#607)"
+        "text": "仪表盘标签筛选匹配模式可配置 (任意匹配/全部匹配) (#607)"
       },
       {
         "type": "feature",
-        "text": "log search filter mode to hide non-matching lines (#916)"
+        "text": "日志搜索过滤模式，可隐藏不匹配日志行 (#916)"
       },
       {
         "type": "feature",
-        "text": "inline terminal on logs page with resizable split layout (#900)"
+        "text": "日志页面内置终端，支持可调整大小的分栏布局 (#900)"
       },
       {
         "type": "fix",
-        "text": "disable Telegram link preview in notifications (#910, @deenle)"
+        "text": "通知内关闭 Telegram 链接预览功能 (#910, @deenle)"
       },
       {
         "type": "fix",
-        "text": "cron editor rejects 6-field expressions with seconds (#839, @GiulioSavini)"
+        "text": "定时编辑器拒绝带有秒字段的六段式 cron 表达式 (#839, @GiulioSavini)"
       },
       {
         "type": "fix",
-        "text": "mirror Dockhand's ExtraHosts into scanner and self-update containers (#836, @YewFence)"
+        "text": "将 Dockhand 的 ExtraHosts 配置同步至扫描器与自更新容器 (#836, @YewFence)"
       },
       {
         "type": "fix",
-        "text": "duplicate volume binds during container recreate (#765, @itsDNNS)"
+        "text": "重建容器时出现重复数据卷绑定配置 (#765, @itsDNNS)"
       },
       {
         "type": "fix",
-        "text": "log timestamp formatting not applied on main logs page (#882)"
+        "text": "主日志页面不会应用日志时间戳格式化规则 (#882)"
       },
       {
         "type": "fix",
-        "text": "uploaded files now inherit container user ownership (#732, @ivanjx)"
+        "text": "上传文件自动继承容器内用户权限 (#732, @ivanjx)"
       },
       {
         "type": "fix",
-        "text": "extraneous backslash in Telegram notification environment name (#955)"
+        "text": "Telegram 通知内环境名称存在多余反斜杠 (#955)"
       },
       {
         "type": "fix",
-        "text": "collapse ports into ranges only if 3 or more consecutive ports"
+        "text": "仅当存在 3 个及以上连续端口时，才将端口合并为区间展示"
       },
       {
         "type": "fix",
-        "text": "git operations auto-merge system CAs with custom cert (#967)"
+        "text": "Git 操作自动合并系统CA证书与自定义证书 (#967)"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.27"
@@ -793,43 +793,43 @@
     "changes": [
       {
         "type": "feature",
-        "text": "persist sort order across page navigation for all data grids (#861, #912)"
+        "text": "所有数据表格排序状态在页面跳转后持久保留 (#861, #912)"
       },
       {
         "type": "feature",
-        "text": "show git repository URL and branch in git stack edit modal (#856)"
+        "text": "Git堆栈编辑弹窗展示代码仓库地址与分支 (#856)"
       },
       {
         "type": "feature",
-        "text": "show memory limit alongside usage in containers and stacks views (#893)"
+        "text": "容器与堆栈视图同时展示内存限制与当前占用 (#893)"
       },
       {
         "type": "feature",
-        "text": "option to delete associated volumes when removing a stack (#655)"
+        "text": "移除堆栈时提供选项同步删除关联数据卷 (#655)"
       },
       {
         "type": "feature",
-        "text": "collapse consecutive port mappings into ranges in container list (#821)"
+        "text": "容器列表中将连续端口映射合并为端口区间展示 (#821)"
       },
       {
         "type": "fix",
-        "text": "bearer token authentication fails with enterprise license active"
+        "text": "启用企业许可证时，Bearer 令牌认证失效"
       },
       {
         "type": "fix",
-        "text": "clicking stack name toggles stats accordion instead of just opening editor (#628)"
+        "text": "点击堆栈名称展开统计折叠面板，不再直接打开编辑器 (#628)"
       },
       {
         "type": "fix",
-        "text": "scheduled image prune notifications missing environment name (#770)"
+        "text": "定时镜像清理通知缺少环境名称 (#770)"
       },
       {
         "type": "fix",
-        "text": "Gotify, ntfy, Pushover, and webhook notifications missing environment name (#943)"
+        "text": "Gotify、ntfy、Pushover、Webhook 通知缺少环境名称 (#943)"
       },
       {
         "type": "fix",
-        "text": "MFA code field not recognized by Bitwarden and other password managers (#566)"
+        "text": "MFA验证码输入框无法被 Bitwarden 等密码管理器识别 (#566)"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.26"
@@ -841,55 +841,55 @@
     "changes": [
       {
         "type": "feature",
-        "text": "API token authentication \u2014 Bearer tokens for CI/CD pipelines and scripts"
+        "text": "API 令牌认证 — 适用于 CI/CD 流水线与脚本的 Bearer 令牌"
       },
       {
         "type": "feature",
-        "text": "Telegram topic support \u2014 send notifications to supergroup topics (#855)"
+        "text": "Telegram 话题支持 — 向超级群组话题发送通知 (#855)"
       },
       {
         "type": "fix",
-        "text": "allow removing healthcheck, ports, and honor startAfterUpdate=false during container edit (#892)"
+        "text": "容器编辑时支持移除健康检查、端口配置，并正确识别 startAfterUpdate=false 参数 (#892)"
       },
       {
         "type": "fix",
-        "text": "validate stack names and prevent broken DB entries on invalid input (#876)"
+        "text": "校验堆栈名称，避免非法输入生成无效数据库记录 (#876)"
       },
       {
         "type": "fix",
-        "text": "use per-environment timezone for schedule execution log timestamps (#882)"
+        "text": "定时任务执行日志时间戳使用对应环境配置的时区 (#882)"
       },
       {
         "type": "fix",
-        "text": "\"Pull image before update\" and \"Start after update\" settings ignored (#909)"
+        "text": "「更新前拉取镜像」与「更新后启动容器」设置不生效 (#909)"
       },
       {
         "type": "fix",
-        "text": "image prune timeout on hawser-standard when pruning many images (#905)"
+        "text": "Hawser标准模式清理大量镜像时出现超时 (#905)"
       },
       {
         "type": "fix",
-        "text": "bump Docker Compose to 5.1.3"
+        "text": "升级 Docker Compose 至 5.1.3"
       },
       {
         "type": "fix",
-        "text": "mask secret environment variables in container inspect modal (#924)"
+        "text": "容器详情弹窗内自动隐藏密钥类环境变量 (#924)"
       },
       {
         "type": "fix",
-        "text": "viewer role can toggle, delete, and run schedules (#923)"
+        "text": "访客角色可以启用、删除、运行定时任务 (#923)"
       },
       {
         "type": "fix",
-        "text": "settings show defaults instead of saved values after login until page refresh (#921)"
+        "text": "登录后设置页面展示默认值，需刷新页面才加载已保存配置 (#921)"
       },
       {
         "type": "fix",
-        "text": "settings toggle notifications show wrong state (#931)"
+        "text": "设置内通知开关显示状态错误 (#931)"
       },
       {
         "type": "fix",
-        "text": "stack memory tooltip shows inflated total on multi-container stacks (#936)"
+        "text": "多容器堆栈的内存提示框汇总数值计算偏高 (#936)"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.25"
@@ -900,11 +900,11 @@
     "changes": [
       {
         "type": "fix",
-        "text": "browsing HTTP registries fails with SSL error (#868)"
+        "text": "浏览HTTP镜像仓库时报 SSL 错误 (#868)"
       },
       {
         "type": "fix",
-        "text": "git stack deploy options (build, re-pull, force redeploy) not persisted in edit dialog"
+        "text": "Git堆栈部署选项 (构建、重新拉取、强制重新部署) 无法在编辑弹窗持久保存"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.24"
@@ -915,55 +915,55 @@
     "changes": [
       {
         "type": "feature",
-        "text": "theme toggle with system option \u2014 auto-follows OS light/dark preference (#803)"
+        "text": "附带系统选项的主题切换 — 自动跟随操作系统浅色/深色偏好 (#803)"
       },
       {
         "type": "feature",
-        "text": "custom user option for terminal shell sessions, persisted per container (#830)"
+        "text": "终端 Shell 会话支持自定义用户选项，按容器持久保存配置 (#830)"
       },
       {
         "type": "feature",
-        "text": "redeploy button for internal stacks with pull/build/force-recreate options (#152)"
+        "text": "内部堆栈新增重新部署按钮，支持拉取镜像/构建/强制重建选项 (#152)"
       },
       {
         "type": "feature",
-        "text": "build, re-pull images and force redeployment options for git stacks (#792, #472)"
+        "text": "Git 堆栈支持构建、重新拉取镜像、强制重新部署选项 (#792, #472)"
       },
       {
         "type": "fix",
-        "text": "allow underscores in hostname validation (#790)"
+        "text": "主机名校验允许使用下划线 (#790)"
       },
       {
         "type": "fix",
-        "text": "HTTPS git repos with self-signed CA certificates fail to clone/pull (#842)"
+        "text": "使用自签名 CA 证书的 HTTPS Git 仓库无法克隆/拉取代码 (#842)"
       },
       {
         "type": "fix",
-        "text": "stack restart fails for containers using network_mode: service:<container> \u2014 added recreate option (#844)"
+        "text": "堆栈重启时，使用 network_mode: service:<container> 的容器执行失败 — 新增重建选项 (#844)"
       },
       {
         "type": "fix",
-        "text": "git stack sync deletes data in relative volume paths (#831)"
+        "text": "Git 堆栈同步会删除相对路径数据卷内的数据 (#831)"
       },
       {
         "type": "fix",
-        "text": "batch update skips Hawser containers (#485)"
+        "text": "批量更新会跳过 Hawser 托管容器 (#485)"
       },
       {
         "type": "fix",
-        "text": "registry delete fails for multi-arch/OCI manifest images"
+        "text": "多架构/OCI 清单镜像无法从镜像仓库删除"
       },
       {
         "type": "fix",
-        "text": "scanner cache cleanup to prevent volume bloat (#808)"
+        "text": "自动清理扫描器缓存，防止数据卷占用持续膨胀 (#808)"
       },
       {
         "type": "fix",
-        "text": "negotiate Docker API version for scanner/updater sidecar containers (#759)"
+        "text": "扫描器/更新辅助容器自动协商 Docker API 版本 (#759)"
       },
       {
         "type": "fix",
-        "text": "scan vulnerability counts mismatch with displayed list (#705)"
+        "text": "漏洞扫描数量统计与展示列表不一致 (#705)"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.23"
@@ -974,59 +974,59 @@
     "changes": [
       {
         "type": "feature",
-        "text": "dashboard list view with inline search and connection filters (#740)"
+        "text": "仪表盘列表视图，支持内置搜索与连接筛选 (#740)"
       },
       {
         "type": "feature",
-        "text": "custom environment icon (#754)"
+        "text": "支持自定义环境图标 (#754)"
       },
       {
         "type": "feature",
-        "text": "show +N indicator for containers with multiple IP addresses (#644)"
+        "text": "拥有多个IP地址的容器显示 +N 标记 (#644)"
       },
       {
         "type": "feature",
-        "text": "bundle all fonts locally for privacy and offline use (#734)"
+        "text": "全部字体本地打包，保护隐私同时支持离线使用 (#734)"
       },
       {
         "type": "fix",
-        "text": "respect PROXY settings when checking for container updates"
+        "text": "检测容器更新时遵循 PROXY 代理设置"
       },
       {
         "type": "fix",
-        "text": "git stacks force-redeploy after a failed sync (#693)"
+        "text": "同步失败后的 Git 堆栈会被强制重新部署 (#693)"
       },
       {
         "type": "fix",
-        "text": "What's New modal shown before login, exposing version info (#717)"
+        "text": "登录前弹出「更新公告」弹窗，泄露版本信息 (#717)"
       },
       {
         "type": "fix",
-        "text": "git repository files not removed from disk on delete (#671)"
+        "text": "删除 Git 堆栈时不会同步清理磁盘上仓库文件 (#671)"
       },
       {
         "type": "fix",
-        "text": "recursive chown at startup breaks stack volumes with different ownership (#719)"
+        "text": "启动时递归执行 chown 会破坏权限不同的堆栈数据卷 (#719)"
       },
       {
         "type": "fix",
-        "text": "missing notification event toggles for container healthy, image prune events (#659)"
+        "text": "容器健康状态、镜像清理相关通知缺少事件开关配置 (#659)"
       },
       {
         "type": "fix",
-        "text": "container disappears when edit fails (e.g. invalid memory/swap) (#736)"
+        "text": "容器编辑失败时直接从列表消失 (例如内存/交换分区参数非法)  (#736)"
       },
       {
         "type": "fix",
-        "text": "regression: network container count always shows 0 (#761)"
+        "text": "缺陷修复：网络容器数量始终显示为0 (#761)"
       },
       {
         "type": "fix",
-        "text": "Grype/Trivy scan containers don't inherit proxy env vars (#780)"
+        "text": "Grype/Trivy 扫描容器不会继承代理环境变量 (#780)"
       },
       {
         "type": "fix",
-        "text": "pin vulnerability scanner images to specific versions not :latest"
+        "text": "漏洞扫描器镜像固定指定版本，不再使用 :latest"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.22"
@@ -1037,55 +1037,55 @@
     "changes": [
       {
         "type": "feature",
-        "text": "option to truncate port list (#702)"
+        "text": "提供开关，可截断超长端口列表 (#702)"
       },
       {
         "type": "feature",
-        "text": "log viewer supports ANSII 256 colors (#743)"
+        "text": "日志查看器支持 ANSI 256 色输出 (#743)"
       },
       {
         "type": "fix",
-        "text": "IPv6 Problems (#714, #731)"
+        "text": "IPv6 相关问题 (#714, #731)"
       },
       {
         "type": "fix",
-        "text": "polling storm & mass disconnect (#733, #741)"
+        "text": "轮询风暴与大规模连接断开问题 (#733, #741)"
       },
       {
         "type": "fix",
-        "text": "custom cron schedule displayed incorrectly (#727)"
+        "text": "自定义定时任务展示格式错误 (#727)"
       },
       {
         "type": "fix",
-        "text": "wrong cron schedule (#706)"
+        "text": "定时调度配置读取错误 (#706)"
       },
       {
         "type": "fix",
-        "text": "file browser does not allow upload over 512 KB (#687)"
+        "text": "文件浏览器无法上传大于 512 KB 的文件 (#687)"
       },
       {
         "type": "fix",
-        "text": "can't set memory swappiness when using Podman (#691)"
+        "text": "使用 Podman 时无法配置内存交换倾向性 (#691)"
       },
       {
         "type": "fix",
-        "text": "compose API negotiation fix (#692, #696)"
+        "text": "Compose API 协商问题修复 (#692, #696)"
       },
       {
         "type": "fix",
-        "text": "not deployed git stacks continue to show the Down action (#694)"
+        "text": "未部署的 Git 堆栈依旧显示停止操作按钮 (#694)"
       },
       {
         "type": "fix",
-        "text": "display time doesn't reflect time zone (#735)"
+        "text": "界面展示时间不遵循时区设置 (#735)"
       },
       {
         "type": "fix",
-        "text": "prune dangling images counter not working (#718)"
+        "text": "游离镜像清理计数失效 (#718)"
       },
       {
         "type": "fix",
-        "text": "own PORT env not used in HEALTHCHECK (#745)"
+        "text": "健康检查不会读取内置 PORT 环境变量 (#745)"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.21"
@@ -1096,15 +1096,15 @@
     "changes": [
       {
         "type": "fix",
-        "text": "regression on Synology DSM"
+        "text": "修复群晖 DSM 环境兼容缺陷"
       },
       {
         "type": "fix",
-        "text": "Fix ARM64 regression: Go collector crashing on Raspberry Pi and other ARM devices"
+        "text": "修复 ARM64 兼容问题：Go 采集器在树莓派与其他 ARM 设备崩溃"
       },
       {
         "type": "fix",
-        "text": "autoupdate hangs on \"waiting for Dockhand\""
+        "text": "自动更新卡在「等待 Dockhand」提示"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.20"
@@ -1115,51 +1115,51 @@
     "changes": [
       {
         "type": "feature",
-        "text": "Inline logs panel on stacks page \u2014 view container logs without leaving the page"
+        "text": "堆栈页面内嵌日志面板 — 无需离开页面即可查看容器日志"
       },
       {
         "type": "feature",
-        "text": "Make ports column sortable in containers grid"
+        "text": "容器表格端口列支持排序"
       },
       {
         "type": "feature",
-        "text": "Structured auth logging with client IP (login/logout/MFA/OIDC events)"
+        "text": "结构化认证日志，记录客户端 IP (登录/登出/MFA/OIDC事件)"
       },
       {
         "type": "fix",
-        "text": "Fix memory leak: TLS context accumulation for HTTPS environments (Bun)"
+        "text": "修复内存泄漏：HTTPS 环境持续堆积 TLS 上下文 (Bun 运行时)"
       },
       {
         "type": "fix",
-        "text": "Fix security scanning on Docker with custom logging drivers (Loki, Fluentd, etc.)"
+        "text": "修复 Docker 使用自定义日志驱动 (Loki、Fluentd等) 时安全扫描异常"
       },
       {
         "type": "fix",
-        "text": "Fix grouped log viewer not auto-scrolling on new entries"
+        "text": "修复分组日志查看器新日志到达不会自动滚动到底部"
       },
       {
         "type": "fix",
-        "text": "Fix container recreation error messages not surfacing actual Docker errors"
+        "text": "修复容器重建报错不会展示底层 Docker 原始错误信息"
       },
       {
         "type": "fix",
-        "text": "Fix LDAP group-to-role mapping"
+        "text": "修复 LDAP 组与角色映射异常"
       },
       {
         "type": "fix",
-        "text": "Fix container file browser hiding old files"
+        "text": "修复容器文件浏览器隐藏旧文件"
       },
       {
         "type": "fix",
-        "text": "Fix SSH key permission issues on NAS filesystems"
+        "text": "修复 NAS 文件系统下 SSH 密钥权限异常"
       },
       {
         "type": "fix",
-        "text": "Fix binary file corruption when syncing stacks to Hawser agents"
+        "text": "修复向 Hawser 代理同步堆栈时二进制文件损坏"
       },
       {
         "type": "fix",
-        "text": "Fix UI timeout issues for long running operations"
+        "text": "修复长时间运行任务触发 UI 超时问题"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.19"
@@ -1170,59 +1170,59 @@
     "changes": [
       {
         "type": "feature",
-        "text": "Dockhand self-update from the UI"
+        "text": "支持在界面内执行Dockhand自更新"
       },
       {
         "type": "feature",
-        "text": "Show freed disk space after image removal and pruning"
+        "text": "删除与清理镜像后展示释放的磁盘空间"
       },
       {
         "type": "feature",
-        "text": "Handle dynamically-spawned child containers in stack stop/down/restart/remove"
+        "text": "堆栈停止/下线/重启/删除操作可处理动态创建的子容器"
       },
       {
         "type": "feature",
-        "text": "Git webhooks are logged to the audit log"
+        "text": "Git Webhook 事件记录至审计日志"
       },
       {
         "type": "feature",
-        "text": "Add Mattermost notification support"
+        "text": "新增 Mattermost 通知渠道支持"
       },
       {
         "type": "feature",
-        "text": "Configurable disk usage warning threshold per environment"
+        "text": "支持为每个环境配置磁盘使用率告警阈值"
       },
       {
         "type": "fix",
-        "text": "Fix file upload CSRF 403 error on plain HTTP deployments"
+        "text": "修复纯 HTTP 部署环境文件上传 CSRF 403 错误"
       },
       {
         "type": "fix",
-        "text": "Fix scanner container /wait timeout causing empty scan output"
+        "text": "修复扫描容器 /wait 超时导致扫描输出为空"
       },
       {
         "type": "fix",
-        "text": "Fix saving adopted external stack failing with 'Stack directory not found'"
+        "text": "修复接管外部堆栈保存失败，提示「找不到堆栈目录」"
       },
       {
         "type": "fix",
-        "text": "Add Bearer token auth support for ntfy notifications"
+        "text": "ntfy 通知新增 Bearer 令牌认证支持"
       },
       {
         "type": "fix",
-        "text": "Fix git SSH failing with 'No user exists for uid' with arbitrary UIDs"
+        "text": "修复 Git SSH 使用任意 UID 时报错「不存在对应UID用户」"
       },
       {
         "type": "fix",
-        "text": "Fix command palette flooding API requests on open"
+        "text": "修复命令面板打开时大量重复请求API"
       },
       {
         "type": "fix",
-        "text": "Normalize stack names when adopting to prevent uppercase rejection"
+        "text": "接管堆栈时标准化堆栈名称，避免大写名称被拦截"
       },
       {
         "type": "fix",
-        "text": "Fix container update failing for shared network modes (container:<name>, host, none)"
+        "text": "修复共享网络模式 (container:<名称>、host、none) 容器更新失败"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.18"
@@ -1233,15 +1233,15 @@
     "changes": [
       {
         "type": "fix",
-        "text": "Fix scanner failure on rootless Docker"
+        "text": "修复无根模式 Docker 下扫描器运行失败"
       },
       {
         "type": "fix",
-        "text": "Increase Hawser compose operation timeout"
+        "text": "延长 Hawser Compose 操作超时时间"
       },
       {
         "type": "fix",
-        "text": "Fix regression in stack container updates"
+        "text": "修复堆栈容器更新相关回归缺陷"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.17"
@@ -1252,23 +1252,23 @@
     "changes": [
       {
         "type": "feature",
-        "text": "Support Docker Compose override files when deploying stacks"
+        "text": "部署堆栈时支持加载 Docker Compose 覆盖文件"
       },
       {
         "type": "fix",
-        "text": "Fix Hawser stack deploy failing when compose file not present on remote host"
+        "text": "修复远程主机不存在 compose 文件时，Hawser 堆栈部署失败"
       },
       {
         "type": "fix",
-        "text": "Fix Hawser Standard TLS test connection sending HTTP to HTTPS server"
+        "text": "修复 Hawser 标准 TLS 连接测试使用 HTTP 请求访问 HTTPS 服务端"
       },
       {
         "type": "fix",
-        "text": "Fix .env variables not applied on save & redeploy"
+        "text": "修复保存并重新部署时 .env 变量未生效"
       },
       {
         "type": "fix",
-        "text": "Fix single Hawser node failure cascading offline state to all environments"
+        "text": "修复单个 Hawser 节点离线后，所有环境被连带标记为离线"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.16"
@@ -1279,107 +1279,107 @@
     "changes": [
       {
         "type": "feature",
-        "text": "Pull before update option: New option to pull latest image before container auto-update"
+        "text": "更新前拉取镜像选项：新增功能，容器自动更新前拉取最新镜像"
       },
       {
         "type": "feature",
-        "text": "Usage filter on images page by usage status (used/unused/all)"
+        "text": "镜像页面可按使用状态筛选 (正在使用/未使用/全部)"
       },
       {
         "type": "feature",
-        "text": "Show repository name for untagged images: Better identification of images without tags"
+        "text": "无标签镜像展示仓库名称：方便识别没有标签的镜像"
       },
       {
         "type": "fix",
-        "text": "Fix IPv6 address not accepted in environment Public IP field"
+        "text": "修复环境公网 IP 字段无法填写 IPv6 地址"
       },
       {
         "type": "fix",
-        "text": "Fix IPv6 port link URLs by adding bracket formatting"
+        "text": "修复 IPv6 端口链接缺少方括号格式化"
       },
       {
         "type": "fix",
-        "text": "Fix custom compose filename not used in SSE deploy"
+        "text": "修复SSE部署流程不读取自定义 compose 文件名"
       },
       {
         "type": "fix",
-        "text": "Fix env var leakage from Dockhand to user stacks"
+        "text": "修复 Dockhand 内部环境变量泄露至用户堆栈"
       },
       {
         "type": "fix",
-        "text": "Fix SMTP notification test returning false success"
+        "text": "修复 SMTP 通知测试显示虚假成功状态"
       },
       {
         "type": "fix",
-        "text": "Fix custom compose file path ignored for Hawser git stack deployments"
+        "text": "修复 Hawser Git 堆栈部署忽略自定义 compose 文件路径"
       },
       {
         "type": "fix",
-        "text": "Fix escaped $$ variables (Docker Compose syntax) incorrectly flagged as missing"
+        "text": "修复转义$$变量 (Docker Compose语法) 被误判为缺失变量"
       },
       {
         "type": "fix",
-        "text": "Use native compose pull and up when updating stack containers"
+        "text": "更新堆栈容器时使用原生 compose pull 与 compose up 指令"
       },
       {
         "type": "fix",
-        "text": "Fix vulnerability scans hanging indefinitely or failing with JSON parse errors"
+        "text": "修复漏洞扫描无限挂起或报 JSON 解析错误"
       },
       {
         "type": "fix",
-        "text": "Fix memory leaks in SSE event streams and unconsumed Docker API response bodies"
+        "text": "修复 SSE 事件流、未释放 Docker API 响应体产生的内存泄漏"
       },
       {
         "type": "feature",
-        "text": "Sort vulnerability scan results by severity by default"
+        "text": "漏洞扫描结果默认按严重程度排序"
       },
       {
         "type": "feature",
-        "text": "Copy button for compose file contents in stack modal"
+        "text": "堆栈弹窗内提供 compose 内容复制按钮"
       },
       {
         "type": "feature",
-        "text": "Confirmation dialog before git stack sync"
+        "text": "Git 堆栈同步前弹出确认对话框"
       },
       {
         "type": "fix",
-        "text": "Fix timezone aliases (e.g. Europe/Kyiv) not saving correctly"
+        "text": "修复时区别名 (例如：Europe/Kyiv) 无法正常保存"
       },
       {
         "type": "fix",
-        "text": "Fix login crash with large session timeout values"
+        "text": "会话超时数值较大时，登录流程发生崩溃"
       },
       {
         "type": "fix",
-        "text": "Fix profile display name not persisting due to field name mismatch"
+        "text": "修复个人资料显示名称因字段不匹配无法持久保存"
       },
       {
         "type": "fix",
-        "text": "Fix date formatting not respecting user preferences"
+        "text": "修复日期格式化不遵循用户偏好设置"
       },
       {
         "type": "fix",
-        "text": "Fix static IP not preserved during container auto-update"
+        "text": "修复容器自动更新时静态 IP 配置丢失"
       },
       {
         "type": "fix",
-        "text": "Fix stack adoption path conflict across different environments"
+        "text": "修复不同环境下堆栈接管路径冲突"
       },
       {
         "type": "fix",
-        "text": "Fix container auto-update causing permission denied on bind mounts"
+        "text": "修复容器自动更新导致绑定挂载权限拒绝"
       },
       {
         "type": "fix",
-        "text": "Fix health tab not showing healthcheck configuration"
+        "text": "修复健康页面无法加载健康检查配置"
       },
       {
         "type": "fix",
-        "text": "Fix stack custom paths reset after edit"
+        "text": "修复堆栈自定义路径编辑后被重置"
       },
       {
         "type": "fix",
-        "text": "Autofocus on login username and MFA code fields"
+        "text": "登录用户名与MFA验证码输入框自动聚焦"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.15"
@@ -1390,19 +1390,19 @@
     "changes": [
       {
         "type": "fix",
-        "text": "Fix environment variables in .env not interpolated during remote deployment"
+        "text": "修复远程部署时 .env 内环境变量不会被解析替换"
       },
       {
         "type": "fix",
-        "text": "Fix stack variables not re-injected during stack start/stop"
+        "text": "修复堆栈启停操作不会重新注入堆栈环境变量"
       },
       {
         "type": "fix",
-        "text": "Fix time format 12/24 setting not respected in header clock"
+        "text": "修复头部时钟不遵循 12/24 小时制设置"
       },
       {
         "type": "fix",
-        "text": "Fix skip TLS verification not saved on new environment"
+        "text": "修复新建环境时「跳过 TLS 校验」设置无法保存"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.14"
@@ -1413,79 +1413,79 @@
     "changes": [
       {
         "type": "feature",
-        "text": "Add DISABLE_LOCAL_LOGIN env var to hide local password login when SSO/LDAP is configured"
+        "text": "新增环境变量 DISABLE_LOCAL_LOGIN，配置SSO/LDAP时隐藏本地密码登录入口"
       },
       {
         "type": "feature",
-        "text": "Add ntfy authentication support (user:pass@host/topic format)"
+        "text": "ntfy支持身份认证 (user:pass@主机/主题 格式)"
       },
       {
         "type": "feature",
-        "text": "Sortable health column in containers grid (unhealthy containers first)"
+        "text": "容器表格健康状态列支持排序 (不健康容器优先展示)"
       },
       {
         "type": "feature",
-        "text": "GPU device configuration in container create/edit/inspect"
+        "text": "支持在容器创建/编辑/详情页面配置 GPU 设备"
       },
       {
         "type": "feature",
-        "text": "Editor font setting with expanded monospace font options"
+        "text": "编辑器字体设置，扩充等宽字体可选列表"
       },
       {
         "type": "feature",
-        "text": "Dedicated NFS/CIFS form fields in create volume modal"
+        "text": "创建数据卷弹窗内置 NFS/CIFS 专用表单项"
       },
       {
         "type": "feature",
-        "text": "Scheduled image pruning per environment"
+        "text": "支持为每个环境配置定时镜像清理任务"
       },
       {
         "type": "feature",
-        "text": "Git stack env populate button to preview overridable variables before deploy"
+        "text": "Git堆栈环境变量填充按钮，部署前预览可覆盖变量"
       },
       {
         "type": "fix",
-        "text": "Fix vulnerability scanning failing with rootless Docker"
+        "text": "修复无根 Docker 环境漏洞扫描失败"
       },
       {
         "type": "fix",
-        "text": "Honor DATA_DIR env var in hawser SQLite operations"
+        "text": "Hawser SQLite 操作读取 DATA_DIR 环境变量"
       },
       {
         "type": "fix",
-        "text": "Show detailed error messages when notification test fails"
+        "text": "通知测试失败时展示详细错误信息"
       },
       {
         "type": "fix",
-        "text": "Fix compose file browse in create mode showing default path instead of selected file"
+        "text": "新建模式浏览 compose 文件时展示默认路径，而非选中文件路径"
       },
       {
         "type": "fix",
-        "text": "Fix custom env file path not preserved in create mode"
+        "text": "修复新建模式下自定义环境文件路径无法保留"
       },
       {
         "type": "fix",
-        "text": "Fix git stacks creating duplicate compose.yaml alongside repo file"
+        "text": "修复Git堆栈在仓库目录生成重复 compose.yaml 文件"
       },
       {
         "type": "fix",
-        "text": "Fix env vars not showing after stack create"
+        "text": "修复创建堆栈后环境变量列表不显示"
       },
       {
         "type": "fix",
-        "text": "Fix stack path defaults accidentally enforced over custom paths"
+        "text": "修复堆栈默认路径强制覆盖自定义路径"
       },
       {
         "type": "fix",
-        "text": "Fix adopted stack save & restart breaking paths and env vars"
+        "text": "修复接管堆栈保存重启后路径与环境变量损坏"
       },
       {
         "type": "fix",
-        "text": "Add more information to container audit logs including diff of changes"
+        "text": "容器审计日志增加更多信息，包含变更对比"
       },
       {
         "type": "fix",
-        "text": "Preserve container settings on restart and auto-update"
+        "text": "容器重启与自动更新时保留容器配置"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.13"
@@ -1496,43 +1496,43 @@
     "changes": [
       {
         "type": "feature",
-        "text": "Add SKIP_DF_COLLECTION env var to disable slow disk usage collection on NAS devices"
+        "text": "新增环境变量 SKIP_DF_COLLECTION，NAS 设备可关闭耗时磁盘使用率采集"
       },
       {
         "type": "fix",
-        "text": "Fix terminal/shell connections to direct TLS/mTLS and Hawser Standard environments"
+        "text": "修复直连 TLS/mTLS 与 Hawser 标准环境下 终端/Shell 连接异常"
       },
       {
         "type": "fix",
-        "text": "Fix crash when Hawser agent is stopped from Dockhand"
+        "text": "修复在 Dockhand 内停止 Hawser 代理引发崩溃"
       },
       {
         "type": "fix",
-        "text": "Skip auto-update for SHA-pinned images (image@sha256:...)"
+        "text": "锁定SHA摘要的镜像跳过自动更新 (image@sha256:...)"
       },
       {
         "type": "fix",
-        "text": "Fix pending updates not cleared when containers or stacks are deleted"
+        "text": "删除容器或堆栈时，待更新标记不会被清除"
       },
       {
         "type": "fix",
-        "text": "Fix adopted stacks using wrong .env path from internal directory instead of original location"
+        "text": "修复接管堆栈读取错误.env路径，读取内部目录而非原始路径"
       },
       {
         "type": "fix",
-        "text": "Improve /login audit logs information"
+        "text": "完善 /login 相关审计日志信息"
       },
       {
         "type": "fix",
-        "text": "Fix login/logout screen refresh issue"
+        "text": "修复 登录/登出 页面刷新异常"
       },
       {
         "type": "fix",
-        "text": "Fix password change not persisting"
+        "text": "修复修改密码无法持久保存"
       },
       {
         "type": "fix",
-        "text": "Fix audit log page showing empty values"
+        "text": "修复审计日志页面展示空值"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.12"
@@ -1543,23 +1543,23 @@
     "changes": [
       {
         "type": "fix",
-        "text": "Encryption at rest for sensitive credentials (AES-256-GCM)"
+        "text": "敏感凭据静态加密 (AES-256-GCM)"
       },
       {
         "type": "fix",
-        "text": "Fix registry browsing and image push for registries with organization paths (e.g., registry.example.com/org)"
+        "text": "修复带有组织路径的镜像仓库浏览与镜像推送 (例如：registry.example.com/org)"
       },
       {
         "type": "fix",
-        "text": "Fix security scan failing to parse scanner output"
+        "text": "修复安全扫描无法解析扫描器输出内容"
       },
       {
         "type": "fix",
-        "text": "Fix git sync stuck with sync_status set to running if app restarted during stack sync"
+        "text": "应用重启时如果堆栈正在同步，git 同步状态会卡死为运行中"
       },
       {
         "type": "fix",
-        "text": "Fix updating via containers tab doesn't properly restart the container"
+        "text": "从容器标签页触发更新，容器不会正常重启"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.11"
@@ -1570,19 +1570,19 @@
     "changes": [
       {
         "type": "fix",
-        "text": "Fix docker socket access for custom PUID/PGID"
+        "text": "修复自定义 PUID/PGID 场景下 docker socket 访问权限问题"
       },
       {
         "type": "fix",
-        "text": "Fix stack creation with deploy failing when no env vars provided"
+        "text": "不带环境变量创建带部署配置的堆栈时失败"
       },
       {
         "type": "fix",
-        "text": "Fix env var validation flagging variables in commented lines as missing"
+        "text": "环境变量校验误判注释行内变量为缺失"
       },
       {
         "type": "fix",
-        "text": "Show stop button for stacks in restart loop"
+        "text": "处于重启循环的堆栈显示停止按钮"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.10"
@@ -1593,47 +1593,47 @@
     "changes": [
       {
         "type": "feature",
-        "text": "Shell: detect available shells in container before connecting"
+        "text": "Shell：连接容器前自动检测容器内可用 Shell 程序"
       },
       {
         "type": "fix",
-        "text": "Fix GHCR registry authentication with OAuth2 token flow"
+        "text": "修复 GHCR 镜像仓库 OAuth2 令牌认证流程异常"
       },
       {
         "type": "fix",
-        "text": "Add page titles for browser tab updates on navigation"
+        "text": "页面跳转时更新浏览器标签标题"
       },
       {
         "type": "fix",
-        "text": "Add stack name conflict warning"
+        "text": "新增堆栈名称冲突警告"
       },
       {
         "type": "feature",
-        "text": "Add docker-buildx plugin to container image"
+        "text": "容器镜像内置 docker-buildx 插件"
       },
       {
         "type": "fix",
-        "text": "Fix relative paths not working for adopted/imported stacks"
+        "text": "修复接管/导入堆栈相对路径失效"
       },
       {
         "type": "fix",
-        "text": "Fix TLS certificates not passed to docker-compose for direct connections"
+        "text": "直连模式下 TLS 证书不会传递给 docker-compose"
       },
       {
         "type": "fix",
-        "text": "Fix registry queries for images with docker.io prefix"
+        "text": "修复带 docker.io 前缀镜像的仓库查询异常"
       },
       {
         "type": "fix",
-        "text": "Fix compose editor issues when editing near env var references"
+        "text": "编辑环境变量附近文本时 compose 编辑器出现异常"
       },
       {
         "type": "fix",
-        "text": "Fix branch switching causing unknown revision error in git stacks"
+        "text": "Git 堆栈切换分支报未知修订版本错误"
       },
       {
         "type": "fix",
-        "text": "Fix SSE connection leak"
+        "text": "修复 SSE 连接泄漏"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.9"
@@ -1644,31 +1644,31 @@
     "changes": [
       {
         "type": "fix",
-        "text": "Fix imported stack working directory for relative volume paths"
+        "text": "修复导入堆栈相对数据卷路径的工作目录问题"
       },
       {
         "type": "fix",
-        "text": "Fix environment refresh after auth login"
+        "text": "登录完成后环境列表不会自动刷新"
       },
       {
         "type": "fix",
-        "text": "Fix single container update clearing up all update badges"
+        "text": "更新单个容器后所有更新标记全部消失"
       },
       {
         "type": "fix",
-        "text": "Fix code editor paste issue on Safari on iPad"
+        "text": "iPad Safari 浏览器代码编辑器粘贴异常"
       },
       {
         "type": "fix",
-        "text": "Fix registry login failing due to Bun stdin API incompatibility"
+        "text": "修复 Bun stdin API 不兼容导致镜像仓库登录失败"
       },
       {
         "type": "fix",
-        "text": "Fix env var editor focus issues"
+        "text": "环境变量编辑器焦点异常"
       },
       {
         "type": "fix",
-        "text": "Fix git stack naming issues: validation, rename sync, and delete cleanup"
+        "text": "修复 Git 堆栈名称相关问题：名称校验、重命名同步、删除清理"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.8"
@@ -1680,47 +1680,47 @@
     "changes": [
       {
         "type": "feature",
-        "text": "Adopt stacks created outside Dockhand"
+        "text": "支持接管在 Dockhand 外部创建的堆栈"
       },
       {
         "type": "feature",
-        "text": "Activity event collection mode (Stream/Poll) and metrics interval settings for reduced CPU usage"
+        "text": "活动事件采集模式 (流式/轮询) 与指标采集间隔设置，降低 CPU 占用"
       },
       {
         "type": "feature",
-        "text": "Baseline Docker images for CPUs without AVX support"
+        "text": "提供无 AVX 指令集 CPU 可用的基础 Docker 镜像"
       },
       {
         "type": "feature",
-        "text": "Show amber \"Unused\" badge for images not used by any container"
+        "text": "未被任何容器使用的镜像展示琥珀色「未使用」标记"
       },
       {
         "type": "feature",
-        "text": "Prune unused button to remove all unused images (not just dangling)"
+        "text": "新增清理未使用镜像按钮 (不只清理游离镜像)"
       },
       {
         "type": "fix",
-        "text": "Stack collision on disk - stacks are now saved in environment folders"
+        "text": "磁盘堆栈名称冲突问题 - 堆栈现在保存在各自环境目录下"
       },
       {
         "type": "fix",
-        "text": "Checkbox selection delay in datagrid"
+        "text": "数据表格复选框选中存在延迟"
       },
       {
         "type": "fix",
-        "text": "Crypto fallback for old Linux kernels (<3.17) that lack getrandom() syscall"
+        "text": "缺少 getrandom() 系统调用的老旧 Linux 内核 (<3.17) 启用加密降级方案"
       },
       {
         "type": "fix",
-        "text": "Dashboard performance with many environments"
+        "text": "大量环境时仪表盘性能不佳"
       },
       {
         "type": "fix",
-        "text": "Can't use authenticated custom registry"
+        "text": "无法使用启用身份认证的自定义镜像仓库"
       },
       {
         "type": "fix",
-        "text": "mTLS connections failing due to Bun TLS caching bug"
+        "text": "Bun TLS 缓存缺陷导致 mTLS 连接失败"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.7"
@@ -1731,15 +1731,15 @@
     "changes": [
       {
         "type": "fix",
-        "text": "Legacy CPU support (Celeron, Atom) - Bun binary now copied from official image instead of Wolfi package"
+        "text": "老旧 CPU 支持 (赛扬、Atom) - Bun 二进制文件现在从官方镜像复制，不再使用 Wolfi 软件包"
       },
       {
         "type": "fix",
-        "text": "Stack modal layouts improved with resizable split panels"
+        "text": "堆栈弹窗布局优化，支持可调整大小的分栏面板"
       },
       {
         "type": "fix",
-        "text": "Missing column headers in images overview"
+        "text": "镜像概览页面缺失列表表头"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.6"
@@ -1750,75 +1750,75 @@
     "changes": [
       {
         "type": "feature",
-        "text": "Custom hardened image built from scratch using Wolfi packages, eliminating Alpine vulnerabilities"
+        "text": "基于 Wolfi 软件包从零构建定制加固镜像，消除 Alpine 相关漏洞"
       },
       {
         "type": "feature",
-        "text": "Clicking container name opens container details"
+        "text": "点击容器名称打开容器详情"
       },
       {
         "type": "feature",
-        "text": "Clicking stack name opens stack editor (internal stacks)"
+        "text": "点击堆栈名称打开堆栈编辑器 (内部堆栈)"
       },
       {
         "type": "feature",
-        "text": "Stack env editor now supports freestyle text entry for pasting env contents"
+        "text": "堆栈环境变量编辑器支持自由文本输入，可直接粘贴环境变量内容"
       },
       {
         "type": "feature",
-        "text": "Stack env vars saved as .env file next to compose, respecting external edits"
+        "text": "堆栈环境变量保存为 compose 同目录下的 .env 文件，兼容外部修改"
       },
       {
         "type": "feature",
-        "text": "Additional container options: ulimits, security options, DNS settings"
+        "text": "新增容器配置项：ulimits、安全选项、DNS 设置"
       },
       {
         "type": "fix",
-        "text": "DataGrid performance and memory leak on Activity page with thousands of rows"
+        "text": "修复活动页面存在上万条数据时表格性能问题与内存泄漏"
       },
       {
         "type": "fix",
-        "text": "Webhook endpoints bypass session authentication when auth is enabled"
+        "text": "修复启用身份认证时 Webhook 端点绕过会话校验"
       },
       {
         "type": "fix",
-        "text": "PUID 1000 conflict with existing dockhand user in container"
+        "text": "修复 PUID 1000 与容器内已存在的 dockhand 用户冲突"
       },
       {
         "type": "fix",
-        "text": "Gmail SMTP notification errors"
+        "text": "修复 Gmail SMTP 通知发送异常"
       },
       {
         "type": "fix",
-        "text": "More detailed error messages when stack fails to start"
+        "text": "堆栈启动失败时展示更详细的错误信息"
       },
       {
         "type": "fix",
-        "text": "Container startup with user: directive in compose"
+        "text": "修复 compose 中带有 user: 指令的容器启动问题"
       },
       {
         "type": "fix",
-        "text": "Stack editor flickering when typing fast"
+        "text": "快速输入时堆栈编辑器界面闪烁"
       },
       {
         "type": "fix",
-        "text": "Container unhealthy notifications not triggering"
+        "text": "容器不健康通知无法正常触发"
       },
       {
         "type": "fix",
-        "text": "tlsSkipVerify not being saved in environment settings"
+        "text": "tlsSkipVerify 设置无法保存至环境配置"
       },
       {
         "type": "fix",
-        "text": "MFA available to all users without enterprise license"
+        "text": "无需企业版许可证，所有用户均可使用MFA"
       },
       {
         "type": "fix",
-        "text": "Socket proxy documentation and examples"
+        "text": "完善 socket 代理文档与示例"
       },
       {
         "type": "fix",
-        "text": "Edit container modal reloading during editing"
+        "text": "编辑容器弹窗在编辑过程中自动重载"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.5"
@@ -1829,75 +1829,71 @@
     "changes": [
       {
         "type": "feature",
-        "text": "Theme system with new light/dark themes and font customization"
+        "text": "主题系统，新增浅色/深色主题并支持字体自定义"
       },
       {
         "type": "feature",
-        "text": "Grid font size setting for data tables"
+        "text": "数据表格字体大小设置"
       },
       {
         "type": "feature",
-        "text": "Column visibility, reordering, and resizing (persisted per user or globally)"
+        "text": "列表列显示控制、排序、宽度调整 (配置按用户或全局持久保存)"
       },
       {
         "type": "feature",
-        "text": "Auto-update containers with per-environment checks, batch updates, and vulnerability blocking"
+        "text": "容器自动更新，支持按环境独立检测、批量更新、漏洞拦截"
       },
       {
         "type": "feature",
-        "text": "Stack improvements: environment variables management and .env file support for git stacks"
+        "text": "堆栈功能优化：环境变量管理，Git 堆栈支持 .env 文件"
       },
       {
         "type": "feature",
-        "text": "Visual graph editor for Docker Compose stacks"
+        "text": "Docker Compose 堆栈可视化图形编辑器"
       },
       {
         "type": "feature",
-        "text": "Timezone support for scheduled tasks"
+        "text": "定时任务支持时区配置"
       },
       {
         "type": "feature",
-        "text": "Improved schedule execution history"
+        "text": "优化定时任务执行历史记录展示"
       },
       {
         "type": "fix",
-        "text": "Fix duplicate ports in expanded stack containers (IPv4/IPv6)"
+        "text": "修复展开堆栈容器时出现重复端口 (IPv4/IPv6)"
       },
       {
         "type": "fix",
-        "text": "Fix registry seed crash when Docker Hub URL is modified"
+        "text": "修复修改 Docker Hub 地址后镜像仓库初始化崩溃"
       },
       {
         "type": "fix",
-        "text": "Fix null ports crash for Docker Desktop containers"
+        "text": "修复 Docker Desktop 容器空端口导致程序崩溃"
       },
       {
         "type": "fix",
-        "text": "Fix header layout overlap on small screens"
+        "text": "修复小屏幕下顶部标题栏布局重叠"
       },
       {
         "type": "fix",
-        "text": "Fix TLS/mTLS support for remote Docker hosts"
+        "text": "修复远程 Docker 主机 TLS/mTLS 连接支持"
       },
       {
         "type": "fix",
-        "text": "Fix memory leaks (setTimeout cleanup, stream requests)"
+        "text": "修复内存泄漏 (setTimeout清理、流式请求)"
       },
       {
         "type": "fix",
-        "text": "Fix Edge mode connection issues"
+        "text": "修复删除堆栈后遗留孤立数据库记录"
       },
       {
         "type": "fix",
-        "text": "Fix stack deletion with orphaned records"
+        "text": "修复编辑容器破坏与 Compose 堆栈关联关系"
       },
       {
         "type": "fix",
-        "text": "Fix container editing breaking Compose stack association"
-      },
-      {
-        "type": "fix",
-        "text": "Many other minor bug fixes and improvements"
+        "text": "多项其他小缺陷修复与功能优化"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.4"
@@ -1908,7 +1904,7 @@
     "changes": [
       {
         "type": "fix",
-        "text": "Fix infinite toast loop when environment is offline"
+        "text": "修复环境离线时弹出提示无限循环"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.3"
@@ -1919,7 +1915,7 @@
     "changes": [
       {
         "type": "fix",
-        "text": "Fix stack git repository selection"
+        "text": "修复堆栈 Git 仓库选择功能异常"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.2"
@@ -1930,31 +1926,27 @@
     "changes": [
       {
         "type": "feature",
-        "text": "Public IP field for environment config (container port clickable links)"
+        "text": "环境配置新增公网IP输入框 (容器端口生成可点击链接)"
       },
       {
         "type": "feature",
-        "text": "Releases are now also published with 'latest' tag"
+        "text": "发布版本同时推送 latest 标签"
       },
       {
         "type": "fix",
-        "text": "Server-side auth enforcement fix"
+        "text": "修复服务端身份认证强制校验逻辑"
       },
       {
         "type": "fix",
-        "text": "Docker production build dependencies fix"
+        "text": "修复远程 Docker 主机内存指标计算"
       },
       {
         "type": "fix",
-        "text": "Memory metrics calculation for remote Docker hosts"
+        "text": "修复仪表盘内存统计 (汇总全部容器内存占用)"
       },
       {
         "type": "fix",
-        "text": "Dashboard memory calculation (sum all containers memory usage)"
-      },
-      {
-        "type": "fix",
-        "text": "Form validation errors and error messages readability in dark theme"
+        "text": "优化深色主题下表单校验错误提示可读性"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.1"
@@ -1965,79 +1957,79 @@
     "changes": [
       {
         "type": "feature",
-        "text": "First public release of Dockhand"
+        "text": "Dockhand 首次公开发布"
       },
       {
         "type": "feature",
-        "text": "Real-time container management (start, stop, restart, remove)"
+        "text": "实时容器管理 (启动、停止、重启、删除)"
       },
       {
         "type": "feature",
-        "text": "Container creation with advanced configuration (ports, volumes, env vars, labels)"
+        "text": "容器创建与高级配置 (端口、数据卷、环境变量、标签)"
       },
       {
         "type": "feature",
-        "text": "Docker Compose stack management with visual editor"
+        "text": "Docker Compose 堆栈管理，附带可视化编辑器"
       },
       {
         "type": "feature",
-        "text": "Git repository integration for stacks with webhooks and auto-sync"
+        "text": "堆栈集成 Git 仓库，支持 Webhook 与自动同步"
       },
       {
         "type": "feature",
-        "text": "Image management and registry browsing"
+        "text": "镜像管理与镜像仓库浏览"
       },
       {
         "type": "feature",
-        "text": "Vulnerability scanning with Grype and Trivy"
+        "text": "基于 Grype 与 Trivy 的漏洞扫描"
       },
       {
         "type": "feature",
-        "text": "Container logs viewer with ANSI color rendering and auto-refresh"
+        "text": "容器日志查看器，支持 ANSI 色彩渲染与自动刷新"
       },
       {
         "type": "feature",
-        "text": "Interactive shell terminal with xterm.js"
+        "text": "基于 xterm.js 的交互式 Shell 终端"
       },
       {
         "type": "feature",
-        "text": "File browser for containers and volumes"
+        "text": "容器与数据卷文件浏览器"
       },
       {
         "type": "feature",
-        "text": "Multi-environment support (local and remote Docker hosts)"
+        "text": "多环境支持 (本地与远程 Docker 宿主机)"
       },
       {
         "type": "feature",
-        "text": "Hawser agent for remote Docker management (Standard and Edge modes)"
+        "text": "Hawser 代理用于远程 Docker 管理 (标准模式与边缘模式)"
       },
       {
         "type": "feature",
-        "text": "Network and volume management"
+        "text": "网络与数据卷管理"
       },
       {
         "type": "feature",
-        "text": "Dashboard with real-time metrics and activity tracking"
+        "text": "仪表盘，展示实时指标与活动追踪"
       },
       {
         "type": "feature",
-        "text": "Authentication with OIDC/SSO and local users"
+        "text": "身份认证，支持 OIDC/SSO 与本地用户"
       },
       {
         "type": "feature",
-        "text": "SQLite and PostgreSQL database support"
+        "text": "支持 SQLite 与 PostgreSQL 数据库"
       },
       {
         "type": "feature",
-        "text": "Notification channels (SMTP, Apprise webhooks)"
+        "text": "通知渠道 (SMTP、Apprise Webhook)"
       },
       {
         "type": "feature",
-        "text": "Container auto-update scheduling with vulnerability criteria"
+        "text": "容器自动更新定时任务，支持漏洞判定条件"
       },
       {
         "type": "feature",
-        "text": "Enterprise edition with LDAP, MFA, and RBAC"
+        "text": "企业版提供 LDAP、MFA 与 RBAC 权限控制"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.0"
@@ -2048,19 +2040,19 @@
     "changes": [
       {
         "type": "feature",
-        "text": "Hawser agent support - manage remote Docker hosts behind NAT/firewall"
+        "text": "支持Hawser代理 - 管理位于 NAT/防火墙后方的远程 Docker 宿主机"
       },
       {
         "type": "feature",
-        "text": "Dashboard redesign with flexible tile sizes and real-time charts"
+        "text": "仪表盘重新设计，支持自由调整卡片尺寸与实时图表"
       },
       {
         "type": "feature",
-        "text": "Multi-architecture Docker images (amd64 + arm64)"
+        "text": "多架构 Docker 镜像 (amd64 + arm64)"
       },
       {
         "type": "fix",
-        "text": "Various bug fixes and performance improvements"
+        "text": "多项缺陷修复与性能优化"
       }
     ],
     "imageTag": "fnsys/dockhand:v0.9.2"
@@ -2071,19 +2063,19 @@
     "changes": [
       {
         "type": "feature",
-        "text": "Git stack deployment with webhook triggers"
+        "text": "Git堆栈部署，支持Webhook触发"
       },
       {
         "type": "feature",
-        "text": "Container auto-update scheduling"
+        "text": "容器自动更新定时调度"
       },
       {
         "type": "fix",
-        "text": "Fixed container logs not streaming on Edge environments"
+        "text": "修复边缘模式环境容器日志无法流式输出"
       },
       {
         "type": "fix",
-        "text": "Fixed memory leak in metrics collection"
+        "text": "修复指标采集存在内存泄漏"
       }
     ],
     "imageTag": "fnsys/dockhand:v0.9.1"

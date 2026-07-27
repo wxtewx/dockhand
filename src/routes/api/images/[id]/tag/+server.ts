@@ -15,18 +15,18 @@ export const POST: RequestHandler = async ({ params, request, url, cookies }) =>
 
 	// Permission check with environment context (Tagging is similar to building/modifying)
 	if (auth.authEnabled && !await auth.can('images', 'build', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const { repo, tag } = await request.json();
 		if (!repo || typeof repo !== 'string') {
-			return json({ error: 'Repository name is required' }, { status: 400 });
+			return json({ error: '仓库名称为必填项' }, { status: 400 });
 		}
 		await tagImage(params.id, repo, tag || 'latest', envIdNum);
 		return json({ success: true });
 	} catch (error) {
-		console.error('Error tagging image:', error);
-		return json({ error: 'Failed to tag image' }, { status: 500 });
+		console.error('标记镜像失败:', error);
+		return json({ error: '标记镜像失败' }, { status: 500 });
 	}
 };

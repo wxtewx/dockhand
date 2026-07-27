@@ -135,7 +135,7 @@
 			stats = statMap;
 		} catch {
 			snapshots = [];
-			toast.error('Failed to load snapshots');
+			toast.error('加载快照失败');
 		} finally {
 			loading = false;
 			onLoadingChange?.(false);
@@ -157,7 +157,7 @@
 		if (diffPending) {
 			// Second selection → compare (older first). Both must share a destination.
 			if (diffPending._destinationId !== s._destinationId) {
-				toast.error('Compare needs two snapshots from the same repository');
+				toast.error('对比需要选择同一存储仓库内的两个快照');
 				diffPending = null;
 				return;
 			}
@@ -177,14 +177,14 @@
 		try {
 			const res = await fetch(`/api/backup/snapshots/${s.id}?destinationId=${s._destinationId}`, { method: 'DELETE' });
 			if (res.ok) {
-				toast.success('Snapshot deleted');
+				toast.success('快照已删除');
 				await loadSnapshots();
 			} else {
 				const data = await res.json();
-				toast.error(data.error || 'Failed to delete snapshot');
+				toast.error(data.error || '删除快照失败');
 			}
 		} catch {
-			toast.error('Failed to delete snapshot');
+			toast.error('删除快照失败');
 		} finally {
 			deletingSnapshot = null;
 			confirmDeleteSnapshot = null;
@@ -215,7 +215,7 @@
      (which has no header row) instead of sitting one row lower. -->
 {#if snapshots.length > 0}
 	<div class="mb-2 flex items-center justify-end">
-		<button type="button" class="flex items-center gap-1.5 rounded p-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50" onclick={() => refresh()} disabled={loading} title="Refresh snapshots">
+		<button type="button" class="flex items-center gap-1.5 rounded p-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50" onclick={() => refresh()} disabled={loading} title="刷新快照">
 			<RefreshCw class="h-3.5 w-3.5" />
 		</button>
 	</div>
@@ -227,13 +227,13 @@
 	     already signals progress). Matches the History tab's empty/loading treatment. -->
 	<div class="flex flex-col items-center justify-center py-10 text-center">
 		<Loader2 class="mb-3 h-8 w-8 animate-spin text-muted-foreground/40" />
-		<p class="text-sm text-muted-foreground">Loading snapshots…</p>
+		<p class="text-sm text-muted-foreground">正在加载快照…</p>
 	</div>
 {:else if snapshots.length === 0}
 	<div class="flex flex-col items-center justify-center py-10 text-center">
 		<Archive class="mb-3 h-10 w-10 text-muted-foreground/40" />
-		<p class="text-sm text-muted-foreground">No snapshots yet for {targetName}.</p>
-		<p class="mt-1 text-xs text-muted-foreground">Run a backup from the Schedules tab to create one.</p>
+		<p class="text-sm text-muted-foreground">{targetName} 暂无快照。</p>
+		<p class="mt-1 text-xs text-muted-foreground">前往 "计划任务" 执行一次备份来创建快照。</p>
 	</div>
 {:else}
 	<!-- Repo filter chips (Option C) — only when the target spans more than one repo. -->
@@ -244,7 +244,7 @@
 				class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors {repoFilter == null ? 'border-primary/50 bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:text-foreground'}"
 				onclick={() => (repoFilter = null)}
 			>
-				All repositories <span class="text-[10px] opacity-70">{snapshots.length}</span>
+				全部仓库 <span class="text-[10px] opacity-70">{snapshots.length}</span>
 			</button>
 			{#each repoGroups as g}
 				{@const GIcon = getRepoTypeIcon(g.repository)}
@@ -262,11 +262,11 @@
 		<table class="w-full text-xs">
 			<thead>
 				<tr class="border-b text-left text-muted-foreground">
-					<th class="py-1.5 pl-2 font-medium">Snapshot</th>
-					<th class="py-1.5 pl-2 font-medium">Taken</th>
-					<th class="py-1.5 pl-2 font-medium">Added</th>
-					<th class="py-1.5 pl-2 font-medium">Repository</th>
-					<th class="py-1.5 pr-3 text-right font-medium">Actions</th>
+					<th class="py-1.5 pl-2 font-medium">快照 ID</th>
+					<th class="py-1.5 pl-2 font-medium">备份时间</th>
+					<th class="py-1.5 pl-2 font-medium">新增数据</th>
+					<th class="py-1.5 pl-2 font-medium">存储仓库</th>
+					<th class="py-1.5 pr-3 text-right font-medium">操作</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -277,29 +277,29 @@
 					<tr class="border-b text-xs last:border-0 hover:bg-muted/30 {isDiffPending ? 'bg-primary/10' : ''}">
 						<td class="py-1.5 pl-2 font-mono text-muted-foreground">{s.shortId}</td>
 						<td class="py-1.5 pl-2">{formatDateTime(s.time)}</td>
-						<td class="py-1.5 pl-2 text-muted-foreground" title={st ? `${st.filesNew} new, ${st.filesChanged} changed files` : ''}>{st ? formatBytes(st.dataAdded) : '—'}</td>
+						<td class="py-1.5 pl-2 text-muted-foreground" title={st ? `${st.filesNew} 个新文件，${st.filesChanged} 个变更文件` : ''}>{st ? formatBytes(st.dataAdded) : '—'}</td>
 						<td class="py-1.5 pl-2 text-muted-foreground">
 							<span class="flex items-center gap-1.5"><RepoIcon class="h-3.5 w-3.5 text-primary/70" />{s._destinationName}</span>
 						</td>
 						<td class="px-3 py-1.5 text-right">
 							<div class="flex items-center justify-end gap-0.5">
 								{#if visibleSnapshots.length >= 2}
-									<button type="button" class="rounded p-1 transition-colors {isDiffPending ? 'bg-primary/20 text-primary' : 'hover:bg-muted'}" onclick={() => toggleDiff(s)} title={isDiffPending ? 'Cancel compare' : diffPending ? 'Compare with selected' : 'Compare'}>
+									<button type="button" class="rounded p-1 transition-colors {isDiffPending ? 'bg-primary/20 text-primary' : 'hover:bg-muted'}" onclick={() => toggleDiff(s)} title={isDiffPending ? '取消选择对比' : diffPending ? '与选中快照对比' : '选择用于对比'}>
 										<ArrowLeftRight class="h-3 w-3 {isDiffPending ? 'text-primary' : 'text-muted-foreground'}" />
 									</button>
 								{/if}
-								<button type="button" class="rounded p-1 transition-colors hover:bg-muted" onclick={() => openBrowser(s)} title="Browse files">
+								<button type="button" class="rounded p-1 transition-colors hover:bg-muted" onclick={() => openBrowser(s)} title="浏览文件">
 									<FolderOpen class="h-3 w-3 text-muted-foreground" />
 								</button>
-								<button type="button" class="rounded p-1 transition-colors hover:bg-muted" onclick={() => openRestore(s)} title="Restore">
+								<button type="button" class="rounded p-1 transition-colors hover:bg-muted" onclick={() => openRestore(s)} title="恢复快照">
 									<RotateCcw class="h-3 w-3 text-muted-foreground" />
 								</button>
 								<ConfirmPopover
 									open={confirmDeleteSnapshot === s.id}
-									action="Delete"
-									itemType="snapshot"
+									action="删除"
+									itemType="快照"
 									itemName={s.shortId}
-									title="Delete snapshot"
+									title="删除快照"
 									position="left"
 									onConfirm={() => deleteSnapshot(s)}
 									onOpenChange={(open) => confirmDeleteSnapshot = open ? s.id : null}

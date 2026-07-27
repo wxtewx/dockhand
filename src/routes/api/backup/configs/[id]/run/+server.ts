@@ -28,7 +28,7 @@ export const POST: RequestHandler = async (event) => {
 		// A backup succeeds as 'success' or 'warning' (partial read still committed);
 		// 'skipped' isn't a failure. Only a real 'error' throws.
 		if (result.status === 'error') {
-			throw new Error(result.error || 'Backup failed');
+			throw new Error(result.error || '备份执行失败');
 		}
 	}, request);
 };

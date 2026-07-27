@@ -10,14 +10,14 @@ import { testRepository } from '$lib/server/backups';
 export const POST: RequestHandler = async ({ params, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('backups', 'manage')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const id = parseInt(params.id);
-	if (isNaN(id)) return json({ error: 'Invalid ID' }, { status: 400 });
+	if (isNaN(id)) return json({ error: '无效 ID' }, { status: 400 });
 
 	const destination = await getBackupDestination(id);
-	if (!destination) return json({ error: 'Destination not found' }, { status: 404 });
+	if (!destination) return json({ error: '未找到目标存储位置' }, { status: 404 });
 
 	const result = await testRepository(id);
 	if (result.ok) {

@@ -7,7 +7,7 @@
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Input } from '$lib/components/ui/input';
 	import { Plus, Check, RefreshCw, Wifi, Database, HardDrive, Dices, Copy, ChevronDown, BarChart3, Loader2, Clock, PackageCheck, FolderCheck, Unlock, CircleHelp, AlertTriangle } from 'lucide-svelte';
-	import cronstrue from 'cronstrue';
+	import cronstrue from 'cronstrue/i18n';
 	import { formatBytes } from '$lib/utils/format';
 	import CronEditor from '$lib/components/cron-editor.svelte';
 	import { copyToClipboard } from '$lib/utils/clipboard';
@@ -15,6 +15,7 @@
 	import { AmazonS3Icon, BackblazeIcon, AzureBlobIcon, GoogleCloudIcon, RestServerIcon } from '$lib/components/cloud-icons';
 	import { toast } from 'svelte-sonner';
 	import { focusFirstInput } from '$lib/utils';
+	import { getResticText } from '$lib/types';
 
 	interface Destination {
 		id: number;
@@ -81,9 +82,9 @@
 
 	const backendTypes: BackendType[] = [
 		{
-			value: 'local', label: 'Local path', icon: HardDrive,
+			value: 'local', label: '本地路径', icon: HardDrive,
 			fields: [
-				{ key: 'path', label: 'Path', placeholder: '/mnt/backups/dockhand' }
+				{ key: 'path', label: '路径', placeholder: '/mnt/backups/dockhand' }
 			],
 			buildRepo: (f) => f.path || '',
 			parseRepo: (repo) => ({ path: repo })
@@ -91,11 +92,11 @@
 		{
 			value: 's3', label: 'Amazon S3', icon: AmazonS3Icon,
 			fields: [
-				{ key: 'endpoint', label: 'Endpoint', placeholder: 's3.amazonaws.com (or http://minio:9000)' },
-				{ key: 'bucket', label: 'Bucket', placeholder: 'my-backup-bucket' },
-				{ key: 'path', label: 'Path (optional)', placeholder: 'dockhand' },
-				{ key: 'accessKey', label: 'Access key ID', placeholder: '', envKey: 'AWS_ACCESS_KEY_ID' },
-				{ key: 'secretKey', label: 'Secret access key', placeholder: '', secret: true, envKey: 'AWS_SECRET_ACCESS_KEY' }
+				{ key: 'endpoint', label: '接入地址', placeholder: 's3.amazonaws.com (or http://minio:9000)' },
+				{ key: 'bucket', label: '存储桶', placeholder: 'my-backup-bucket' },
+				{ key: 'path', label: '路径 (可选)', placeholder: 'dockhand' },
+				{ key: 'accessKey', label: '访问密钥 ID', placeholder: '', envKey: 'AWS_ACCESS_KEY_ID' },
+				{ key: 'secretKey', label: '私有访问密钥', placeholder: '', secret: true, envKey: 'AWS_SECRET_ACCESS_KEY' }
 			],
 			buildRepo: (f) => {
 				const endpoint = f.endpoint || 's3.amazonaws.com';
@@ -120,10 +121,10 @@
 		{
 			value: 'b2', label: 'Backblaze B2', icon: BackblazeIcon,
 			fields: [
-				{ key: 'bucket', label: 'Bucket', placeholder: 'my-backup-bucket' },
-				{ key: 'path', label: 'Path (optional)', placeholder: 'dockhand' },
-				{ key: 'accountId', label: 'Account ID', placeholder: '', envKey: 'B2_ACCOUNT_ID' },
-				{ key: 'accountKey', label: 'Application key', placeholder: '', secret: true, envKey: 'B2_ACCOUNT_KEY' }
+				{ key: 'bucket', label: '存储桶', placeholder: 'my-backup-bucket' },
+				{ key: 'path', label: '路径 (可选)', placeholder: 'dockhand' },
+				{ key: 'accountId', label: '账户 ID', placeholder: '', envKey: 'B2_ACCOUNT_ID' },
+				{ key: 'accountKey', label: '应用密钥', placeholder: '', secret: true, envKey: 'B2_ACCOUNT_KEY' }
 			],
 			buildRepo: (f) => `b2:${f.bucket}:${f.path || ''}`.replace(/:$/, ''),
 			parseRepo: (repo) => {
@@ -135,10 +136,10 @@
 		{
 			value: 'azure', label: 'Azure Blob', icon: AzureBlobIcon,
 			fields: [
-				{ key: 'container', label: 'Container', placeholder: 'my-backup-container' },
-				{ key: 'path', label: 'Path (optional)', placeholder: 'dockhand' },
-				{ key: 'accountName', label: 'Account name', placeholder: '', envKey: 'AZURE_ACCOUNT_NAME' },
-				{ key: 'accountKey', label: 'Account key', placeholder: '', secret: true, envKey: 'AZURE_ACCOUNT_KEY' }
+				{ key: 'container', label: '容器', placeholder: 'my-backup-container' },
+				{ key: 'path', label: '路径 (可选)', placeholder: 'dockhand' },
+				{ key: 'accountName', label: '账户名称', placeholder: '', envKey: 'AZURE_ACCOUNT_NAME' },
+				{ key: 'accountKey', label: '账户密钥', placeholder: '', secret: true, envKey: 'AZURE_ACCOUNT_KEY' }
 			],
 			buildRepo: (f) => `azure:${f.container}:${f.path || ''}`.replace(/:$/, ''),
 			parseRepo: (repo) => {
@@ -150,9 +151,9 @@
 		{
 			value: 'gs', label: 'Google Cloud', icon: GoogleCloudIcon,
 			fields: [
-				{ key: 'bucket', label: 'Bucket', placeholder: 'my-backup-bucket' },
-				{ key: 'path', label: 'Path (optional)', placeholder: '/dockhand' },
-				{ key: 'accessToken', label: 'Access token', placeholder: '', secret: true, envKey: 'GOOGLE_ACCESS_TOKEN' }
+				{ key: 'bucket', label: '存储桶', placeholder: 'my-backup-bucket' },
+				{ key: 'path', label: '路径 (可选)', placeholder: '/dockhand' },
+				{ key: 'accessToken', label: '访问令牌', placeholder: '', secret: true, envKey: 'GOOGLE_ACCESS_TOKEN' }
 			],
 			buildRepo: (f) => `gs:${f.bucket}:${f.path || '/'}`,
 			parseRepo: (repo) => {
@@ -164,7 +165,7 @@
 		{
 			value: 'rest', label: 'REST server', icon: RestServerIcon,
 			fields: [
-				{ key: 'url', label: 'Server URL', placeholder: 'https://backup-server:8000/repo-name' }
+				{ key: 'url', label: '服务端地址', placeholder: 'https://backup-server:8000/repo-name' }
 			],
 			buildRepo: (f) => `rest:${f.url || ''}`,
 			parseRepo: (repo) => ({ url: repo.replace(/^rest:/, '') })
@@ -290,8 +291,8 @@
 				payload = { destinationId: destination!.id };
 			} else {
 				const repository = selectedBackend.buildRepo(formFields);
-				if (!repository.trim()) { toast.error('Fill in repository fields before testing'); testing = false; return; }
-				if (!formPassword.trim()) { toast.error('Enter encryption password before testing'); testing = false; return; }
+				if (!repository.trim()) { toast.error('请先填写仓库信息再进行测试'); testing = false; return; }
+				if (!formPassword.trim()) { toast.error('请输入加密密码再进行测试'); testing = false; return; }
 				const envVars: Record<string, string> = {};
 				for (const field of selectedBackend.fields) {
 					if (field.envKey && formFields[field.key]?.trim()) envVars[field.envKey] = formFields[field.key];
@@ -305,11 +306,11 @@
 			});
 			const data = await res.json();
 			if (data.success && data.needsInit) {
-				toast.info(data.message || 'Connection works, but repository needs initialization');
+				toast.info(data.message || '连接正常，但存储仓库需要初始化');
 			} else {
-				toast[res.ok && data.success ? 'success' : 'error'](data.success ? 'Connection test successful' : (data.error || 'Connection test failed'));
+				toast[res.ok && data.success ? 'success' : 'error'](data.success ? '连接测试成功' : getResticText(data.error || '连接测试失败'));
 			}
-		} catch { toast.error('Connection test failed'); } finally { testing = false; }
+		} catch { toast.error('连接测试失败'); } finally { testing = false; }
 	}
 
 	async function initRepo() {
@@ -318,8 +319,8 @@
 		try {
 			const res = await fetch(`/api/backup/destinations/${destination.id}/init`, { method: 'POST' });
 			const data = await res.json();
-			toast[res.ok && data.success ? 'success' : 'error'](data.success ? 'Repository initialized' : (data.error || 'Init failed'));
-		} catch { toast.error('Init failed'); } finally { initializing = false; }
+			toast[res.ok && data.success ? 'success' : 'error'](data.success ? '仓库初始化完成' : (data.error || '初始化失败'));
+		} catch { toast.error('初始化失败'); } finally { initializing = false; }
 	}
 
 	// Normalize a restic repository string for loose equality: lowercase, drop
@@ -344,9 +345,9 @@
 	});
 
 	async function save() {
-		if (!formName.trim()) { formError = 'Name is required'; return; }
+		if (!formName.trim()) { formError = '名称不能为空'; return; }
 		const repository = selectedBackend.buildRepo(formFields);
-		if (!repository.trim()) { formError = 'Repository fields are incomplete'; return; }
+		if (!repository.trim()) { formError = '仓库信息填写不完整'; return; }
 
 		// Warn (once) if this repo is already used by another destination. Backups
 		// to a shared repo are serialized (restic locks the repo), not parallel —
@@ -389,17 +390,17 @@
 			const res = await fetch(isEditing ? `/api/backup/destinations/${destination!.id}` : '/api/backup/destinations', {
 				method: isEditing ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
 			});
-			if (res.ok) { open = false; onSaved(); toast.success(isEditing ? 'Destination updated' : 'Destination created'); }
-			else { const data = await res.json(); formError = data.error || 'Failed'; }
-		} catch { formError = 'Failed'; } finally { formSaving = false; }
+			if (res.ok) { open = false; onSaved(); toast.success(isEditing ? '存储目标已更新' : '存储目标已创建'); }
+			else { const data = await res.json(); formError = data.error || '操作失败'; }
+		} catch { formError = '操作失败'; } finally { formSaving = false; }
 	}
 </script>
 
 <Dialog.Root bind:open onOpenChange={(o) => { if (o) { formError = ''; repoConflictName = null; focusFirstInput(); } }}>
 	<Dialog.Content class="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
 		<Dialog.Header>
-			<Dialog.Title>{isEditing ? 'Edit backup destination' : 'Add backup destination'}</Dialog.Title>
-			<Dialog.Description>{isEditing ? 'Update backup destination settings' : 'Configure a restic backup repository'}</Dialog.Description>
+			<Dialog.Title>{isEditing ? '编辑备份存储目标' : '添加备份存储目标'}</Dialog.Title>
+			<Dialog.Description>{isEditing ? '修改备份存储目标配置' : '配置 restic 备份仓库'}</Dialog.Description>
 		</Dialog.Header>
 
 		{#if formError}<p class="text-sm text-destructive">{formError}</p>{/if}
@@ -408,19 +409,19 @@
 		{#if selectedBackend.value === 'local'}
 			<div class="flex items-start gap-2 p-2.5 mt-4 rounded-md bg-amber-500/10 border border-amber-500/20 text-xs text-amber-600 dark:text-amber-400">
 				<HardDrive class="w-3.5 h-3.5 shrink-0 mt-0.5" />
-				<span>Local path repositories can only be used to back up and restore containers running on the same Docker host as Dockhand. For remote environments or cross-env restore, use S3, REST, or another remote backend.</span>
+				<span>本地路径仓库仅能用于备份与恢复和 Dockhand 运行在同一台 Docker 主机上的容器。如需跨环境恢复或者对接远程环境，请使用 S3、REST 或其他远程存储后端。</span>
 			</div>
 		{/if}
 		<div class="grid grid-cols-2 gap-6 py-4">
 			<!-- Left column: connection -->
 			<div class="space-y-4">
 				<div class="space-y-2">
-					<Label for="dest-name">Name</Label>
+					<Label for="dest-name">名称</Label>
 					<Input id="dest-name" bind:value={formName} />
 				</div>
 
 				<div class="space-y-2">
-					<Label>Backend type</Label>
+					<Label>存储后端类型</Label>
 					<Select.Root type="single" value={formBackendType} onValueChange={handleBackendChange}>
 						<Select.Trigger class="w-full">
 							<span class="flex items-center gap-2">
@@ -470,38 +471,38 @@
 								type={field.secret ? 'password' : 'text'}
 								value={formFields[field.key] ?? ''}
 								oninput={(e: Event) => { formFields[field.key] = (e.target as HTMLInputElement).value; }}
-								placeholder={isEditing && field.secret ? '(leave blank to keep current)' : field.placeholder}
+								placeholder={isEditing && field.secret ? '(留空则保持原有值)' : field.placeholder}
 							/>
 						</div>
 					{/if}
 				{/each}
 
 				<div class="space-y-2">
-					<Label for="dest-password">Encryption password</Label>
+					<Label for="dest-password">加密密码</Label>
 					<div class="flex gap-1.5">
-						<Input id="dest-password" type="password" bind:value={formPassword} placeholder={isEditing ? '(leave blank to keep current)' : ''} class="flex-1" />
-						<Button variant="outline" size="sm" class="h-9 px-2 shrink-0" onclick={generatePassword} title="Generate strong password">
+						<Input id="dest-password" type="password" bind:value={formPassword} placeholder={isEditing ? '(留空则保持原有值)' : ''} class="flex-1" />
+						<Button variant="outline" size="sm" class="h-9 px-2 shrink-0" onclick={generatePassword} title="生成高强度密码">
 							{#if generatedOk}<Check class="w-3.5 h-3.5 text-green-500" />{:else}<Dices class="w-3.5 h-3.5" />{/if}
 						</Button>
 						{#if formPassword}
-							<Button variant="outline" size="sm" class="h-9 px-2 shrink-0" onclick={copyPassword} title="Copy password">
+							<Button variant="outline" size="sm" class="h-9 px-2 shrink-0" onclick={copyPassword} title="复制密码">
 								{#if copiedOk}<Check class="w-3.5 h-3.5 text-green-500" />{:else}<Copy class="w-3.5 h-3.5" />{/if}
 							</Button>
 						{/if}
 					</div>
-					<p class="text-xs text-muted-foreground">Restic encrypts all data with this password. You will need it to restore.</p>
+					<p class="text-xs text-muted-foreground">Restic 使用该密码加密所有备份数据，恢复时必须提供此密码。</p>
 				</div>
 
 				<div class="space-y-2">
-					<Label for="dest-flags">Extra restic flags</Label>
+					<Label for="dest-flags">额外 restic 参数</Label>
 					<Input id="dest-flags" bind:value={formFlags} />
 					<div class="text-[10px] text-muted-foreground space-y-0.5">
-						<p>Common flags:</p>
+						<p>常用参数:</p>
 						<div class="flex flex-wrap gap-x-3 gap-y-0.5 font-mono">
-							<span class="cursor-pointer hover:text-foreground" onclick={() => { formFlags = (formFlags + ' --limit-upload 5120').trim(); }} title="Limit upload speed to 5 MB/s">--limit-upload</span>
-							<span class="cursor-pointer hover:text-foreground" onclick={() => { formFlags = (formFlags + ' --limit-download 10240').trim(); }} title="Limit download speed to 10 MB/s">--limit-download</span>
-							<span class="cursor-pointer hover:text-foreground" onclick={() => { formFlags = (formFlags + ' --verbose').trim(); }} title="Verbose output">--verbose</span>
-							<span class="cursor-pointer hover:text-foreground" onclick={() => { formFlags = (formFlags + ' --compression max').trim(); }} title="Maximum compression">--compression max</span>
+							<span class="cursor-pointer hover:text-foreground" onclick={() => { formFlags = (formFlags + ' --limit-upload 5120').trim(); }} title="限制上传速度为 5 MB/s">--limit-upload</span>
+							<span class="cursor-pointer hover:text-foreground" onclick={() => { formFlags = (formFlags + ' --limit-download 10240').trim(); }} title="限制下载速度为 10 MB/s">--limit-download</span>
+							<span class="cursor-pointer hover:text-foreground" onclick={() => { formFlags = (formFlags + ' --verbose').trim(); }} title="详细输出日志">--verbose</span>
+							<span class="cursor-pointer hover:text-foreground" onclick={() => { formFlags = (formFlags + ' --compression max').trim(); }} title="最高压缩级别">--compression max</span>
 						</div>
 					</div>
 				</div>
@@ -510,17 +511,17 @@
 
 		<!-- Policies section -->
 		<div class="border-t pt-3 mt-2 space-y-3">
-			<span class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Repository policies</span>
+			<span class="text-xs font-medium text-muted-foreground uppercase tracking-wide">仓库策略</span>
 
 			<!-- Prune policy -->
 			<div class="space-y-1.5">
 				<div class="flex items-center justify-between">
 					<div class="flex items-center gap-1.5">
 						<Clock class="w-3.5 h-3.5 text-muted-foreground" />
-						<Label class="text-sm">Scheduled prune</Label>
+						<Label class="text-sm">定时清理快照</Label>
 						<Tooltip.Provider delayDuration={200}>
 							<Tooltip.Root><Tooltip.Trigger><CircleHelp class="w-3 h-3 text-muted-foreground/50 cursor-help" /></Tooltip.Trigger>
-								<Tooltip.Portal><Tooltip.Content side="right" class="!w-64 text-xs">Removes unreferenced data from the repository. Frees disk space after snapshots are forgotten. Run monthly for most repos.</Tooltip.Content></Tooltip.Portal>
+								<Tooltip.Portal><Tooltip.Content side="right" class="!w-64 text-xs">移除仓库中不再被快照引用的数据，在快照过期后释放存储空间。大多数仓库建议每月执行一次。</Tooltip.Content></Tooltip.Portal>
 							</Tooltip.Root>
 						</Tooltip.Provider>
 					</div>
@@ -530,7 +531,7 @@
 					<div class="pl-5 space-y-2">
 						<CronEditor value={policyPruneSchedule} onchange={(v) => policyPruneSchedule = v} />
 						<div class="flex items-center gap-2">
-							<label class="text-[10px] text-muted-foreground">Max unused %</label>
+							<label class="text-[10px] text-muted-foreground">最大未使用占比 (%)</label>
 							<Input bind:value={policyPruneMaxUnused} type="number" min="0" max="100" class="h-8 text-xs w-20" />
 						</div>
 					</div>
@@ -542,10 +543,10 @@
 				<div class="flex items-center justify-between">
 					<div class="flex items-center gap-1.5">
 						<PackageCheck class="w-3.5 h-3.5 text-muted-foreground" />
-						<Label class="text-sm">Scheduled integrity check</Label>
+						<Label class="text-sm">定时完整性检测</Label>
 						<Tooltip.Provider delayDuration={200}>
 							<Tooltip.Root><Tooltip.Trigger><CircleHelp class="w-3 h-3 text-muted-foreground/50 cursor-help" /></Tooltip.Trigger>
-								<Tooltip.Portal><Tooltip.Content side="right" class="!w-64 text-xs">Verifies the structure and integrity of the repository. Detects corruption or missing data. Run monthly or after storage issues.</Tooltip.Content></Tooltip.Portal>
+								<Tooltip.Portal><Tooltip.Content side="right" class="!w-64 text-xs">校验仓库结构与元数据完整性，用于检测数据损坏或文件丢失。建议每月执行或存储出现故障后运行。</Tooltip.Content></Tooltip.Portal>
 							</Tooltip.Root>
 						</Tooltip.Provider>
 					</div>
@@ -563,10 +564,10 @@
 				<div class="flex items-center justify-between">
 					<div class="flex items-center gap-1.5">
 						<FolderCheck class="w-3.5 h-3.5 text-muted-foreground" />
-						<Label class="text-sm">Scheduled data verification</Label>
+						<Label class="text-sm">定时数据校验</Label>
 						<Tooltip.Provider delayDuration={200}>
 							<Tooltip.Root><Tooltip.Trigger><CircleHelp class="w-3 h-3 text-muted-foreground/50 cursor-help" /></Tooltip.Trigger>
-								<Tooltip.Portal><Tooltip.Content side="right" class="!w-64 text-xs">Reads a random subset of data packs to verify they're readable and intact. Catches bit rot and storage corruption. Slower and uses bandwidth on cloud repos. Off by default.</Tooltip.Content></Tooltip.Portal>
+								<Tooltip.Portal><Tooltip.Content side="right" class="!w-64 text-xs">随机读取一部分数据块校验文件可用性与完整性，可发现存储位衰减与介质损坏。云端仓库会消耗带宽，默认关闭。</Tooltip.Content></Tooltip.Portal>
 							</Tooltip.Root>
 						</Tooltip.Provider>
 					</div>
@@ -576,7 +577,7 @@
 					<div class="pl-5 space-y-2">
 						<CronEditor value={policyVerifySchedule} onchange={(v) => policyVerifySchedule = v} />
 						<div class="flex items-center gap-2">
-							<label class="text-[10px] text-muted-foreground">Data %</label>
+							<label class="text-[10px] text-muted-foreground">校验数据占比</label>
 							<Select.Root type="single" value={policyVerifyDataSubset} onValueChange={(v) => policyVerifyDataSubset = v}>
 								<Select.Trigger class="h-8 w-20 text-xs">{policyVerifyDataSubset}</Select.Trigger>
 								<Select.Content>
@@ -596,10 +597,10 @@
 			<div class="flex items-center justify-between">
 				<div class="flex items-center gap-1.5">
 					<Unlock class="w-3.5 h-3.5 text-muted-foreground" />
-					<Label class="text-sm">Auto-unlock stale locks</Label>
+					<Label class="text-sm">自动清理过期锁文件</Label>
 					<Tooltip.Provider delayDuration={200}>
 						<Tooltip.Root><Tooltip.Trigger><CircleHelp class="w-3 h-3 text-muted-foreground/50 cursor-help" /></Tooltip.Trigger>
-							<Tooltip.Portal><Tooltip.Content side="right" class="!w-64 text-xs">Automatically removes stale repository locks before prune and check operations. Locks can be left behind by interrupted or crashed backups.</Tooltip.Content></Tooltip.Portal>
+							<Tooltip.Portal><Tooltip.Content side="right" class="!w-64 text-xs">在执行清理与检测前自动移除过期仓库锁。中断、崩溃的备份任务会遗留锁文件导致后续任务阻塞。</Tooltip.Content></Tooltip.Portal>
 						</Tooltip.Root>
 					</Tooltip.Provider>
 				</div>
@@ -612,7 +613,7 @@
 			<div class="border-t pt-3 mt-2">
 				<div class="flex items-center gap-2 mb-2">
 					<BarChart3 class="w-3.5 h-3.5 text-muted-foreground" />
-					<span class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Repository usage</span>
+					<span class="text-xs font-medium text-muted-foreground uppercase tracking-wide">仓库使用概况</span>
 					{#if loadingStats}
 						<Loader2 class="w-3 h-3 animate-spin text-muted-foreground" />
 					{/if}
@@ -621,15 +622,15 @@
 					<div class="grid grid-cols-3 gap-2">
 						<div class="bg-muted/30 rounded px-2 py-1.5 text-center border border-border/30">
 							<div class="text-sm font-semibold">{formatBytes(repoStats.totalSize)}</div>
-							<div class="text-[9px] text-muted-foreground">Size</div>
+							<div class="text-[9px] text-muted-foreground">总容量</div>
 						</div>
 						<div class="bg-muted/30 rounded px-2 py-1.5 text-center border border-border/30">
 							<div class="text-sm font-semibold">{repoStats.totalFiles.toLocaleString()}</div>
-							<div class="text-[9px] text-muted-foreground">Files</div>
+							<div class="text-[9px] text-muted-foreground">文件总数</div>
 						</div>
 						<div class="bg-muted/30 rounded px-2 py-1.5 text-center border border-border/30">
 							<div class="text-sm font-semibold">{repoStats.snapshots}</div>
-							<div class="text-[9px] text-muted-foreground">Snapshots</div>
+							<div class="text-[9px] text-muted-foreground">快照数量</div>
 						</div>
 					</div>
 					<!-- Usage bar -->
@@ -637,10 +638,10 @@
 						<div class="h-2 bg-muted rounded-full overflow-hidden">
 							<div class="h-full bg-primary/60 rounded-full transition-all" style="width: {Math.min(100, (repoStats.totalSize / (1024 * 1024 * 1024)) * 10)}%"></div>
 						</div>
-						<p class="text-[10px] text-muted-foreground mt-1">{repoStats.snapshots} snapshots across {repoStats.totalFiles.toLocaleString()} files</p>
+						<p class="text-[10px] text-muted-foreground mt-1">共 {repoStats.snapshots} 个快照，包含 {repoStats.totalFiles.toLocaleString()} 个文件</p>
 					{/if}
 				{:else if !loadingStats}
-					<p class="text-xs text-muted-foreground">Loading repository stats...</p>
+					<p class="text-xs text-muted-foreground">正在加载仓库统计信息...</p>
 				{/if}
 			</div>
 		{/if}
@@ -650,9 +651,9 @@
 			<div class="flex-shrink-0 flex gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-400">
 				<AlertTriangle class="w-4 h-4 mt-0.5 flex-shrink-0" />
 				<span>
-					This repository is already used by <span class="font-medium">"{repoConflictName}"</span>.
-					Backups to a shared repository run one at a time (restic locks the repo), not in parallel.
-					Click <span class="font-medium">Save anyway</span> to continue.
+					该仓库地址已被 <span class="font-medium">"{repoConflictName}"</span> 使用。
+					同一仓库无法并行执行备份 (Restic 会自动上锁串行运行)，仅适合迁移或轮换场景。
+					点击 <span class="font-medium">仍然保存</span> 继续。
 				</span>
 			</div>
 		{/if}
@@ -660,19 +661,19 @@
 			<div class="flex gap-2 mr-auto">
 				<Button variant="outline" size="sm" onclick={testConnection} disabled={testing}>
 					{#if testing}<RefreshCw class="w-4 h-4 mr-1 animate-spin" />{:else}<Wifi class="w-4 h-4 mr-1" />{/if}
-					Test
+					测试连接
 				</Button>
 				{#if isEditing}
-					<Button variant="outline" size="sm" class="{destination?.lastTestStatus === 'success' ? 'opacity-30' : ''}" onclick={initRepo} disabled={initializing} title={destination?.lastTestStatus === 'success' ? 'Already initialized' : 'Initialize repository'}>
+					<Button variant="outline" size="sm" class="{destination?.lastTestStatus === 'success' ? 'opacity-30' : ''}" onclick={initRepo} disabled={initializing} title={destination?.lastTestStatus === 'success' ? '已完成初始化' : '初始化仓库'}>
 						{#if initializing}<RefreshCw class="w-4 h-4 mr-1 animate-spin" />{:else}<Database class="w-4 h-4 mr-1" />{/if}
-						Init repo
+						初始化仓库
 					</Button>
 				{/if}
 			</div>
-			<Button variant="outline" onclick={() => { open = false; onClose(); }}>Cancel</Button>
+			<Button variant="outline" onclick={() => { open = false; onClose(); }}>取消</Button>
 			<Button onclick={save} disabled={formSaving} variant={repoConflictName ? 'destructive' : 'default'}>
 				{#if formSaving}<RefreshCw class="w-4 h-4 mr-1 animate-spin" />{:else if repoConflictName}<AlertTriangle class="w-4 h-4 mr-1" />{:else if isEditing}<Check class="w-4 h-4" />{:else}<Plus class="w-4 h-4" />{/if}
-				{repoConflictName ? 'Save anyway' : isEditing ? 'Save' : 'Create'}
+				{repoConflictName ? '仍然保存' : isEditing ? '保存' : '创建'}
 			</Button>
 		</Dialog.Footer>
 	</Dialog.Content>

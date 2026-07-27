@@ -4,6 +4,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { ShieldCheck, Loader2, CheckCircle, XCircle } from 'lucide-svelte';
 	import { watchJob } from '$lib/utils/sse-fetch';
+	import { getResticText } from '$lib/types';
 
 	interface Props {
 		open: boolean;
@@ -32,7 +33,7 @@
 	async function runVerify() {
 		running = true;
 		status = 'running';
-		logs = [`Starting verification (reading ${dataSubset} of data)...`];
+		logs = [`开始校验 (读取 ${dataSubset} 的数据)...`];
 		error = '';
 
 		try {
@@ -46,21 +47,22 @@
 			if (data.jobId) {
 				await watchJob(data.jobId, (line) => {
 					if (line.event === 'progress' && line.data?.message) {
-						logs = [...logs, line.data.message];
+						const translatedLine = getResticText(line.data.message);
+						logs = [...logs, translatedLine];
 					}
 				});
 				status = 'success';
-				logs = [...logs, 'Verification passed'];
+				logs = [...logs, '数据校验通过'];
 			} else if (data.error) {
 				status = 'error';
 				error = data.error;
 			} else {
 				status = data.success ? 'success' : 'error';
-				if (!data.success) error = data.error || 'Unknown error';
+				if (!data.success) error = getResticText(data.error || '未知错误');
 			}
 		} catch (err: any) {
 			status = 'error';
-			error = err.message || 'Verification failed';
+			error = getResticText(err.message || '数据校验失败');
 		} finally {
 			running = false;
 		}
@@ -71,7 +73,7 @@
 	<Dialog.Content class="max-w-lg max-h-[70vh] flex flex-col">
 		<Dialog.Header>
 			<Dialog.Title class="flex items-center gap-2">
-				<ShieldCheck class="w-4 h-4" />Verify backup integrity
+				<ShieldCheck class="w-4 h-4" />备份完整性校验
 			</Dialog.Title>
 			<Dialog.Description>{destinationName}</Dialog.Description>
 		</Dialog.Header>
@@ -79,26 +81,26 @@
 		{#if status === 'idle'}
 			<div class="space-y-3 py-2">
 				<p class="text-xs text-muted-foreground">
-					Reads a random subset of data packs from the repository and verifies they are intact and readable. Larger subsets take longer but provide more thorough verification.
+					从仓库随机读取一部分数据块，校验文件完整性与可读性。选取比例越大耗时越长，但校验结果更全面。
 				</p>
 				<div class="flex items-center gap-3">
-					<span class="text-xs text-muted-foreground shrink-0">Data to verify:</span>
+					<span class="text-xs text-muted-foreground shrink-0">校验数据比例:</span>
 					<Select.Root type="single" value={dataSubset} onValueChange={(v) => dataSubset = v}>
 						<Select.Trigger class="h-8 w-28 text-xs">{dataSubset}</Select.Trigger>
 						<Select.Content>
-							<Select.Item value="5%">5% (quick)</Select.Item>
+							<Select.Item value="5%">5% (快速)</Select.Item>
 							<Select.Item value="10%">10%</Select.Item>
 							<Select.Item value="25%">25%</Select.Item>
 							<Select.Item value="50%">50%</Select.Item>
-							<Select.Item value="100%">100% (full)</Select.Item>
+							<Select.Item value="100%">100% (完整校验)</Select.Item>
 						</Select.Content>
 					</Select.Root>
 				</div>
 			</div>
 			<div class="flex justify-end gap-2 pt-2">
-				<Button variant="outline" size="sm" onclick={() => open = false}>Cancel</Button>
+				<Button variant="outline" size="sm" onclick={() => open = false}>取消</Button>
 				<Button size="sm" onclick={runVerify}>
-					<ShieldCheck class="w-3.5 h-3.5 mr-1.5" />Verify
+					<ShieldCheck class="w-3.5 h-3.5 mr-1.5" />开始校验
 				</Button>
 			</div>
 		{:else}
@@ -108,12 +110,12 @@
 				{/each}
 				{#if status === 'running'}
 					<div class="flex items-center gap-1.5 text-primary">
-						<Loader2 class="w-3 h-3 animate-spin" />Running...
+						<Loader2 class="w-3 h-3 animate-spin" />正在执行...
 					</div>
 				{/if}
 				{#if status === 'success'}
 					<div class="flex items-center gap-1.5 text-green-500 font-medium mt-2">
-						<CheckCircle class="w-3.5 h-3.5" />Verification passed
+						<CheckCircle class="w-3.5 h-3.5" />数据校验通过
 					</div>
 				{/if}
 				{#if status === 'error'}
@@ -123,7 +125,7 @@
 				{/if}
 			</div>
 			<div class="flex justify-end pt-2">
-				<Button variant="outline" size="sm" onclick={() => open = false}>Close</Button>
+				<Button variant="outline" size="sm" onclick={() => open = false}>关闭</Button>
 			</div>
 		{/if}
 	</Dialog.Content>

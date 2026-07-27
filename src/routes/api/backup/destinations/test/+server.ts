@@ -13,7 +13,7 @@ import { buildResticEnv, cleanErrorMsg, isRepoNotInitializedError, RESTIC_EXIT_R
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('backups', 'manage')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const body = await request.json();
@@ -25,7 +25,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 	if (body.destinationId) {
 		// Use saved destination from DB
 		const dest = await getBackupDestination(body.destinationId);
-		if (!dest) return json({ error: 'Destination not found' }, { status: 404 });
+		if (!dest) return json({ error: '备份目标不存在' }, { status: 404 });
 		const decrypted = decryptBackupDestination(dest);
 		repository = dest.repository;
 		password = decrypted.decryptedPassword;
@@ -33,7 +33,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 	} else {
 		// Inline test (before save)
 		if (!body.repository || !body.password) {
-			return json({ error: 'Repository and password are required' }, { status: 400 });
+			return json({ error: '仓库地址与密码为必填项' }, { status: 400 });
 		}
 		// Reject unsupported backends AND SSRF-dangerous hosts (loopback/metadata)
 		// before spawning restic — same guard the save path uses, so an inline test
@@ -79,13 +79,13 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			/unable to open (config|repository)|Is there a repository/i.test(rawStderr);
 
 		if (notInitialized) {
-			if (body.destinationId) await updateBackupDestinationTestStatus(body.destinationId, 'needs_init', 'Repository not initialized');
-			return json({ success: false, needsInit: true, error: 'Repository not initialized' });
+			if (body.destinationId) await updateBackupDestinationTestStatus(body.destinationId, 'needs_init', '仓库尚未初始化');
+			return json({ success: false, needsInit: true, error: '仓库尚未初始化' });
 		}
 
 		// Surface the real restic error (audit #8): derive detail from stderr,
 		// cleaned of embedded JSON/ANSI, falling back to the exit code.
-		const detail = rawStderr ? cleanErrorMsg(rawStderr) : `restic exited with code ${result.code}`;
+		const detail = rawStderr ? cleanErrorMsg(rawStderr) : `restic 已退出，错误码 ${result.code}`;
 		if (body.destinationId) await updateBackupDestinationTestStatus(body.destinationId, 'failed', detail);
 		return json({ success: false, error: detail });
 	} catch (error) {

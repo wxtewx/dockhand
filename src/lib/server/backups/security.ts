@@ -106,7 +106,7 @@ export function isSafeVolumeInclude(inc: string): boolean {
 /** Throwing variant — use at the boundary before building a restore script. */
 export function assertSafeVolumeInclude(inc: string): void {
 	if (!isSafeVolumeInclude(inc)) {
-		throw new Error(`Unsafe restore include path: ${inc}`);
+		throw new Error(`不安全的恢复包含路径: ${inc}`);
 	}
 }
 
@@ -129,7 +129,7 @@ export function isPathWithin(root: string, target: string): boolean {
 /** Throwing variant. `label` names the thing being restored for the error. */
 export function assertTargetWithin(root: string, target: string, label = 'restore target'): void {
 	if (!isPathWithin(root, target)) {
-		throw new Error(`Refusing: ${label} "${target}" resolves outside the allowed directory "${root}".`);
+		throw new Error(`拒绝执行：${label} "${target}" 解析路径超出允许目录 "${root}"。`);
 	}
 }
 

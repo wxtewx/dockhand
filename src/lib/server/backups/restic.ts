@@ -122,7 +122,7 @@ export class Restic {
 				// A timeout kill gives code === null + a signal → exit is undefined
 				// (unknown outcome), which the caller treats as failure.
 				const exitCode = code === null ? undefined : code;
-				const stderrOut = signal ? `${stderr}\n(process killed by ${signal})` : stderr;
+				const stderrOut = signal ? `${stderr}\n(进程被信号 ${signal} 终止)` : stderr;
 				done({ exitCode, stdout, stderr: stderrOut });
 			});
 			proc.on('error', (err) => {
@@ -164,7 +164,7 @@ export class Restic {
 			proc.stderr.on('data', (d) => { stderr += d; });
 			proc.on('close', (code, signal) => {
 				const exitCode = code === null ? undefined : code;
-				const stderrOut = signal ? `${stderr}\n(process killed by ${signal})` : stderr;
+				const stderrOut = signal ? `${stderr}\n(进程被信号 ${signal} 终止` : stderr;
 				done({ exitCode, stdout: Buffer.concat(chunks), stderr: stderrOut });
 			});
 			proc.on('error', (err) => {
@@ -273,9 +273,9 @@ export class Restic {
 			else throw err; // a real inspect error or a timeout BackupError — surface it
 		}
 		if (!exists) {
-			console.log(`[Backups] Pulling helper image: ${image}`);
+			console.log(`[备份] 正在拉取辅助镜像: ${image}`);
 			await withTimeout(pullImage(image, undefined, envId ?? undefined), HELPER_PULL_TIMEOUT_MS,
-				`timed out pulling helper image "${image}" — check that it is available and the registry is reachable`);
+				`拉取辅助镜像 "${image}" 超时 — 请确认镜像地址有效且镜像仓库可访问`);
 		}
 		return image;
 	}

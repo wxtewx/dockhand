@@ -8,7 +8,7 @@ import { guardSnapshotEnvAccess } from '$lib/server/backups/route-guards';
 export const GET: RequestHandler = async ({ params, url, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('backups', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const snapshotId = params.id;
@@ -16,10 +16,10 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 	if (invalidSnap) return invalidSnap;
 
 	const destIdParam = url.searchParams.get('destinationId');
-	if (!destIdParam) return json({ error: 'destinationId is required' }, { status: 400 });
+	if (!destIdParam) return json({ error: '必须提供 destinationId' }, { status: 400 });
 
 	const destinationId = parseInt(destIdParam);
-	if (isNaN(destinationId)) return json({ error: 'Invalid destinationId' }, { status: 400 });
+	if (isNaN(destinationId)) return json({ error: '无效的 destinationId' }, { status: 400 });
 
 	// (HIGH #8) Enforce per-environment access on the snapshot's owning env.
 	const envDenied = await guardSnapshotEnvAccess(auth, destinationId, snapshotId);
@@ -27,7 +27,7 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 
 	try {
 		const metadata = await getSnapshotMetadata(destinationId, snapshotId);
-		if (!metadata) return json({ error: 'No metadata available' }, { status: 404 });
+		if (!metadata) return json({ error: '未获取到元数据' }, { status: 404 });
 		return json(metadata);
 	} catch (error) {
 		const msg = error instanceof Error ? error.message : String(error);

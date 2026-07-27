@@ -44,20 +44,20 @@ export async function assertInstanceOwned(
 	snapshotId: string,
 ): Promise<string[]> {
 	if (!isValidSnapshotId(snapshotId)) {
-		throw new BackupError('VALIDATION', 'invalid snapshot id');
+		throw new BackupError('VALIDATION', '无效快照 ID');
 	}
 	const run = await restic.runLocal(destination, [
 		'snapshots', '--json', '--no-lock', '--tag', instanceTagFilter(instanceId), snapshotId,
 	]);
 	if (run.exitCode !== 0) {
-		throw new BackupError('RESTIC', `could not verify snapshot ownership: ${run.stderr.trim() || 'restic failed'}`);
+		throw new BackupError('RESTIC', `无法校验快照归属：${run.stderr.trim() || 'restic 执行失败'}`);
 	}
 	const snaps = parseSnapshots(run.stdout);
 	const match = snaps.find((s) => s.id === snapshotId || s.shortId === snapshotId);
 	if (!match) {
 		// Not found under our instance tag → not ours. Report as not-found so we
 		// don't reveal that the id exists under another instance.
-		throw new BackupError('VALIDATION', 'snapshot not found for this installation', { snapshotId });
+		throw new BackupError('VALIDATION', '未找到属于当前实例的快照', { snapshotId });
 	}
 	return match.tags;
 }
@@ -72,11 +72,11 @@ export async function assertEnvAccess(access: AccessContext, tags: string[]): Pr
 	if (!access.isEnterprise) return; // no per-env boundaries outside enterprise
 	const envId = readEnvIdFromTags(tags);
 	if (envId === null) {
-		throw new BackupError('VALIDATION', 'could not resolve the snapshot environment (denied)');
+		throw new BackupError('VALIDATION', '无法解析快照所属环境，访问已拒绝');
 	}
 	if (envId === 'local') return; // an unscoped snapshot has no env gate
 	if (!(await access.canAccessEnvironment(envId))) {
-		throw new BackupError('VALIDATION', 'access denied to this snapshot environment');
+		throw new BackupError('VALIDATION', '无权访问该快照所属环境');
 	}
 }
 
@@ -170,7 +170,7 @@ export async function listSnapshots(
 	if (run.exitCode !== 0) {
 		// An empty repo (not initialised) and a real error look different; surface
 		// the stderr so the caller can classify. Return [] only on a clean exit.
-		throw new BackupError('RESTIC', run.stderr.trim() || 'could not list snapshots');
+		throw new BackupError('RESTIC', run.stderr.trim() || '无法列出快照');
 	}
 	const snaps = parseSnapshots(run.stdout);
 	if (!access.isEnterprise) return snaps;

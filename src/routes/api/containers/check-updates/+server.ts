@@ -32,11 +32,11 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 	const envIdNum = envId ? parseInt(envId) : undefined;
 
 	if (!envIdNum) {
-		return json({ error: 'Environment ID required' }, { status: 400 });
+		return json({ error: '必须传入环境 ID' }, { status: 400 });
 	}
 
 	if (auth.authEnabled && !await auth.can('containers', 'view', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -51,8 +51,8 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 			}))
 		});
 	} catch (error: any) {
-		console.error('Error getting pending updates:', error);
-		return json({ error: 'Failed to get pending updates', details: error.message }, { status: 500 });
+		console.error('获取待更新容器信息失败:', error);
+		return json({ error: '获取待更新容器信息失败', details: error.message }, { status: 500 });
 	}
 };
 
@@ -68,7 +68,7 @@ export const POST: RequestHandler = async ({ url, cookies, request }) => {
 
 	// Need at least view permission
 	if (auth.authEnabled && !await auth.can('containers', 'view', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	return createJobResponse(async (send) => {
@@ -101,7 +101,7 @@ export const POST: RequestHandler = async ({ url, cookies, request }) => {
 						containerName: container.name,
 						imageName: container.image,
 						hasUpdate: false,
-						error: 'Could not determine image name',
+						error: '无法确定镜像名称',
 						systemContainer: isSystemContainer(container.image) || null
 					};
 				}

@@ -14,33 +14,33 @@ export const DELETE: RequestHandler = async (event) => {
 
 	const authEnabled = await isAuthEnabled();
 	if (!authEnabled) {
-		return json({ error: 'Authentication is not enabled' }, { status: 400 });
+		return json({ error: '认证未启用' }, { status: 400 });
 	}
 
 	// Bearer tokens cannot manage tokens (prevent leaked token from revoking others)
 	const reqCtx = getRequestContext();
 	if (reqCtx?.authMethod === 'bearer') {
-		return json({ error: 'Token management requires a cookie session' }, { status: 403 });
+		return json({ error: '令牌管理需要会话登录' }, { status: 403 });
 	}
 
 	const auth = await authorize(cookies);
 	if (!auth.isAuthenticated || !auth.user) {
-		return json({ error: 'Authentication required' }, { status: 401 });
+		return json({ error: '需要认证' }, { status: 401 });
 	}
 
 	const tokenId = parseInt(params.id);
 	if (isNaN(tokenId)) {
-		return json({ error: 'Invalid token ID' }, { status: 400 });
+		return json({ error: '无效的令牌 ID' }, { status: 400 });
 	}
 
 	const success = await revokeApiToken(tokenId, auth.user.id, auth.isAdmin);
 	if (!success) {
-		return json({ error: 'Token not found or access denied' }, { status: 404 });
+		return json({ error: '令牌不存在或无访问权限' }, { status: 404 });
 	}
 
 	await audit(event, 'delete', 'api_token', {
 		entityId: params.id,
-		description: `API token revoked`
+		description: `API 令牌已吊销`
 	});
 
 	return json({ success: true });

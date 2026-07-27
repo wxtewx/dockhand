@@ -11,7 +11,7 @@ export const POST: RequestHandler = async (event) => {
 	const { request, cookies } = event;
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('backups', 'manage')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const body = await request.json();
@@ -26,7 +26,7 @@ export const POST: RequestHandler = async (event) => {
 	// never learns anything about the request shape.
 	// Target environment access (enterprise RBAC).
 	if (body.environmentId && auth.isEnterprise && !await auth.canAccessEnvironment(body.environmentId)) {
-		return json({ error: 'Access denied to target environment' }, { status: 403 });
+		return json({ error: '无权访问目标环境' }, { status: 403 });
 	}
 	// Gate on the SNAPSHOT's owning environment too (server-resolved, fail-closed).
 	const denied = await guardSnapshotEnvAccess(auth, body.destinationId, body.snapshotId);
@@ -48,7 +48,7 @@ export const POST: RequestHandler = async (event) => {
 		volumeDestinations,
 	});
 	if (!check.ok) {
-		return json({ error: 'Invalid restore request', issues: check.issues }, { status: 400 });
+		return json({ error: '无效的恢复请求', issues: check.issues }, { status: 400 });
 	}
 
 	await auditRestore(event, body.targetName || 'unknown', body.environmentId, { snapshotId: body.snapshotId, destinationId: body.destinationId, mode });
@@ -82,7 +82,7 @@ export const POST: RequestHandler = async (event) => {
 		send('result', result);
 
 		if (result.status === 'error') {
-			throw new Error(result.error || 'Restore failed');
+			throw new Error(result.error || '恢复失败');
 		}
 	}, request);
 };

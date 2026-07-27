@@ -32,6 +32,16 @@
 		expanded = s;
 	}
 
+	function formatTimestamp(ts: string): string {
+		if (!ts) return '-';
+		let fixedIso = ts.trim();
+		if (!fixedIso.includes('T')) fixedIso = fixedIso.replace(' ', 'T');
+		if (!fixedIso.endsWith('Z') && !fixedIso.includes('+') && !fixedIso.includes('-', 10)) {
+			fixedIso += 'Z';
+		}
+		return formatDateTime(fixedIso, true);
+	}
+	
 	function cleanError(msg: string): string {
 		try { const p = JSON.parse(msg); if (p.message) return p.message; } catch {}
 		const m = msg.match(/\{"message":"([^"]+)"\}/);
@@ -65,7 +75,7 @@
 		}
 	}
 	function triggerLabel(trigger: string) {
-		return trigger === 'cron' ? 'Scheduled' : trigger === 'webhook' ? 'Webhook' : 'Manual';
+		return trigger === 'cron' ? '定时任务' : trigger === 'webhook' ? 'Webhook' : '手动执行';
 	}
 </script>
 
@@ -74,20 +84,20 @@
 {:else if executions.length === 0}
 	<div class="flex flex-col items-center justify-center py-10 text-center">
 		<Clock class="mb-3 h-10 w-10 text-muted-foreground/40" />
-		<p class="text-sm text-muted-foreground">No backup runs yet.</p>
-		<p class="mt-1 text-xs text-muted-foreground">Run a backup — its history appears here.</p>
+		<p class="text-sm text-muted-foreground">暂无备份记录。</p>
+		<p class="mt-1 text-xs text-muted-foreground">执行一次备份，运行历史将会展示在此处。</p>
 	</div>
 {:else}
 	<div class="overflow-x-auto">
 		<table class="w-full text-xs">
 			<thead>
 				<tr class="border-b text-left text-muted-foreground">
-					<th class="py-1.5 pl-2 font-medium">Run</th>
-					<th class="py-1.5 pl-2 text-center font-medium">Trigger</th>
-					<th class="py-1.5 pl-2 font-medium">Duration</th>
-					<th class="py-1.5 pl-2 text-center font-medium">Status</th>
-					<th class="py-1.5 pl-2 font-medium">Detail</th>
-					{#if showRepo}<th class="py-1.5 pl-2 font-medium">Repo</th>{/if}
+					<th class="py-1.5 pl-2 font-medium">执行时间</th>
+					<th class="py-1.5 pl-2 text-center font-medium">触发方式</th>
+					<th class="py-1.5 pl-2 font-medium">耗时</th>
+					<th class="py-1.5 pl-2 text-center font-medium">状态</th>
+					<th class="py-1.5 pl-2 font-medium">详情</th>
+					{#if showRepo}<th class="py-1.5 pl-2 font-medium">仓库</th>{/if}
 					<th class="py-1.5 pr-2 font-medium"></th>
 				</tr>
 			</thead>
@@ -99,7 +109,7 @@
 					{@const isFail = exec.status === 'failed'}
 					{@const isOpen = expanded.has(exec.id)}
 					<tr class="border-b text-xs last:border-0 hover:bg-muted/30">
-						<td class="py-1.5 pl-2 font-mono">{exec.triggeredAt ? formatDateTime(exec.triggeredAt, true) : '—'}</td>
+						<td class="py-1.5 pl-2 font-mono">{exec.triggeredAt ? formatTimestamp(exec.triggeredAt) : '—'}</td>
 						<td class="py-1.5 pl-2 text-center">
 							<span class="inline-flex h-5 w-5 items-center justify-center rounded bg-muted text-muted-foreground" title={triggerLabel(exec.triggeredBy)}>
 								<TrigIcon class="h-3 w-3" />
@@ -115,7 +125,7 @@
 							{#if exec.errorMessage}
 								<span class="text-destructive">{cleanError(exec.errorMessage)}</span>
 							{:else if exec.status === 'success' && exec.details?.dataAdded !== undefined}
-								<span class="text-muted-foreground">{exec.details.filesNew ?? 0} new · {exec.details.filesChanged ?? 0} changed · {formatBytes(exec.details.dataAdded ?? 0)}</span>
+								<span class="text-muted-foreground">{exec.details.filesNew ?? 0} 新增 · {exec.details.filesChanged ?? 0} 修改 · {formatBytes(exec.details.dataAdded ?? 0)}</span>
 							{:else}
 								<span class="text-muted-foreground/60">—</span>
 							{/if}
@@ -133,12 +143,12 @@
 						<td class="py-1.5 pr-2 text-right">
 							<div class="flex items-center justify-end gap-0.5">
 								{#if onViewLog}
-									<button type="button" class="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" onclick={() => onViewLog?.(exec.id)} title="View log">
+									<button type="button" class="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" onclick={() => onViewLog?.(exec.id)} title="查看日志">
 										<FileText class="h-3 w-3" />
 									</button>
 								{/if}
 								{#if isFail && exec.errorMessage}
-									<button type="button" class="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" onclick={() => toggle(exec.id)} title={isOpen ? 'Hide error' : 'Show error'}>
+									<button type="button" class="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" onclick={() => toggle(exec.id)} title={isOpen ? '隐藏错误信息' : '展开错误信息'}>
 										<ChevronDown class="h-3.5 w-3.5 transition-transform {isOpen ? '' : '-rotate-90'}" />
 									</button>
 								{/if}
@@ -150,7 +160,7 @@
 							<td colspan={showRepo ? 7 : 6} class="px-2 py-2">
 								<div class="rounded-md border border-l-[3px] border-destructive/40 border-l-destructive bg-destructive/5 p-2.5">
 									<div class="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-destructive">
-										<X class="h-3 w-3" /> Backup failed
+										<X class="h-3 w-3" /> 备份失败
 									</div>
 									<pre class="whitespace-pre-wrap break-all font-mono text-[11px] text-destructive/90">{exec.errorMessage}</pre>
 								</div>

@@ -8,7 +8,7 @@ import { guardSnapshotEnvAccess } from '$lib/server/backups/route-guards';
 export const GET: RequestHandler = async ({ params, url, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('backups', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const snapshotId = params.id;
@@ -16,10 +16,10 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 	if (invalidSnap) return invalidSnap;
 
 	const destIdParam = url.searchParams.get('destinationId');
-	if (!destIdParam) return json({ error: 'destinationId parameter is required' }, { status: 400 });
+	if (!destIdParam) return json({ error: '必须提供 destinationId 参数' }, { status: 400 });
 
 	const destinationId = parseInt(destIdParam);
-	if (isNaN(destinationId)) return json({ error: 'Invalid destinationId' }, { status: 400 });
+	if (isNaN(destinationId)) return json({ error: '无效的 destinationId' }, { status: 400 });
 
 	// (HIGH #8) Enforce per-environment access on the snapshot's OWNING env,
 	// resolved server-side from its tag — not a caller-supplied param.
@@ -27,14 +27,14 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 	if (envDenied) return envDenied;
 
 	const path = url.searchParams.get('path');
-	if (!path) return json({ error: 'path parameter is required' }, { status: 400 });
+	if (!path) return json({ error: '必须提供 path 参数' }, { status: 400 });
 
 	const download = url.searchParams.get('download') === '1';
 	const isDir = url.searchParams.get('type') === 'directory';
 
 	// Validate path — no traversal
 	if (path.includes('..')) {
-		return json({ error: 'Invalid path' }, { status: 400 });
+		return json({ error: '路径不合法' }, { status: 400 });
 	}
 
 	// Restrict dumps to the known snapshot roots so arbitrary snapshot paths can't be
@@ -45,7 +45,7 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 		path !== '/volumes' && path !== '/metadata' &&
 		!path.startsWith('/volumes/') && !path.startsWith('/metadata/')
 	) {
-		return json({ error: 'Invalid path' }, { status: 400 });
+		return json({ error: '路径不合法' }, { status: 400 });
 	}
 
 	// Sanitize filename for Content-Disposition (strip quotes, backslashes, control chars)

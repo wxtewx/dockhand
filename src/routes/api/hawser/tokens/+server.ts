@@ -18,11 +18,11 @@ export const GET: RequestHandler = async ({ cookies }) => {
 	const auth = await authorize(cookies);
 
 	if (auth.authEnabled && !auth.isAuthenticated) {
-		return json({ error: 'Unauthorized' }, { status: 401 });
+		return json({ error: '未授权' }, { status: 401 });
 	}
 
 	if (auth.authEnabled && !auth.isAdmin) {
-		return json({ error: 'Admin access required' }, { status: 403 });
+		return json({ error: '需要管理员权限' }, { status: 403 });
 	}
 
 	try {
@@ -42,8 +42,8 @@ export const GET: RequestHandler = async ({ cookies }) => {
 
 		return json(tokens);
 	} catch (error) {
-		console.error('Error fetching Hawser tokens:', error);
-		return json({ error: 'Failed to fetch tokens' }, { status: 500 });
+		console.error('获取 Hawser 令牌失败:', error);
+		return json({ error: '获取令牌失败' }, { status: 500 });
 	}
 };
 
@@ -58,11 +58,11 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 	const auth = await authorize(cookies);
 
 	if (auth.authEnabled && !auth.isAuthenticated) {
-		return json({ error: 'Unauthorized' }, { status: 401 });
+		return json({ error: '未授权' }, { status: 401 });
 	}
 
 	if (auth.authEnabled && !auth.isAdmin) {
-		return json({ error: 'Admin access required' }, { status: 403 });
+		return json({ error: '需要管理员权限' }, { status: 403 });
 	}
 
 	try {
@@ -70,11 +70,11 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		const { name, environmentId, expiresAt, rawToken } = body;
 
 		if (!name || typeof name !== 'string') {
-			return json({ error: 'Token name is required' }, { status: 400 });
+			return json({ error: '令牌名称为必填项' }, { status: 400 });
 		}
 
 		if (!environmentId || typeof environmentId !== 'number') {
-			return json({ error: 'Environment ID is required' }, { status: 400 });
+			return json({ error: '环境 ID 为必填项' }, { status: 400 });
 		}
 
 		const result = await generateHawserToken(name, environmentId, expiresAt, rawToken);
@@ -82,11 +82,11 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		return json({
 			token: result.token,
 			tokenId: result.tokenId,
-			message: 'Token generated successfully. Save this token - it will not be shown again.'
+			message: '令牌生成成功。请保存此令牌 —— 它将不会再次显示。'
 		});
 	} catch (error) {
-		console.error('Error generating Hawser token:', error);
-		return json({ error: 'Failed to generate token' }, { status: 500 });
+		console.error('生成 Hawser 令牌失败:', error);
+		return json({ error: '生成令牌失败' }, { status: 500 });
 	}
 };
 
@@ -100,23 +100,23 @@ export const DELETE: RequestHandler = async ({ url, cookies }) => {
 	const auth = await authorize(cookies);
 
 	if (auth.authEnabled && !auth.isAuthenticated) {
-		return json({ error: 'Unauthorized' }, { status: 401 });
+		return json({ error: '未授权' }, { status: 401 });
 	}
 
 	if (auth.authEnabled && !auth.isAdmin) {
-		return json({ error: 'Admin access required' }, { status: 403 });
+		return json({ error: '需要管理员权限' }, { status: 403 });
 	}
 
 	const tokenId = url.searchParams.get('id');
 	if (!tokenId) {
-		return json({ error: 'Token ID is required' }, { status: 400 });
+		return json({ error: '令牌 ID 为必填项' }, { status: 400 });
 	}
 
 	try {
 		await revokeHawserToken(parseInt(tokenId, 10));
-		return json({ success: true, message: 'Token revoked' });
+		return json({ success: true, message: '令牌已吊销' });
 	} catch (error) {
-		console.error('Error revoking Hawser token:', error);
-		return json({ error: 'Failed to revoke token' }, { status: 500 });
+		console.error('吊销 Hawser 令牌失败:', error);
+		return json({ error: '吊销令牌失败' }, { status: 500 });
 	}
 };

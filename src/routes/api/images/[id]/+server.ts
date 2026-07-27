@@ -18,16 +18,16 @@ export const DELETE: RequestHandler = async (event) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('images', 'remove', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Environment access check (enterprise only)
 	if (envIdNum && auth.isEnterprise && !await auth.canAccessEnvironment(envIdNum)) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问此环境' }, { status: 403 });
 	}
 
 	try {
-		console.log('Delete image request - params.id:', params.id, 'force:', force, 'envId:', envIdNum);
+		console.log('删除镜像请求 - params.id:', params.id, '强制删除:', force, '环境 ID:', envIdNum);
 
 		// Get image name for audit before deleting
 		let imageName = params.id;
@@ -35,7 +35,7 @@ export const DELETE: RequestHandler = async (event) => {
 			const imageInfo = await inspectImage(params.id, envIdNum);
 			imageName = imageInfo.RepoTags?.[0] || params.id;
 		} catch (e) {
-			console.log('Could not inspect image:', e);
+			console.log('无法检查镜像:', e);
 			// Use ID if can't get name
 		}
 
@@ -46,20 +46,20 @@ export const DELETE: RequestHandler = async (event) => {
 
 		return json({ success: true });
 	} catch (error: any) {
-		console.error('Error removing image:', error.message, 'statusCode:', error.statusCode, 'json:', error.json);
+		console.error('删除镜像失败:', error.message, '状态码:', error.statusCode, '错误信息:', error.json);
 
 		// Handle specific Docker errors
 		if (error.statusCode === 409) {
 			const message = error.json?.message || error.message || '';
 			if (message.includes('being used by running container')) {
-				return json({ error: 'Cannot delete image: it is being used by a running container. Stop the container first.' }, { status: 409 });
+				return json({ error: '无法删除镜像：正在被运行中的容器使用。请先停止容器。' }, { status: 409 });
 			}
 			if (message.includes('has dependent child images')) {
-				return json({ error: 'Cannot delete image: it has dependent child images. Delete those first or use force delete.' }, { status: 409 });
+				return json({ error: '无法删除镜像：存在依赖的子镜像。请先删除子镜像或使用强制删除。' }, { status: 409 });
 			}
-			return json({ error: message || 'Image is in use and cannot be deleted' }, { status: 409 });
+			return json({ error: message || '镜像正在使用中，无法删除' }, { status: 409 });
 		}
 
-		return json({ error: 'Failed to remove image' }, { status: 500 });
+		return json({ error: '删除镜像失败' }, { status: 500 });
 	}
 };

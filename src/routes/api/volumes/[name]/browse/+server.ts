@@ -16,7 +16,7 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('volumes', 'inspect', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -39,17 +39,17 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 			helperId: result.containerId
 		});
 	} catch (error: any) {
-		console.error('Failed to browse volume:', error);
+		console.error('浏览数据卷失败：', error);
 
 		if (error.message?.includes('No such file or directory')) {
-			return json({ error: 'Directory not found', path: url.searchParams.get('path') || '/' }, { status: 404 });
+			return json({ error: '目录不存在', path: url.searchParams.get('path') || '/' }, { status: 404 });
 		}
 		if (error.message?.includes('Permission denied')) {
-			return json({ error: 'Permission denied to access this path' }, { status: 403 });
+			return json({ error: '访问此路径权限不足' }, { status: 403 });
 		}
 
 		return json({
-			error: 'Failed to browse volume',
+			error: '浏览数据卷失败',
 			details: error.message || String(error)
 		}, { status: 500 });
 	}
