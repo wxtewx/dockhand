@@ -35,7 +35,7 @@
 		value = $bindable(),
 		disableLocalForRemoteEnv = false,
 		triggerClass = 'h-9 w-full',
-		placeholder = 'Select repository...'
+		placeholder = '选择仓库...'
 	}: Props = $props();
 
 	const selected = $derived(destinations.find((d) => d.id === value));
@@ -66,7 +66,7 @@
 					<span class="flex items-center gap-2 opacity-50">
 						<DIcon class="w-4 h-4 text-muted-foreground" />
 						{dest.name}
-						<span class="text-xs text-muted-foreground">— local</span>
+						<span class="text-xs text-muted-foreground">— 本地</span>
 					</span>
 				</Select.Item>
 			{:else}

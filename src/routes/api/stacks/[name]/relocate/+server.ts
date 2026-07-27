@@ -14,7 +14,7 @@ import { join, dirname } from 'node:path';
 export const POST: RequestHandler = async ({ params, request, url, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !(await auth.can('stacks', 'edit'))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const { name } = params;
@@ -26,14 +26,14 @@ export const POST: RequestHandler = async ({ params, request, url, cookies }) =>
 		const { oldDir, newComposePath, newEnvPath } = body;
 
 		if (!oldDir || !newComposePath) {
-			return json({ error: 'oldDir and newComposePath are required' }, { status: 400 });
+			return json({ error: 'oldDir 和 newComposePath 为必填项' }, { status: 400 });
 		}
 
 		const newDir = dirname(newComposePath);
 
 		// Verify old directory exists
 		if (!existsSync(oldDir)) {
-			return json({ error: 'Source directory does not exist' }, { status: 400 });
+			return json({ error: '源目录不存在' }, { status: 400 });
 		}
 
 		// Create new directory if it doesn't exist
@@ -63,10 +63,10 @@ export const POST: RequestHandler = async ({ params, request, url, cookies }) =>
 						unlinkSync(oldFilePath);
 						movedFiles.push(file);
 					} catch (copyErr: any) {
-						errors.push(`Failed to copy ${file}: ${copyErr.message}`);
+						errors.push(`复制 ${file} 失败：${copyErr.message}`);
 					}
 				} else {
-					errors.push(`Failed to move ${file}: ${renameErr.message}`);
+					errors.push(`移动 ${file} 失败：${renameErr.message}`);
 				}
 			}
 		}
@@ -125,7 +125,7 @@ export const POST: RequestHandler = async ({ params, request, url, cookies }) =>
 			envVars
 		});
 	} catch (error: any) {
-		console.error(`Error relocating stack ${name}:`, error);
-		return json({ error: error.message || 'Failed to relocate stack' }, { status: 500 });
+		console.error(`迁移堆栈 ${name} 时出错：`, error);
+		return json({ error: error.message || '迁移堆栈失败' }, { status: 500 });
 	}
 };

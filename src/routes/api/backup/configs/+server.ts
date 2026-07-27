@@ -27,7 +27,7 @@ function isRemoteEnv(connectionType?: string | null, host?: string | null): bool
 export const GET: RequestHandler = async ({ url, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('backups', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const type = url.searchParams.get('type') ?? undefined;
@@ -60,36 +60,36 @@ export const POST: RequestHandler = async (event) => {
 	const { request, cookies } = event;
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('backups', 'manage')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const body = await request.json();
 
 	if (!body.destinationId || !body.targetName) {
-		return json({ error: 'Missing required fields: destinationId, targetName' }, { status: 400 });
+		return json({ error: '缺少必填参数：destinationId、targetName' }, { status: 400 });
 	}
 
 	// Light allowlist on targetName — it flows into paths/restic tags. Complements
 	// the stack-path traversal guard (audit #43).
 	if (typeof body.targetName !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(body.targetName)) {
-		return json({ error: 'Invalid targetName' }, { status: 400 });
+		return json({ error: '目标名称格式非法' }, { status: 400 });
 	}
 
 	// Validate cron schedule if provided (audit #7)
 	if (typeof body.schedule === 'string' && body.schedule.trim() && !isValidCron(body.schedule.trim())) {
-		return json({ error: `Invalid cron expression: ${body.schedule}` }, { status: 400 });
+		return json({ error: `Cron 表达式无效: ${body.schedule}` }, { status: 400 });
 	}
 
 	// Validate retention keep-* values before persisting (audit medium #13) — reject
 	// negative/fractional/string/out-of-range so corrupt retention can't reach restic.
 	const retentionCheck = validateRetention(body.retention);
 	if (!retentionCheck.ok) {
-		return json({ error: `Invalid retention: ${retentionCheck.reason}` }, { status: 400 });
+		return json({ error: `保留策略配置无效: ${retentionCheck.reason}` }, { status: 400 });
 	}
 
 	// Environment access check (enterprise RBAC)
 	if (body.environmentId && auth.isEnterprise && !await auth.canAccessEnvironment(body.environmentId)) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问该环境' }, { status: 403 });
 	}
 
 	// Refuse local repo + remote env: the restic helper runs on the REMOTE
@@ -102,7 +102,7 @@ export const POST: RequestHandler = async (event) => {
 		]);
 		if (dest && env && isRemoteEnv(env.connectionType, env.host) && isLocalRepo(dest.repository)) {
 			return json({
-				error: `Local repository "${dest.name}" cannot back up containers on remote environment "${env.name}". Use S3, REST, or another non-local backend.`
+				error: `本地存储仓库 "${dest.name}" 无法备份远程环境 "${env.name}" 中的容器。请使用 S3、REST 或其他非本地存储后端。`
 			}, { status: 400 });
 		}
 	}

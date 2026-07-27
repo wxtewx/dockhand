@@ -198,7 +198,7 @@ export class RestoreService {
 			const available = await this.ports.listSnapshotVolumes(job.destinationId, job.snapshotId);
 			const requested = job.volumes.length > 0 ? job.volumes : available;
 			const missing = requested.filter((v) => !available.includes(v));
-			if (missing.length > 0) throw new BackupError('VALIDATION', `${missing.join(', ')} not found in snapshot. Available: ${available.join(', ') || 'none'}`);
+			if (missing.length > 0) throw new BackupError('VALIDATION', `在快照中未找到：${missing.join(', ')}。可用：${available.join(', ') || '无'}`);
 
 			// Four paths on (mode, targetType). A stack carries its compose files in
 			// the snapshot, so its paths also restore/redeploy that definition.
@@ -220,11 +220,11 @@ export class RestoreService {
 						if (job.targetType === 'stack') {
 							if (await this.ports.stackExists(name, job.environmentId)) {
 								throw new BackupError('VALIDATION',
-									`a stack "${name}" already exists on the target environment; remove it or choose another name before cloning`);
+									`目标环境已存在堆栈 "${name}"；请先删除该堆栈或更换名称后再执行克隆恢复`);
 							}
 						} else if (await this.ports.containerExists(name, job.environmentId)) {
 							throw new BackupError('VALIDATION',
-								`a container "${name}" already exists on the target environment; remove it or choose another name before cloning`);
+								`目标环境已存在容器 "${name}"；请先删除该容器或更换名称后再执行克隆恢复`);
 						}
 					}
 					return job.targetType === 'stack'
@@ -277,7 +277,7 @@ export class RestoreService {
 				await this.ports.writeLocalStackFiles(job.destinationId, job.snapshotId, job.targetName, job.targetPath, overwrite);
 			} catch (e) {
 				// the volume restore already succeeded; local stack files are best-effort
-				console.log(`[Restore] writeLocalStackFiles threw for "${job.targetName}": ${e instanceof Error ? e.message : String(e)}`);
+				console.log(`[恢复] 写入本地堆栈文件异常 "${job.targetName}"：${e instanceof Error ? e.message : String(e)}`);
 			}
 		}
 		return result;
@@ -285,11 +285,11 @@ export class RestoreService {
 
 	/** Shared non-destructive restore: extract the given includes to targetPath. */
 	private async runNewLocationTo(job: RestoreJob, triggeredBy: 'manual' | 'cron', volumes: string[], includes: string[]): Promise<RestoreResult> {
-		const op = await this.ports.openOperation(`Restore ${job.snapshotId.slice(0, 8)} → ${job.targetPath}`, job.environmentId, triggeredBy);
+		const op = await this.ports.openOperation(`恢复 ${job.snapshotId.slice(0, 8)} → ${job.targetPath}`, job.environmentId, triggeredBy);
 		try {
 			includes.forEach(assertSafeVolumeInclude);
 			const args = buildNewLocationRestore(job.snapshotId, job.targetPath!, includes, job.restoreFlags ?? []);
-			op.progress('restoring', `Restoring ${volumes.length} volume(s) to ${job.targetPath}...`);
+			op.progress('restoring', `正在将 ${volumes.length} 个数据卷恢复至 ${job.targetPath}...`);
 			this.emitVolumeList(op, volumes);
 			// Bind the target path OUT to the host at the same path, so restic's
 			// `--target ${targetPath}` writes to a durable host location instead of
@@ -298,7 +298,7 @@ export class RestoreService {
 			const run = await this.ports.runInHelper({ args, binds: [`${job.targetPath}:${job.targetPath}`], envId: job.environmentId, name: this.ports.helperName(job.snapshotId),
 				onStderr: (line) => { for (const l of formatResticLines(line)) op.progress('progress', l.startsWith('[dockhand]') ? l : `[restic] ${l}`); } });
 				this.emitResticStdout(op, run.stdout);
-			if (!resticOk(run)) throw new BackupError('RESTIC', run.stderr.trim() || 'restore failed', { exitCode: run.exitCode });
+			if (!resticOk(run)) throw new BackupError('RESTIC', run.stderr.trim() || '恢复失败', { exitCode: run.exitCode });
 			await op.close({ kind: 'ok' }, { snapshotId: job.snapshotId, volumes, targetPath: job.targetPath });
 			await this.notifyOk(job, volumes);
 			return { status: 'success', executionId: op.id, restoredVolumes: volumes, targetPath: job.targetPath! };
@@ -350,7 +350,7 @@ export class RestoreService {
 
 		return this.ports.serializeDestination(job.destinationId, async () => {
 			const op = await this.ports.openOperation(
-				`Clone ${job.snapshotId.slice(0, 8)} → ${job.targetName ?? 'target'}`, env, triggeredBy);
+				`克隆恢复 ${job.snapshotId.slice(0, 8)} → ${job.targetName ?? '目标'}`, env, triggeredBy);
 			try {
 				// --- populate the mapped destinations (fail-closed on volume collision) ---
 				if (mapped.length > 0) {
@@ -363,7 +363,7 @@ export class RestoreService {
 						if (d.kind === 'volume') {
 							if (await this.ports.volumeExists(d.target, env)) {
 								throw new BackupError('VALIDATION',
-									`volume "${d.target}" already exists on the target environment; remove it or choose another destination before cloning`);
+									`目标环境已存在数据卷 "${d.target}"；请先删除该数据卷或更换目标路径后再执行克隆恢复`);
 							}
 							await this.ports.createTargetVolume(d.target, env);
 						}
@@ -372,12 +372,12 @@ export class RestoreService {
 						mountRoots.push(include);
 					}
 					const script = buildCloneRestore(job.snapshotId, mountRoots, job.restoreFlags ?? []);
-					op.progress('restoring', `Populating ${mapped.length} volume(s) on the target environment...`);
+					op.progress('restoring', `正在向目标环境填充 ${mapped.length} 个数据卷...`);
 						this.emitVolumeList(op, mapped);
 					const run = await this.ports.runInHelper({ script, binds, envId: env, name: this.ports.helperName(job.snapshotId),
 						onStderr: (line) => { for (const l of formatResticLines(line)) op.progress('progress', l.startsWith('[dockhand]') ? l : `[restic] ${l}`); } });
 						this.emitResticStdout(op, run.stdout);
-					if (!resticOk(run)) throw new BackupError('RESTIC', run.stderr.trim() || 'clone restore failed', { exitCode: run.exitCode });
+					if (!resticOk(run)) throw new BackupError('RESTIC', run.stderr.trim() || '克隆恢复失败', { exitCode: run.exitCode });
 				}
 
 				// --- loose-files fallback for any un-mapped volumes (extract to targetPath) ---
@@ -385,12 +385,12 @@ export class RestoreService {
 					const includes = loose.map((v) => `/volumes/${v}`);
 					includes.forEach(assertSafeVolumeInclude);
 					const args = buildNewLocationRestore(job.snapshotId, job.targetPath, includes, job.restoreFlags ?? []);
-					op.progress('restoring', `Extracting ${loose.length} volume(s) to ${job.targetPath}...`);
+					op.progress('restoring', `正在将 ${loose.length} 个数据卷解压至 ${job.targetPath}...`);
 						this.emitVolumeList(op, loose);
 					const run = await this.ports.runInHelper({ args, binds: [`${job.targetPath}:${job.targetPath}`], envId: env, name: this.ports.helperName(job.snapshotId),
 						onStderr: (line) => { for (const l of formatResticLines(line)) op.progress('progress', l.startsWith('[dockhand]') ? l : `[restic] ${l}`); } });
 						this.emitResticStdout(op, run.stdout);
-					if (!resticOk(run)) throw new BackupError('RESTIC', run.stderr.trim() || 'clone restore failed', { exitCode: run.exitCode });
+					if (!resticOk(run)) throw new BackupError('RESTIC', run.stderr.trim() || '克隆恢复失败', { exitCode: run.exitCode });
 				}
 
 				// --- bring the target up on the chosen env ---
@@ -406,7 +406,7 @@ export class RestoreService {
 				// the daemon said (e.g. a source network/image missing on the target) and
 				// fixes it themselves — we don't parse or interpret it. The volume data is
 				// already restored; only the container/stack wasn't brought up.
-				const rawErr = outcome.error ?? `${outcome.action} failed`;
+				const rawErr = outcome.error ?? `${outcome.action} 执行失败`;
 				op.progress('error', rawErr);
 				await op.close({ kind: 'error', code: 'DOCKER', message: rawErr }, { snapshotId: job.snapshotId, volumes, postRestore: outcome });
 				return { status: 'error', executionId: op.id, code: 'DOCKER', error: rawErr };
@@ -426,7 +426,7 @@ export class RestoreService {
 				const { containers } = await this.ports.resolveTargets(job.targetName, job.environmentId);
 				const running = containers.filter((c) => c.state === 'running');
 				if (running.length === 0) return { intentKey: null, restart: null };
-				op.progress('stopping', `Stopping ${job.targetName}...`);
+				op.progress('stopping', `正在停止 ${job.targetName}...`);
 				const intentKey = stopIntentKeyFor(job.environmentId, 'container', job.targetName);
 				await this.ports.recordStopIntent(intentKey, {
 					type: 'container', targetName: job.targetName, envId: job.environmentId,
@@ -452,7 +452,7 @@ export class RestoreService {
 				const { containers } = await this.ports.resolveTargets(job.targetName, job.environmentId, 'stack');
 				const running = containers.filter((c) => c.state === 'running');
 				if (running.length === 0) return { intentKey: null, restart: null };
-				op.progress('stopping', `Stopping stack ${job.targetName}...`);
+				op.progress('stopping', `正在停止堆栈 ${job.targetName}...`);
 				const intentKey = stopIntentKeyFor(job.environmentId, 'stack', job.targetName);
 				await this.ports.recordStopIntent(intentKey, {
 					type: 'stack', targetName: job.targetName, envId: job.environmentId,
@@ -484,7 +484,7 @@ export class RestoreService {
 		},
 	): Promise<RestoreResult> {
 		if (job.confirmOverwrite !== true) {
-			return { status: 'error', code: 'VALIDATION', error: 'an in-place restore overwrites live data and requires explicit confirmation' };
+			return { status: 'error', code: 'VALIDATION', error: '就地恢复会覆盖正在运行的数据，需要显式确认' };
 		}
 		const env = job.environmentId;
 
@@ -501,11 +501,11 @@ export class RestoreService {
 		// Lock the live targets (reject a concurrent op on this data).
 		const key = liveTargetKey(env, binds);
 		const release = this.ports.acquireLiveTarget(key);
-		if (!release) return { status: 'skipped', reason: `Another backup or restore is already running for "${job.targetName ?? key}".` };
+		if (!release) return { status: 'skipped', reason: `正在针对 "${job.targetName ?? key}" 执行其他备份或恢复任务，请稍后重试。` };
 
 		try {
 			return await this.ports.serializeDestination(job.destinationId, async () => {
-				const op = await this.ports.openOperation(`Restore ${job.snapshotId.slice(0, 8)} → ${job.targetName ?? 'volumes'}`, env, triggeredBy);
+				const op = await this.ports.openOperation(`恢复 ${job.snapshotId.slice(0, 8)} → ${job.targetName ?? '数据卷'}`, env, triggeredBy);
 				let restart: (() => Promise<void>) | null = null;
 				let stopIntentKey: string | null = null;
 				const swapKey = `swap:${env ?? 'local'}:${job.snapshotId}:${job.targetName ?? key}`;
@@ -521,16 +521,16 @@ export class RestoreService {
 						await this.ports.recordSwapIntent(swapKey, { snapshotId: job.snapshotId, includes: liveRoots, binds, envId: env });
 
 						const script = buildInPlaceRestore(job.snapshotId, liveRoots, job.restoreFlags ?? []);
-						op.progress('restoring', `Restoring ${volumes.length} volume(s) in place...`);
+						op.progress('restoring', `正在就地恢复 ${volumes.length} 个数据卷...`);
 						this.emitVolumeList(op, volumes);
 						const run = await this.ports.runInHelper({ script, binds, envId: env, name: this.ports.helperName(job.snapshotId),
 							onStderr: (line) => { for (const l of formatResticLines(line)) op.progress('progress', l.startsWith('[dockhand]') ? l : `[restic] ${l}`); } });
 							this.emitResticStdout(op, run.stdout);
-						if (!resticOk(run)) throw new BackupError('RESTIC', run.stderr.trim() || 'restore failed', { exitCode: run.exitCode });
+						if (!resticOk(run)) throw new BackupError('RESTIC', run.stderr.trim() || '恢复失败', { exitCode: run.exitCode });
 
 						await this.ports.clearSwapIntent(swapKey);
 					} else {
-						op.progress('restoring', `Config-only snapshot — no volume data to restore for ${job.targetName ?? 'target'}.`);
+						op.progress('restoring', `仅包含配置信息的快照，无需为 ${job.targetName ?? '目标'} 恢复数据卷。`);
 					}
 
 					// The volume data is now safely restored. Run the post-restore action —
@@ -545,7 +545,7 @@ export class RestoreService {
 						await this.notifyOk(job, volumes);
 						return { status: 'success', executionId: op.id, restoredVolumes: volumes, postRestore: outcome };
 					}
-					const warnMsg = `Data restored, but the post-restore step (${outcome.action}) failed: ${outcome.error ?? 'unknown error'}`;
+					const warnMsg = `数据恢复完成，但后续操作（${outcome.action}）失败：${outcome.error ?? '未知错误'}`;
 					op.progress('warning', warnMsg);
 					await op.close({ kind: 'warning', message: warnMsg }, { snapshotId: job.snapshotId, volumes, postRestore: outcome });
 					await this.notifyOk(job, volumes);
@@ -586,11 +586,11 @@ export class RestoreService {
 
 				case 'start': {
 					if (await this.ports.containerExists(name, envId)) {
-						op.progress('starting', `Starting ${name}...`);
+						op.progress('starting', `正在启动 ${name}...`);
 						await this.ports.startContainer(name, envId);
 						return { action, ok: true };
 					}
-					return { action, ok: false, error: 'target container no longer exists — choose Recreate to rebuild it' };
+					return { action, ok: false, error: '目标容器已不存在，请选择重建容器' };
 				}
 
 				case 'recreate': {
@@ -598,15 +598,15 @@ export class RestoreService {
 					// prefer starting it (never destroy a live container); only rebuild
 					// from the stored config when it's actually gone.
 					if (await this.ports.containerExists(name, envId)) {
-						op.progress('starting', `Starting ${name}...`);
+						op.progress('starting', `正在启动 ${name}...`);
 						await this.ports.startContainer(name, envId);
 						return { action, ok: true };
 					}
 					const meta = await this.ports.readSnapshotMetadata(job.destinationId, job.snapshotId);
 					if (!meta || meta.container == null) {
-						return { action, ok: false, error: 'no container metadata stored in this snapshot; cannot recreate' };
+						return { action, ok: false, error: '快照内未保存容器元数据，无法重建容器' };
 					}
-					op.progress('recreating', `Recreating ${name} from the snapshot's stored config...`);
+					op.progress('recreating', `正在根据快照内保存的配置重建 ${name} ...`);
 					await this.ports.recreateContainerFromMetadata(name, envId, meta.container);
 					return { action, ok: true };
 				}
@@ -614,9 +614,9 @@ export class RestoreService {
 				case 'redeploy': {
 					const meta = await this.ports.readSnapshotMetadata(job.destinationId, job.snapshotId);
 					if (!meta || meta.hasStackFiles !== true) {
-						return { action, ok: false, error: 'no stack files stored in this snapshot; cannot redeploy' };
+						return { action, ok: false, error: '快照内未保存堆栈配置文件，无法重新部署堆栈' };
 					}
-					op.progress('redeploying', `Redeploying stack ${name}...`);
+					op.progress('redeploying', `正在重新部署堆栈 ${name}...`);
 					await this.ports.redeployStack(name, envId, job.destinationId, job.snapshotId);
 					return { action, ok: true };
 				}

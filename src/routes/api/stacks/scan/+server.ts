@@ -5,7 +5,7 @@ import { scanExternalPaths, scanPaths, detectRunningStacks } from '$lib/server/s
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('stacks', 'create')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -30,7 +30,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			discovered: discoveredWithRunning
 		});
 	} catch (error) {
-		const message = error instanceof Error ? error.message : 'Unknown error';
+		const message = error instanceof Error ? error.message : '未知错误';
 		return json({ error: message }, { status: 500 });
 	}
 };

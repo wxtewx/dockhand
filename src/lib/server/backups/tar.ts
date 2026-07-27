@@ -60,7 +60,7 @@ export function buildTar(entries: TarEntry[], mtimeSecs = Math.floor(Date.now() 
 	for (const e of entries) {
 		const path = e.path.replace(/^\/+/, '');
 		if (new TextEncoder().encode(path).length > 100) {
-			throw new Error(`tar entry path too long for USTAR name field (>100 bytes): ${path}`);
+			throw new Error(`tar 条目路径超出 USTAR 名称字段限制 (>100 字节): ${path}`);
 		}
 		blocks.push(header(path, e.content.length, mtimeSecs));
 		const padded = Math.ceil(e.content.length / BLOCK) * BLOCK;

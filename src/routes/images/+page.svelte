@@ -1,5 +1,5 @@
 <svelte:head>
-	<title>Images - Dockhand</title>
+	<title>镜像 - Dockhand</title>
 </svelte:head>
 
 <script lang="ts">
@@ -123,13 +123,13 @@
 
 	const vulnList = createWindowedList<VulnFinding>({
 		windowSize: 400,
-		onError: (e) => console.error('Failed to load vulnerabilities:', e),
+		onError: (e) => console.error('加载漏洞数据失败:', e),
 		fetchPage: async (offset, limit, signal) => {
 			// Mark the tab as "opened" up front so a failed load doesn't leave the
 			// lazy-load effect re-firing in a tight retry loop (it gates on !vulnFetched).
 			vulnFetched = true;
 			const res = await fetch(`/api/vulnerabilities?${vulnQueryParams(offset, limit)}`, { signal });
-			if (!res.ok) throw new Error(`Failed to load vulnerabilities (${res.status})`);
+			if (!res.ok) throw new Error(`加载漏洞数据失败 (${res.status})`);
 			const data = await res.json();
 			// The paged response carries a filtered summary — update the header pills so
 			// the severity counts + total reflect the active filters, not the env total.
@@ -184,7 +184,7 @@
 				vulnStackOptions = toOpts(data.options?.stacks ?? []);
 			}
 		} catch (e) {
-			console.error('Failed to load vulnerability meta:', e);
+			console.error('加载漏洞元数据失败:', e);
 		}
 	}
 
@@ -239,12 +239,12 @@
 	}
 
 	const vulnSeverityOptions = [
-		{ value: 'critical', label: 'Critical', color: 'text-red-500', icon: ShieldAlert },
-		{ value: 'high', label: 'High', color: 'text-orange-500', icon: ShieldAlert },
-		{ value: 'medium', label: 'Medium', color: 'text-yellow-600', icon: Shield },
-		{ value: 'low', label: 'Low', color: 'text-blue-500', icon: Shield },
-		{ value: 'negligible', label: 'Negligible', color: 'text-gray-500', icon: ShieldCheck },
-		{ value: 'unknown', label: 'Unknown', color: 'text-gray-500', icon: ShieldQuestion }
+		{ value: 'critical', label: '严重', color: 'text-red-500', icon: ShieldAlert },
+		{ value: 'high', label: '高危', color: 'text-orange-500', icon: ShieldAlert },
+		{ value: 'medium', label: '中危', color: 'text-yellow-600', icon: Shield },
+		{ value: 'low', label: '低危', color: 'text-blue-500', icon: Shield },
+		{ value: 'negligible', label: '可忽略', color: 'text-gray-500', icon: ShieldCheck },
+		{ value: 'unknown', label: '未知', color: 'text-gray-500', icon: ShieldQuestion }
 	];
 
 	// Tab state (persisted in the URL: /images?tab=vulnerabilities)
@@ -337,10 +337,10 @@
 			link.click();
 			document.body.removeChild(link);
 
-			toast.success(`Exporting ${imageName}...`);
+			toast.success(`正在导出 ${imageName}...`);
 		} catch (err) {
-			console.error('Failed to export image:', err);
-			toast.error(`Failed to export ${imageName}`);
+			console.error('导出镜像失败：', err);
+			toast.error(`导出 ${imageName} 失败`);
 		} finally {
 			pendingTimeouts.push(setTimeout(() => {
 				if (exportingId === imageRef) exportingId = null;
@@ -562,7 +562,7 @@
 			const url = appendEnvParam('/api/images', envId);
 			const response = await fetch(url);
 			if (!response.ok) {
-				// Handle stale environment ID (e.g., after database reset)
+				// Handle stale environment ID (例如：after database reset)
 				if (response.status === 404 && envId) {
 					clearStaleEnvironment(envId);
 					environments.refresh();
@@ -572,8 +572,8 @@
 			}
 			images = await response.json();
 		} catch (error) {
-			console.error('Failed to fetch images:', error);
-			toast.error('Failed to load images');
+			console.error('获取镜像失败：', error);
+		toast.error('加载镜像失败');
 		} finally {
 			if (isInitialLoad) loading = false;
 		}
@@ -587,7 +587,7 @@
 			}
 			registries = await response.json();
 		} catch (error) {
-			console.error('Failed to fetch registries:', error);
+			console.error('获取镜像仓库失败：', error);
 		}
 	}
 
@@ -603,7 +603,7 @@
 				scannerEnabled = data.settings.scanner !== 'none';
 			}
 		} catch (error) {
-			console.error('Failed to fetch scanner settings:', error);
+			console.error('获取扫描器设置失败：', error);
 			scannerEnabled = false;
 		}
 	}
@@ -657,7 +657,7 @@
 	});
 
 	function bulkRemove() {
-		batchOpTitle = `Removing ${selectedInFilter.length} image${selectedInFilter.length !== 1 ? 's' : ''}`;
+		batchOpTitle = `正在删除 ${selectedInFilter.length} 个镜像`;
 		batchOpOperation = 'remove';
 		batchOpItems = selectedInFilter.map(img => {
 			const displayName = img.tags.length > 0
@@ -686,18 +686,18 @@
 				const spaceReclaimed = data.result?.SpaceReclaimed ?? 0;
 				const count = deleted?.length ?? 0;
 				if (count > 0) {
-					toast.success(`Pruned ${count} image${count !== 1 ? 's' : ''}, freed ${formatBytes(spaceReclaimed)}`);
+					toast.success(`已清理 ${count} 个悬空镜像，释放 ${formatBytes(spaceReclaimed)}`);
 				} else {
-					toast.success('No dangling images to prune');
+					toast.success('无悬空镜像可清理');
 				}
 				await fetchImages();
 			} else {
 				pruneStatus = 'error';
-				toast.error(data.error || 'Failed to prune images');
+				toast.error(data.error || '清理镜像失败');
 			}
 		} catch (error) {
 			pruneStatus = 'error';
-			toast.error('Failed to prune images');
+			toast.error('清理镜像失败');
 		}
 		pendingTimeouts.push(setTimeout(() => { pruneStatus = 'idle'; }, 3000));
 	}
@@ -714,18 +714,18 @@
 				const spaceReclaimed = data.result?.SpaceReclaimed ?? 0;
 				const count = deleted?.length ?? 0;
 				if (count > 0) {
-					toast.success(`Pruned ${count} image${count !== 1 ? 's' : ''}, freed ${formatBytes(spaceReclaimed)}`);
+					toast.success(`已清理 ${count} 个未使用镜像，释放 ${formatBytes(spaceReclaimed)}`);
 				} else {
-					toast.success('No unused images to prune');
+					toast.success('无未使用镜像可清理');
 				}
 				await fetchImages();
 			} else {
 				pruneUnusedStatus = 'error';
-				toast.error(data.error || 'Failed to prune unused images');
+				toast.error(data.error || '清理未使用镜像失败');
 			}
 		} catch (error) {
 			pruneUnusedStatus = 'error';
-			toast.error('Failed to prune unused images');
+			toast.error('清理未使用镜像失败');
 		}
 		pendingTimeouts.push(setTimeout(() => { pruneUnusedStatus = 'idle'; }, 3000));
 	}
@@ -737,20 +737,20 @@
 			const response = await fetch(appendEnvParam(`/api/images/${encodeURIComponent(id)}?force=true`, envId), { method: 'DELETE' });
 			if (!response.ok) {
 				const data = await response.json();
-				deleteError = { id, message: data.error || 'Failed to delete image' };
-				toast.error(`Failed to delete ${tagName}`);
+				deleteError = { id, message: data.error || '删除镜像失败' };
+				toast.error(`删除 ${tagName} 失败`);
 				pendingTimeouts.push(setTimeout(() => {
 					if (deleteError?.id === id) deleteError = null;
 				}, 5000));
 				return;
 			}
 			const sizeStr = imageSize ? ` (${formatBytes(imageSize)})` : '';
-			toast.success(`Deleted ${tagName}${sizeStr}`);
+			toast.success(`已删除 ${tagName}${sizeStr}`);
 			await fetchImages();
 		} catch (error) {
-			console.error('Failed to remove image:', error);
-			deleteError = { id, message: 'Failed to delete image' };
-			toast.error(`Failed to delete ${tagName}`);
+			console.error('删除镜像失败:', error);
+			deleteError = { id, message: '删除镜像失败' };
+			toast.error(`删除 ${tagName} 失败`);
 			pendingTimeouts.push(setTimeout(() => {
 				if (deleteError?.id === id) deleteError = null;
 			}, 5000));
@@ -782,15 +782,15 @@
 				body: JSON.stringify({ repo: tagNewRepo.trim(), tag: tagNewTag.trim() })
 			});
 			if (response.ok) {
-				toast.success(`Tagged as ${newTag}`);
+				toast.success(`已标记为 ${newTag}`);
 				showTagModal = false;
 				await fetchImages();
 			} else {
 				const data = await response.json();
-				toast.error(data.error || 'Failed to tag image');
+				toast.error(data.error || '标记镜像失败');
 			}
 		} catch (error) {
-			toast.error('Failed to tag image');
+			toast.error('标记镜像失败');
 		} finally {
 			tagging = false;
 		}
@@ -839,7 +839,7 @@
 		}
 	}
 
-	// Handle tab visibility changes (e.g., user switches back from another tab)
+	// Handle tab visibility changes (例如：user switches back from another tab)
 	function handleVisibilityChange() {
 		if (document.visibilityState === 'visible' && envId) {
 			fetchImages();
@@ -903,7 +903,7 @@
 			tabs={[
 				{
 					id: 'images',
-					label: 'Images',
+					label: '镜像',
 					icon: Images,
 					count: activeTab === 'images' ? sortedGroups.length : groupedImages.length,
 					total: activeTab === 'images' && (searchQuery || usageFilter !== 'all') && sortedGroups.length !== groupedImages.length ? groupedImages.length : undefined,
@@ -911,7 +911,7 @@
 				},
 				{
 					id: 'vulnerabilities',
-					label: 'Vulnerabilities',
+					label: '漏洞',
 					icon: ShieldCheck,
 					count: vulnCount,
 					total: vulnCountTotal
@@ -927,7 +927,7 @@
 				<Search class="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
 				<Input
 					type="text"
-					placeholder="Search images..."
+					placeholder="搜索镜像..."
 					bind:value={searchQuery}
 					onkeydown={(e) => e.key === 'Escape' && (searchQuery = '')}
 					class="pl-8 h-8 w-48 text-sm"
@@ -937,43 +937,43 @@
 				<Select.Trigger size="sm" class="w-36 text-sm">
 					{#if usageFilter === 'all'}
 						<Filter class="w-3.5 h-3.5 mr-1.5 text-muted-foreground shrink-0" />
-						<span class="text-muted-foreground">All</span>
+						<span class="text-muted-foreground">全部</span>
 					{:else if usageFilter === 'in-use'}
 						<CircleDot class="w-3.5 h-3.5 mr-1.5 text-emerald-500 shrink-0" />
-						<span>In use</span>
+						<span>已使用</span>
 					{:else if usageFilter === 'some-unused'}
 						<CircleDot class="w-3.5 h-3.5 mr-1.5 text-amber-500 shrink-0" />
-						<span>Some unused</span>
+						<span>部分未使用</span>
 					{:else}
 						<Circle class="w-3.5 h-3.5 mr-1.5 text-muted-foreground shrink-0" />
-						<span>Unused</span>
+						<span>未使用</span>
 					{/if}
 				</Select.Trigger>
 				<Select.Content>
 					<Select.Item value="all">
 						<Filter class="w-4 h-4 mr-2 text-muted-foreground" />
-						All
+						全部
 					</Select.Item>
 					<Select.Item value="in-use">
 						<CircleDot class="w-4 h-4 mr-2 text-emerald-500" />
-						In use
+						使用中
 					</Select.Item>
 					<Select.Item value="some-unused">
 						<CircleDot class="w-4 h-4 mr-2 text-amber-500" />
-						Some unused
+						部分未使用
 					</Select.Item>
 					<Select.Item value="unused">
 						<Circle class="w-4 h-4 mr-2 text-muted-foreground" />
-						Unused
+						未使用
 					</Select.Item>
 				</Select.Content>
 			</Select.Root>
 			{#if $canAccess('images', 'remove')}
 			<ConfirmPopover
 				open={confirmPrune}
-				action="Prune"
-				itemType="dangling images"
-				title="Prune dangling images"
+				action="清理"
+				itemType="悬空镜像"
+				title="清理悬空镜像"
 				position="left"
 				onConfirm={pruneImages}
 				onOpenChange={(open) => confirmPrune = open}
@@ -982,7 +982,7 @@
 				{#snippet children({ open })}
 					<span
 						class="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-sm bg-background shadow-xs border hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 {pruneStatus === 'pruning' ? 'opacity-50 pointer-events-none' : ''}"
-						title="Remove untagged intermediate layers (dangling images)"
+						title="删除未标记的中间层 (悬空镜像)"
 					>
 						{#if pruneStatus === 'pruning'}
 							<RefreshCw class="w-3.5 h-3.5 animate-spin" />
@@ -993,15 +993,15 @@
 						{:else}
 							<Icon iconNode={broom} class="w-3.5 h-3.5" />
 						{/if}
-						Prune
+						清理
 					</span>
 				{/snippet}
 			</ConfirmPopover>
 			<ConfirmPopover
 				open={confirmPruneUnused}
-				action="Prune"
-				itemType="all unused images"
-				title="Prune unused images"
+				action="清理"
+				itemType="所有未使用镜像"
+				title="清理未使用镜像"
 				position="left"
 				onConfirm={pruneUnusedImages}
 				onOpenChange={(open) => confirmPruneUnused = open}
@@ -1010,7 +1010,7 @@
 				{#snippet children({ open })}
 					<span
 						class="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-sm bg-background shadow-xs border hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 {pruneUnusedStatus === 'pruning' ? 'opacity-50 pointer-events-none' : ''}"
-						title="Remove ALL images not used by any container (including tagged images)"
+						title="删除所有未被容器使用的镜像 (包含已标记镜像)"
 					>
 						{#if pruneUnusedStatus === 'pruning'}
 							<RefreshCw class="w-3.5 h-3.5 animate-spin" />
@@ -1021,7 +1021,7 @@
 						{:else}
 							<Icon iconNode={broom} class="w-3.5 h-3.5 text-amber-600" />
 						{/if}
-						Prune unused
+						清理未使用
 					</span>
 				{/snippet}
 			</ConfirmPopover>
@@ -1029,10 +1029,10 @@
 			{#if $canAccess('images', 'pull')}
 			<Button size="sm" variant="default" onclick={() => showPullModal = true}>
 				<Download class="w-3.5 h-3.5 mr-1.5" />
-				Pull
+				拉取
 			</Button>
 			{/if}
-			<Button size="sm" variant="outline" onclick={fetchImages}>Refresh</Button>
+			<Button size="sm" variant="outline" onclick={fetchImages}>刷新</Button>
 		</div>
 		{/if}
 
@@ -1042,7 +1042,7 @@
 				<Search class="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
 				<Input
 					type="text"
-					placeholder="Search CVE, package, image, container, stack..."
+					placeholder="搜索 CVE、软件包、镜像、容器、堆栈..."
 					bind:value={vulnSearch}
 					onkeydown={(e) => e.key === 'Escape' && (vulnSearch = '')}
 					class="pl-8 h-8 w-80 text-sm"
@@ -1051,39 +1051,39 @@
 			<MultiSelectFilter
 				bind:value={vulnSeverityFilter}
 				options={vulnSeverityOptions}
-				placeholder="All severities"
-				pluralLabel="severities"
+				placeholder="全部危险等级"
+				pluralLabel="危险等级"
 				width="w-40"
 				defaultIcon={ShieldCheck}
 			/>
 			<MultiSelectFilter
 				bind:value={vulnImageFilter}
 				options={vulnImageOptions}
-				placeholder="All images"
-				pluralLabel="images"
+				placeholder="全部镜像"
+				pluralLabel="镜像"
 				width="w-48"
 			/>
 			<MultiSelectFilter
 				bind:value={vulnContainerFilter}
 				options={vulnContainerOptions}
-				placeholder="All containers"
-				pluralLabel="containers"
+				placeholder="全部容器"
+				pluralLabel="容器"
 				width="w-44"
 			/>
 			<MultiSelectFilter
 				bind:value={vulnStackFilter}
 				options={vulnStackOptions}
-				placeholder="All stacks"
-				pluralLabel="stacks"
+				placeholder="全部堆栈"
+				pluralLabel="堆栈"
 				width="w-40"
 			/>
 			<div class="flex items-center gap-2 ml-auto">
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger>
 						{#snippet child({ props })}
-							<Button size="sm" variant="outline" title="Export findings" {...props}>
+							<Button size="sm" variant="outline" title="导出检测结果" {...props}>
 								<Download class="w-3.5 h-3.5" />
-								Export
+								导出
 							</Button>
 						{/snippet}
 					</DropdownMenu.Trigger>
@@ -1104,12 +1104,12 @@
 				</DropdownMenu.Root>
 				<Button size="sm" variant="outline" onclick={refreshVulnerabilities} disabled={vulnList.loading}>
 					<RefreshCw class="w-3.5 h-3.5 {vulnList.loading ? 'animate-spin' : ''}" />
-					Refresh
+					刷新
 				</Button>
 				{#if scannerEnabled}
 					<Button size="sm" variant="secondary" onclick={() => showVulnScanModal = true}>
 						<ShieldCheck class="w-3.5 h-3.5" />
-						Scan all images
+						扫描全部镜像
 					</Button>
 				{/if}
 			</div>
@@ -1126,13 +1126,13 @@
 	<div class="shrink-0">
 		{#if selectedImages.size > 0}
 			<div class="flex items-center gap-1 text-xs text-muted-foreground h-full">
-			<span>{selectedInFilter.length} selected</span>
+			<span>已选择 {selectedInFilter.length} 项</span>
 			<button
 				type="button"
 				class="inline-flex items-center gap-1 px-1.5 py-0 rounded border border-border hover:border-foreground/30 hover:shadow transition-all"
 				onclick={selectNone}
 			>
-				Clear
+				清空
 			</button>
 			{#if $canAccess('images', 'remove')}
 			<button
@@ -1142,7 +1142,7 @@
 				disabled={selectedInFilter.length === 0}
 			>
 				<Trash2 class="w-3 h-3" />
-				Delete
+				删除
 			</button>
 			{/if}
 			</div>
@@ -1155,8 +1155,8 @@
 	{:else if !loading && images.length === 0}
 		<EmptyState
 			icon={Images}
-			title="No images found"
-			description="Pull an image from a registry to get started"
+			title="未找到镜像"
+			description="从镜像仓库拉取镜像以开始使用"
 		/>
 	{:else}
 		<DataGrid
@@ -1192,7 +1192,7 @@
 							}
 						}}
 						class="flex items-center justify-center transition-colors opacity-40 hover:opacity-100 cursor-pointer"
-						title={allSelected ? 'Deselect all' : 'Select all'}
+						title={allSelected ? '取消全选' : '全选'}
 					>
 						{#if allSelected}
 							<CheckSquare class="w-3.5 h-3.5 text-muted-foreground" />
@@ -1260,7 +1260,7 @@
 				{:else if column.id === 'image'}
 					<div class="flex items-center gap-1.5">
 						<span class="text-xs truncate" title={group.repoName}>
-							{group.repoName === '<none>' ? '<untagged>' : group.repoName}
+							{group.repoName === '<none>' ? '<未标记>' : group.repoName}
 						</span>
 						{#if group.tags.length === 1}
 							<span class="text-2xs px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">
@@ -1269,12 +1269,12 @@
 						{/if}
 						{#if group.containers === 0}
 							<Badge variant="outline" class="text-2xs px-1.5 py-0 border-amber-500/50 text-amber-600 dark:text-amber-400 shadow-[0_0_4px_rgba(245,158,11,0.4)]">
-								Unused
+								未使用
 							</Badge>
 						{:else if group.tags.length > 1 && group.tags.some(t => t.containers === 0)}
-							<Badge variant="outline" class="text-2xs px-1.5 py-0 border-amber-500/30 text-amber-600/70 dark:text-amber-400/70 shadow-[0_0_3px_rgba(245,158,11,0.25)]" title="Some tags are unused">
+							<Badge variant="outline" class="text-2xs px-1.5 py-0 border-amber-500/30 text-amber-600/70 dark:text-amber-400/70 shadow-[0_0_3px_rgba(245,158,11,0.25)]" title="部分标签未使用">
 								<CircleDashed class="w-2.5 h-2.5 mr-0.5" />
-								Some unused
+								部分未使用
 							</Badge>
 						{/if}
 					</div>
@@ -1296,7 +1296,7 @@
 							<button
 								type="button"
 								onclick={() => openRunModal(firstTag.fullRef)}
-								title="Run container"
+								title="运行容器"
 								class="p-1 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
 							>
 								<Play class="grid-action-icon grid-action-start text-muted-foreground hover:text-green-600" />
@@ -1306,7 +1306,7 @@
 							<button
 								type="button"
 								onclick={() => openScanModal(firstTag.fullRef)}
-								title="Scan for vulnerabilities"
+								title="扫描漏洞"
 								class="p-1 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
 							>
 								<ShieldCheck class="grid-action-icon grid-action-info text-muted-foreground hover:text-blue-500" />
@@ -1316,7 +1316,7 @@
 							<button
 								type="button"
 								onclick={() => openPushModal(firstTag.imageId, firstTag.fullRef)}
-								title="Push to registry"
+								title="推送至仓库"
 								class="p-1 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
 							>
 								<Upload class="grid-action-icon grid-action-transfer text-muted-foreground hover:text-foreground" />
@@ -1348,7 +1348,7 @@
 									type="button"
 									onclick={() => copyImageId(tagInfo.imageId)}
 									class="inline-flex items-center gap-1 hover:bg-muted px-1 py-0.5 rounded transition-colors cursor-pointer"
-									title={copiedId === tagInfo.imageId ? 'Copied!' : 'Click to copy full ID'}
+									title={copiedId === tagInfo.imageId ? '已复制！' : '点击复制完整 ID'}
 								>
 									<code class="text-2xs text-muted-foreground">{tagInfo.imageId.slice(7, 19)}</code>
 									{#if copiedId === tagInfo.imageId}
@@ -1364,13 +1364,13 @@
 									<a
 										href="/containers?search={encodeURIComponent(tagInfo.fullRef)}"
 										class="text-muted-foreground hover:text-foreground hover:underline"
-										title="View containers using this image"
+										title="查看使用此镜像的容器"
 									>
-										{tagInfo.containers} container{tagInfo.containers === 1 ? '' : 's'}
+										{tagInfo.containers} 个容器
 									</a>
 								{:else if tagInfo.containers === 0}
 									<Badge variant="outline" class="text-2xs px-1.5 py-0 border-amber-500/50 text-amber-600 dark:text-amber-400 shadow-[0_0_4px_rgba(245,158,11,0.4)]">
-										Unused
+										未使用
 									</Badge>
 								{:else}
 									<span class="text-muted-foreground/50">—</span>
@@ -1381,7 +1381,7 @@
 									<button
 										type="button"
 										onclick={() => openHistoryModal(tagInfo.imageId, tagInfo.fullRef)}
-										title="View layers"
+										title="查看堆栈"
 										class="p-1 rounded hover:bg-muted transition-colors cursor-pointer"
 									>
 										<Layers class="grid-action-icon grid-action-info text-muted-foreground hover:text-foreground" />
@@ -1391,7 +1391,7 @@
 									<button
 										type="button"
 										onclick={() => openRunModal(tagInfo.fullRef)}
-										title="Run container"
+										title="运行容器"
 										class="p-1 rounded hover:bg-muted transition-colors cursor-pointer"
 									>
 										<Play class="grid-action-icon grid-action-start text-muted-foreground hover:text-green-600" />
@@ -1401,7 +1401,7 @@
 									<button
 										type="button"
 										onclick={() => openScanModal(tagInfo.fullRef)}
-										title="Scan for vulnerabilities"
+										title="扫描漏洞"
 										class="p-1 rounded hover:bg-muted transition-colors cursor-pointer"
 									>
 										<ShieldCheck class="grid-action-icon grid-action-info text-muted-foreground hover:text-blue-500" />
@@ -1411,7 +1411,7 @@
 									<button
 										type="button"
 										onclick={() => openPushModal(tagInfo.imageId, tagInfo.fullRef)}
-										title="Push to registry"
+										title="推送至仓库"
 										class="p-1 rounded hover:bg-muted transition-colors cursor-pointer"
 									>
 										<Upload class="grid-action-icon grid-action-transfer text-muted-foreground hover:text-foreground" />
@@ -1421,7 +1421,7 @@
 									<button
 										type="button"
 										onclick={() => exportImage(tagInfo.fullRef, tagInfo.fullRef)}
-										title="Export image as {$appSettings.downloadFormat}"
+										title="导出镜像为 {$appSettings.downloadFormat}"
 										class="p-1 rounded hover:bg-muted transition-colors cursor-pointer {exportingId === tagInfo.fullRef ? 'animate-pulse' : ''}"
 										disabled={exportingId === tagInfo.fullRef}
 									>
@@ -1432,7 +1432,7 @@
 									<button
 										type="button"
 										onclick={() => openTagModal(tagInfo.imageId, tagInfo.fullRef)}
-										title="Tag image"
+										title="标记镜像"
 										class="p-1 rounded hover:bg-muted transition-colors cursor-pointer"
 									>
 										<Tag class="grid-action-icon grid-action-edit text-muted-foreground hover:text-foreground" />
@@ -1442,10 +1442,10 @@
 									<div class="relative">
 										<ConfirmPopover
 											open={confirmDeleteId === tagInfo.fullRef}
-											action="Delete"
-											itemType="image"
+											action="删除"
+											itemType="镜像"
 											itemName={tagInfo.fullRef}
-											title="Remove"
+											title="删除"
 											onConfirm={() => removeImage(tagInfo.imageId, tagInfo.fullRef)}
 											onOpenChange={(open) => confirmDeleteId = open ? tagInfo.fullRef : null}
 										>
@@ -1557,28 +1557,28 @@
 		<Dialog.Header>
 			<Dialog.Title class="flex items-center gap-2">
 				<Tag class="w-5 h-5" />
-				Tag image
+				标记镜像
 			</Dialog.Title>
 			<Dialog.Description>
-				Add a new tag to <span class="font-mono text-foreground truncate" title={tagImageCurrentName}>{tagImageCurrentName.startsWith('sha256:') ? tagImageCurrentName.slice(0, 19) : tagImageCurrentName}</span>
+				为 <span class="font-mono text-foreground truncate" title={tagImageCurrentName}>{tagImageCurrentName.startsWith('sha256:') ? tagImageCurrentName.slice(0, 19) : tagImageCurrentName}</span> 添加新标签
 			</Dialog.Description>
 		</Dialog.Header>
 		<div class="py-4 space-y-4">
 			<div>
-				<Label for="tagRepo">Repository name</Label>
+				<Label for="tagRepo">仓库名称</Label>
 				<Input
 					id="tagRepo"
 					bind:value={tagNewRepo}
-					placeholder="e.g., myregistry/myimage"
+					placeholder="例如：myregistry/myimage"
 					class="mt-2"
 				/>
 			</div>
 			<div>
-				<Label for="tagTag">Tag</Label>
+				<Label for="tagTag">标签</Label>
 				<Input
 					id="tagTag"
 					bind:value={tagNewTag}
-					placeholder="e.g., latest, v1.0.0"
+					placeholder="例如：latest, v1.0.0"
 					class="mt-2"
 					onkeydown={(e: KeyboardEvent) => {
 						if (e.key === 'Enter' && !tagging && tagNewRepo.trim() && tagNewTag.trim()) {
@@ -1590,7 +1590,7 @@
 		</div>
 		<Dialog.Footer>
 			<Button variant="outline" onclick={() => showTagModal = false} disabled={tagging}>
-				Cancel
+				取消
 			</Button>
 			<Button
 				onclick={tagImage}
@@ -1598,9 +1598,9 @@
 			>
 				{#if tagging}
 					<RefreshCw class="w-4 h-4 mr-2 animate-spin" />
-					Tagging...
+					标记中...
 				{:else}
-					Tag
+					标记
 				{/if}
 			</Button>
 		</Dialog.Footer>

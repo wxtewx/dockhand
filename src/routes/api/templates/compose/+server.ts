@@ -74,7 +74,7 @@ async function fetchStackCompose(repository: { url: string; stackfile: string })
 
 	const response = await fetch(rawUrl, { signal: AbortSignal.timeout(10000) });
 	if (!response.ok) {
-		throw new Error(`Failed to fetch compose file: ${response.status}`);
+		throw new Error(`获取编排文件失败: ${response.status}`);
 	}
 	return await response.text();
 }
@@ -82,14 +82,14 @@ async function fetchStackCompose(repository: { url: string; stackfile: string })
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('templates', 'deploy')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const { template } = await request.json() as { template: TemplateItem };
 
 		if (!template) {
-			return json({ error: 'Template is required' }, { status: 400 });
+			return json({ error: '模板为必填项' }, { status: 400 });
 		}
 
 		let compose: string;
@@ -102,7 +102,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 		return json({ compose });
 	} catch (error) {
-		const message = error instanceof Error ? error.message : 'Failed to generate compose';
+		const message = error instanceof Error ? error.message : '生成编排配置失败';
 		return json({ error: message }, { status: 500 });
 	}
 };

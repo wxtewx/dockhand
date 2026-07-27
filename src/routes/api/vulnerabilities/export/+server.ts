@@ -8,8 +8,8 @@ import type { RequestHandler } from './$types';
 
 function toCSV(findings: Finding[]): string {
 	const headers = [
-		'CVE', 'Severity', 'Package', 'Installed Version', 'Fixed Version',
-		'Image', 'Containers', 'Stacks', 'Scanned', 'Description', 'Link'
+		'CVE 编号', '危险等级', '软件包', '已安装版本', '修复版本',
+		'镜像', '容器', '堆栈', '扫描时间', '描述', '链接'
 	];
 	const rows = findings.map((f) => [
 		f.cve,
@@ -24,7 +24,8 @@ function toCSV(findings: Finding[]): string {
 		f.description,
 		f.link
 	]);
-	return rowsToCSV(headers, rows);
+	const csvRaw = rowsToCSV(headers, rows);
+	return '\uFEFF' + csvRaw;
 }
 
 /**
@@ -59,7 +60,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 			toCSV
 		});
 	} catch (error) {
-		console.error('Error exporting vulnerabilities:', error);
-		return jsonError('Failed to export vulnerabilities', 500);
+		console.error('导出漏洞数据时发生错误:', error);
+		return jsonError('导出漏洞数据失败', 500);
 	}
 };

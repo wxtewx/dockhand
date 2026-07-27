@@ -16,6 +16,7 @@
 	import DestinationPicker from '$lib/components/backup/DestinationPicker.svelte';
 	import LogConsole from '$lib/components/LogConsole.svelte';
 	import { normalizeMounts, volumesForStack, type VolumeInfo } from '$lib/utils/mounts';
+	import { getLabelText } from '$lib/types';
 
 	interface Props {
 		open: boolean;
@@ -171,15 +172,15 @@
 
 			if (!result.ok) {
 				backupStatus = 'error';
-				backupError = result.error || 'Backup failed';
+				backupError = result.error || '备份失败';
 			} else {
 				backupStatus = 'success';
-				toast.success(saveSchedule ? 'Backup completed and schedule saved' : 'Backup completed');
+				toast.success(saveSchedule ? '备份完成，计划任务已保存' : '备份完成');
 			}
 			onCreated?.();
 		} catch (err: any) {
 			backupStatus = 'error';
-			backupError = err?.message || 'Backup failed';
+			backupError = err?.message || '备份失败';
 		} finally {
 			running = false;
 		}
@@ -204,13 +205,13 @@
 	<Dialog.Content class="max-w-3xl h-[70vh] flex flex-col">
 		<Dialog.Header class="pb-0">
 			<Dialog.Title class="flex items-center gap-2 text-base">
-				<Package class="w-4 h-4" />Create backup
+				<Package class="w-4 h-4" />新建备份
 			</Dialog.Title>
 			{#if selectedItem}
 				<Dialog.Description class="flex items-center gap-2 text-sm flex-wrap">
 					{#if selectedItem.type === 'container'}<Box class="w-4 h-4 text-blue-500" />{:else}<Layers class="w-4 h-4 text-purple-500" />{/if}
 					{selectedItem.name}
-					<span class="text-muted-foreground">on</span>
+					<span class="text-muted-foreground">位于</span>
 					<EnvironmentIcon icon={selectedItem.envIcon || 'globe'} envId={selectedItem.envId} class="w-4 h-4 text-muted-foreground" />
 					<span class="text-muted-foreground">{selectedItem.envName}</span>
 					{#if selectedDest}
@@ -229,7 +230,7 @@
 				onclick={() => step = 1}
 			>
 				<Box class="w-4 h-4" />
-				Source
+				数据源
 				{#if selectedItem}
 					<CheckCircle2 class="w-3.5 h-3.5 text-green-500" />
 				{/if}
@@ -241,7 +242,7 @@
 				onclick={() => { if (selectedItem) step = 2; }}
 			>
 				<Settings class="w-4 h-4" />
-				Configure
+				配置参数
 				{#if selectedDestId}
 					<CheckCircle2 class="w-3.5 h-3.5 text-green-500" />
 				{/if}
@@ -253,7 +254,7 @@
 				onclick={() => { if (selectedItem && selectedDestId) step = 3; }}
 			>
 				<Clock class="w-4 h-4" />
-				Schedule & run
+				计划与执行
 			</button>
 		</div>
 
@@ -266,7 +267,7 @@
 						{@const env = environments.find(e => e.id === selectedEnvId)}
 						{#if env}
 							<EnvironmentIcon icon={env.icon || 'globe'} envId={env.id} class="w-3 h-3 mr-1 text-muted-foreground" />{env.name}
-						{:else}Select environment{/if}
+						{:else}选择环境{/if}
 					</Select.Trigger>
 					<Select.Content>
 						{#each environments as env}
@@ -279,7 +280,7 @@
 				{#if selectedEnvId}
 					<div class="relative flex-1">
 						<Search class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-						<Input bind:value={searchQuery} placeholder="Search containers and stacks..." class="pl-8 h-8 text-xs" />
+						<Input bind:value={searchQuery} placeholder="搜索容器和堆栈..." class="pl-8 h-8 text-xs" />
 					</div>
 				{/if}
 			</div>
@@ -301,17 +302,17 @@
 								>
 									{#if item.type === 'container'}<Box class="w-3.5 h-3.5 text-muted-foreground shrink-0" />{:else}<Layers class="w-3.5 h-3.5 text-muted-foreground shrink-0" />{/if}
 									<span class="font-medium truncate">{item.name}</span>
-									<Badge variant="outline" class="text-xs ml-auto shrink-0">{item.type}</Badge>
+									<Badge variant="outline" class="text-xs ml-auto shrink-0">{getLabelText(item.type)}</Badge>
 									{#if item.volumes.length > 0}
-										<span class="text-xs text-muted-foreground shrink-0">{item.volumes.length} vol</span>
+										<span class="text-xs text-muted-foreground shrink-0">{item.volumes.length} 个数据卷</span>
 									{/if}
 								</button>
 							{/each}
 						</div>
 					{:else if selectedEnvId}
-						<p class="text-xs text-muted-foreground py-4 text-center">No containers or stacks found</p>
+						<p class="text-xs text-muted-foreground py-4 text-center">未找到容器或堆栈</p>
 					{:else}
-						<p class="text-xs text-muted-foreground py-4 text-center">Select an environment to see available sources</p>
+						<p class="text-xs text-muted-foreground py-4 text-center">选择环境以查看可用数据源</p>
 					{/if}
 				</div>
 
@@ -319,7 +320,7 @@
 				<!-- Step 2: Configure -->
 				<div class="space-y-4">
 					<div class="space-y-1">
-						<Label class="text-xs">Backup repository</Label>
+						<Label class="text-xs">备份仓库</Label>
 						<DestinationPicker
 							destinations={destinations}
 							bind:value={selectedDestId}
@@ -330,8 +331,8 @@
 					<div class="flex items-center gap-3">
 						<TogglePill bind:checked={stopBeforeBackup} />
 						<div>
-							<Label class="text-xs">Stop {selectedItem?.type || 'container'} during backup</Label>
-							<p class="text-xs text-muted-foreground">Ensures data consistency (will restart after)</p>
+							<Label class="text-xs">备份期间停止{selectedItem ? getLabelText(selectedItem.type) : '容器'}</Label>
+							<p class="text-xs text-muted-foreground">保证数据一致性 (备份完成后自动重启)</p>
 						</div>
 					</div>
 
@@ -340,14 +341,14 @@
 							volumes={selectedItem.volumes}
 							bind:allVolumes
 							bind:selectedVolumes
-							emptyLabel="No volumes detected on this {selectedItem.type}"
+							emptyLabel="该 {getLabelText(selectedItem.type)} 未检测到数据卷"
 							showBindWarning={true}
 						/>
 					{/if}
 
 					<div class="flex justify-end pt-2">
 						<Button size="sm" onclick={() => step = 3} disabled={!selectedDestId}>
-							Next <ArrowBigRight class="w-3.5 h-3.5 ml-1" />
+							下一步 <ArrowBigRight class="w-3.5 h-3.5 ml-1" />
 						</Button>
 					</div>
 				</div>
@@ -357,19 +358,19 @@
 				<div class="flex flex-col gap-4 h-full">
 					<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground pb-2 border-b">
 						{#if allVolumes}
-							<span>All volumes</span>
+							<span>全部数据卷</span>
 						{:else}
-							<span>{selectedVolumes.length} volume{selectedVolumes.length !== 1 ? 's' : ''}</span>
+							<span>{selectedVolumes.length} 个数据卷{selectedVolumes.length !== 1 ? '' : ''}</span>
 						{/if}
 						{#if stopBeforeBackup}
 							<span class="text-muted-foreground">·</span>
-							<span>stop during backup</span>
+							<span>备份时暂停服务</span>
 						{/if}
 					</div>
 
 					<div class="flex items-center gap-2">
 						<Checkbox checked={saveSchedule} onCheckedChange={() => { saveSchedule = !saveSchedule; }} />
-						<span class="text-xs">Save as recurring schedule</span>
+						<span class="text-xs">保存为周期性计划任务</span>
 					</div>
 
 					{#if saveSchedule}
@@ -378,7 +379,7 @@
 						</div>
 					{:else}
 						<p class="pl-6 text-[11px] text-muted-foreground">
-							Runs once now. The backup stays on the list so you can re-run or remove it later — it just won't run on a schedule.
+							仅立即执行一次。备份记录会保留在列表中，你可以后续重新执行或移除，不会自动定时运行。
 						</p>
 					{/if}
 
@@ -388,22 +389,22 @@
 
 					<div class="flex items-center gap-2 pt-2">
 						{#if backupStatus === 'idle' || (backupStatus !== 'running' && logs.length === 0)}
-							<Button variant="outline" size="sm" onclick={() => step = 2} disabled={running}>Back</Button>
+							<Button variant="outline" size="sm" onclick={() => step = 2} disabled={running}>返回</Button>
 						{/if}
 						<div class="flex-1"></div>
 						{#if backupStatus === 'success'}
 							<Button size="sm" onclick={() => { open = false; }}>
-								<CheckCircle2 class="w-3.5 h-3.5 mr-1.5 text-green-500" />Done
+								<CheckCircle2 class="w-3.5 h-3.5 mr-1.5 text-green-500" />完成
 							</Button>
 						{:else if backupStatus === 'error' && !running}
 							<Button size="sm" variant="outline" onclick={() => { backupStatus = 'idle'; logs = []; }}>
-								Retry
+								重试
 							</Button>
-							<Button size="sm" onclick={() => { open = false; }}>Close</Button>
+							<Button size="sm" onclick={() => { open = false; }}>关闭</Button>
 						{:else}
 							<Button size="sm" onclick={runBackup} disabled={running || (saveSchedule && scheduleInvalid)}>
 								{#if running}<Loader2 class="w-3.5 h-3.5 mr-1.5 animate-spin" />{:else}<Play class="w-3.5 h-3.5 mr-1.5" />{/if}
-								{saveSchedule ? 'Run & save schedule' : 'Run backup now'}
+								{saveSchedule ? '执行并保存计划' : '立即执行备份'}
 							</Button>
 						{/if}
 					</div>
@@ -415,15 +416,15 @@
 						<LogConsole lines={logs} class="flex-1 min-h-0" />
 						{#if backupStatus === 'running'}
 							<div class="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-								<Loader2 class="h-3 w-3 animate-spin" />Backing up…
+								<Loader2 class="h-3 w-3 animate-spin" />正在备份…
 							</div>
 						{:else if backupStatus === 'success'}
 							<div class="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-green-500">
-								<CheckCircle2 class="h-3.5 w-3.5" />Backup completed
+								<CheckCircle2 class="h-3.5 w-3.5" />备份已完成
 							</div>
 						{:else if backupStatus === 'error'}
 							<div class="mt-1.5 flex items-start gap-1.5 text-xs font-medium text-red-400">
-								<XCircle class="mt-0.5 h-3.5 w-3.5 shrink-0" /><span class="break-all">{backupError || 'Failed'}</span>
+								<XCircle class="mt-0.5 h-3.5 w-3.5 shrink-0" /><span class="break-all">{backupError || '执行失败'}</span>
 							</div>
 						{/if}
 					</div>
