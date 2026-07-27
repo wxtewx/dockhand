@@ -526,28 +526,21 @@ export function getLabelText(
 export function getResticText(value?: string): string {
   if (!value) return value ?? "";
   let text = value;
-  console.log("原始:", text);
 
-  // 1. restic短句正则（完整语句优先，短单词后置）
   for (const [reg, template] of resticRegexRules) {
     text = text.replace(reg, template);
   }
-  console.log("restic短句正则后:", text);
 
-  // 2. restic词条正则（仅长句子）
   for (const [reg, template] of precompiledResticRules) {
     text = text.replace(reg, template);
   }
-  console.log("restic词条正则后:", text);
 
-  // 3. 通用容器日志翻译
   text = getLabelText(text);
-  console.log("getLabelText后:", text);
 
   const trimmed = text.trim();
   if (FlatResticOnlyMap[trimmed]) {
     text = FlatResticOnlyMap[trimmed];
   }
-  console.log("最终输出:", text);
+
   return text;
 }
