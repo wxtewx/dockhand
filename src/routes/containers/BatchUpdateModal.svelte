@@ -499,7 +499,7 @@ const severityOrder: Record<string, number> = { critical: 0, high: 1, medium: 2,
 							onclick={() => filterMode = 'updated'}
 						>
 							<CheckCircle2 class="w-3 h-3 mr-1" />
-							Updated ({summary.success})
+							已更新 ({summary.success})
 						</Button>
 						<Button
 							variant={filterMode === 'failed' ? 'destructive' : 'outline'}
@@ -508,7 +508,7 @@ const severityOrder: Record<string, number> = { critical: 0, high: 1, medium: 2,
 							onclick={() => filterMode = 'failed'}
 						>
 							<XCircle class="w-3 h-3 mr-1" />
-							Failed ({summary.failed + summary.blocked})
+							失败 ({summary.failed + summary.blocked})
 						</Button>
 					</div>
 				{/if}
