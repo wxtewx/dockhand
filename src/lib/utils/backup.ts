@@ -4,7 +4,7 @@
 
 import { HardDrive, Globe } from 'lucide-svelte';
 import { AmazonS3Icon, BackblazeIcon, AzureBlobIcon, GoogleCloudIcon, RestServerIcon } from '$lib/components/cloud-icons';
-import cronstrue from 'cronstrue';
+import cronstrue from 'cronstrue/i18n';
 import type { Component } from 'svelte';
 import { computeExecutionTally, type Execution, type ExecutionTally } from '$lib/utils/execution-tally';
 export { computeExecutionTally, type Execution, type ExecutionTally };
@@ -27,10 +27,10 @@ export { computeExecutionTally, type Execution, type ExecutionTally };
 export type BackupOutcome = 'success' | 'warning' | 'skipped' | 'error';
 
 export function classifyJobResult(result: any): { outcome: BackupOutcome; message?: string } {
-	if (!result || typeof result !== 'object') return { outcome: 'error', message: 'No result' };
+	if (!result || typeof result !== 'object') return { outcome: 'error', message: '无返回结果' };
 	const status = result.status as string | undefined;
 	if (status === 'error' || result.success === false || (result.error && !status)) {
-		return { outcome: 'error', message: result.error || 'Operation failed' };
+		return { outcome: 'error', message: result.error || '操作执行失败' };
 	}
 	if (status === 'skipped') return { outcome: 'skipped', message: result.reason };
 	if (status === 'warning') return { outcome: 'warning', message: result.warning };
@@ -52,13 +52,13 @@ export function getRepoTypeIcon(repository: string): Component {
 }
 
 export function getRepoTypeLabel(repository: string): string {
-	if (repository.startsWith('/') || repository.startsWith('./')) return 'Local';
+	if (repository.startsWith('/') || repository.startsWith('./')) return '本地存储';
 	if (repository.startsWith('s3:')) return 'S3';
 	if (repository.startsWith('b2:')) return 'Backblaze B2';
 	if (repository.startsWith('azure:')) return 'Azure Blob';
 	if (repository.startsWith('gs:')) return 'Google Cloud';
 	if (repository.startsWith('rest:')) return 'REST';
-	return 'Unknown';
+	return '未知';
 }
 
 // Repository/environment predicates live in the lucide-free shared module so
@@ -117,13 +117,13 @@ export function parseOptions(options: string | BackupOptions | null | undefined)
 export function retentionSummary(retention: string | RetentionPolicy | null | undefined): string {
 	const r = parseRetention(retention);
 	const parts = [
-		r.keepLast && `${r.keepLast} last`,
-		r.keepDaily && `${r.keepDaily}d`,
-		r.keepWeekly && `${r.keepWeekly}w`,
-		r.keepMonthly && `${r.keepMonthly}m`,
-		r.keepYearly && `${r.keepYearly}y`
+		r.keepLast && `${r.keepLast} 个最新`,
+		r.keepDaily && `${r.keepDaily} 日`,
+		r.keepWeekly && `${r.keepWeekly} 周`,
+		r.keepMonthly && `${r.keepMonthly} 月`,
+		r.keepYearly && `${r.keepYearly} 年`
 	].filter(Boolean);
-	return parts.length > 0 ? `Keep ${parts.join('/')}` : '';
+	return parts.length > 0 ? `保留 ${parts.join('/')}` : '';
 }
 
 // ---------------------------------------------------------------------------
@@ -132,7 +132,14 @@ export function retentionSummary(retention: string | RetentionPolicy | null | un
 
 export function formatCron(cron: string | null): string {
 	if (!cron) return '—';
-	try { return cronstrue.toString(cron, { use24HourTimeFormat: true }); } catch { return cron; }
+	try {
+		return cronstrue.toString(cron, {
+			use24HourTimeFormat: true,
+			locale: 'zh_CN'
+		});
+	} catch {
+		return cron;
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -275,12 +282,12 @@ export async function runBackupAction(input: RunBackupActionInput): Promise<RunB
 		});
 		if (!res.ok) {
 			const data = await res.json().catch(() => ({}));
-			return { ok: false, error: data.error || `Failed to ${isPut ? 'update' : 'create'} backup config` };
+			return { ok: false, error: data.error || `${isPut ? '更新' : '创建'}备份配置失败` };
 		}
 		const body = await res.json();
 		configId = isPut ? (reuseId as number) : body.id;
 	} catch (err: any) {
-		return { ok: false, error: err?.message || 'Failed to save config' };
+		return { ok: false, error: err?.message || '保存备份配置请求异常' };
 	}
 
 	// Step 2 — if just saving, we're done.
@@ -314,7 +321,7 @@ export async function runBackupAction(input: RunBackupActionInput): Promise<RunB
 			// 'skipped' (concurrent overlap / prune guard) is neither success nor a
 			// hard failure — surface the reason so the caller isn't told it succeeded.
 			if (outcome === 'error' || outcome === 'skipped') {
-				runError = message || 'Backup failed';
+				runError = message || '备份执行异常';
 			} else {
 				snapshotId = result?.snapshotId;
 			}
@@ -322,13 +329,13 @@ export async function runBackupAction(input: RunBackupActionInput): Promise<RunB
 			// Synchronous JSON path (Accept: application/json). Same union shape.
 			const { outcome, message } = classifyJobResult(runData);
 			if (outcome === 'error' || outcome === 'skipped') {
-				runError = message || 'Backup failed';
+				runError = message || '备份执行异常';
 			} else {
 				snapshotId = runData.snapshotId;
 			}
 		}
 	} catch (err: any) {
-		runError = err?.message || 'Backup failed';
+		runError = err?.message || '备份执行异常';
 	}
 
 	// A 'run-once' backup KEEPS its config (enabled=false, schedule=null) so the

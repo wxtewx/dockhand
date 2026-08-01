@@ -69,7 +69,7 @@ export class Operation {
 			status: 'running',
 		});
 		await updateScheduleExecution(row.id, { startedAt: new Date().toISOString() });
-		const label = opts.kind === 'backup' ? 'Backup' : opts.kind === 'restore' ? 'Restore' : opts.kind;
+		const label = opts.kind === 'backup' ? '备份' : opts.kind === 'restore' ? '恢复' : opts.kind;
 		return new Operation(row.id, `[${label}:${opts.entityName}#${row.id}]`, onProgress);
 	}
 

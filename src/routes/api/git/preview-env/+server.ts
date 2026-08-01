@@ -31,14 +31,14 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 	// Basic permission check - must be able to create stacks
 	if (auth.authEnabled && !auth.isAuthenticated) {
-		return json({ error: 'Authentication required' }, { status: 401 });
+		return json({ error: '需要登录认证' }, { status: 401 });
 	}
 
 	try {
 		const data = await request.json();
 
 		if (!data.composePath || typeof data.composePath !== 'string') {
-			return json({ error: 'Compose path is required' }, { status: 400 });
+			return json({ error: 'Compose 路径为必填项' }, { status: 400 });
 		}
 
 		let repoUrl: string;
@@ -49,7 +49,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			// Use existing repository
 			const repo = await getGitRepository(data.repositoryId);
 			if (!repo) {
-				return json({ error: 'Repository not found' }, { status: 404 });
+				return json({ error: '仓库不存在' }, { status: 404 });
 			}
 			repoUrl = repo.url;
 			branch = repo.branch;
@@ -60,7 +60,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			branch = data.branch || 'main';
 			credentialId = data.credentialId || null;
 		} else {
-			return json({ error: 'Either repositoryId or url is required' }, { status: 400 });
+			return json({ error: '必须提供 repositoryId 或 url' }, { status: 400 });
 		}
 
 		// Get credential if specified
@@ -86,7 +86,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			sources: result.sources
 		});
 	} catch (error: any) {
-		console.error('Failed to preview env files:', error);
-		return json({ error: error.message || 'Failed to preview env files' }, { status: 500 });
+		console.error('预览环境变量文件失败:', error);
+		return json({ error: error.message || '预览环境变量文件失败' }, { status: 500 });
 	}
 };

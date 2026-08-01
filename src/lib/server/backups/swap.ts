@@ -132,15 +132,15 @@ function swapOne(live: string): string {
 		`  rm -rf ${oldQ}; rm -f ${phaseQ};`,
 		`  mkdir -p ${oldQ};`,
 		// marker 2: move live entries aside (reversible).
-		`  ${say(`Swapping ${live}: moving live data aside`)};`,
+		`  ${say(`正在执行交换 ${live}: 将当前数据移至备份目录`)};`,
 		`  printf 2 > ${phaseQ};`,
 		`  ${moveEntries(liveQ, oldQ)};`,
 		// marker 3: move restored entries up into the live root.
-		`  ${say(`Swapping ${live}: committing restored data`)};`,
+		`  ${say(`正在执行交换 ${live}: 将恢复的数据切换为正式数据`)};`,
 		`  printf 3 > ${phaseQ};`,
 		`  ${moveEntries(newQ, liveQ)};`,
 		// committed: drop the marker, the now-empty NEW, and the old content.
-		`  ${say(`Swapping ${live}: removing the previous data`)};`,
+		`  ${say(`正在执行交换 ${live}: 清理旧数据备份目录`)};`,
 		`  rm -f ${phaseQ}; rmdir ${newQ}; rm -rf ${oldQ};`,
 		`fi`,
 	].join(' ');

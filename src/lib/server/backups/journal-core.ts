@@ -58,7 +58,7 @@ export async function recordOperationIn(
 		// Single-key upsert. No read-modify-write of a shared row → no lost update.
 		await store.set(rowKey(id), full);
 	} catch (err) {
-		console.warn(`[Backup] Could not persist ${rec.kind} operation ${id}: ${err instanceof Error ? err.message : String(err)}`);
+		console.warn(`[备份] 无法持久化 ${rec.kind} 操作 ${id}: ${err instanceof Error ? err.message : String(err)}`);
 	}
 	return id;
 }

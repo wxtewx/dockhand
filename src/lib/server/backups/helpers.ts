@@ -25,7 +25,7 @@ export function parseOptionsJson(options: string | null | undefined): Record<str
 	if (!options) return {};
 	try { return JSON.parse(options); } catch (err) {
 		// eslint-disable-next-line no-console
-		console.warn(`[Backup] Failed to parse options JSON: ${err instanceof Error ? err.message : String(err)}`);
+		console.warn(`[备份] 解析选项 JSON 失败: ${err instanceof Error ? err.message : String(err)}`);
 		return {};
 	}
 }
@@ -42,7 +42,7 @@ export function parsePoliciesJson(policies: string | null | undefined): Record<s
 		return JSON.parse(policies);
 	} catch (err) {
 		// eslint-disable-next-line no-console
-		console.warn(`[Backup] Ignoring malformed destination policies JSON: ${err instanceof Error ? err.message : String(err)}`);
+		console.warn(`[备份] 忽略损坏的目标策略 JSON: ${err instanceof Error ? err.message : String(err)}`);
 		return {};
 	}
 }
@@ -61,13 +61,13 @@ const RETENTION_KEEP_KEYS = ['keepLast', 'keepDaily', 'keepWeekly', 'keepMonthly
 export function validateRetention(retention: unknown): { ok: true } | { ok: false; reason: string } {
 	if (retention === null || retention === undefined) return { ok: true };
 	if (typeof retention !== 'object' || Array.isArray(retention)) {
-		return { ok: false, reason: 'retention must be an object' };
+		return { ok: false, reason: '保留策略必须为对象' };
 	}
 	for (const key of RETENTION_KEEP_KEYS) {
 		const v = (retention as Record<string, unknown>)[key];
 		if (v === undefined || v === null) continue;
 		if (typeof v !== 'number' || !Number.isInteger(v) || v < 0 || v > 10000) {
-			return { ok: false, reason: `retention.${key} must be an integer between 0 and 10000` };
+			return { ok: false, reason: `retention.${key} 必须是介于 0 和 10000 之间的整数` };
 		}
 	}
 	return { ok: true };
@@ -155,7 +155,7 @@ export function fireWebhook(
 	// blocks all private IPs. Loopback (127.x) and metadata (169.254.169.254) stay
 	// blocked, both on the literal host and on every DNS-resolved IP below.
 	const safe = isSafeNotificationUrl(url);
-	if (!safe.ok) { log(`Webhook blocked: ${safe.reason}`); return Promise.resolve(); }
+	if (!safe.ok) { log(`Webhook 已拦截: ${safe.reason}`); return Promise.resolve(); }
 	const safeUrl = sanitizeWebhookUrlForLog(url);
 
 	return (async () => {
@@ -166,11 +166,11 @@ export function fireWebhook(
 				const addrs = await resolveHost(host);
 				for (const addr of addrs) {
 					const reason = dangerousHostReason(addr);
-					if (reason) { log(`Webhook blocked: host ${host} resolves to a disallowed address (${reason})`); return; }
+					if (reason) { log(`Webhook 已拦截：主机 ${host} 解析至不允许的地址 (${reason})`); return; }
 				}
 			}
 		} catch (err) {
-			log(`Webhook blocked: could not resolve host (${err instanceof Error ? err.message : String(err)})`);
+			log(`Webhook 已拦截：无法解析主机 (${err instanceof Error ? err.message : String(err)})`);
 			return;
 		}
 
@@ -182,16 +182,16 @@ export function fireWebhook(
 				body,
 				signal: AbortSignal.timeout(10000),
 			});
-			log(`Webhook POST sent to ${safeUrl}`);
+			log(`Webhook 请求已发送至 ${safeUrl}`);
 		} catch {
 			// Fall back to GET for receivers that only support a ping (ntfy, healthchecks).
 			try {
 				await doFetch(url, { method: 'GET', signal: AbortSignal.timeout(10000) });
-				log(`Webhook GET fallback sent to ${safeUrl}`);
+				log(`Webhook GET 降级请求已发送至 ${safeUrl}`);
 			} catch (err) {
 				const msg = err instanceof Error ? err.message : String(err);
-				console.error(`[Backup] Webhook delivery failed for ${safeUrl}: ${msg}`);
-				log(`Webhook failed: ${msg}`);
+				console.error(`[备份] Webhook 推送失败 ${safeUrl}: ${msg}`);
+				log(`Webhook 请求失败: ${msg}`);
 			}
 		}
 	})();
@@ -424,13 +424,13 @@ export function sanitizeResticFlags(flags: string | null | undefined): string[] 
 		}
 		const name = tok.startsWith('--') ? tok.split('=')[0] : tok;
 		if (!name.startsWith('--') || !RESTIC_FLAG_ALLOW.has(name)) {
-			throw new Error(`Disallowed restic flag: ${tok}`);
+			throw new Error(`不允许使用的 restic 参数: ${tok}`);
 		}
 		out.push(tok);
 		// A space-separated value-taking flag (no `=value`) consumes the next token.
 		if (RESTIC_FLAG_TAKES_VALUE.has(name) && !tok.includes('=')) expectValue = true;
 	}
-	if (expectValue) throw new Error('Restic flag is missing its value');
+	if (expectValue) throw new Error('restic 参数缺少对应值');
 	return out;
 }
 
@@ -496,14 +496,14 @@ export function resolveEnabledOnScheduleChange(input: {
  */
 export function validateRepositoryForSave(repository: string): string | null {
 	if (!isAllowedRepository(repository)) {
-		return 'Invalid repository: must be a local absolute path or a supported scheme (rest:, s3:, b2:, azure:, gs:)';
+		return '仓库地址无效：必须为本地绝对路径或受支持的协议 (rest:, s3:, b2:, azure:, gs:)';
 	}
 	const httpMatch = repository.match(/https?:\/\/[^\s]+/);
 	if (httpMatch) {
 		let host: string;
-		try { host = new URL(httpMatch[0]).hostname; } catch { return 'Invalid repository URL'; }
+		try { host = new URL(httpMatch[0]).hostname; } catch { return '仓库 URL 格式无效'; }
 		const reason = dangerousHostReason(host);
-		if (reason) return `Repository host not allowed: ${reason}`;
+		if (reason) return `仓库主机不允许访问: ${reason}`;
 	}
 	return null;
 }
@@ -513,7 +513,7 @@ export function validateRepositoryForSave(repository: string): string | null {
 export function validateFlags(flags: unknown): string | null {
 	if (flags === undefined || flags === null) return null;
 	try { sanitizeResticFlags(flags as string); return null; }
-	catch (e) { return e instanceof Error ? e.message : 'Invalid restic flags'; }
+	catch (e) { return e instanceof Error ? e.message : 'restic 参数无效'; }
 }
 
 /**
@@ -526,7 +526,7 @@ export function validatePolicySchedules(policies: unknown): string | null {
 	if (policies == null) return null;
 	let parsed: any;
 	if (typeof policies === 'string') {
-		try { parsed = JSON.parse(policies); } catch { return 'Invalid policies JSON'; }
+		try { parsed = JSON.parse(policies); } catch { return '策略 JSON 格式无效'; }
 	} else if (typeof policies === 'object') {
 		parsed = policies;
 	} else {
@@ -535,7 +535,7 @@ export function validatePolicySchedules(policies: unknown): string | null {
 	for (const field of ['pruneSchedule', 'checkSchedule', 'verifySchedule'] as const) {
 		const value = parsed?.[field];
 		if (typeof value === 'string' && value.trim() && !isValidCron(value.trim())) {
-			return `Invalid cron expression for ${field}: ${value}`;
+			return `${field} 的Cron表达式无效：${value}`;
 		}
 	}
 	return null;

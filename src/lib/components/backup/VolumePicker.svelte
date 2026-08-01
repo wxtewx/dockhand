@@ -38,7 +38,7 @@
 		volumes,
 		allVolumes = $bindable(),
 		selectedVolumes = $bindable(),
-		emptyLabel = 'No volumes detected',
+		emptyLabel = '未检测到数据卷',
 		showBindWarning = true
 	}: Props = $props();
 
@@ -61,16 +61,16 @@
 	     so the switch clearly belongs to the volumes below it. -->
 	<div class="border rounded-md overflow-hidden">
 		<div class="flex items-center justify-between gap-4 px-3 py-2 bg-muted/30 border-b">
-			<Label class="text-xs">Backup all volumes ({backupable.length})</Label>
-			<TogglePill bind:checked={allVolumes} onLabel="Yes" offLabel="No" />
+			<Label class="text-xs">备份全部数据卷 ({backupable.length})</Label>
+			<TogglePill bind:checked={allVolumes} onLabel="是" offLabel="否" />
 		</div>
 
 		{#if showBindWarning && bindMounts.length > 0}
 			<div class="flex items-start gap-2 border-b border-amber-500/30 bg-amber-500/5 p-2 text-xs">
 				<AlertTriangle class="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
 				<div class="space-y-1">
-					<p class="font-medium text-amber-600 dark:text-amber-400">{bindMounts.length} bind mount{bindMounts.length !== 1 ? 's' : ''} detected</p>
-					<p class="text-muted-foreground">Contents are captured in the snapshot, but bind sources are host paths. Restoring to a different environment requires those exact paths on the target host — otherwise services start with empty mounts.</p>
+					<p class="font-medium text-amber-600 dark:text-amber-400">检测到 {bindMounts.length} 个绑定挂载</p>
+					<p class="text-muted-foreground">快照会保存目录内容，但绑定挂载源为宿主机路径。恢复至其他环境时，目标主机必须存在完全一致的路径，否则容器启动后挂载目录为空。</p>
 				</div>
 			</div>
 		{/if}
@@ -88,10 +88,10 @@
 					<MountTypeBadge type={vol.mountType} size="sm" />
 						<span class="font-mono truncate">{vol.name}</span>
 						{#if vol.source && vol.source !== vol.name}
-							<span class="text-muted-foreground font-mono truncate">from {vol.source}</span>
+							<span class="text-muted-foreground font-mono truncate">来源 {vol.source}</span>
 						{/if}
 						{#if vol.unbackupable}
-							<span class="text-muted-foreground ml-auto shrink-0 italic">socket / system path - not backed up</span>
+							<span class="text-muted-foreground ml-auto shrink-0 italic">socket / system 路径 — 不进行备份</span>
 						{:else if vol.mountPoint}
 							<span class="text-muted-foreground ml-auto truncate">{vol.mountPoint}</span>
 						{/if}

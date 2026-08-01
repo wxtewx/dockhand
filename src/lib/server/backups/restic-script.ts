@@ -35,7 +35,7 @@ export function finishScript(command: string): string {
  */
 export function localRepoGuard(repository: string): string {
 	if (!(repository.startsWith('/') || repository.startsWith('./'))) return '';
-	const msg = `restic repository not found at $RESTIC_REPOSITORY on this environment's Docker host. A local-path repository only works when the environment's Docker daemon runs on the same host as Dockhand (e.g. a co-located socket-proxy). For a remote host, use an S3 or REST destination.`;
+	const msg = `在此环境的 Docker 主机上未找到 $RESTIC_REPOSITORY 指向的 restic 仓库。本地路径仓库仅适用于环境的 Docker 守护进程与 Dockhand 运行在同一台主机的场景 (例如同机部署的 socket-proxy)。远程主机请使用 S3 或 REST 存储目标。`;
 	return `test -f "$RESTIC_REPOSITORY/config" || { echo ${shellQuote(msg)} >&2; exit 1; }; `;
 }
 
@@ -87,7 +87,7 @@ export function classifyProcClose(
 	stderr: string
 ): { exitCode: number | undefined; stderr: string } {
 	const exitCode = code === null ? undefined : code;
-	const stderrOut = signal ? `${stderr}\n(process killed by ${signal})` : stderr;
+	const stderrOut = signal ? `${stderr}\n(进程被 ${signal} 信号终止)` : stderr;
 	return { exitCode, stderr: stderrOut };
 }
 

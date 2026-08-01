@@ -16,21 +16,20 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('networks', 'inspect', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Environment access check (enterprise only)
 	if (envIdNum && auth.isEnterprise && !await auth.canAccessEnvironment(envIdNum)) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问此环境' }, { status: 403 });
 	}
 
 	try {
-
 		const network = await inspectNetwork(params.id, envIdNum);
 		return json(network);
 	} catch (error) {
-		console.error('Failed to inspect network:', error);
-		return json({ error: 'Failed to inspect network' }, { status: 500 });
+		console.error('检查网络失败:', error);
+		return json({ error: '检查网络失败' }, { status: 500 });
 	}
 };
 
@@ -46,16 +45,15 @@ export const DELETE: RequestHandler = async (event) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('networks', 'remove', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Environment access check (enterprise only)
 	if (envIdNum && auth.isEnterprise && !await auth.canAccessEnvironment(envIdNum)) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问此环境' }, { status: 403 });
 	}
 
 	try {
-
 		// Get network name before deletion for audit
 		let networkName = params.id;
 		try {
@@ -72,7 +70,7 @@ export const DELETE: RequestHandler = async (event) => {
 
 		return json({ success: true });
 	} catch (error: any) {
-		console.error('Failed to remove network:', error);
-		return json({ error: 'Failed to remove network', details: error.message }, { status: 500 });
+		console.error('删除网络失败:', error);
+		return json({ error: '删除网络失败', details: error.message }, { status: 500 });
 	}
 };

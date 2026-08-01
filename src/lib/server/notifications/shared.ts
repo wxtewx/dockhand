@@ -49,7 +49,7 @@ export async function notificationFetch(input: string | URL, init: RequestInit =
 	const target = typeof input === 'string' ? input : input.toString();
 	const safe = isSafeNotificationUrl(target);
 	if (!safe.ok) {
-		throw new Error(`Notification endpoint rejected: ${safe.reason ?? 'unsafe URL'}`);
+		throw new Error(`通知地址校验不通过：${safe.reason ?? '不安全的链接地址'}`);
 	}
 	const response = await fetch(input, {
 		...init,
@@ -61,7 +61,7 @@ export async function notificationFetch(input: string | URL, init: RequestInit =
 	// a private host), so treat it as a blocked/failed send.
 	if (response.status >= 300 && response.status < 400) {
 		await drainResponse(response);
-		throw new Error(`Notification endpoint rejected: refusing to follow redirect (status ${response.status})`);
+		throw new Error(`通知地址校验不通过：禁止跟随跳转 (状态码 ${response.status})`);
 	}
 	return response;
 }

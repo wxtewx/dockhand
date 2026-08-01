@@ -21,14 +21,14 @@
 	function onToggle(value: boolean) {
 		checked = value;
 		themeStore.setPreference('coloredActionButtons', value, userId, skipApply);
-		toast.success(value ? 'Action buttons colored' : 'Action buttons reset to default');
+		toast.success(value ? '操作按钮已启用彩色样式' : '操作按钮已恢复默认灰色样式');
 	}
 </script>
 
 <div class="space-y-1">
 	<div class="flex items-center gap-3">
-		<Label>Colored grid buttons</Label>
+		<Label>彩色网格按钮</Label>
 		<TogglePill {checked} onchange={onToggle} />
 	</div>
-	<p class="text-xs text-muted-foreground">Use semantic colors instead of muted gray</p>
+	<p class="text-xs text-muted-foreground">使用语义化色彩替代暗淡灰色</p>
 </div>

@@ -69,7 +69,7 @@ export function buildInPlaceRestore(
 		// touch a user's own `volumes/` directory at the live root (that's the bug
 		// the CLONE path had before it moved to a staging dir — see buildCloneRestore).
 		return [
-			`${say(`Restoring ${include} into staging dir ${SWAP_NEW}`)}`,
+			`${say(`正在将 ${include} 恢复至临时目录 ${SWAP_NEW}`)}`,
 			restic,
 			flatten,
 			`rm -rf ${scaffold}`,
@@ -142,12 +142,12 @@ export function buildCloneRestore(
 		// Remove ONLY our staging dir (recursive is safe — it's ours, and the payload
 		// was copied out). Never touches any user directory at the mount.
 		return [
-			`${say(`Cloning into ${root} (staging dir ${staging_name})`)}`,
+			`${say(`正在克隆恢复至 ${root} (临时目录 ${staging_name})`)}`,
 			`rm -rf ${stagingQ}`,
 			restic,
-			`${say(`Moving restored files into ${root}`)}`,
+			`${say(`正在将恢复文件迁移至 ${root}`)}`,
 			move,
-			`${say(`Cleaning up staging dir at ${root}`)}`,
+			`${say(`清理挂载目录下的临时目录 ${root}`)}`,
 			`rm -rf ${stagingQ}`,
 		].join('; ');
 	}).join('; ');

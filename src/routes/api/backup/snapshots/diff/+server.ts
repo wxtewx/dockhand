@@ -8,7 +8,7 @@ import { validateSnapshotId } from '$lib/server/docker-validation';
 export const GET: RequestHandler = async ({ url, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('backups', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const destId = url.searchParams.get('destinationId');
@@ -16,7 +16,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 	const snapB = url.searchParams.get('snapshotB');
 
 	if (!destId || !snapA || !snapB) {
-		return json({ error: 'Missing required params: destinationId, snapshotA, snapshotB' }, { status: 400 });
+		return json({ error: '缺少必填参数: destinationId, snapshotA, snapshotB' }, { status: 400 });
 	}
 
 	const invalidA = validateSnapshotId(snapA);

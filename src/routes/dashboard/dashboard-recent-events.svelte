@@ -50,6 +50,25 @@
 		}
 	}
 
+	function getActionLabel(action: string): string {
+		switch (action) {
+			case 'create': return '创建';
+			case 'start': return '启动';
+			case 'stop': return '停止';
+			case 'die': return '退出';
+			case 'kill': return '终止';
+			case 'restart': return '重启';
+			case 'pause': return '暂停';
+			case 'unpause': return '恢复';
+			case 'destroy': return '销毁';
+			case 'rename': return '重命名';
+			case 'update': return '更新';
+			case 'oom': return '内存溢出';
+			case 'health_status': return '健康状态';
+			default: return '未知操作';
+		}
+	}
+
 	function getActionColor(action: string): string {
 		switch (action) {
 			case 'create':
@@ -80,14 +99,14 @@
 		const diffMs = now.getTime() - date.getTime();
 		const diffMins = Math.floor(diffMs / 60000);
 
-		if (diffMins < 1) return 'now';
-		if (diffMins < 60) return `${diffMins}m`;
+		if (diffMins < 1) return '刚刚';
+		if (diffMins < 60) return `${diffMins} 分钟`;
 
 		const diffHours = Math.floor(diffMins / 60);
-		if (diffHours < 24) return `${diffHours}h`;
+		if (diffHours < 24) return `${diffHours} 小时`;
 
 		const diffDays = Math.floor(diffHours / 24);
-		return `${diffDays}d`;
+		return `${diffDays} 天`;
 	}
 </script>
 
@@ -110,7 +129,7 @@
 	>
 		<div class="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
 			<Activity class="w-3 h-3" />
-			<span class="font-medium">Recent events</span>
+			<span class="font-medium">最近事件</span>
 		</div>
 		<!-- Grid layout with fixed columns: timestamp, action icon, container name -->
 		<div class="grid grid-cols-[auto_auto_1fr] gap-x-2 gap-y-1 text-xs">
@@ -121,7 +140,7 @@
 				</span>
 				{@const ActionIcon = getActionIcon(event.action)}
 				<!-- Action icon -->
-				<div class="flex items-center justify-center {getActionColor(event.action)}" title={event.action}>
+				<div class="flex items-center justify-center {getActionColor(event.action)}" title={getActionLabel(event.action)}>
 					<ActionIcon class="w-3 h-3" />
 				</div>
 				<!-- Container name -->

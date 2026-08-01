@@ -9,21 +9,21 @@ export const POST: RequestHandler = async (event) => {
 	const { params, request, cookies } = event;
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('backups', 'manage')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const destId = parseInt(params.id);
-	if (isNaN(destId)) return json({ error: 'Invalid destination ID' }, { status: 400 });
+	if (isNaN(destId)) return json({ error: '存储位置 ID 格式非法' }, { status: 400 });
 
 	const body = await request.json();
 	const task = body.task as string;
 
 	if (!['unlock', 'check', 'prune', 'stats', 'repair-index', 'repair-snapshots'].includes(task)) {
-		return json({ error: `Invalid task: ${task}` }, { status: 400 });
+		return json({ error: `无效任务类型: ${task}` }, { status: 400 });
 	}
 
 	const dest = await getBackupDestination(destId);
-	if (!dest) return json({ error: 'Destination not found' }, { status: 404 });
+	if (!dest) return json({ error: '未找到该存储位置' }, { status: 404 });
 
 	// Repo maintenance (prune/check/repair) is destructive and operates on the
 	// shared repo. Destinations aren't environment-scoped, so gate on every
@@ -36,7 +36,7 @@ export const POST: RequestHandler = async (event) => {
 		)];
 		for (const envId of envIds) {
 			if (!await auth.canAccessEnvironment(envId)) {
-				return json({ error: 'Access denied to an environment using this destination' }, { status: 403 });
+				return json({ error: '无权访问正在使用此存储位置的某个环境' }, { status: 403 });
 			}
 		}
 	}

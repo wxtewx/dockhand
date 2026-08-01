@@ -13,6 +13,7 @@
 	import { environments } from '$lib/stores/environment';
 	import EnvironmentIcon from '$lib/components/EnvironmentIcon.svelte';
 	import FileBrowserPanel from './FileBrowserPanel.svelte';
+	import { getLabelText } from '$lib/types';
 
 	interface Props {
 		open: boolean;
@@ -94,10 +95,10 @@
 			if (res.ok) {
 				metadata = await res.json();
 			} else {
-				try { metadataError = (await res.json()).error || 'No metadata available'; }
-				catch { metadataError = 'No metadata available'; }
+				try { metadataError = (await res.json()).error || '无可用元数据'; }
+				catch { metadataError = '无可用元数据'; }
 			}
-		} catch { metadataError = 'Failed to load metadata'; }
+		} catch { metadataError = '加载元数据失败'; }
 		finally { metadataLoading = false; }
 	}
 </script>
@@ -107,9 +108,9 @@
 		<Dialog.Header>
 			<Dialog.Title class="flex items-center gap-2 flex-wrap">
 				<FolderOpen class="w-5 h-5" />
-				Browse snapshot
+				浏览快照
 				{#if snapshotEnvName}
-					<span class="text-muted-foreground font-normal">from</span>
+					<span class="text-muted-foreground font-normal">来源环境</span>
 					<EnvironmentIcon icon={snapshotEnvIcon} envId={snapshotEnvId} class="w-4 h-4 text-amber-600 dark:text-amber-400" />
 					<span class="font-normal text-amber-600 dark:text-amber-400">{snapshotEnvName}</span>
 				{/if}
@@ -123,7 +124,7 @@
 					<span class="font-normal">{displayName}</span>
 				{/if}
 				{#if destinationName}
-					<span class="text-muted-foreground font-normal">on</span>
+					<span class="text-muted-foreground font-normal">存储位置</span>
 					<svelte:component this={getRepoTypeIcon(destinationRepo)} class="w-4 h-4" />
 					<span class="font-normal">{destinationName}</span>
 				{/if}
@@ -141,14 +142,14 @@
 				class="px-3 py-1.5 text-sm transition-colors border-b-2 -mb-px {activeTab === 'files' ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}"
 				onclick={() => activeTab = 'files'}
 			>
-				Files
+				文件
 			</button>
 			<button
 				type="button"
 				class="px-3 py-1.5 text-sm transition-colors border-b-2 -mb-px {activeTab === 'metadata' ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}"
 				onclick={() => activeTab = 'metadata'}
 			>
-				Metadata
+				元数据
 			</button>
 		</div>
 
@@ -177,27 +178,27 @@
 					<div class="max-w-2xl space-y-5 px-1">
 						<!-- Backup info -->
 						<section class="space-y-2">
-							<h4 class="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Backup info</h4>
+							<h4 class="text-xs font-semibold text-muted-foreground uppercase tracking-wide">备份信息</h4>
 							<dl class="grid grid-cols-[130px_1fr] gap-y-1.5 text-sm">
-								<dt class="text-muted-foreground">Type</dt>
-								<dd><Badge variant="outline" class="text-[10px]">{metadata.type}</Badge></dd>
-								<dt class="text-muted-foreground">Name</dt>
+								<dt class="text-muted-foreground">类型</dt>
+								<dd><Badge variant="outline" class="text-[10px]">{getLabelText(metadata.type)}</Badge></dd>
+								<dt class="text-muted-foreground">名称</dt>
 								<dd class="font-medium">{metadata.targetName}</dd>
-								<dt class="text-muted-foreground">Backup time</dt>
+								<dt class="text-muted-foreground">备份时间</dt>
 								<dd>{formatDateTime(metadata.backupTime)}</dd>
 								{#if metadata.environmentId != null}
-									<dt class="text-muted-foreground">Environment ID</dt>
+									<dt class="text-muted-foreground">环境 ID</dt>
 									<dd class="font-mono">{metadata.environmentId}</dd>
 								{/if}
-								<dt class="text-muted-foreground">Volumes</dt>
+								<dt class="text-muted-foreground">数据卷数量</dt>
 								<dd>{metadata.volumes?.length ?? 0}</dd>
 								{#if metadata.type === 'stack'}
 									{#if metadata.composeFileName}
-										<dt class="text-muted-foreground">Compose file</dt>
+										<dt class="text-muted-foreground">Compose 文件</dt>
 										<dd class="font-mono">{metadata.composeFileName}</dd>
 									{/if}
-									<dt class="text-muted-foreground">Stack files</dt>
-									<dd>{metadata.hasStackFiles ? (metadata.stackFilesTruncated ? 'captured (truncated)' : 'captured') : 'not captured'}</dd>
+									<dt class="text-muted-foreground">堆栈文件</dt>
+									<dd>{metadata.hasStackFiles ? (metadata.stackFilesTruncated ? '已采集 (列表截断)' : '已采集') : '未采集'}</dd>
 								{/if}
 							</dl>
 						</section>
@@ -205,7 +206,7 @@
 						<!-- Volumes / binds -->
 						{#if metadata.volumes?.length}
 							<section class="space-y-2 border-t pt-4">
-								<h4 class="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5"><HardDrive class="w-3.5 h-3.5" />Volumes &amp; binds ({metadata.volumes.length})</h4>
+								<h4 class="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5"><HardDrive class="w-3.5 h-3.5" />数据卷与绑定挂载 ({metadata.volumes.length})</h4>
 								<div class="space-y-1">
 									{#each metadata.volumes as vol}
 										<!-- Docker convention: source (host path / volume name) → destination
@@ -231,7 +232,7 @@
 						     without a browse roundtrip. -->
 						{#if metadata.type === 'stack' && metadata.stackFilesList?.length}
 							<section class="space-y-2 border-t pt-4">
-								<h4 class="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5"><FileText class="w-3.5 h-3.5" />Stack files ({metadata.stackFilesList.length}{metadata.stackFilesListTruncated ? '+' : ''})</h4>
+								<h4 class="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5"><FileText class="w-3.5 h-3.5" />堆栈文件 ({metadata.stackFilesList.length}{metadata.stackFilesListTruncated ? '+' : ''})</h4>
 								<div class="space-y-1">
 									{#each metadata.stackFilesList as file}
 										<div class="flex items-center gap-2 text-sm bg-muted/30 rounded px-2 py-1.5">
@@ -244,7 +245,7 @@
 									{/each}
 								</div>
 								{#if metadata.stackFilesListTruncated}
-									<p class="text-xs text-muted-foreground">Only the first {metadata.stackFilesList.length} files are listed. Browse the snapshot to see the full tree.</p>
+									<p class="text-xs text-muted-foreground">仅展示前 {metadata.stackFilesList.length} 个文件，浏览快照查看完整目录树。</p>
 								{/if}
 							</section>
 						{/if}
@@ -254,13 +255,13 @@
 						     DB on restore unless the user opts out. -->
 						{#if metadata.type === 'stack' && metadata.secretKeys?.length}
 							<section class="space-y-2 border-t pt-4">
-								<h4 class="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5"><KeyRound class="w-3.5 h-3.5" />Secrets ({metadata.secretKeys.length})</h4>
+								<h4 class="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5"><KeyRound class="w-3.5 h-3.5" />密钥 ({metadata.secretKeys.length})</h4>
 								<div class="flex flex-wrap gap-1">
 									{#each metadata.secretKeys as key}
 										<code class="rounded bg-muted px-1.5 py-0.5 text-xs">{key}</code>
 									{/each}
 								</div>
-								<p class="text-xs text-muted-foreground">Stored encrypted with this instance's key. Restored to the stack on restore (values never shown).</p>
+								<p class="text-xs text-muted-foreground">使用当前实例密钥加密存储。执行恢复时将还原至堆栈 (密钥内容永不显示)。</p>
 							</section>
 						{/if}
 
@@ -270,53 +271,53 @@
 							<section class="space-y-2 border-t pt-4">
 								<h4 class="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
 									<Box class="w-3 h-3" />
-									{(containerInspect.Name || metadata.targetName || '').replace(/^\//, '')}
+									容器配置 {((containerInspect.Name || metadata.targetName || '').replace(/^\//, ''))}
 								</h4>
 								<dl class="grid grid-cols-[130px_1fr] gap-y-1.5 text-sm">
-									<dt class="text-muted-foreground">Image</dt>
+									<dt class="text-muted-foreground">镜像</dt>
 									<dd class="font-mono break-all">{containerInspect.Config.Image || '—'}</dd>
 									{#if containerInspect.Id}
-										<dt class="text-muted-foreground">Container ID</dt>
+										<dt class="text-muted-foreground">容器 ID</dt>
 										<dd class="font-mono">{containerInspect.Id.slice(0, 12)}</dd>
 									{/if}
 									{#if containerInspect.State?.Status}
-										<dt class="text-muted-foreground">State at backup</dt>
+										<dt class="text-muted-foreground">备份时状态</dt>
 										<dd>{containerInspect.State.Status}</dd>
 									{/if}
 									{#if containerInspect.Created}
-										<dt class="text-muted-foreground">Created</dt>
+										<dt class="text-muted-foreground">创建时间</dt>
 										<dd>{formatDateTime(containerInspect.Created)}</dd>
 									{/if}
 									{#if containerInspect.Config.Cmd?.length}
-										<dt class="text-muted-foreground">Command</dt>
+										<dt class="text-muted-foreground">命令</dt>
 										<dd class="font-mono break-all">{containerInspect.Config.Cmd.join(' ')}</dd>
 									{/if}
 									{#if containerInspect.Config.Entrypoint?.length}
-										<dt class="text-muted-foreground">Entrypoint</dt>
+										<dt class="text-muted-foreground">入口程序</dt>
 										<dd class="font-mono break-all">{containerInspect.Config.Entrypoint.join(' ')}</dd>
 									{/if}
 									{#if containerInspect.Config.WorkingDir}
-										<dt class="text-muted-foreground">Working dir</dt>
+										<dt class="text-muted-foreground">工作目录</dt>
 										<dd class="font-mono break-all">{containerInspect.Config.WorkingDir}</dd>
 									{/if}
 									{#if containerInspect.Config.User}
-										<dt class="text-muted-foreground">User</dt>
+										<dt class="text-muted-foreground">运行用户</dt>
 										<dd class="font-mono">{containerInspect.Config.User}</dd>
 									{/if}
 									{#if containerInspect.Config.ExposedPorts}
-										<dt class="text-muted-foreground">Exposed ports</dt>
+										<dt class="text-muted-foreground">暴露端口</dt>
 										<dd class="break-all">{Object.keys(containerInspect.Config.ExposedPorts).join(', ')}</dd>
 									{/if}
 									{#if containerInspect.HostConfig?.RestartPolicy?.Name}
-										<dt class="text-muted-foreground">Restart policy</dt>
+										<dt class="text-muted-foreground">重启策略</dt>
 										<dd>{containerInspect.HostConfig.RestartPolicy.Name}{containerInspect.HostConfig.RestartPolicy.MaximumRetryCount ? ` (max ${containerInspect.HostConfig.RestartPolicy.MaximumRetryCount})` : ''}</dd>
 									{/if}
 									{#if containerInspect.HostConfig?.NetworkMode}
-										<dt class="text-muted-foreground">Network mode</dt>
+										<dt class="text-muted-foreground">网络模式</dt>
 										<dd class="break-all">{containerInspect.HostConfig.NetworkMode}</dd>
 									{/if}
 									{#if containerInspect.HostConfig?.Privileged}
-										<dt class="text-muted-foreground">Privileged</dt>
+										<dt class="text-muted-foreground">特权模式</dt>
 										<dd>yes</dd>
 									{/if}
 								</dl>
@@ -325,7 +326,7 @@
 								     ExposedPorts above; only present when ports are published). -->
 								{#if containerInspect.HostConfig?.PortBindings && Object.keys(containerInspect.HostConfig.PortBindings).length}
 									<div class="pt-1 space-y-1.5">
-										<span class="text-xs font-semibold text-muted-foreground flex items-center gap-1.5"><Plug class="w-3.5 h-3.5" />Port bindings</span>
+										<span class="text-xs font-semibold text-muted-foreground flex items-center gap-1.5"><Plug class="w-3.5 h-3.5" />端口映射</span>
 										<div class="flex flex-wrap gap-1">
 											{#each Object.entries(containerInspect.HostConfig.PortBindings) as [containerPort, hostArr]}
 												{@const h = (hostArr as any[])?.[0]}
@@ -338,18 +339,18 @@
 								<!-- Health at backup -->
 								{#if containerInspect.State?.Health?.Status}
 									<div class="pt-1 space-y-1.5">
-										<span class="text-xs font-semibold text-muted-foreground flex items-center gap-1.5"><HeartPulse class="w-3.5 h-3.5" />Health at backup</span>
-										<Badge variant="outline" class="text-xs {containerInspect.State.Health.Status === 'healthy' ? 'text-green-600 border-green-600/40' : containerInspect.State.Health.Status === 'unhealthy' ? 'text-destructive border-destructive/40' : ''}">{containerInspect.State.Health.Status}</Badge>
+										<span class="text-xs font-semibold text-muted-foreground flex items-center gap-1.5"><HeartPulse class="w-3.5 h-3.5" />备份时健康状态</span>
+										<Badge variant="outline" class="text-xs {containerInspect.State.Health.Status === 'healthy' ? 'text-green-600 border-green-600/40' : containerInspect.State.Health.Status === 'unhealthy' ? 'text-destructive border-destructive/40' : ''}">{getLabelText(containerInspect.State.Health.Status)}</Badge>
 									</div>
 								{/if}
 
 								<!-- Security flags -->
 								{#if containerInspect.HostConfig?.Privileged || containerInspect.HostConfig?.ReadonlyRootfs || containerInspect.HostConfig?.CapAdd?.length || containerInspect.HostConfig?.CapDrop?.length}
 									<div class="pt-1 space-y-1.5">
-										<span class="text-xs font-semibold text-muted-foreground flex items-center gap-1.5"><ShieldAlert class="w-3.5 h-3.5" />Security</span>
+										<span class="text-xs font-semibold text-muted-foreground flex items-center gap-1.5"><ShieldAlert class="w-3.5 h-3.5" />安全配置</span>
 										<div class="flex flex-wrap gap-1">
-											{#if containerInspect.HostConfig.Privileged}<Badge variant="outline" class="text-xs text-amber-600 border-amber-600/40">privileged</Badge>{/if}
-											{#if containerInspect.HostConfig.ReadonlyRootfs}<Badge variant="outline" class="text-xs">read-only rootfs</Badge>{/if}
+											{#if containerInspect.HostConfig.Privileged}<Badge variant="outline" class="text-xs text-amber-600 border-amber-600/40">特权模式</Badge>{/if}
+											{#if containerInspect.HostConfig.ReadonlyRootfs}<Badge variant="outline" class="text-xs">只读根文件系统</Badge>{/if}
 											{#each containerInspect.HostConfig.CapAdd ?? [] as cap}<Badge variant="outline" class="text-xs text-green-600 border-green-600/40 font-mono">+{cap}</Badge>{/each}
 											{#each containerInspect.HostConfig.CapDrop ?? [] as cap}<Badge variant="outline" class="text-xs text-muted-foreground font-mono">-{cap}</Badge>{/each}
 										</div>
@@ -359,18 +360,18 @@
 								<!-- Runtime details (log driver, stop signal, platform) -->
 								{#if containerInspect.HostConfig?.LogConfig?.Type || containerInspect.Config?.StopSignal || containerInspect.Platform}
 									<div class="pt-1 space-y-1.5">
-										<span class="text-xs font-semibold text-muted-foreground flex items-center gap-1.5"><Server class="w-3.5 h-3.5" />Runtime</span>
+										<span class="text-xs font-semibold text-muted-foreground flex items-center gap-1.5"><Server class="w-3.5 h-3.5" />运行时信息</span>
 										<dl class="grid grid-cols-[130px_1fr] gap-y-1 text-sm">
 											{#if containerInspect.HostConfig?.LogConfig?.Type}
-												<dt class="text-muted-foreground flex items-center gap-1.5"><ScrollText class="w-3.5 h-3.5" />Log driver</dt>
+												<dt class="text-muted-foreground flex items-center gap-1.5"><ScrollText class="w-3.5 h-3.5" />日志驱动</dt>
 												<dd class="font-mono">{containerInspect.HostConfig.LogConfig.Type}</dd>
 											{/if}
 											{#if containerInspect.Config?.StopSignal}
-												<dt class="text-muted-foreground">Stop signal</dt>
+												<dt class="text-muted-foreground">停止信号</dt>
 												<dd class="font-mono">{containerInspect.Config.StopSignal}</dd>
 											{/if}
 											{#if containerInspect.Platform}
-												<dt class="text-muted-foreground flex items-center gap-1.5"><Cpu class="w-3.5 h-3.5" />Platform</dt>
+												<dt class="text-muted-foreground flex items-center gap-1.5"><Cpu class="w-3.5 h-3.5" />平台架构</dt>
 												<dd class="font-mono">{containerInspect.Platform}</dd>
 											{/if}
 										</dl>
@@ -380,7 +381,7 @@
 								<!-- DNS / extra hosts -->
 								{#if containerInspect.HostConfig?.Dns?.length || containerInspect.HostConfig?.ExtraHosts?.length}
 									<div class="pt-1 space-y-1.5">
-										<span class="text-xs font-semibold text-muted-foreground flex items-center gap-1.5"><Globe class="w-3.5 h-3.5" />DNS &amp; hosts</span>
+										<span class="text-xs font-semibold text-muted-foreground flex items-center gap-1.5"><Globe class="w-3.5 h-3.5" />DNS 与自定义主机映射</span>
 										<div class="flex flex-wrap gap-1">
 											{#each containerInspect.HostConfig.Dns ?? [] as dns}<Badge variant="secondary" class="text-xs font-mono">DNS {dns}</Badge>{/each}
 											{#each containerInspect.HostConfig.ExtraHosts ?? [] as host}<Badge variant="secondary" class="text-xs font-mono">{host}</Badge>{/each}
@@ -391,7 +392,7 @@
 								<!-- Networks -->
 								{#if containerInspect.NetworkSettings?.Networks && Object.keys(containerInspect.NetworkSettings.Networks).length}
 									<div class="pt-1 space-y-1.5">
-										<span class="text-xs font-semibold text-muted-foreground flex items-center gap-1.5"><Network class="w-3.5 h-3.5" />Networks</span>
+										<span class="text-xs font-semibold text-muted-foreground flex items-center gap-1.5"><Network class="w-3.5 h-3.5" />网络</span>
 										<div class="flex flex-wrap gap-1">
 											{#each Object.entries(containerInspect.NetworkSettings.Networks) as [net, cfg]}
 												<Badge variant="secondary" class="text-xs"><Network class="w-3.5 h-3.5 mr-1" />{net}{(cfg as any)?.IPAddress ? ` (${(cfg as any).IPAddress})` : ''}</Badge>
@@ -403,7 +404,7 @@
 								<!-- Labels -->
 								{#if containerInspect.Config.Labels && Object.keys(containerInspect.Config.Labels).length}
 									<div class="pt-1 space-y-1.5">
-										<span class="text-xs font-semibold text-muted-foreground flex items-center gap-1.5"><Tag class="w-3.5 h-3.5" />Labels ({Object.keys(containerInspect.Config.Labels).length})</span>
+										<span class="text-xs font-semibold text-muted-foreground flex items-center gap-1.5"><Tag class="w-3.5 h-3.5" />标签 ({Object.keys(containerInspect.Config.Labels).length})</span>
 										<div class="max-h-40 overflow-y-auto text-sm font-mono bg-muted/20 rounded p-2 space-y-0.5">
 											{#each Object.entries(containerInspect.Config.Labels) as [key, value]}
 												<div class="truncate"><span class="text-muted-foreground">{key}</span>=<span>{value}</span></div>
@@ -415,7 +416,7 @@
 								<!-- Env vars (values masked) -->
 								{#if containerInspect.Config.Env?.length}
 									<div class="pt-1 space-y-1.5">
-										<span class="text-xs font-semibold text-muted-foreground flex items-center gap-1.5"><Variable class="w-3.5 h-3.5" />Environment variables ({containerInspect.Config.Env.length})</span>
+										<span class="text-xs font-semibold text-muted-foreground flex items-center gap-1.5"><Variable class="w-3.5 h-3.5" />环境变量 ({containerInspect.Config.Env.length})</span>
 										<div class="max-h-40 overflow-y-auto text-sm font-mono bg-muted/20 rounded p-2 space-y-0.5">
 											{#each containerInspect.Config.Env as envVar}
 												{@const eqIdx = envVar.indexOf('=')}
@@ -430,7 +431,7 @@
 						{/if}
 					</div>
 				{:else}
-					<p class="text-sm text-muted-foreground p-4">No metadata available for this snapshot</p>
+					<p class="text-sm text-muted-foreground p-4">该快照没有可用元数据</p>
 				{/if}
 			</div>
 		{/if}

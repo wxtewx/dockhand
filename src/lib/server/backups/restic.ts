@@ -280,9 +280,9 @@ export class Restic {
 			else throw err; // a real inspect error or a timeout BackupError — surface it
 		}
 		if (!exists) {
-			console.log(`[Backups] Pulling helper image: ${image}`);
+			console.log(`[备份] 正在拉取辅助镜像: ${image}`);
 			await withTimeout(pullImage(image, undefined, envId ?? undefined), HELPER_PULL_TIMEOUT_MS,
-				`timed out pulling helper image "${image}" — check that it is available and the registry is reachable`);
+				`拉取辅助镜像 "${image}" 超时 — 请确认镜像地址有效且镜像仓库可访问`);
 		}
 		return image;
 	}

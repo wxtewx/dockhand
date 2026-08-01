@@ -18,13 +18,13 @@ export const POST: RequestHandler = async (event) => {
 
 	// Permission check with environment context (renaming requires create permission)
 	if (auth.authEnabled && !await auth.can('containers', 'create', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const { name } = await request.json();
 		if (!name || typeof name !== 'string') {
-			return json({ error: 'New name is required' }, { status: 400 });
+			return json({ error: '新名称为必填项' }, { status: 400 });
 		}
 
 		// Get old container name before renaming
@@ -45,16 +45,16 @@ export const POST: RequestHandler = async (event) => {
 		try {
 			await renameAutoUpdateSchedule(oldName, name, envIdNum);
 		} catch (error) {
-			console.error('Failed to update schedule name:', error);
+			console.error('更新计划名称失败:', error);
 			// Don't fail the rename if schedule update fails
 		}
 
 		return json({ success: true });
 	} catch (error: any) {
 		if (error?.statusCode === 404) {
-			return json({ error: error.json?.message || 'Container not found' }, { status: 404 });
+			return json({ error: error.json?.message || '容器未找到' }, { status: 404 });
 		}
-		console.error('Error renaming container:', error?.message || error);
-		return json({ error: 'Failed to rename container' }, { status: 500 });
+		console.error('重命名容器错误:', error?.message || error);
+		return json({ error: '重命名容器失败' }, { status: 500 });
 	}
 };
