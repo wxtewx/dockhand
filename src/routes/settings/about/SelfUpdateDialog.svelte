@@ -155,7 +155,7 @@
 		loadingNotes = true;
 		try {
 			const response = await fetch(
-				'https://raw.githubusercontent.com/Finsys/dockhand/main/src/lib/data/changelog.json',
+				'https://raw.githubusercontent.com/wxtewx/dockhand/main/src/lib/data/changelog.json',
 				{ signal: AbortSignal.timeout(5000) }
 			);
 
