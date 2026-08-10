@@ -92,12 +92,12 @@
 </script>
 
 <div class="space-y-2">
-	<div class="text-sm font-medium">Stack files on the host</div>
+	<div class="text-sm font-medium">宿主机上的堆栈文件</div>
 
 	{#if loading}
 		<div class="flex items-center gap-2 rounded-md border bg-muted/30 p-2.5 text-xs text-muted-foreground">
 			<Loader2 class="h-4 w-4 shrink-0 animate-spin" />
-			Probing the host for the stack folder...
+			正在探测宿主机的堆栈文件夹...
 		</div>
 	{:else if listing?.kind === 'listed' || listing?.kind === 'tar'}
 		{#if listing.kind === 'listed'}
@@ -106,45 +106,39 @@
 				<FolderOpen class="mt-0.5 h-4 w-4 shrink-0 text-sky-500" />
 				<div class="min-w-0 flex-1">
 					<div class="flex items-center gap-1.5">
-						<span class="font-medium text-foreground">Captured from the host at</span>
+						<span class="font-medium text-foreground">从宿主机以下路径采集</span>
 						<Tooltip.Root>
 							<Tooltip.Trigger type="button" class="text-muted-foreground hover:text-foreground">
 								<HelpCircle class="h-3.5 w-3.5" />
 							</Tooltip.Trigger>
 							<Tooltip.Content class="w-80 z-[200]" side="right">
 								<div class="space-y-2">
-									<p class="font-medium">Where this path comes from</p>
+									<p class="font-medium">该路径来源说明</p>
 									{#if envKind === 'socket'}
 										<p class="flex items-center gap-1.5 text-muted-foreground">
 											{#if envIcon && envId != null}<EnvironmentIcon icon={envIcon} {envId} class="h-3.5 w-3.5 shrink-0" />{/if}
 											<Unplug class="h-3.5 w-3.5 shrink-0 text-cyan-500" />
-											<span><span class="font-medium text-foreground">{envLabel}</span> is a socket
-											environment. Backup reads the stack folder from Dockhand's own stack
-											directory on this host.</span>
+											<span><span class="font-medium text-foreground">{envLabel}</span> 属于套接字类型环境。备份程序将从 Dockhand 自身在宿主机的堆栈目录读取堆栈文件夹。</span>
 										</p>
 										<p class="text-muted-foreground">
-											If this path looks wrong, set <code class="bg-muted px-1 rounded">HOST_DATA_DIR</code>
-											when Dockhand runs in a container, so it points to where the data volume
-											lives on the host.
+											若路径显示有误，请在容器运行 Dockhand 时配置 <code class="bg-muted px-1 rounded">HOST_DATA_DIR</code>，使其指向宿主机上数据卷的实际挂载位置。
 										</p>
 									{:else if envKind === 'direct'}
 										<p class="flex items-center gap-1.5 text-muted-foreground">
 											{#if envIcon && envId != null}<EnvironmentIcon icon={envIcon} {envId} class="h-3.5 w-3.5 shrink-0" />{/if}
 											<Icon iconNode={whale} class="h-3.5 w-3.5 shrink-0 text-blue-500" />
-											<span><span class="font-medium text-foreground">{envLabel}</span> is a direct
-											environment. Backup reads the stack folder from this path on the remote
-											Docker host.</span>
+											<span><span class="font-medium text-foreground">{envLabel}</span> 属于直连类型环境。备份程序将从远程 Docker 宿主机的此路径读取堆栈文件夹。</span>
 										</p>
 										{#if configuredStackPath}
 											<p class="text-muted-foreground">
-												Remote stack path set on this environment:
+												当前环境已配置远程堆栈路径:
 												<code class="bg-muted px-1 rounded break-all">{configuredStackPath}</code>
 											</p>
 										{:else}
 											<p class="text-muted-foreground">
-												It is derived from the stack's bind mounts. To set it explicitly, use
-												<span class="font-medium text-foreground">Environments &gt; (edit) &gt; Remote stack path (for backup)</span>
-												and re-open this dialog.
+												该路径由堆栈绑定挂载自动推导。如需手动指定，请前往
+												<span class="font-medium text-foreground">环境管理 > 编辑 > 备份用远程堆栈路径</span>
+												配置后重新打开此弹窗。
 											</p>
 										{/if}
 									{:else}
@@ -155,21 +149,18 @@
 											{:else}
 												<Route class="h-3.5 w-3.5 shrink-0 text-purple-500" />
 											{/if}
-											<span><span class="font-medium text-foreground">{envLabel}</span> is a Hawser
-											environment. Backup reads the stack folder from the Hawser agent's stack
-											directory on its host.</span>
+											<span><span class="font-medium text-foreground">{envLabel}</span> 属于 Hawser 环境。备份程序将从 Hawser 代理所在宿主机的堆栈目录读取文件夹。</span>
 										</p>
 										{#if configuredStackPath}
 											<p class="text-muted-foreground">
-												Remote stack path set on this environment:
+												当前环境已配置远程堆栈路径:
 												<code class="bg-muted px-1 rounded break-all">{configuredStackPath}</code>
 											</p>
 										{:else}
 											<p class="text-muted-foreground">
-												It defaults to <code class="bg-muted px-1 rounded">/data/stacks</code>. If the
-												agent uses a custom <code class="bg-muted px-1 rounded">STACKS_DIR</code>, set it
-												under <span class="font-medium text-foreground">Environments &gt; (edit) &gt; Remote stack path (for backup)</span>
-												and re-open this dialog.
+												默认路径为 <code class="bg-muted px-1 rounded">/data/stacks</code>。若代理使用自定义 <code class="bg-muted px-1 rounded">STACKS_DIR</code>，请在
+												<span class="font-medium text-foreground">环境管理 > 编辑 > 备份用远程堆栈路径</span>
+												设置后重新打开弹窗。
 											</p>
 										{/if}
 									{/if}
@@ -186,16 +177,16 @@
 			<div class="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2.5 text-xs">
 				<AlertTriangle class="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
 				<div class="min-w-0">
-					<div class="font-medium text-amber-600 dark:text-amber-400">Only these compose/config files will be captured</div>
-					<div class="mt-0.5 text-muted-foreground">This environment has no stack path set, so the folder can't be read on the remote host. Dockhand backs up its own copy of the files below. <strong>Bind-mount data on the remote host is NOT included.</strong> Set a stack path on this environment for a full backup.</div>
+					<div class="font-medium text-amber-600 dark:text-amber-400">仅会备份以下编排与配置文件</div>
+					<div class="mt-0.5 text-muted-foreground">当前环境未设置堆栈路径，无法读取远程宿主机文件夹。Dockhand 仅备份自身留存的配置文件，<strong>远程宿主机上绑定挂载的数据不会被包含在内</strong>。请为该环境配置堆栈路径以执行完整备份。</div>
 				</div>
 			</div>
 		{/if}
 
 		<div class="border rounded-md overflow-hidden">
 			<div class="flex items-center gap-3 px-3 py-2 bg-muted/30 border-b">
-				<Label class="text-xs">Backup all files ({selectable.length})</Label>
-				<TogglePill checked={allFiles} onLabel="Yes" offLabel="No" onchange={() => toggleAll(!allFiles)} />
+				<Label class="text-xs">备份全部文件 (共 {selectable.length} 项可选择)</Label>
+				<TogglePill checked={allFiles} onLabel="是" offLabel="否" onchange={() => toggleAll(!allFiles)} />
 			</div>
 			<div class="divide-y max-h-40 overflow-y-auto">
 				{#each entries as entry}
@@ -214,9 +205,9 @@
 						{/if}
 						<span class="font-mono truncate">{entry.name}</span>
 						{#if entry.capturedAs}
-							<span class="text-muted-foreground ml-auto shrink-0 italic">captured as a {entry.capturedAs} below</span>
+							<span class="text-muted-foreground ml-auto shrink-0 italic">在下方作为 {entry.capturedAs} 类型采集</span>
 						{:else if isLoadBearing(entry.name)}
-							<span class="text-muted-foreground ml-auto shrink-0 italic">always kept</span>
+							<span class="text-muted-foreground ml-auto shrink-0 italic">强制保留</span>
 						{:else if entry.type === 'file'}
 							<span class="text-muted-foreground ml-auto shrink-0">{fmtSize(entry.size)}</span>
 						{/if}
@@ -230,23 +221,23 @@
 		<div class="flex items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-2.5 text-xs">
 			<AlertTriangle class="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
 			<div class="min-w-0">
-				<div class="font-medium text-destructive">The backup helper can't run on this environment</div>
+				<div class="font-medium text-destructive">备份辅助容器无法在该环境运行</div>
 				<div class="mt-0.5 break-all text-muted-foreground">{listing.reason}</div>
-				<div class="mt-1 text-muted-foreground">A backup can't be created until this is fixed - the same helper container captures the stack files.</div>
+				<div class="mt-1 text-muted-foreground">无法创建备份，堆栈文件依赖同一辅助容器进行采集，请先修复该问题再重试。</div>
 			</div>
 		</div>
 	{:else if listing?.kind === 'unknown'}
 		<div class="flex items-start gap-2 rounded-md border bg-muted/30 p-2.5 text-xs">
 			<Info class="mt-0.5 h-4 w-4 shrink-0 text-sky-500" />
 			<div class="min-w-0">
-				<div class="font-medium text-foreground">No stack folder found on the host</div>
+				<div class="font-medium text-foreground">未在宿主机找到堆栈文件夹</div>
 				<div class="mt-0.5 text-muted-foreground">{listing.reason}</div>
 				{#if envKind === 'socket'}
-					<div class="mt-1 text-muted-foreground">On a socket environment this usually means <code class="bg-muted px-1 rounded">HOST_DATA_DIR</code> does not match where the data volume is mounted on the host. Fix it, then cancel and re-configure this backup.</div>
+					<div class="mt-1 text-muted-foreground">Socket 环境下通常是 <code class="bg-muted px-1 rounded">HOST_DATA_DIR</code> 与宿主机数据卷挂载路径不匹配，修正后取消并重配备份即可。</div>
 				{:else if envKind === 'direct'}
-					<div class="mt-1 text-muted-foreground">Set the environment's stack path (Environments &gt; edit &gt; Remote stack path for backup), then cancel and re-configure this backup.</div>
+					<div class="mt-1 text-muted-foreground">前往环境编辑页面填写 (备份用远程堆栈路径)，保存后取消并重配本次备份。</div>
 				{:else}
-					<div class="mt-1 text-muted-foreground">On Hawser this usually means the agent uses a custom <code class="bg-muted px-1 rounded">STACKS_DIR</code> (not the default <code class="bg-muted px-1 rounded">/data/stacks</code>). Set the environment's stack path (Environments &gt; edit &gt; Remote stack path for backup), then cancel and re-configure this backup.</div>
+					<div class="mt-1 text-muted-foreground">Hawser 环境大概率使用了自定义 <code class="bg-muted px-1 rounded">STACKS_DIR</code> (非默认 <code class="bg-muted px-1 rounded">/data/stacks</code>)，在环境编辑中填写远程堆栈路径后重新配置备份。</div>
 				{/if}
 			</div>
 		</div>

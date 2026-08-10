@@ -19,10 +19,10 @@ export const POST: RequestHandler = async ({ request, url, cookies }) => {
 	const envId = envIdParam ? parseInt(envIdParam) : undefined;
 
 	if (auth.authEnabled && !(await auth.can('images', 'inspect', envId))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 	if (envId && auth.isEnterprise && !(await auth.canAccessEnvironment(envId))) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问该环境' }, { status: 403 });
 	}
 
 	return createJobResponse(async (send, isCancelled) => {
@@ -80,7 +80,7 @@ export const POST: RequestHandler = async ({ request, url, cookies }) => {
 			} catch (error) {
 				failed++;
 				const msg = error instanceof Error ? error.message : String(error);
-				console.error(`[scan-all] Failed to scan ${imageName}: ${msg}`);
+				console.error(`[批量扫描] 镜像 ${imageName} 扫描失败: ${msg}`);
 				send('scanned', { current: i + 1, total, imageName, scanners: [], ok: false, error: msg });
 			}
 		}

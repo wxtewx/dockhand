@@ -34,7 +34,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		return json(settingsMap);
 	} catch (error) {
-		console.error('Failed to get auto-update settings:', error);
-		return json({ error: 'Failed to get auto-update settings' }, { status: 500 });
+		console.error('获取自动更新设置失败:', error);
+		return json({ error: '获取自动更新设置失败' }, { status: 500 });
 	}
 };

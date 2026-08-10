@@ -4,7 +4,7 @@ import { notificationFetch, drainResponse, type NotificationPayload, type Notifi
 export async function sendPushover(appriseUrl: string, payload: NotificationPayload): Promise<NotificationResult> {
 	const match = appriseUrl.match(/^pushover:\/\/([^/]+)\/(.+)/);
 	if (!match) {
-		return { success: false, error: 'Invalid Pushover URL format. Expected: pushover://user_key/api_token' };
+		return { success: false, error: '无效的 Pushover 地址格式，标准格式: pushover://user_key/api_token' };
 	}
 
 	const [, userKey, apiToken] = match;
@@ -26,11 +26,11 @@ export async function sendPushover(appriseUrl: string, payload: NotificationPayl
 
 		if (!response.ok) {
 			const text = await response.text().catch(() => '');
-			return { success: false, error: `Pushover error ${response.status}: ${text || response.statusText}` };
+			return { success: false, error: `Pushover 请求异常 ${response.status}: ${text || response.statusText}` };
 		}
 		await drainResponse(response);
 		return { success: true };
 	} catch (error) {
-		return { success: false, error: `Pushover connection failed: ${error instanceof Error ? error.message : String(error)}` };
+		return { success: false, error: `Pushover 连接失败: ${error instanceof Error ? error.message : String(error)}` };
 	}
 }

@@ -15,14 +15,14 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('volumes', 'inspect', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const volumeData = await inspectVolume(params.name, envIdNum);
 		return json(volumeData);
 	} catch (error) {
-		console.error('Failed to inspect volume:', error);
-		return json({ error: 'Failed to inspect volume' }, { status: 500 });
+		console.error('查看数据卷详情失败：', error);
+		return json({ error: '查看数据卷详情失败' }, { status: 500 });
 	}
 };

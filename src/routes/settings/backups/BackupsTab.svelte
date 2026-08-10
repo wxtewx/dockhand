@@ -29,6 +29,7 @@
 	import { watchJob } from '$lib/utils/sse-fetch';
 	import RotatePasswordModal from './RotatePasswordModal.svelte';
 	import { EmptyState } from '$lib/components/ui/empty-state';
+	import { getResticText } from '$lib/types';
 
 	interface Destination {
 		id: number;
@@ -177,8 +178,8 @@
 				imageSavedOk = true;
 				setTimeout(() => { imageSavedOk = false; }, 2000);
 			}
-			else toast.error('Failed to save');
-		} catch { toast.error('Failed to save'); }
+			else toast.error('保存失败');
+		} catch { toast.error('保存失败'); }
 		finally { savingImage = false; }
 	}
 	let initializingId = $state<number | null>(null);
@@ -206,10 +207,10 @@
 					m.set(destId, data.stats);
 					repoStats = m;
 				} else if (!data.success) {
-					toast.error(data.error || 'Stats failed');
+					toast.error(data.error || '统计信息获取失败');
 				}
 			} catch (err: any) {
-				toast.error(err.message || 'Stats failed');
+				toast.error(err.message || '统计信息获取失败');
 			} finally {
 				runningTask = null;
 			}
@@ -227,7 +228,7 @@
 	}
 
 	function verifyDestination(dest: any) {
-		streamRepoAction(`Verify data integrity - ${dest.name}`, `/api/backup/destinations/${dest.id}/verify`, {}, dest.repository);
+		streamRepoAction(`校验数据完整性 - ${dest.name}`, `/api/backup/destinations/${dest.id}/verify`, {}, dest.repository);
 	}
 
 	/** Run a restic maintenance action, streaming its output live into the shared
@@ -253,7 +254,7 @@
 				}) as any;
 				if (result?.success === false) {
 					actionLogStatus = 'error';
-					actionLogError = result.error || 'Action failed';
+					actionLogError = result.error || '操作执行失败';
 				} else {
 					actionLogStatus = 'success';
 				}
@@ -263,11 +264,11 @@
 			} else {
 				// Backward-compat JSON path (Accept negotiated to one-shot): show result.
 				actionLogStatus = data.success ? 'success' : 'error';
-				if (!data.success) actionLogError = data.error || 'Action failed';
+				if (!data.success) actionLogError = data.error || '操作执行失败';
 			}
 		} catch (err: any) {
 			actionLogStatus = 'error';
-			actionLogError = err.message || 'Action failed';
+			actionLogError = err.message || '操作执行失败';
 		}
 	}
 
@@ -375,10 +376,10 @@
 			if (res.ok) { const d = await res.json(); browseSnapshots = d.snapshots ?? d; }
 			else {
 				const data = await res.json();
-				const errMsg = data.error || 'Failed to list snapshots';
+				const errMsg = data.error || '无法列出快照';
 				try { const p = JSON.parse(errMsg); toast.error(p.message || errMsg); } catch { toast.error(errMsg); }
 			}
-		} catch { toast.error('Failed to list snapshots'); }
+		} catch { toast.error('无法列出快照'); }
 		finally { browseLoading = false; }
 	}
 
@@ -433,8 +434,8 @@
 			configs = Array.isArray(configData) ? configData : [];
 			if (envRes.ok) { const envData = await envRes.json(); environments = Array.isArray(envData) ? envData : []; }
 		} catch (error) {
-			console.error('Failed to fetch backup data:', error);
-			toast.error('Failed to fetch backup destinations');
+			console.error('加载备份数据失败:', error);
+			toast.error('加载备份存储目标失败');
 		} finally {
 			loading = false;
 		}
@@ -467,13 +468,13 @@
 			const res = await fetch(`/api/backup/destinations/${id}/test`, { method: 'POST' });
 			const data = await res.json();
 			if (data.success) {
-				toast.success('Connection test successful');
+				toast.success('连接测试成功');
 			} else if (data.status === 'needs_init') {
-				toast.warning(data.error || 'Repository needs initialization');
+				toast.warning(data.error || '存储仓库需要初始化');
 			} else {
-				toast.error(data.error || 'Connection test failed');
+				toast.error(data.error || '连接测试失败');
 			}
-		} catch { toast.error('Connection test failed'); }
+		} catch { toast.error('连接测试失败'); }
 		finally { testingId = null; await fetchData(); }
 	}
 
@@ -482,8 +483,8 @@
 		try {
 			const res = await fetch(`/api/backup/destinations/${id}/init`, { method: 'POST' });
 			const data = await res.json();
-			toast[data.success ? 'success' : 'error'](data.message || data.error || 'Init failed');
-		} catch { toast.error('Init failed'); }
+			toast[data.success ? 'success' : 'error'](data.message || data.error || '初始化失败');
+		} catch { toast.error('初始化失败'); }
 		finally { initializingId = null; await fetchData(); }
 	}
 
@@ -492,12 +493,12 @@
 			const response = await fetch(`/api/backup/destinations/${id}`, { method: 'DELETE' });
 			if (response.ok) {
 				await fetchData();
-				toast.success('Destination deleted');
+				toast.success('存储目标已删除');
 			} else {
 				const data = await response.json();
-				toast.error(data.error || 'Failed to delete destination');
+				toast.error(data.error || '删除存储目标失败');
 			}
-		} catch { toast.error('Failed to delete destination'); }
+		} catch { toast.error('删除存储目标失败'); }
 	}
 
 	onMount(() => { fetchData(); });
@@ -507,7 +508,7 @@
 	<!-- Backup helper image -->
 	<div class="flex items-center gap-3 p-3 border rounded-md bg-muted/20">
 		<Label class="text-xs shrink-0 flex items-center gap-1.5">
-			Backup helper image
+			备份辅助镜像
 			<Tooltip.Provider delayDuration={200}>
 				<Tooltip.Root>
 					<Tooltip.Trigger>
@@ -515,7 +516,7 @@
 					</Tooltip.Trigger>
 					<Tooltip.Portal>
 						<Tooltip.Content side="bottom" sideOffset={4} class="!w-80 text-xs">
-							Docker image with restic for backup/restore. Auto-pulled on first run. Change for private registries.
+							内置 restic 的 Docker 镜像，用于执行备份与恢复任务。首次运行自动拉取。如需私有镜像仓库可修改此项。
 						</Tooltip.Content>
 					</Tooltip.Portal>
 				</Tooltip.Root>
@@ -533,33 +534,33 @@
 				<Search class="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
 				<Input
 					bind:value={searchQuery}
-					placeholder="Filter destinations..."
+					placeholder="筛选存储目标..."
 					class="pl-9 h-8 w-64 text-sm"
 				/>
 			</div>
 			<Select.Root type="single" value={statusFilter} onValueChange={(v) => statusFilter = (v as typeof statusFilter) ?? 'all'}>
 				<Select.Trigger class="h-8 w-40 text-sm">
-					{statusFilter === 'success' ? 'Initialized' : statusFilter === 'needs_init' ? 'Needs init' : statusFilter === 'failed' ? 'Failed' : 'All statuses'}
+					{statusFilter === 'success' ? '已初始化' : statusFilter === 'needs_init' ? '待初始化' : statusFilter === 'failed' ? '初始化失败' : '全部状态'}
 				</Select.Trigger>
 				<Select.Content>
-					<Select.Item value="all">All statuses</Select.Item>
-					<Select.Item value="success"><CheckCircle class="w-3.5 h-3.5 text-green-500 mr-1.5 inline" />Initialized</Select.Item>
-					<Select.Item value="needs_init"><AlertCircle class="w-3.5 h-3.5 text-amber-500 mr-1.5 inline" />Needs init</Select.Item>
-					<Select.Item value="failed"><XCircle class="w-3.5 h-3.5 text-destructive mr-1.5 inline" />Failed</Select.Item>
+					<Select.Item value="all">全部状态</Select.Item>
+					<Select.Item value="success"><CheckCircle class="w-3.5 h-3.5 text-green-500 mr-1.5 inline" />已初始化</Select.Item>
+					<Select.Item value="needs_init"><AlertCircle class="w-3.5 h-3.5 text-amber-500 mr-1.5 inline" />待初始化</Select.Item>
+					<Select.Item value="failed"><XCircle class="w-3.5 h-3.5 text-destructive mr-1.5 inline" />初始化失败</Select.Item>
 				</Select.Content>
 			</Select.Root>
-			<Badge variant="secondary" class="text-xs">{destinations.length} destination{destinations.length !== 1 ? 's' : ''}</Badge>
+			<Badge variant="secondary" class="text-xs">{destinations.length} 个存储位置</Badge>
 		</div>
 		<div class="flex gap-2">
 			{#if $canAccess('backups', 'manage')}
 				<Button size="sm" onclick={() => openModal()}>
 					<Plus class="w-4 h-4 mr-1" />
-					Add destination
+					添加存储目标
 				</Button>
 			{/if}
 			<Button size="sm" variant="outline" onclick={testAllDestinations} disabled={testingAll}>
 				{#if testingAll}<Loader2 class="w-3.5 h-3.5 mr-1 animate-spin" />{:else}<Wifi class="w-3.5 h-3.5 mr-1" />{/if}
-				Test all
+				批量测试
 			</Button>
 			<Button size="sm" variant="outline" onclick={fetchData}>
 				<RefreshCw class="w-3.5 h-3.5" />
@@ -568,12 +569,12 @@
 	</div>
 
 	{#if loading && destinations.length === 0}
-		<p class="text-muted-foreground text-sm">Loading backup destinations...</p>
+		<p class="text-muted-foreground text-sm">正在加载备份存储目标...</p>
 	{:else if destinations.length === 0}
 		<EmptyState
 			icon={Archive as unknown as Component}
-			title="No backup destinations"
-			description="Add a backup destination to start protecting your container data"
+			title="暂无备份存储目标"
+			description="添加备份存储目标，开始保护容器与堆栈数据"
 		/>
 	{:else}
 		<DataGrid
@@ -604,10 +605,10 @@
 					{#if usage.containers > 0 || usage.stacks > 0}
 						<div class="flex items-center gap-1.5">
 							{#if usage.containers > 0}
-								<span class="flex items-center gap-0.5 text-xs text-muted-foreground" title="{usage.containers} container{usage.containers !== 1 ? 's' : ''} using this repository"><Box class="w-3 h-3" />{usage.containers}</span>
+								<span class="flex items-center gap-0.5 text-xs text-muted-foreground" title="{usage.containers} 个容器正在使用此仓库"><Box class="w-3 h-3" />{usage.containers}</span>
 							{/if}
 							{#if usage.stacks > 0}
-								<span class="flex items-center gap-0.5 text-xs text-muted-foreground" title="{usage.stacks} stack{usage.stacks !== 1 ? 's' : ''} using this repository"><Layers class="w-3 h-3" />{usage.stacks}</span>
+								<span class="flex items-center gap-0.5 text-xs text-muted-foreground" title="{usage.stacks} 个堆栈正在使用此仓库"><Layers class="w-3 h-3" />{usage.stacks}</span>
 							{/if}
 						</div>
 					{:else}
@@ -617,9 +618,9 @@
 					{@const stat = repoStats.get(dest.id)}
 					{#if stat}
 						<div class="flex items-center gap-2 text-xs text-muted-foreground">
-							<span class="flex items-center gap-0.5" title="Total size"><HardDrive class="w-3 h-3" />{formatBytes(stat.totalSize)}</span>
-							<span class="flex items-center gap-0.5" title="Files"><FileStack class="w-3 h-3" />{stat.totalFiles}</span>
-							<span class="flex items-center gap-0.5" title="Snapshots"><Camera class="w-3 h-3" />{stat.snapshots}</span>
+							<span class="flex items-center gap-0.5" title="总容量"><HardDrive class="w-3 h-3" />{formatBytes(stat.totalSize)}</span>
+							<span class="flex items-center gap-0.5" title="文件总数"><FileStack class="w-3 h-3" />{stat.totalFiles}</span>
+							<span class="flex items-center gap-0.5" title="快照数量"><Camera class="w-3 h-3" />{stat.snapshots}</span>
 						</div>
 					{:else if loadingStats.has(dest.id)}
 						<Loader2 class="w-3 h-3 animate-spin text-muted-foreground" />
@@ -630,19 +631,19 @@
 					{#if dest.lastTestStatus === 'success'}
 						<div class="flex items-center gap-1.5">
 							<CheckCircle class="w-3.5 h-3.5 text-green-500" />
-							<span class="text-xs text-green-600 dark:text-green-400">Initialized</span>
+							<span class="text-xs text-green-600 dark:text-green-400">已初始化</span>
 						</div>
 					{:else if dest.lastTestStatus === 'needs_init'}
 						<div class="flex items-center gap-1.5">
 							<AlertCircle class="w-3.5 h-3.5 text-amber-500" />
-							<span class="text-xs text-amber-600 dark:text-amber-400">Needs init</span>
+							<span class="text-xs text-amber-600 dark:text-amber-400">需要初始化</span>
 						</div>
 					{:else if dest.lastTestStatus === 'failed'}
 						<Tooltip.Root>
 							<Tooltip.Trigger>
 								<div class="flex items-center gap-1.5">
 									<XCircle class="w-3.5 h-3.5 text-destructive" />
-									<span class="text-xs text-destructive">Failed</span>
+									<span class="text-xs text-destructive">连接失败</span>
 								</div>
 							</Tooltip.Trigger>
 							{#if dest.lastTestError}
@@ -652,12 +653,12 @@
 					{:else if testingAll}
 						<div class="flex items-center gap-1.5">
 							<Loader2 class="w-3.5 h-3.5 text-muted-foreground animate-spin" />
-							<span class="text-xs text-muted-foreground">Testing...</span>
+							<span class="text-xs text-muted-foreground">测试中...</span>
 						</div>
 					{:else}
 						<div class="flex items-center gap-1.5">
 							<AlertCircle class="w-3.5 h-3.5 text-muted-foreground" />
-							<span class="text-xs text-muted-foreground">Not tested</span>
+							<span class="text-xs text-muted-foreground">未测试</span>
 						</div>
 					{/if}
 				{:else if column.id === 'actions'}
@@ -666,21 +667,21 @@
 					<div class="flex items-center justify-end gap-0.5" onclick={(e) => e.stopPropagation()}>
 						{#if dest.lastTestStatus === 'success'}
 							<!-- Repo actions (only for initialized repos) -->
-							<button type="button" class="p-0.5 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100" onclick={() => browseDestination(dest)} title="Browse snapshots">
+							<button type="button" class="p-0.5 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100" onclick={() => browseDestination(dest)} title="浏览快照">
 								<FolderOpen class="grid-action-icon grid-action-info text-muted-foreground" />
 							</button>
-							<button type="button" class="p-0.5 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100" onclick={() => runRepoTask(dest.id, 'stats')} disabled={runningTask?.destId === dest.id} title="Repository stats">
+							<button type="button" class="p-0.5 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100" onclick={() => runRepoTask(dest.id, 'stats')} disabled={runningTask?.destId === dest.id} title="仓库统计信息">
 								{#if runningTask?.destId === dest.id && runningTask.task === 'stats'}<Loader2 class="grid-action-icon text-muted-foreground animate-spin" />{:else}<BarChart3 class="grid-action-icon grid-action-info text-muted-foreground" />{/if}
 							</button>
-							<button type="button" class="p-0.5 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100" onclick={() => runRepoTask(dest.id, 'check')} disabled={runningTask?.destId === dest.id} title="Check integrity">
+							<button type="button" class="p-0.5 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100" onclick={() => runRepoTask(dest.id, 'check')} disabled={runningTask?.destId === dest.id} title="完整性检测">
 								{#if runningTask?.destId === dest.id && runningTask.task === 'check'}<Loader2 class="grid-action-icon text-muted-foreground animate-spin" />{:else}<PackageCheck class="grid-action-icon grid-action-info text-muted-foreground" />{/if}
 							</button>
-							<button type="button" class="p-0.5 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100" onclick={() => verifyDestination(dest)} title="Verify data integrity">
+							<button type="button" class="p-0.5 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100" onclick={() => verifyDestination(dest)} title="校验数据完整性">
 								<FolderCheck class="grid-action-icon grid-action-info text-muted-foreground" />
 							</button>
 							<ConfirmPopover
 								open={confirmAction?.destId === dest.id && confirmAction.task === 'unlock'}
-								action="Unlock" itemType="repository" itemName={dest.name} confirmText="Unlock" position="left" title="Unlock repository"
+								action="解锁" itemType="仓库" itemName={dest.name} confirmText="解锁" position="left" title="解锁备份仓库"
 								onConfirm={() => { confirmAction = null; runRepoTask(dest.id, 'unlock'); }}
 								onOpenChange={(o) => confirmAction = o ? { destId: dest.id, task: 'unlock' } : null}
 							>
@@ -690,7 +691,7 @@
 							</ConfirmPopover>
 							<ConfirmPopover
 								open={confirmAction?.destId === dest.id && confirmAction.task === 'prune'}
-								action="Prune" itemType="unused data from" itemName={dest.name} confirmText="Prune" variant="destructive" position="left" title="Prune unused data"
+								action="清理" itemType="该存储位置的冗余数据" itemName={dest.name} confirmText="执行清理" variant="destructive" position="left" title="清理未使用的冗余快照数据"
 								onConfirm={() => { confirmAction = null; runRepoTask(dest.id, 'prune'); }}
 								onOpenChange={(o) => confirmAction = o ? { destId: dest.id, task: 'prune' } : null}
 							>
@@ -700,7 +701,7 @@
 							</ConfirmPopover>
 							<ConfirmPopover
 								open={confirmAction?.destId === dest.id && confirmAction.task === 'repair'}
-								action="Repair" itemType="index for" itemName={dest.name} confirmText="Repair" variant="destructive" position="left" title="Repair index"
+								action="修复" itemType="存储位置的索引" itemName={dest.name} confirmText="执行修复" variant="destructive" position="left" title="修复仓库索引"
 								onConfirm={() => { confirmAction = null; runRepoTask(dest.id, 'repair-index'); }}
 								onOpenChange={(o) => confirmAction = o ? { destId: dest.id, task: 'repair' } : null}
 							>
@@ -711,27 +712,27 @@
 						{/if}
 						<!-- Init (only when needs_init) -->
 						{#if dest.lastTestStatus === 'needs_init'}
-							<button type="button" class="p-0.5 rounded hover:bg-muted transition-colors text-amber-500 hover:text-amber-600" onclick={() => initDestination(dest.id)} disabled={initializingId === dest.id} title="Initialize repository">
+							<button type="button" class="p-0.5 rounded hover:bg-muted transition-colors text-amber-500 hover:text-amber-600" onclick={() => initDestination(dest.id)} disabled={initializingId === dest.id} title="初始化存储仓库">
 								{#if initializingId === dest.id}<Loader2 class="w-3 h-3 animate-spin" />{:else}<Database class="w-3 h-3" />{/if}
 							</button>
 						{/if}
 						<!-- Always visible: test, edit, delete -->
-						<button type="button" class="p-0.5 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100" onclick={() => testDestination(dest.id)} disabled={testingId === dest.id} title="Test connection">
+						<button type="button" class="p-0.5 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100" onclick={() => testDestination(dest.id)} disabled={testingId === dest.id} title="测试连接">
 							{#if testingId === dest.id}<RefreshCw class="grid-action-icon text-muted-foreground animate-spin" />{:else}<Wifi class="grid-action-icon grid-action-restart text-muted-foreground" />{/if}
 						</button>
 						{#if $canAccess('backups', 'manage')}
-							<button type="button" class="p-0.5 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100" onclick={() => { rotateDestId = dest.id; rotateDestName = dest.name; rotateModalOpen = true; }} title="Rotate repository password">
+							<button type="button" class="p-0.5 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100" onclick={() => { rotateDestId = dest.id; rotateDestName = dest.name; rotateModalOpen = true; }} title="轮换仓库密码">
 								<KeyRound class="grid-action-icon grid-action-edit text-muted-foreground" />
 							</button>
-							<button type="button" class="p-0.5 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100" onclick={() => openModal(dest)} title="Edit">
+							<button type="button" class="p-0.5 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100" onclick={() => openModal(dest)} title="编辑">
 								<Pencil class="grid-action-icon grid-action-edit text-muted-foreground" />
 							</button>
 							<ConfirmPopover
 								open={confirmDeleteId === dest.id}
-								action="Delete"
-								itemType="destination"
+								action="删除"
+								itemType="存储目标"
 								itemName={dest.name}
-								title="Remove"
+								title="移除"
 								position="left"
 								onConfirm={() => deleteDestination(dest.id)}
 								onOpenChange={(open) => confirmDeleteId = open ? dest.id : null}
@@ -761,22 +762,22 @@
 		<Dialog.Header>
 			<Dialog.Title class="flex items-center gap-2">
 				<FolderOpen class="w-5 h-5" />
-				Repository snapshots on
+				仓库快照列表
 				<svelte:component this={getRepoTypeIcon(browseDestRepo)} class="w-4 h-4" />
 				<span class="text-amber-600 dark:text-amber-400">{browseDestName}</span>
 			</Dialog.Title>
 		</Dialog.Header>
 		{#if !browseLoading && browseSnapshots.length > 0}
 			<div class="flex gap-2 pb-3 flex-shrink-0">
-				<Input bind:value={browseFilterName} placeholder="Filter by name..." class="h-8 max-w-xs" />
-				<Input bind:value={browseFilterEnv} placeholder="Filter by environment..." class="h-8 max-w-xs" />
+				<Input bind:value={browseFilterName} placeholder="按名称筛选..." class="h-8 max-w-xs" />
+				<Input bind:value={browseFilterEnv} placeholder="按环境筛选..." class="h-8 max-w-xs" />
 			</div>
 		{/if}
 		<div class="flex-1 min-h-0">
 			{#if browseLoading}
-				<LoadingState class="h-full" label="Loading snapshots..." />
+				<LoadingState class="h-full" label="正在加载快照..." />
 			{:else if browseSnapshots.length === 0}
-				<div class="flex h-full items-center justify-center"><p class="text-sm text-muted-foreground">No snapshots in this repository.</p></div>
+				<div class="flex h-full items-center justify-center"><p class="text-sm text-muted-foreground">此仓库暂无快照。</p></div>
 			{:else}
 				<DataGrid
 					data={browseGroups}
@@ -816,7 +817,7 @@
 									<span class="truncate">{group.env.name}</span>
 								</span>
 							{:else if group.env}
-								<Badge variant="secondary" class="text-2xs font-normal text-muted-foreground">missing</Badge>
+								<Badge variant="secondary" class="text-2xs font-normal text-muted-foreground">已删除</Badge>
 							{:else}
 								<span class="text-xs text-muted-foreground">—</span>
 							{/if}
@@ -838,8 +839,8 @@
 									<Table.Header class="sticky top-0 z-10 bg-background">
 										<Table.Row>
 											<Table.Head class="w-28 py-1.5 text-xs" style="padding-left:8px">ID</Table.Head>
-											<Table.Head class="py-1.5 text-xs" style="padding-left:8px">Created</Table.Head>
-											<Table.Head class="w-16 py-1.5 text-xs text-right" style="padding-right:8px">Browse</Table.Head>
+											<Table.Head class="py-1.5 text-xs" style="padding-left:8px">创建时间</Table.Head>
+											<Table.Head class="w-16 py-1.5 text-xs text-right" style="padding-right:8px">浏览</Table.Head>
 										</Table.Row>
 									</Table.Header>
 									<Table.Body>
@@ -848,7 +849,7 @@
 												<Table.Cell class="font-mono text-xs text-muted-foreground py-1" style="padding-left:8px">{snap.shortId}</Table.Cell>
 												<Table.Cell class="text-xs py-1" style="padding-left:8px">{formatDateTime(snap.time)} <span class="text-muted-foreground opacity-60">({formatRelativeTime(snap.time)})</span></Table.Cell>
 												<Table.Cell class="text-right py-1">
-													<span class="inline-flex p-1 rounded hover:bg-muted transition-colors text-muted-foreground" title="Browse snapshot content">
+													<span class="inline-flex p-1 rounded hover:bg-muted transition-colors text-muted-foreground" title="浏览快照内容">
 														<FolderOpen class="w-3.5 h-3.5" />
 													</span>
 												</Table.Cell>
@@ -863,7 +864,7 @@
 			{/if}
 		</div>
 		<Dialog.Footer class="pt-4">
-			<Button variant="outline" onclick={() => browseOpen = false}>Close</Button>
+			<Button variant="outline" onclick={() => browseOpen = false}>关闭</Button>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>

@@ -64,11 +64,11 @@ export function buildBackupScript(resticArgs: string[], stackDirProbe?: { volume
 		// Name the REAL host path we mounted (<remote_stacks_dir>/<stack>) so the operator knows
 		// exactly where to look, and what to do: redeploy the stack to stage its files there.
 		const hostHint = stackDirProbe.hostPath
-			? ` The stack folder is empty or missing at ${stackDirProbe.hostPath} on the Docker host - redeploy the stack to stage its files there.`
+			? ` Docker 宿主机路径 ${stackDirProbe.hostPath} 下的堆栈文件夹为空或不存在，请重新部署堆栈以生成对应文件。`
 			: '';
 		probe =
 			`if [ ! -f ${composePath} ]; then ` +
-			`echo "[backup] $(date -u +%Y-%m-%dT%H:%M:%SZ)${label} STACKDIR PROBE FAILED: the stack's compose (${stackDirProbe.composeFileName}) is not present under the mounted stack dir.${hostHint} Refusing to write a silent-empty snapshot." 1>&2; ` +
+			`echo "[备份] $(date -u +%Y-%m-%dT%H:%M:%SZ)${label} 堆栈目录探测失败：挂载的堆栈目录中未找到堆栈编排文件 (${stackDirProbe.composeFileName}) 。${hostHint} 拒绝生成空快照。" 1>&2; ` +
 			`exit 1; fi; `;
 	}
 

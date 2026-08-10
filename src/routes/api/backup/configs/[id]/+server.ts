@@ -40,20 +40,20 @@ export const PUT: RequestHandler = async (event) => {
 
 	// Validate cron schedule if provided (audit #7)
 	if (typeof body.schedule === 'string' && body.schedule.trim() && !isValidCron(body.schedule.trim())) {
-		return json({ error: `Invalid cron expression: ${body.schedule}` }, { status: 400 });
+		return json({ error: `Cron 表达式无效: ${body.schedule}` }, { status: 400 });
 	}
 
 	// Validate retention keep-* values before persisting (audit medium #13).
 	const retentionCheck = validateRetention(body.retention);
 	if (!retentionCheck.ok) {
-		return json({ error: `Invalid retention: ${retentionCheck.reason}` }, { status: 400 });
+		return json({ error: `保留策略配置无效: ${retentionCheck.reason}` }, { status: 400 });
 	}
 
 	// (audit #56) Changing the destination while a backup is in flight would leave
 	// the running backup on the OLD destination's lock while the schedule re-arms
 	// under the new one — refuse the destination change until the run finishes.
 	if (body.destinationId !== undefined && body.destinationId !== existing.destinationId && isBackupRunning(id)) {
-		return json({ error: 'Cannot change the destination while a backup is running for this config' }, { status: 409 });
+		return json({ error: '该配置正在执行备份，暂时无法修改存储位置' }, { status: 409 });
 	}
 
 	// A local-path repo is allowed on any env; a wrong-host mount fails loud via
@@ -85,7 +85,7 @@ export const PUT: RequestHandler = async (event) => {
 			tags: body.tags ? JSON.stringify(body.tags) : body.tags
 		});
 
-		if (!updated) return json({ error: 'Update failed' }, { status: 500 });
+		if (!updated) return json({ error: '更新操作失败' }, { status: 500 });
 
 		// Update schedule registration
 		if (updated.enabled && updated.schedule) {
@@ -116,7 +116,7 @@ export const DELETE: RequestHandler = async (event) => {
 	// (audit #55) Don't delete a config out from under an in-flight backup — the
 	// run's helper containers + lock reference it; deleting mid-run is messy.
 	if (isBackupRunning(id)) {
-		return json({ error: 'A backup is currently running for this config — stop it before deleting' }, { status: 409 });
+		return json({ error: '该配置正在执行备份，请等待任务结束后再删除' }, { status: 409 });
 	}
 
 	// Unregister schedule before deleting

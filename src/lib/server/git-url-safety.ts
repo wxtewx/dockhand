@@ -12,17 +12,17 @@ import { resolve, isAbsolute, sep } from 'node:path';
 
 export function assertSafeRepoUrl(url: string): void {
 	const u = (url || '').trim();
-	if (!u) throw new Error('Repository URL is required');
+	if (!u) throw new Error('必须填写仓库地址');
 	// A value starting with '-' is consumed by git as an option (e.g. --upload-pack=).
-	if (u.startsWith('-')) throw new Error('Invalid repository URL');
+	if (u.startsWith('-')) throw new Error('无效的仓库地址');
 	// git's ext::/fd:: transports execute a command; file:// reads local paths.
 	const lower = u.toLowerCase();
 	if (lower.startsWith('ext::') || lower.startsWith('fd::') || lower.startsWith('file://')) {
-		throw new Error('Unsupported repository URL transport');
+		throw new Error('不支持该仓库地址传输协议');
 	}
 	// A bare local filesystem path (no scheme, no scp-like host:) is not a remote.
 	if (u.startsWith('/') || u.startsWith('./') || u.startsWith('../')) {
-		throw new Error('Repository URL must be a remote (https/ssh/git), not a local path');
+		throw new Error('仓库地址必须为远程地址 (https/ssh/git)，不能使用本地路径');
 	}
 }
 
@@ -30,7 +30,7 @@ export function assertSafeRepoUrl(url: string): void {
  *  (callers fall back to a default like HEAD). */
 export function assertSafeGitRef(ref: string | null | undefined): void {
 	const r = (ref || '').trim();
-	if (r && r.startsWith('-')) throw new Error('Invalid branch/ref name');
+	if (r && r.startsWith('-')) throw new Error('无效的分支/引用名称');
 }
 
 /**
@@ -41,10 +41,10 @@ export function assertSafeGitRef(ref: string | null | undefined): void {
  * for the error message.
  */
 export function repoFilePath(repoPath: string, userRel: string, label: string): string {
-	if (isAbsolute(userRel)) throw new Error(`${label} must be a relative path (got "${userRel}")`);
+	if (isAbsolute(userRel)) throw new Error(`${label} 必须是相对路径 (输入值: "${userRel}")`);
 	const abs = resolve(repoPath, userRel);
 	if (abs !== repoPath && !abs.startsWith(repoPath + sep)) {
-		throw new Error(`${label} must be a path inside the repository (got "${userRel}")`);
+		throw new Error(`${label} 路径必须位于仓库内部 (输入值: "${userRel}")`);
 	}
 	return abs;
 }

@@ -166,7 +166,7 @@ export class BackupService {
 				// target backs up fine (resolveTargets lists all states). This only
 				// fires when nothing matches the name at all (target deleted).
 				return this.earlySkipOrError(job, triggeredBy,
-					`No ${job.type === 'stack' ? 'containers for stack' : 'container'} "${job.targetName}" found — refusing to back up nothing.`);
+					`未找到${job.type === 'stack' ? '属于该堆栈的容器' : '容器'} "${job.targetName}" — 拒绝执行空备份。`);
 			}
 			const d = await this.ports.discoverVolumes(containers, envId, job.allVolumes ? null : job.selectedVolumes);
 			volumes = d.volumes;
@@ -183,9 +183,9 @@ export class BackupService {
 				const p = await this.ports.planStackDirVolume(job.targetName, envId, job.options.excludedStackFiles);
 				if (p.kind === 'unknown') {
 					return this.earlySkipOrError(job, triggeredBy,
-						`Cannot locate the stack folder on the host for "${job.targetName}" (${p.reason}). ` +
-						`For remote environments, set a Remote stacks directory or use matching paths so the stack files exist on the Docker host. ` +
-						`Refusing to write a backup missing the stack's compose and config.`);
+						`无法在宿主机上定位 "${job.targetName}" 的堆栈文件夹 (原因：${p.reason}). ` +
+						`对于远程环境，请配置远程堆栈目录或使用匹配路径，确保堆栈文件已存在于 Docker 宿主机中。 ` +
+						`因缺少堆栈编排及配置文件，本次备份终止执行。`);
 				} else if (p.kind === 'tar') {
 					// direct-remote, no remote_stacks_dir: no host bind (nothing staged), so the
 					// compose/config is captured from Dockhand's local copy into /metadata via a tar.
@@ -206,7 +206,7 @@ export class BackupService {
 		const key = liveTargetKey(envId, volumes.map((v) => v.bind), `${job.type}:${job.targetName}`);
 		const release = this.ports.acquireLiveTarget(key);
 		if (!release) {
-			return { status: 'skipped', reason: `Another backup or restore is already running for "${job.targetName}".` };
+			return { status: 'skipped', reason: `"${job.targetName}" 正在执行其他备份或恢复任务。` };
 		}
 
 		// Release exactly once. runLocked releases the live-target lock as soon as
@@ -257,36 +257,36 @@ export class BackupService {
 		//            gold for a CI flake.
 		const key = `${job.targetName} env=${envId}`;
 		const t0 = Date.now();
-		const log = (msg: string) => console.log(`[backup] ${new Date().toISOString()} ${key} | ${msg}`);
+		const log = (msg: string) => console.log(`[备份] ${new Date().toISOString()} ${key} | ${msg}`);
 		const diagOn = process.env.BACKUP_DIAG === '1';
 		const diag = (phase: string, extra?: string) => {
 			if (!diagOn) return;
-			console.log(`[backup] ${new Date().toISOString()} ${key} cfg=${job.configId} op=${op.id} | ${phase} @${Date.now() - t0}ms${extra ? ' | ' + extra : ''}`);
+			console.log(`[备份] ${new Date().toISOString()} ${key} 配置ID=${job.configId} 操作=${op.id} | ${phase} 耗时@${Date.now() - t0}毫秒${extra ? ' | ' + extra : ''}`);
 		};
-		log(`started (${triggeredBy})`);
+		log(`已启动 (${triggeredBy})`);
 		if (diagOn) {
 			diag('START', `stopBeforeBackup=${job.stopBeforeBackup} retention=${JSON.stringify(job.retention)}`);
 			try {
 				const cfg = await this.ports.runLocal(['cat', 'config', '--no-lock'], 'interactive');
-				diag('REPO_PROBE', `cat-config exit=${cfg.exitCode} (${cfg.exitCode === 10 ? 'NOT-INITIALISED' : cfg.exitCode === 0 ? 'exists' : 'error'})`);
-			} catch (e) { diag('REPO_PROBE', `cat-config THREW ${e instanceof Error ? e.message : String(e)}`); }
+				diag('REPO_PROBE', `cat-config exit=${cfg.exitCode} (${cfg.exitCode === 10 ? '未初始化' : cfg.exitCode === 0 ? '已存在' : '错误'})`);
+			} catch (e) { diag('REPO_PROBE', `cat-config 抛出异常 ${e instanceof Error ? e.message : String(e)}`); }
 			try {
 				const locks = await this.ports.runLocal(['list', 'locks', '--no-lock'], 'interactive');
 				const lockLines = (locks.stdout || '').trim().split('\n').filter(Boolean);
-				diag('LOCK_PROBE', `list-locks exit=${locks.exitCode} heldLocks=${lockLines.length}${lockLines.length ? ' [' + lockLines.join(',').slice(0, 120) + ']' : ''}`);
-			} catch (e) { diag('LOCK_PROBE', `list-locks THREW ${e instanceof Error ? e.message : String(e)}`); }
+				diag('LOCK_PROBE', `list-locks exit=${locks.exitCode} 持有锁数量=${lockLines.length}${lockLines.length ? ' [' + lockLines.join(',').slice(0, 120) + ']' : ''}`);
+			} catch (e) { diag('LOCK_PROBE', `list-locks 抛出异常 ${e instanceof Error ? e.message : String(e)}`); }
 		}
 
 		try {
 			// --- optionally stop the target for a consistent snapshot ---
 			if (job.stopBeforeBackup) {
-				op.progress('stopping', `Stopping ${job.targetName} for a consistent backup...`);
+				op.progress('stopping', `正在停止 ${job.targetName} 以创建一致性备份...`);
 				const stopped = await this.ports.stopForBackup(job.type, job.targetName, containers, envId);
 				restart = stopped.restart;
 			}
 
 			// --- metadata + backup args + session script ---
-			op.progress('metadata', 'Collecting metadata...');
+			op.progress('metadata', '正在收集元数据...');
 			const { files: metadata, stackDirStreamSources } = await this.ports.collectMetadata(job.type, job.targetName, envId, volumes, stackDirTar);
 			const instanceId = await this.ports.instanceId();
 			const tags = buildSnapshotTags({ instanceId, configId: job.configId, environmentId: envId, targetName: job.targetName, type: job.type });
@@ -322,14 +322,14 @@ export class BackupService {
 			// Echo the options actually applied to the restic run, so the execution
 			// log records what took effect (not just what was saved on the config).
 			const o = job.options;
-			if (o.compression) op.log(`Compression: ${o.compression}`);
-			if (o.limitUpload) op.log(`Upload limit: ${o.limitUpload}`);
-			if (o.limitDownload) op.log(`Download limit: ${o.limitDownload}`);
-			if (o.excludeCaches !== false) op.log('Exclude caches: yes');
-			if (o.excludePatterns && o.excludePatterns.length) op.log(`Exclude patterns: ${o.excludePatterns.join(', ')}`);
+			if (o.compression) op.log(`压缩算法: ${o.compression}`);
+			if (o.limitUpload) op.log(`上传限速: ${o.limitUpload}`);
+			if (o.limitDownload) op.log(`下载限速: ${o.limitDownload}`);
+			if (o.excludeCaches !== false) op.log('排除缓存: 启用');
+			if (o.excludePatterns && o.excludePatterns.length) op.log(`排除规则: ${o.excludePatterns.join(', ')}`);
 			// Record WHICH volumes were actually selected (not just the count), so a
 			// regression in the selectedVolumes filter is visible in the execution log.
-			op.log(`Volumes to backup: ${volumes.map((v) => v.name).join(', ') || 'none'}`);
+			op.log(`待备份数据卷: ${volumes.map((v) => v.name).join(', ') || '无'}`);
 
 			// --- clear any STALE repo lock before backing up ---
 			// A prior backup/restore that was killed or crashed (helper OOM, host
@@ -358,19 +358,19 @@ export class BackupService {
 			// These are 'backing-up' (not 'progress') status lines, so they're ALWAYS
 			// persisted — the throttle only applies to the restic 'progress' spam.
 			if (volumes.length === 0) {
-				op.progress('backing-up', 'Backing up (config only — no volumes)...');
+				op.progress('backing-up', '正在备份(仅配置，不含数据卷)...');
 			} else {
-				op.progress('backing-up', `Backing up ${volumes.length} ${volumes.length === 1 ? 'volume' : 'volumes'}:`);
+				op.progress('backing-up', `正在备份 ${volumes.length} 个${volumes.length === 1 ? '数据卷' : '数据卷'}:`);
 				for (const v of volumes) {
 					// A bind's `name` is only its container destination, so two binds to the same
 					// path (e.g. /data) read identically. Show `host-source -> destination` so each
 					// is distinguishable in the log (#1373).
 					const label = v.name === STACKDIR_VOLUME_KEY
-						? 'Stack data'
+						? '堆栈数据'
 						: v.type === 'bind'
 							? `${v.source} → ${v.name}`
 							: v.name;
-					op.progress('backing-up', `  • [${v.type === 'bind' ? 'BIND' : 'VOL'}] ${label}`);
+					op.progress('backing-up', `  • [${v.type === 'bind' ? '绑定挂载' : '数据卷'}] ${label}`);
 				}
 			}
 			// Did the LIVE stdout stream deliver anything? restic writes its --json
@@ -402,12 +402,12 @@ export class BackupService {
 
 			// --- verify the OUTCOME: exit 0/3 AND a parsed snapshot id ---
 			if (!resticOk(run) && !resticPartial(run)) {
-				throw new BackupError('RESTIC', run.stderr.trim() || 'restic backup failed', { exitCode: run.exitCode });
+				throw new BackupError('RESTIC', run.stderr.trim() || 'restic 备份执行失败', { exitCode: run.exitCode });
 			}
 			const summary = parseResticBackupSummary(run.stdout);
 			if (!summary) {
 				// No summary ⇒ unknown outcome ⇒ NOT a success (never record a phantom).
-				throw new BackupError('INTEGRITY', 'backup produced no snapshot summary — treating as failed');
+				throw new BackupError('INTEGRITY', '备份未产生快照摘要 — 判定为失败');
 			}
 			// A partial is restic's own "couldn't read all files" (exit 3). A stack dir
 			// over the capture cap is no longer a partial — it hard-fails in collectMetadata.
@@ -415,7 +415,7 @@ export class BackupService {
 
 			// --- VERIFY the snapshot is actually readable before declaring success ---
 			log(`snapshot ${summary.snapshotId.slice(0, 8)} created, verifying`);
-			op.progress('verifying', 'Verifying the snapshot is readable...');
+			op.progress('verifying', '正在校验快照可用性...');
 			diag("BEFORE_VERIFY", "snapshot=" + summary.snapshotId);
 			await this.verifySnapshot(summary.snapshotId, instanceId);
 
@@ -446,12 +446,12 @@ export class BackupService {
 				retention: retentionOutcome,
 			};
 			if (partial) {
-				log(`completed with warnings (partial read) in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
-				await op.close({ kind: 'warning', message: 'Backup completed with warnings (some files could not be read).' }, details);
+				log(`执行完成但存在警告 (部分文件读取失败) ，耗时 ${((Date.now() - t0) / 1000).toFixed(1)}秒`);
+				await op.close({ kind: 'warning', message: '备份已完成但存在警告 (部分文件无法读取)。' }, details);
 				await this.notifySuccess(job, summary, envId, true, op.id, startTime);
 				return { status: 'warning', executionId: op.id, snapshotId: summary.snapshotId, summary, warning: 'partial read', retention: retentionOutcome };
 			}
-			log(`completed in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
+			log(`执行完成，耗时 ${((Date.now() - t0) / 1000).toFixed(1)}秒`);
 			diag("BEFORE_CLOSE");
 			await op.close({ kind: 'ok' }, details);
 			await this.notifySuccess(job, summary, envId, false, op.id, startTime);
@@ -461,18 +461,18 @@ export class BackupService {
 			// resulting non-zero exit (137) is not a real failure. Report it as cancelled
 			// with a clean message instead of the raw restic exit spew.
 			if (this.ports.isCancelling(job.configId)) {
-				log('cancelled by user');
+				log('已由用户取消');
 				if (!restarted) await this.restartAndSurface(restart, job, op);
 				try { await this.ports.runLocal(['unlock']); } catch { /* best-effort */ }
 				try { await this.ports.setConfigStatus(job.configId, 'failed'); } catch { /* non-fatal */ }
-				await op.close({ kind: 'cancelled', message: 'Backup cancelled' });
-				return { status: 'skipped', executionId: op.id, reason: 'Backup cancelled' };
+				await op.close({ kind: 'cancelled', message: '备份已取消' });
+				return { status: 'skipped', executionId: op.id, reason: '备份已取消' };
 			}
 			// Log the FULL raw error to the server log (docker logs dockhand) before it's
 			// cleaned for the UI — the raw text (restic JSON spew, exit code, stderr) is
 			// what we actually need to diagnose a failure, and cleanErrorMsg strips it.
-			log(`failed after ${((Date.now() - t0) / 1000).toFixed(1)}s`);
-			console.error(`[backup] ${new Date().toISOString()} ${key} | raw error:`, err instanceof Error ? (err.stack ?? err.message) : String(err));
+			log(`执行失败，耗时 ${((Date.now() - t0) / 1000).toFixed(1)}秒`);
+			console.error(`[备份] ${new Date().toISOString()} ${key} | 原始错误:`, err instanceof Error ? (err.stack ?? err.message) : String(err));
 			// Always try to restart what we stopped, even on failure — unless the
 			// success path already restarted it (avoid a double start).
 			if (!restarted) await this.restartAndSurface(restart, job, op);
@@ -506,7 +506,7 @@ export class BackupService {
 	private async verifySnapshot(snapshotId: string, instanceId: string): Promise<void> {
 		const run = await this.ports.runLocal(['snapshots', '--json', '--no-lock', '--tag', `dockhand:instance=${instanceId}`, snapshotId]);
 		if (run.exitCode !== 0 || !run.stdout.includes(snapshotId.slice(0, 8))) {
-			throw new BackupError('INTEGRITY', 'the new snapshot could not be verified as readable — not declaring success');
+			throw new BackupError('INTEGRITY', '无法确认新建快照可读 — 不标记本次备份成功');
 		}
 	}
 
@@ -517,10 +517,10 @@ export class BackupService {
 	 * self-diagnosing from the operation log. */
 	private async applyRetention(job: BackupJob, instanceId: string, op: OperationHandle): Promise<string> {
 		const policy = parseRetention(job.retention);
-		if (!retentionActive(policy)) { op.log('Retention: none configured — keeping all snapshots.'); return 'none'; }
+		if (!retentionActive(policy)) { op.log('Retention: 保留策略：未配置 — 保留全部快照。'); return 'none'; }
 
 		const filter = retentionTagFilter(instanceId, job.configId);
-		op.log(`Retention: applying policy for config ${job.configId} (needs an exclusive repo lock).`);
+		op.log(`保留策略：正在为配置 ${job.configId} 执行清理 (需要独占仓库锁)。`);
 
 		// Dry-run first: refuse if it would wipe every snapshot.
 		const dry = buildForgetArgs(policy, filter, { dryRun: true, json: true })!;
@@ -530,18 +530,18 @@ export class BackupService {
 		// A slow dry-run means the exclusive lock was contended (orphan or another
 		// instance) and forget spent time on --retry-lock — surface it so the operator
 		// can see the wait, not just the eventual result.
-		if (dryMs > 5000) op.log(`Retention: dry-run took ${(dryMs / 1000).toFixed(1)}s (waited on the repo lock).`);
+		if (dryMs > 5000) op.log(`保留策略：模拟执行耗时 ${(dryMs / 1000).toFixed(1)}秒 (等待仓库锁)。`);
 		if (dryRun.exitCode !== 0) {
-			op.progress('warning', `Retention dry-run failed (exit ${dryRun.exitCode}): ${dryRun.stderr.trim() || 'restic failed'} — skipping retention, backup is still safe.`);
+			op.progress('warning', `保留策略模拟执行失败 (退出码 ${dryRun.exitCode}): ${dryRun.stderr.trim() || 'restic 执行失败'} — 已跳过保留策略执行，备份数据仍完好。`);
 			return 'failed';
 		}
 		if (checkWouldWipe(dryRun.stdout).wouldWipe) {
-			op.progress('warning', 'Retention would delete every snapshot for this config — skipping retention.');
+			op.progress('warning', '已跳过保留策略执行，备份数据仍完好。');
 			return 'skipped-would-wipe';
 		}
 		// forget only removes snapshot references (fast, metadata) — NO --prune here, so a
 		// backup never hangs reclaiming space. The destination's prune schedule reclaims it.
-		op.progress('pruning', 'Applying retention...');
+		op.progress('pruning', '正在应用保留策略...');
 		const forget = buildForgetArgs(policy, filter)!;
 		const t1 = Date.now();
 		const run = await this.ports.runLocal(forget, 'data');
@@ -551,10 +551,10 @@ export class BackupService {
 			// The common non-fatal case: --retry-lock elapsed because another op (an
 			// orphaned lock, or a second Dockhand instance sharing this repo) held the
 			// lock — retention just runs next schedule; no snapshot is lost.
-			op.progress('warning', `Retention failed after ${(forgetMs / 1000).toFixed(1)}s (exit ${run.exitCode}): ${run.stderr.trim() || 'restic failed'} — backup is safe, retention will retry next run.`);
+			op.progress('warning', `快照清理执行失败，耗时 ${(forgetMs / 1000).toFixed(1)}秒 (退出码 ${run.exitCode}): ${run.stderr.trim() || 'restic 执行异常'} — 备份有效，保留策略将在下一轮执行。`);
 			return 'failed';
 		}
-		op.log(`Retention: applied in ${(forgetMs / 1000).toFixed(1)}s.`);
+		op.log(`保留策略：清理完成，耗时 ${(forgetMs / 1000).toFixed(1)}秒。`);
 		return 'applied';
 	}
 
@@ -575,11 +575,11 @@ export class BackupService {
 		}
 		if (failed.length > 0) {
 			const names = failed.map((f) => f.name).join(', ');
-			const msg = `Backup finished but ${names} could not be restarted and is STILL STOPPED — start it manually.`;
+			const msg = `备份完成，但 ${names} 无法重启，当前仍处于停止状态 — 请手动启动。`;
 			op.progress('warning', msg);
 			try { await this.ports.notify('backup_failed', { target: job.targetName, kind: 'backup', errorCode: 'STOPPED_RESTART_FAILED', message: msg }, job.environmentId); } catch { /* non-fatal */ }
 		} else {
-			op.progress('restarted', `${job.targetName} restarted.`);
+			op.progress('restarted', `${job.targetName} 已重启。`);
 		}
 	}
 
@@ -663,19 +663,19 @@ export function formatResticLines(chunk: string): string[] {
 		switch (o.message_type) {
 			case 'status':
 				if (typeof o.percent_done === 'number') {
-					const pct = `${Math.round(o.percent_done * 100)}% done`;
+					const pct = `${Math.round(o.percent_done * 100)}% 已完成`;
 					const cur = Array.isArray(o.current_files) && o.current_files.length ? ` — ${o.current_files[0]}` : '';
 					out.push(pct + cur);
 				}
 				break;
 			case 'summary': {
 				const n = o.files_new ?? 0, c = o.files_changed ?? 0, u = o.files_unmodified ?? 0;
-				const mb = typeof o.data_added === 'number' ? ` · ${(o.data_added / 1e6).toFixed(1)} MB added` : '';
-				out.push(`Done: ${n} new, ${c} changed, ${u} unchanged${mb}`);
+				const mb = typeof o.data_added === 'number' ? ` · 新增 ${(o.data_added / 1e6).toFixed(1)} MB 数据` : '';
+				out.push(`完成：${n} 个新增、${c} 个变更、${u} 个未变更文件${mb}`);
 				break;
 			}
 			case 'error':
-				out.push(`error: ${o.error?.message ?? o.item ?? JSON.stringify(o)}`);
+				out.push(`错误: ${o.error?.message ?? o.item ?? JSON.stringify(o)}`);
 				break;
 			default:
 				// verbose_status / anything else — show the raw line so nothing is lost.

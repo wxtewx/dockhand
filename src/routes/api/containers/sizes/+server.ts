@@ -11,14 +11,14 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('containers', 'view', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const sizes = await listContainersWithSize(true, envIdNum);
 		return json(sizes);
 	} catch (error) {
-		console.error('Failed to get container sizes:', error);
+		console.error('获取容器大小失败:', error);
 		return json({}, { status: 500 });
 	}
 };

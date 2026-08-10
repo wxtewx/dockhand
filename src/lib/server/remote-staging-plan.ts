@@ -32,9 +32,9 @@ export function planRemoteStaging(input: {
 	composeContent: string;
 	hasStackFiles: boolean;
 }): RemoteStagingPlan {
-	if (input.operation !== 'up') return { stage: false, reason: `operation ${input.operation} does not stage` };
-	if (!input.hasStackFiles) return { stage: false, reason: 'no stack files to stage' };
+	if (input.operation !== 'up') return { stage: false, reason: `操作 ${input.operation} 无需暂存文件` };
+	if (!input.hasStackFiles) return { stage: false, reason: '不存在需要暂存的堆栈文件' };
 	const base = typeof input.remoteStacksDir === 'string' ? input.remoteStacksDir.trim().replace(/\/+$/, '') : '';
-	if (!base) return { stage: false, reason: 'no remote_stacks_dir configured on the env' };
-	return { stage: true, projectDir: `${base}/${input.stackName}`, reason: 'direct env with remote_stacks_dir' };
+	if (!base) return { stage: false, reason: '该环境未配置 remote_stacks_dir 远程堆栈目录' };
+	return { stage: true, projectDir: `${base}/${input.stackName}`, reason: '直连环境已配置远程堆栈存储目录' };
 }

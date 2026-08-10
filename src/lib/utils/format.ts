@@ -42,15 +42,15 @@ export function formatRelativeTime(date: Date | string | number): string {
 	const ms = d.getTime();
 	if (isNaN(ms)) return '';
 	const sec = Math.round((Date.now() - ms) / 1000);
-	if (sec < 0) return 'in the future';
-	if (sec < 45) return 'just now';
+	if (sec < 0) return '未来时间';
+	if (sec < 45) return '刚刚';
 	const min = Math.round(sec / 60);
-	if (min < 60) return `${min}m ago`;
+	if (min < 60) return `${min} 分钟前`;
 	const hr = Math.round(min / 60);
-	if (hr < 24) return `${hr}h ago`;
+	if (hr < 24) return `${hr} 小时前`;
 	const day = Math.round(hr / 24);
-	if (day < 30) return `${day}d ago`;
+	if (day < 30) return `${day} 天前`;
 	const mo = Math.round(day / 30);
-	if (mo < 12) return `${mo}mo ago`;
-	return `${Math.round(mo / 12)}y ago`;
+	if (mo < 12) return `${mo} 个月前`;
+	return `${Math.round(mo / 12)} 年前`;
 }
