@@ -1953,7 +1953,7 @@
 					<div class="text-right whitespace-nowrap">
 						{#if stats}
 							<span class="text-xs font-mono text-muted-foreground" title="↓读取{formatBytes(stats.blockRead)} / ↑写入{formatBytes(stats.blockWrite)}">
-								<span class="text-2xs text-green-400">r</span>{formatBytesCompact(stats.blockRead, 0)} <span class="text-2xs text-yellow-400">w</span>{formatBytesCompact(stats.blockWrite, 0)}
+								<span class="text-2xs text-green-400">读</span>{formatBytesCompact(stats.blockRead, 0)} <span class="text-2xs text-yellow-400">写</span>{formatBytesCompact(stats.blockWrite, 0)}
 							</span>
 						{:else if stack.status === 'running' || stack.status === 'partial' || stack.status === 'restarting'}
 							<span class="text-xs text-muted-foreground/50">...</span>

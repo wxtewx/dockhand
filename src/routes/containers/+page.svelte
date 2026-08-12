@@ -1841,7 +1841,7 @@
 							{#if containerStats.get(container.id)}
 								{@const stats = containerStats.get(container.id)}
 								{@const memoryTooltip = stats.memoryCache > 0
-									? `${formatBytes(stats.memoryUsage)} / ${formatBytes(stats.memoryLimit)} (Total: ${formatBytes(stats.memoryRaw)} | Cache: ${formatBytes(stats.memoryCache)})`
+									? `${formatBytes(stats.memoryUsage)} / ${formatBytes(stats.memoryLimit)} (总计内存: ${formatBytes(stats.memoryRaw)} | 缓存: ${formatBytes(stats.memoryCache)})`
 									: `${formatBytes(stats.memoryUsage)} / ${formatBytes(stats.memoryLimit)}`}
 								<span class="text-xs font-mono {stats.memoryPercent > 80 ? 'text-red-500' : stats.memoryPercent > 50 ? 'text-yellow-500' : 'text-muted-foreground'}" title={memoryTooltip}>{formatBytesCompact(stats.memoryUsage)}<span class="text-muted-foreground/50">/{formatBytesCompact(stats.memoryLimit, 0)}</span></span>
 							{:else if container.state === 'running'}
@@ -1868,7 +1868,7 @@
 							{#if containerStats.get(container.id)}
 								{@const stats = containerStats.get(container.id)}
 								<span class="text-xs font-mono text-muted-foreground" title="↓{formatBytes(stats.blockRead)} 读取 / ↑{formatBytes(stats.blockWrite)} 写入">
-									<span class="text-2xs text-green-400">r</span>{formatBytesCompact(stats.blockRead, 0)} <span class="text-2xs text-yellow-400">w</span>{formatBytesCompact(stats.blockWrite, 0)}
+									<span class="text-2xs text-green-400">读</span>{formatBytesCompact(stats.blockRead, 0)} <span class="text-2xs text-yellow-400">写</span>{formatBytesCompact(stats.blockWrite, 0)}
 								</span>
 							{:else if container.state === 'running'}
 								<span class="text-xs text-muted-foreground/50">...</span>
