@@ -16,6 +16,7 @@
 	import { copyToClipboard } from '$lib/utils/clipboard';
 	import CronEditor from '$lib/components/cron-editor.svelte';
 	import StackEnvVarsPanel from '$lib/components/StackEnvVarsPanel.svelte';
+	import SecretProviderPicker from '$lib/components/SecretProviderPicker.svelte';
 	import { type EnvVar, type ValidationResult } from '$lib/components/StackEnvVarsEditor.svelte';
 	import { toast } from 'svelte-sonner';
 	import { focusFirstInput } from '$lib/utils';
@@ -154,6 +155,12 @@
 	let copiedWebhookUrl = $state<'ok' | 'error' | null>(null);
 	let copiedWebhookSecret = $state<'ok' | 'error' | null>(null);
 
+	// Secret providers
+	type SecretProviderOption = { id: number; name: string; type: string };
+	let secretProviders = $state<SecretProviderOption[]>([]);
+	let formSecretProviderId = $state<number | null>(null);
+	let injectedSecretKeys = $state<string[]>([]);
+
 	// Environment variables state
 	let formEnvFilePath = $state<string | null>(null);
 	let envFiles = $state<string[]>([]);
@@ -205,7 +212,20 @@
 		// Add global mouse event listeners for split dragging
 		window.addEventListener('mousemove', handleMouseMove);
 		window.addEventListener('mouseup', handleMouseUp);
+
+		fetchSecretProviders();
 	});
+
+	async function fetchSecretProviders() {
+		try {
+			const response = await fetch('/api/secret-providers');
+			if (!response.ok) return;
+			const data = await response.json();
+			secretProviders = (data ?? []).map((p: any) => ({ id: p.id, name: p.name, type: p.type }));
+		} catch (e) {
+			console.warn('Failed to load secret providers:', e);
+		}
+	}
 
 	onDestroy(() => {
 		window.removeEventListener('mousemove', handleMouseMove);
@@ -314,6 +334,7 @@
 				);
 				// Set envVars - the panel's $effect will auto-sync rawContent for text view
 				envVars = loadedVars;
+				injectedSecretKeys = data.injectedSecretKeys ?? [];
 			}
 		} catch (e) {
 			console.error('Failed to load env var overrides:', e);
@@ -426,6 +447,10 @@
 			formRepullImages = gitStack.repullImages ?? false;
 			formForceRedeploy = gitStack.forceRedeploy ?? false;
 			formDeployNow = false;
+			formSecretProviderId = null;
+			
+			// Load secret provider binding
+			loadSecretProviderBindingForStack(gitStack.stackName);
 
 			// Load env files and overrides SYNCHRONOUSLY to avoid race conditions
 			// Wait for all loads to complete before allowing any other effect to run
@@ -455,6 +480,20 @@
 			formRepullImages = false;
 			formForceRedeploy = false;
 			formDeployNow = false;
+			formSecretProviderId = null;
+		}
+	}
+
+	async function loadSecretProviderBindingForStack(stackName: string) {
+		try {
+			const url = environmentId ? `/api/stacks/sources?env=${environmentId}` : '/api/stacks/sources';
+			const response = await fetch(url);
+			if (!response.ok) return;
+			const sourceMap = await response.json();
+			const source = sourceMap?.[stackName];
+			formSecretProviderId = source?.secretProviderId ?? null;
+		} catch (e) {
+			console.warn('Failed to load secret provider binding for git stack:', e);
 		}
 	}
 
@@ -540,6 +579,7 @@
 				repullImages: formRepullImages,
 				forceRedeploy: formForceRedeploy,
 				deployNow: deployAfterSave,
+				secretProviderId: formSecretProviderId,
 				envVars: overrideVars.map(v => ({
 					key: v.key.trim(),
 					value: v.value,
@@ -1151,8 +1191,16 @@
 
 			<!-- Right column: Environment Variables -->
 			<div class="flex-1 min-w-0 flex flex-col overflow-hidden bg-zinc-50 dark:bg-zinc-800/50">
+				<SecretProviderPicker
+					bind:secretProviderId={formSecretProviderId}
+					bind:envVars
+					providers={secretProviders}
+				/>
 				<StackEnvVarsPanel
 					bind:variables={envVars}
+					injectedSecretKeys={gitStack !== null ? injectedSecretKeys : []}
+					providerType={secretProviders.find((p) => p.id === formSecretProviderId)?.type ?? null}
+					providerName={secretProviders.find((p) => p.id === formSecretProviderId)?.name ?? null}
 					placeholder={{ key: 'MY_VAR', value: 'value' }}
 					infoText="Override variables from your repository env files. Non-secrets are saved to <code class='bg-muted px-1 rounded'>.env.dockhand</code> in the stack directory. Secrets are stored in the database and injected via shell environment at deploy time.<br/><br/>Variables are available for <strong>compose file interpolation</strong> using <code class='bg-muted px-1 rounded'>${'{VAR_NAME}'}</code> syntax. They are not automatically injected into containers — use <code class='bg-muted px-1 rounded'>environment:</code> or reference <code class='bg-muted px-1 rounded'>.env.dockhand</code> in <code class='bg-muted px-1 rounded'>env_file:</code> to pass them through."
 					existingSecretKeys={gitStack !== null ? existingSecretKeys : new Set()}

@@ -91,7 +91,7 @@ export const POST: RequestHandler = async (event) => {
 
 	try {
 		const body = await request.json();
-		const { name, compose, start, envVars, rawEnvContent, composePath, envPath } = body;
+		const { name, compose, start, envVars, rawEnvContent, composePath, envPath, secretProviderId } = body;
 
 		if (!name || typeof name !== 'string') {
 			return json({ error: 'Stack name is required' }, { status: 400 });
@@ -99,6 +99,25 @@ export const POST: RequestHandler = async (event) => {
 
 		if (!compose || typeof compose !== 'string') {
 			return json({ error: 'Compose file content is required' }, { status: 400 });
+		}
+
+		if (
+			'secretProviderId' in body &&
+			secretProviderId !== null &&
+			typeof secretProviderId !== 'number'
+		) {
+			return json({ error: 'secretProviderId must be a number or null' }, { status: 400 });
+		}
+
+		// Binding a secret provider resolves its secrets into the container at deploy;
+		// require the secrets permission so a stacks-only user can't exfiltrate a
+		// provider's secrets by binding it and reading the container env.
+		if (
+			typeof secretProviderId === 'number' &&
+			auth.authEnabled &&
+			!(await auth.can('secrets', 'view', envIdNum))
+		) {
+			return json({ error: 'Permission denied: binding a secret provider requires the secrets permission' }, { status: 403 });
 		}
 
 		// If start is false, only create the compose file without deploying
@@ -134,7 +153,8 @@ export const POST: RequestHandler = async (event) => {
 				environmentId: envIdNum,
 				sourceType: 'internal',
 				composePath: composePath || undefined,
-				envPath: envPath || undefined
+				envPath: envPath || undefined,
+				secretProviderId,
 			});
 
 			// Audit log
@@ -175,7 +195,8 @@ export const POST: RequestHandler = async (event) => {
 			environmentId: envIdNum,
 			sourceType: 'internal',
 			composePath: composePath || undefined,
-			envPath: envPath || undefined
+			envPath: envPath || undefined,
+			secretProviderId
 		});
 
 		// Deploy via SSE to keep connection alive during long operations

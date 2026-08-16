@@ -16,6 +16,7 @@
 	import ThemeSelector from '$lib/components/ThemeSelector.svelte';
 	import NavigationSelector from '$lib/components/NavigationSelector.svelte';
 	import AnimateIconsToggle from '$lib/components/AnimateIconsToggle.svelte';
+	import IndentGuidesToggle from '$lib/components/IndentGuidesToggle.svelte';
 	import ColoredActionsToggle from '$lib/components/ColoredActionsToggle.svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 
@@ -437,13 +438,13 @@ services:
 							</div>
 							<div class="space-y-1">
 								<div class="flex items-center gap-3">
-									<Label>Honor Traefik/Pangolin labels</Label>
+									<Label>Honor Traefik/Pangolin/Caddy labels</Label>
 									<Tooltip.Root>
 										<Tooltip.Trigger>
 											<HelpCircle class="w-3.5 h-3.5 text-muted-foreground" />
 										</Tooltip.Trigger>
 										<Tooltip.Content side="top" class="w-96 max-w-[90vw]">
-											<p>Parse <code>traefik.http.routers.&lt;name&gt;.rule</code>, <code>pangolin.public-resources.&lt;name&gt;.full-domain</code>, and <code>pangolin.private-resources.&lt;name&gt;.full-domain</code> labels and surface the resulting URLs as clickable pills next to ports. When off, only explicit <code>dockhand.url</code> labels are shown.</p>
+											<p>Parse <code>traefik.http.routers.&lt;name&gt;.rule</code>, <code>pangolin.public-resources.&lt;name&gt;.full-domain</code>, <code>pangolin.private-resources.&lt;name&gt;.full-domain</code>, and caddy-docker-proxy <code>caddy</code>/<code>caddy_&lt;n&gt;</code> site-address labels, and surface the resulting URLs as clickable pills next to ports. When off, only explicit <code>dockhand.url</code> labels are shown.</p>
 										</Tooltip.Content>
 									</Tooltip.Root>
 									<TogglePill
@@ -511,6 +512,7 @@ services:
 							<ThemeSelector />
 							<ColoredActionsToggle />
 							<AnimateIconsToggle />
+							<IndentGuidesToggle />
 							{#if $authStore.authEnabled}
 								<div class="text-xs text-muted-foreground flex items-start gap-1.5 mt-2 p-2 bg-muted/50 rounded-md">
 									<HelpCircle class="w-3.5 h-3.5 shrink-0 mt-0.5" />

@@ -1,0 +1,440 @@
+<script lang='ts' module>
+	export interface SecretProvider {
+		id: number;
+		type: string;
+		name: string;
+		createdAt: string;
+		updatedAt?: string;
+	}
+
+	interface ProviderField {
+		key: string;
+		label: string;
+		type: 'text' | 'password';
+		required: boolean;
+		placeholder?: string;
+		hint?: string;
+	}
+
+	// Selectable provider types + their labels. Mirrors the registered providers
+	// in src/lib/server/secretproviders (index.ts / shared.ts).
+	export const PROVIDER_TYPES: { value: string; label: string }[] = [
+		{ value: 'op-service-account', label: '1Password service account' },
+		{ value: 'op-connect', label: '1Password Connect' },
+		{ value: 'infisical', label: 'Infisical' },
+		{ value: 'vault', label: 'HashiCorp Vault' },
+		{ value: 'doppler', label: 'Doppler' },
+	];
+
+	// Config fields per provider type, matching the config shapes in
+	// secretproviders/shared.ts. Non-required fields are optional overrides.
+	export const PROVIDER_FIELDS: Record<string, ProviderField[]> = {
+		'op-service-account': [
+			{ key: 'token', label: 'Service account token', type: 'password', required: true, placeholder: 'ops_eyJ...', hint: 'A 1Password service account token (starts with ops_).' },
+		],
+		'op-connect': [
+			{ key: 'host', label: 'Connect host URL', type: 'text', required: true, placeholder: 'https://connect.example.com', hint: 'URL of your 1Password Connect server.' },
+			{ key: 'token', label: 'Connect token', type: 'password', required: true, placeholder: 'eyJ...', hint: 'A Connect access token with read access to the vault.' },
+		],
+		infisical: [
+			{ key: 'host', label: 'API host', type: 'text', required: true, placeholder: 'https://app.infisical.com', hint: 'Infisical Cloud or your self-hosted URL.' },
+			{ key: 'token', label: 'Access token', type: 'password', required: true, placeholder: 'st...', hint: 'A service token or machine-identity access token.' },
+			{ key: 'projectId', label: 'Project ID', type: 'text', required: true, placeholder: 'workspace / project id', hint: 'The workspace/project the secrets live in.' },
+			{ key: 'environment', label: 'Environment', type: 'text', required: true, placeholder: 'prod', hint: 'Environment slug, e.g. prod / staging.' },
+			{ key: 'path', label: 'Secret path', type: 'text', required: false, placeholder: '/', hint: 'Folder path within the project. Defaults to /.' },
+		],
+		vault: [
+			{ key: 'address', label: 'Vault address', type: 'text', required: true, placeholder: 'https://vault.example.com', hint: 'Base URL of your Vault server.' },
+			{ key: 'token', label: 'Vault token', type: 'password', required: true, placeholder: 'hvs...', hint: 'A token with read access to the KV path.' },
+			{ key: 'namespace', label: 'Namespace', type: 'text', required: false, placeholder: 'admin (Enterprise / HCP)', hint: 'Vault Enterprise / HCP only.' },
+			{ key: 'mount', label: 'KV mount', type: 'text', required: false, placeholder: 'secret', hint: 'KV v2 mount path. Defaults to "secret".' },
+		],
+		doppler: [
+			{ key: 'token', label: 'Token', type: 'password', required: true, placeholder: 'dp.st.... or dp.pt....', hint: 'A service token (dp.st.) already targets one config. A personal token (dp.pt.) also needs the project and config below.' },
+			{ key: 'project', label: 'Project', type: 'text', required: false, placeholder: 'only for a personal token (dp.pt.)', hint: 'Doppler project slug. Only needed with a personal token.' },
+			{ key: 'config', label: 'Config', type: 'text', required: false, placeholder: 'e.g. prd', hint: 'Config within the project. Only needed with a personal token.' },
+		],
+	};
+
+	export function providerTypeLabel(type: string): string {
+		return PROVIDER_TYPES.find((t) => t.value === type)?.label ?? type;
+	}
+
+	// Per-stack bulk-selector field metadata (UI-only, like PROVIDER_FIELDS above).
+	// A provider type with no entry shows no selector field: doppler ignores the
+	// selector, connect has no bulk pull. The field's value is written to the stack
+	// env as DOCKHAND_SECRET_SELECTOR (consumed by resolveProviderEnvVars).
+	export type BulkSelectorField = { label: string; placeholder?: string; hint?: string };
+	export const BULK_SELECTOR_FIELDS: Record<string, BulkSelectorField> = {
+		'op-service-account': {
+			label: 'Environment',
+			placeholder: '1Password Environment id',
+			hint: 'Bulk-load every secret from this 1Password Environment. Leave blank to inject only inline op:// references.'
+		},
+		'vault': {
+			label: 'KV v2 path',
+			placeholder: 'path/to/secret',
+			hint: 'Bulk-load every key at this KV v2 path (under the configured mount).'
+		},
+		'infisical': {
+			label: 'Secret path',
+			placeholder: '/',
+			hint: 'Bulk-load every secret at this path (project and environment come from the provider config).'
+		}
+	};
+</script>
+
+<script lang='ts'>
+	import { Button } from '$lib/components/ui/button';
+	import * as Dialog from '$lib/components/ui/dialog';
+	import * as Select from '$lib/components/ui/select';
+	import { FieldLabel } from '$lib/components/ui/field-label';
+	import { Input } from '$lib/components/ui/input';
+	import { Plus, Check, RefreshCw, PlugZap, KeyRound } from 'lucide-svelte';
+	import { scale } from 'svelte/transition';
+	import { backOut, cubicIn } from 'svelte/easing';
+	import { getProviderIcon } from '$lib/components/provider-icons';
+	import { toast } from 'svelte-sonner';
+	import { focusFirstInput } from '$lib/utils';
+
+	interface Props {
+		open: boolean;
+		provider?: SecretProvider | null;
+		onClose: () => void;
+		onSaved: () => void;
+	}
+
+	let {
+		open = $bindable(),
+		provider = null,
+		onClose,
+		onSaved,
+	}: Props = $props();
+
+	const isEditing = $derived(provider !== null);
+
+	let formName = $state('');
+	let formType = $state('op-service-account');
+	// One value per config field; blank means 'unset' (on edit: keep existing).
+	let formConfig = $state<Record<string, string>>({});
+	let formError = $state('');
+	let formSaving = $state(false);
+	let formTesting = $state(false);
+	// Brief green tick on the Test connection button right after a successful test.
+	let testOk = $state(false);
+	let testOkTimer: ReturnType<typeof setTimeout> | undefined;
+
+	const fields = $derived(PROVIDER_FIELDS[formType] ?? []);
+	// Providers whose config fields read better stacked one per row rather than in the
+	// 2-column grid (per-field hints, or fields long enough to want full width).
+	const stackConfigFields = $derived(
+		formType === 'op-connect' || formType === 'doppler'
+	);
+
+	function resetConfig() {
+		formConfig = {};
+	}
+
+	function resetForm() {
+		formName = '';
+		formType = 'op-service-account';
+		resetConfig();
+		formError = '';
+		formSaving = false;
+		formTesting = false;
+	}
+
+	$effect(() => {
+		if (open) {
+			if (provider) {
+				formName = provider.name;
+				formType = provider.type;
+				resetConfig();
+				formError = '';
+				// Pre-fill the NON-secret config fields (host, projectId, mount, ...) from
+				// the server; the token stays blank ('keep existing'). The list only has a
+				// summary, so fetch the single provider which returns the redacted config.
+				void loadProviderConfig(provider.id);
+			} else {
+				resetForm();
+			}
+		}
+	});
+
+	async function loadProviderConfig(id: number) {
+		try {
+			const res = await fetch(`/api/secret-providers/${id}`);
+			if (!res.ok) return;
+			const data = await res.json();
+			const cfg = (data?.config ?? {}) as Record<string, unknown>;
+			const next: Record<string, string> = {};
+			for (const [key, value] of Object.entries(cfg)) {
+				if (value != null) next[key] = String(value);
+			}
+			formConfig = next; // secret fields (token) are absent -> stay blank
+		} catch {
+			// leave fields blank on failure - the user can re-enter them
+		}
+	}
+
+	// A blank secret field on edit means "keep the stored value"; non-secret fields are
+	// pre-filled (loadProviderConfig). Collect only the fields the user actually filled.
+	function collectConfig(): Record<string, string> {
+		const config: Record<string, string> = {};
+		for (const field of fields) {
+			const value = (formConfig[field.key] ?? '').trim();
+			if (value) config[field.key] = value;
+		}
+		return config;
+	}
+
+	function missingRequired(config: Record<string, string>, editing = false): string | null {
+		for (const field of fields) {
+			// On edit a blank secret (password) field keeps the stored value, so it is
+			// allowed to be empty; non-secret required fields still must be present.
+			if (editing && field.type === 'password') continue;
+			if (field.required && !config[field.key]) {
+				return `${field.label} is required`;
+			}
+		}
+		return null;
+	}
+
+	function onTypeChange(value: string) {
+		formType = value;
+		// Fields differ per type; drop any stale values.
+		resetConfig();
+		formError = '';
+	}
+
+	async function testCurrent() {
+		formTesting = true;
+		formError = '';
+		try {
+			const config = collectConfig();
+			const missing = missingRequired(config, isEditing);
+			if (missing) {
+				formError = missing;
+				return;
+			}
+
+			let response: Response;
+			if (isEditing) {
+				// Test EXACTLY what a Save would persist: the typed non-secret fields, merged
+				// server-side over the stored config (a blank token keeps the stored one). This
+				// makes an edited address/mount/namespace actually get tested - not the old
+				// stored config.
+				response = await fetch(`/api/secret-providers/${provider!.id}/test`, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ config }),
+				});
+			} else {
+				response = await fetch('/api/secret-providers/test', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ type: formType, config }),
+				});
+			}
+			const data = await response.json();
+			if (data.ok) {
+				toast.success('Connection works');
+				clearTimeout(testOkTimer);
+				testOk = true;
+				testOkTimer = setTimeout(() => (testOk = false), 2000);
+			} else {
+				toast.error(data.error || 'Connection failed');
+				formError = data.error || 'Connection failed';
+			}
+		} catch {
+			toast.error('Connection test failed');
+		} finally {
+			formTesting = false;
+		}
+	}
+
+	async function save() {
+		if (!formName.trim()) {
+			formError = 'Name is required';
+			return;
+		}
+
+		const config = collectConfig();
+
+		// On create, every required field must be present. On EDIT, a blank SECRET
+		// field (token) means "keep the stored value", so a required secret is allowed
+		// to be blank; non-secret required fields (host, projectId, ...) are pre-filled
+		// and still validated. The backend merges the stored secret over the blank.
+		const missing = missingRequired(config, isEditing);
+		if (missing) {
+			formError = missing;
+			return;
+		}
+
+		formSaving = true;
+		formError = '';
+
+		try {
+			const body: Record<string, unknown> = {
+				name: formName.trim(),
+				type: formType,
+				// Always send config; on edit the backend keeps the stored secret when a
+				// secret field is blank (updateSecretProvider merges), and the non-secret
+				// fields are pre-filled, so `config` is the full intended coordinates.
+				config,
+			};
+
+			const url = isEditing
+				? `/api/secret-providers/${provider!.id}`
+				: '/api/secret-providers';
+			const method = isEditing ? 'PUT' : 'POST';
+
+			const response = await fetch(url, {
+				method,
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(body),
+			});
+
+			if (response.ok) {
+				open = false;
+				onSaved();
+			} else {
+				const data = await response.json();
+				formError =
+					data.error ||
+					`Failed to ${isEditing ? 'update' : 'create'} secret provider`;
+			}
+		} catch {
+			formError = `Failed to ${isEditing ? 'update' : 'create'} secret provider`;
+		} finally {
+			formSaving = false;
+		}
+	}
+
+	function handleClose() {
+		clearTimeout(testOkTimer);
+		testOk = false;
+		open = false;
+		onClose();
+	}
+</script>
+
+<Dialog.Root
+	bind:open
+	onOpenChange={(o) => {
+		if (o) {
+			formError = "";
+			focusFirstInput();
+		}
+	}}
+>
+	<Dialog.Content class="sm:max-w-2xl">
+		<Dialog.Header>
+			<Dialog.Title class="flex items-center gap-2">
+				<KeyRound class="w-5 h-5 text-muted-foreground" />
+				{isEditing ? "Edit" : "Add"} secret provider
+			</Dialog.Title>
+		</Dialog.Header>
+		<div class="space-y-4">
+			{#if formError}
+				<div class="text-sm text-red-600 dark:text-red-400">
+					{formError}
+				</div>
+			{/if}
+			<div class="space-y-2">
+				<FieldLabel label="Name" forId="provider-name" required showOptional={false} />
+				<Input
+					id="provider-name"
+					bind:value={formName}
+					placeholder="Production secrets"
+				/>
+			</div>
+			<div class="space-y-2">
+				<FieldLabel label="Provider" forId="provider-type" required showOptional={false} />
+				<Select.Root
+					type="single"
+					value={formType}
+					onValueChange={onTypeChange}
+					disabled={isEditing}
+				>
+					<Select.Trigger id="provider-type" class="w-full justify-between gap-2">
+						{@const TriggerIcon = getProviderIcon(formType)}
+						<span class="flex items-center gap-2 min-w-0">
+							<TriggerIcon class="w-4 h-4 shrink-0 text-muted-foreground" />
+							<span class="truncate">{providerTypeLabel(formType)}</span>
+						</span>
+					</Select.Trigger>
+					<Select.Content>
+						{#each PROVIDER_TYPES as t (t.value)}
+							{@const ItemIcon = getProviderIcon(t.value)}
+							<Select.Item value={t.value} label={t.label}>
+								<span class="flex items-center gap-2">
+									<ItemIcon class="w-4 h-4 shrink-0 text-muted-foreground" />
+									{t.label}
+								</span>
+							</Select.Item>
+						{/each}
+					</Select.Content>
+				</Select.Root>
+			</div>
+			<!-- Provider config fields: a 2-column grid, or one per row for providers whose
+			     fields read better stacked (Vault, Connect, Doppler). min-height +
+			     content-start keep the dialog a stable height while laying rows top-aligned. -->
+			<div class="grid {stackConfigFields ? 'grid-cols-1' : 'grid-cols-2'} gap-x-4 gap-y-3 content-start" style="min-height: 21rem;">
+				{#each fields as field (field.key)}
+					<div class="space-y-1.5 self-start {fields.length === 1 ? 'col-span-full' : ''}">
+						<FieldLabel label={field.label} forId={`provider-${field.key}`} required={field.required} />
+						<Input
+							id={`provider-${field.key}`}
+							type={field.type}
+							bind:value={formConfig[field.key]}
+							placeholder={isEditing && field.type === "password"
+								? "leave blank to keep existing"
+								: field.placeholder}
+						/>
+						{#if field.hint}
+							<p class="text-xs text-muted-foreground">{field.hint}</p>
+						{/if}
+					</div>
+				{/each}
+			</div>
+			<p class="text-xs text-muted-foreground">
+				Configuration is stored encrypted.{#if isEditing}
+					Leave secret fields blank to keep the existing values.{/if}
+			</p>
+		</div>
+		<Dialog.Footer>
+			<Button
+				variant="outline"
+				onclick={testCurrent}
+				disabled={formTesting || formSaving}
+				class={`transition-colors duration-300 ${testOk ? 'border-green-500/60 text-green-600 dark:text-green-400' : ''}`}
+			>
+				<span class="inline-flex w-4 h-4 mr-1 items-center justify-center shrink-0">
+					{#if formTesting}
+						<RefreshCw class="w-4 h-4 animate-spin" />
+					{:else if testOk}
+						<span in:scale={{ duration: 260, start: 0.4, easing: backOut }} out:scale={{ duration: 150, start: 0.6, easing: cubicIn }}>
+							<Check class="w-4 h-4 text-green-600 dark:text-green-400" />
+						</span>
+					{:else}
+						<PlugZap class="w-4 h-4" />
+					{/if}
+				</span>
+				Test connection
+			</Button>
+			<div class="flex-1"></div>
+			<Button variant="outline" onclick={handleClose}>Cancel</Button>
+			<Button onclick={save} disabled={formSaving}>
+				{#if formSaving}
+					<RefreshCw class="w-4 h-4 mr-1 animate-spin" />
+				{:else if isEditing}
+					<Check class="w-4 h-4" />
+				{:else}
+					<Plus class="w-4 h-4" />
+				{/if}
+				{isEditing ? "Save" : "Add"}
+			</Button>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>

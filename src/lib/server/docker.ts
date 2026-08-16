@@ -10,6 +10,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import * as http from 'node:http';
 import * as https from 'node:https';
+import { Readable } from 'node:stream';
 import * as tls from 'node:tls';
 import { createHash } from 'node:crypto';
 import { pumpWebStreamToWritable } from './stream-pump';
@@ -17,9 +18,10 @@ import { computeRequestTimeoutMs } from './backups/request-timeout';
 import type { Environment } from './db';
 import { getSetting } from './db';
 import { getAdditionalVolumeBinds, dedupeVolumesForRecreate } from './mount-dedupe';
+import { resolveNanoCpusConflict, resolvePodmanUsernsMode } from './hostconfig-recreate';
 import { rebaseEnvOntoImage, rebaseLabelsOntoImage, rebaseCommand, describeEnvRebase, describeLabelRebase, type ImageEnvLabels } from './container-env-merge';
 import { encodeRegistryAuth } from './registry-auth';
-import { isSystemContainer, classifyEmptyDigestImage } from './scheduler/tasks/update-utils';
+import { isSystemContainer, classifyEmptyDigestImage, localDigestIsIndexChild } from './scheduler/tasks/update-utils';
 import { deepDiff } from '../utils/diff.js';
 import { getInstanceId } from './backups/identity';
 import { isOwnedBackupHelper } from './backups/reap-core';
@@ -726,15 +728,21 @@ export function unixSocketRequest(
 
 		req.on('error', reject);
 
-		if (options.body) {
-			if (typeof options.body === 'string') {
-				req.write(options.body);
-			} else if (options.body instanceof Uint8Array || Buffer.isBuffer(options.body)) {
-				req.write(options.body);
+		if (options.body instanceof ReadableStream) {
+			// Stream a web ReadableStream (e.g. a large tar for /images/load) straight
+			// to the socket without buffering it in memory. Readable.fromWeb bridges
+			// web -> Node stream; pipe() ends the request when the source finishes.
+			Readable.fromWeb(options.body as any).on('error', reject).pipe(req);
+		} else {
+			if (options.body) {
+				if (typeof options.body === 'string') {
+					req.write(options.body);
+				} else if (options.body instanceof Uint8Array || Buffer.isBuffer(options.body)) {
+					req.write(options.body);
+				}
 			}
+			req.end();
 		}
-
-		req.end();
 	});
 }
 
@@ -805,15 +813,21 @@ export function unixSocketStreamRequest(
 
 		req.on('error', reject);
 
-		if (options.body) {
-			if (typeof options.body === 'string') {
-				req.write(options.body);
-			} else if (options.body instanceof Uint8Array || Buffer.isBuffer(options.body)) {
-				req.write(options.body);
+		if (options.body instanceof ReadableStream) {
+			// Stream a web ReadableStream (e.g. a large tar for /images/load) straight
+			// to the socket without buffering it in memory. Readable.fromWeb bridges
+			// web -> Node stream; pipe() ends the request when the source finishes.
+			Readable.fromWeb(options.body as any).on('error', reject).pipe(req);
+		} else {
+			if (options.body) {
+				if (typeof options.body === 'string') {
+					req.write(options.body);
+				} else if (options.body instanceof Uint8Array || Buffer.isBuffer(options.body)) {
+					req.write(options.body);
+				}
 			}
+			req.end();
 		}
-
-		req.end();
 	});
 }
 
@@ -965,6 +979,12 @@ export async function dockerFetch(
 			const composeTimeoutMs = parseInt(process.env.COMPOSE_TIMEOUT || '900') * 1000;
 			const isPrune = path.endsWith('/prune');
 			finalOptions.signal = AbortSignal.timeout(isComposeOperation ? composeTimeoutMs : isPrune ? 300000 : 30000);
+		}
+
+		// A ReadableStream request body (e.g. a large tar for /images/load) requires
+		// duplex:'half' under Node's fetch, else it throws before sending.
+		if (typeof (finalOptions.body as ReadableStream | undefined)?.getReader === 'function') {
+			(finalOptions as RequestInit & { duplex?: string }).duplex = 'half';
 		}
 
 		try {
@@ -2066,6 +2086,27 @@ export async function recreateContainerFromInspect(
 		delete createConfig.HostConfig.MemorySwappiness;
 	}
 
+	// NanoCpus and CpuPeriod/CpuQuota are two ways to express the same CPU limit and are
+	// mutually exclusive at create time. Podman's inspect reports BOTH, so passing the whole
+	// HostConfig back trips its "NanoCpus conflicts with CpuPeriod and CpuQuota" (#1381).
+	if (resolveNanoCpusConflict(createConfig.HostConfig)) {
+		log?.('Dropped CpuPeriod/CpuQuota — they conflict with NanoCpus at create time (kept NanoCpus)');
+	}
+
+	// Podman lowers `--userns keep-id` to UsernsMode:"private" in inspect, which create then
+	// rejects without inline mappings (#1409). Restore the original intent from the annotation
+	// so keep-id survives the recreate; Docker (UsernsMode != "private") is untouched.
+	const usernsFix = resolvePodmanUsernsMode(createConfig.HostConfig?.UsernsMode, config.Annotations);
+	if (usernsFix && createConfig.HostConfig) {
+		if ('mode' in usernsFix) {
+			createConfig.HostConfig.UsernsMode = usernsFix.mode;
+			log?.(`Restored UsernsMode "${usernsFix.mode}" from Podman annotation (was "private")`);
+		} else {
+			delete createConfig.HostConfig.UsernsMode;
+			log?.('Dropped UsernsMode "private" — Podman rejects it without inline UID/GID mappings');
+		}
+	}
+
 	// container:<name> mode shares the network namespace — Docker rejects
 	// networking-related fields on the dependent container since they're
 	// owned by the network provider container
@@ -2276,6 +2317,14 @@ export async function createContainerFromMetadata(
 	const swappiness = createConfig.HostConfig?.MemorySwappiness;
 	if (swappiness == null || swappiness === -1 || swappiness === 0) {
 		delete createConfig.HostConfig.MemorySwappiness;
+	}
+
+	// Podman keep-id -> UsernsMode:"private" in inspect, rejected on create (#1409).
+	// Restore the intent from the annotation; Docker (UsernsMode != "private") untouched.
+	const usernsFix = resolvePodmanUsernsMode(createConfig.HostConfig?.UsernsMode, config.Annotations);
+	if (usernsFix && createConfig.HostConfig) {
+		if ('mode' in usernsFix) createConfig.HostConfig.UsernsMode = usernsFix.mode;
+		else delete createConfig.HostConfig.UsernsMode;
 	}
 
 	// container:<name> mode: clean up conflicting network fields
@@ -3677,6 +3726,52 @@ export async function getRegistryManifestDigest(imageName: string): Promise<stri
 	}
 }
 
+/**
+ * A multi-arch tag is a manifest list / OCI image index: the list has one digest,
+ * and each per-architecture child manifest has its own. `docker pull` usually records
+ * the INDEX digest in RepoDigests, but some pulls leave only the PER-ARCH child digest.
+ * getRegistryManifestDigest() (a HEAD) always returns the index digest, so a local
+ * per-arch digest never matches it -> phantom "update available" (#1367).
+ *
+ * Fetches the index body and returns true if any local digest is one of its per-arch
+ * child digests (same image, just recorded per-arch). Best-effort: ANY failure
+ * (network, timeout, non-index body, unauthenticated) returns false so the caller
+ * keeps its existing "update available" verdict. NEVER throws, own short timeout, and
+ * runs ONLY on the already-flagged-as-update path - it can't slow or break the common
+ * case. A false "update available" is acceptable; breaking the check is not.
+ */
+async function localDigestMatchesRegistryChild(
+	imageName: string,
+	localDigests: string[]
+): Promise<boolean> {
+	try {
+		const { registry, repo, tag } = parseImageReference(imageName);
+		const token = await getRegistryBearerToken(registry, repo);
+		const headers: Record<string, string> = {
+			'User-Agent': 'Dockhand/1.0',
+			'Accept': [
+				'application/vnd.docker.distribution.manifest.list.v2+json',
+				'application/vnd.oci.image.index.v1+json'
+			].join(', ')
+		};
+		if (token) headers['Authorization'] = token;
+
+		const response = await fetch(`https://${registry}/v2/${repo}/manifests/${tag}`, {
+			method: 'GET',
+			headers,
+			signal: AbortSignal.timeout(8000)
+		});
+		if (!response.ok) {
+			await drainResponse(response);
+			return false;
+		}
+		const body: unknown = await response.json();
+		return localDigestIsIndexChild(localDigests, body);
+	} catch {
+		return false;
+	}
+}
+
 export interface ImageUpdateCheckResult {
 	hasUpdate: boolean;
 	currentDigest?: string;
@@ -3775,13 +3870,22 @@ export async function checkImageUpdateAvailable(
 		}
 
 		// Check if registry digest matches ANY of the local digests
-		const matchesLocal = localDigests.includes(registryDigest);
-		const hasUpdate = !matchesLocal;
+		if (localDigests.includes(registryDigest)) {
+			return { hasUpdate: false, currentDigest: currentRepoDigests[0] };
+		}
+
+		// The HEAD digest (always the manifest-list/index digest) didn't match. Before
+		// declaring an update, rule out the multi-arch false positive: a local per-arch
+		// child digest won't equal the index digest even when the image is current
+		// (#1367). Best-effort GET of the index; on any failure hasUpdate stays true.
+		if (await localDigestMatchesRegistryChild(imageName, localDigests)) {
+			return { hasUpdate: false, currentDigest: currentRepoDigests[0] };
+		}
 
 		return {
-			hasUpdate,
+			hasUpdate: true,
 			currentDigest: currentRepoDigests[0],
-			registryDigest: hasUpdate ? registryDigest : undefined
+			registryDigest
 		};
 	} catch (e: any) {
 		return { hasUpdate: false, error: e.message };
@@ -4994,19 +5098,18 @@ export async function runContainerWithStreaming(options: {
 			// Bounded-retry the wait; if it still can't be determined, fall back to
 			// inspecting the container's final State, and if that's also unavailable
 			// leave exitCode undefined — the guard below fails closed on undefined.
-			// HELPERS_WAIT_MODE (default 'wait'): the exit signal below is a single
-			// streaming `POST /wait`, held open with no bytes for the whole run. A
-			// socket-proxy / reverse-proxy / tcp DOCKER_HOST with a short idle timeout can
-			// sever it mid-run, leaving the exit code unreadable even though the helper is
-			// fine (#1344). Set HELPERS_WAIT_MODE=poll to POLL short inspect calls instead
-			// (nothing stays open for a proxy to cut). Applies to every helper this function
-			// runs — backup/restore AND the image scanner.
+			// HELPERS_WAIT_MODE (default 'poll'): the exit signal is read by POLLING short
+			// inspect calls - nothing stays open for a proxy to cut. The alternative, a single
+			// streaming `POST /wait` held open with no bytes for the whole run, gets severed
+			// mid-run by a socket-proxy / reverse-proxy / tcp DOCKER_HOST with a short idle
+			// timeout, leaving the exit code unreadable even though the helper is fine (#1344).
+			// Poll is the safe default; set HELPERS_WAIT_MODE=wait to force the streaming /wait.
+			// Applies to every helper this function runs — backup/restore AND the image scanner.
 			let exitCode: number | undefined;
-			if (process.env.HELPERS_WAIT_MODE === 'poll') {
+			if (process.env.HELPERS_WAIT_MODE !== 'wait') {
 				// Bound by the caller's timeout (backup passes a long 'data' tier, the
 				// scanner passes 600_000). Fall back to 1h so poll mode never hangs.
-				// One line so the log confirms which exit-signal mode is active (helps
-				// diagnose whether HELPERS_WAIT_MODE=poll actually took effect - #1344).
+				// One line so the log confirms which exit-signal mode is active (#1344).
 				console.log(`[runContainerWithStreaming] Awaiting exit of ${options.name ?? containerId.slice(0, 12)} via POLL mode`);
 				const deadline = Date.now() + (options.timeout && options.timeout > 0 ? options.timeout : 3_600_000);
 				while (exitCode === undefined && Date.now() < deadline) {

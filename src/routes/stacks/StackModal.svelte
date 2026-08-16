@@ -7,6 +7,9 @@
 	import CodeEditor, { type VariableMarker } from '$lib/components/CodeEditor.svelte';
 	import StackEnvVarsPanel from '$lib/components/StackEnvVarsPanel.svelte';
 	import { type EnvVar, type ValidationResult } from '$lib/components/StackEnvVarsEditor.svelte';
+	import SecretProviderPicker from '$lib/components/SecretProviderPicker.svelte';
+	import { SELECTOR_VARS } from '$lib/utils/bulk-selector';
+	import { classifyMarker, resolvedRefVarNames } from '$lib/utils/invault-markers';
 	import { Layers, Save, Play, Code, GitGraph, GitBranch, GitCommitHorizontal, Github, Loader2, AlertCircle, X, Sun, Moon, TriangleAlert, GripVertical, FolderOpen, Copy, Check, XCircle, MapPin, ArrowRight, ArrowDown, Info, Box, FolderSync, Archive } from 'lucide-svelte';
 	import BackupPanel from '../containers/BackupPanel.svelte';
 	import { volumesForStack, type VolumeInfo } from '$lib/utils/mounts';
@@ -15,7 +18,6 @@
 	import FilesystemBrowser from './FilesystemBrowser.svelte';
 	import PathBarItem from './PathBarItem.svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip';
-	import * as Select from '$lib/components/ui/select';
 	import { Badge } from '$lib/components/ui/badge';
 	import { currentEnvironment, appendEnvParam } from '$lib/stores/environment';
 	import { appSettings } from '$lib/stores/settings';
@@ -70,11 +72,43 @@
 	// Ref to the embedded backup panel so close can check its inline form for unsaved edits.
 	let backupPanelRef = $state<BackupPanel | undefined>(undefined);
 
+	// Secret providers
+	type SecretProviderOption = { id: number; name: string; type: string };
+	let secretProviders = $state<SecretProviderOption[]>([]);
+	let formSecretProviderId = $state<number | null>(null);
+	// Provider-injected key NAMES from the last deploy (banner)
+	let injectedSecretKeys = $state<string[]>([]);
+	// Provider type/name for the injected-secrets banner in the env panel.
+	const selectedProviderType = $derived(
+		secretProviders.find((p) => p.id === formSecretProviderId)?.type ?? null
+	);
+	const selectedProviderName = $derived(
+		secretProviders.find((p) => p.id === formSecretProviderId)?.name ?? null
+	);
+	// Live probe of the bound provider: key NAMES currently present (bulk + resolved
+	// inline refs). Drives the editor's green IN VAULT marker. Empty when no provider
+	// is bound or the probe failed; probeError holds the reason on failure.
+	let providerKeySet = $state<Set<string>>(new Set());
+	let probeError = $state<string | null>(null);
+	let probeSeq = 0;
+
 	// Environment variables state
 	let envVars = $state<EnvVar[]>([]);
 	let rawEnvContent = $state(''); // Raw .env file content (comments preserved)
 	let envValidation = $state<ValidationResult | null>(null);
 	let validating = $state(false);
+
+	// SELECTOR_VARS (OP_ENVIRONMENT_ID / DOCKHAND_SECRET_SELECTOR) are consumed by the
+	// secret provider, not the compose file, so they only count as "used" when a
+	// provider is bound to the stack.
+	const effectiveValidation = $derived.by<ValidationResult | null>(() => {
+		if (!envValidation || formSecretProviderId === null) return envValidation;
+		if (!envValidation.unused.some((v) => SELECTOR_VARS.includes(v))) return envValidation;
+		return {
+			...envValidation,
+			unused: envValidation.unused.filter((v) => !SELECTOR_VARS.includes(v))
+		};
+	});
 	let existingSecretKeys = $state<Set<string>>(new Set());
 	let hadExistingDbVars = $state(false); // Track if DB had any vars on load (for proper cleanup)
 
@@ -600,12 +634,14 @@
 
 		const markers: VariableMarker[] = [];
 
-		// Add missing required variables
+		// Add missing required variables - but a var the bound provider currently has
+		// (live probe) is 'invault' (green), not 'missing' (red). A failed probe forces
+		// MISSING so we never show a false green.
 		for (const name of envValidation.missing) {
 			const env = envVarMap.get(name);
 			markers.push({
 				name,
-				type: 'missing',
+				type: classifyMarker(name, true, providerKeySet, probeError !== null),
 				value: env?.value,
 				isSecret: env?.isSecret
 			});
@@ -645,12 +681,78 @@
 		debouncedValidate();
 	}
 
-	// Debounced validation to avoid too many API calls while typing
+	// Debounced validation to avoid too many API calls while typing. The live
+	// provider probe rides the same cadence so it doesn't hammer the provider.
 	function debouncedValidate() {
 		if (validateTimer) clearTimeout(validateTimer);
 		validateTimer = setTimeout(() => {
 			validateEnvVars();
+			runProbe();
 		}, 1000);
+	}
+
+	// op://... inline references in the current env vars, mapped var -> ref, so a
+	// resolved ref (the provider returns ref STRINGS) maps back to its var name.
+	function inlineRefPairs(): { varName: string; ref: string }[] {
+		const pairs: { varName: string; ref: string }[] = [];
+		for (const v of envVars) {
+			const key = v.key.trim();
+			const val = (v.value ?? '').trim();
+			if (key && val.startsWith('op://')) pairs.push({ varName: key, ref: val });
+		}
+		return pairs;
+	}
+
+	// Live-probe the bound provider for which required keys exist RIGHT NOW. Only
+	// key NAMES cross the wire. Guardrails: a provider must be selected; on any
+	// failure the key set is emptied and probeError is set (-> everything MISSING,
+	// never a false green). Guarded by probeSeq to drop stale responses.
+	async function runProbe() {
+		if (formSecretProviderId === null) {
+			providerKeySet = new Set();
+			probeError = null;
+			return;
+		}
+		const selector = (() => {
+			for (const name of SELECTOR_VARS) {
+				const hit = envVars.find((v) => v.key.trim() === name);
+				if (hit && hit.value.trim()) return hit.value.trim();
+			}
+			return undefined;
+		})();
+		const refPairs = inlineRefPairs();
+		if (!selector && refPairs.length === 0) {
+			providerKeySet = new Set();
+			probeError = null;
+			updateEditorMarkers();
+			return;
+		}
+		const seq = ++probeSeq;
+		try {
+			const response = await fetch(`/api/secret-providers/${formSecretProviderId}/probe`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ selector, refs: refPairs.map((p) => p.ref) })
+			});
+			if (seq !== probeSeq) return; // a newer probe superseded this one
+			const data = await response.json();
+			if (!response.ok || !data.ok) {
+				providerKeySet = new Set();
+				probeError = data.error || `Provider check failed (${response.status})`;
+			} else {
+				const names = [
+					...(data.bulkKeys ?? []),
+					...resolvedRefVarNames(refPairs, data.resolvedRefs ?? [])
+				];
+				providerKeySet = new Set(names);
+				probeError = null;
+			}
+		} catch (e) {
+			if (seq !== probeSeq) return;
+			providerKeySet = new Set();
+			probeError = e instanceof Error ? e.message : 'Provider check failed';
+		}
+		updateEditorMarkers();
 	}
 
 	// Explicitly push markers to the editor (immediate=true since this is called after validation)
@@ -694,7 +796,20 @@
 		// Add global mouse event listeners for split dragging
 		window.addEventListener('mousemove', handleMouseMove);
 		window.addEventListener('mouseup', handleMouseUp);
+
+		fetchSecretProviders();
 	});
+
+	async function fetchSecretProviders() {
+		try {
+			const response = await fetch('/api/secret-providers');
+			if (!response.ok) return;
+			const data = await response.json();
+			secretProviders = (data ?? []).map((p: any) => ({ id: p.id, name: p.name, type: p.type }));
+		} catch (e) {
+			console.warn('Failed to load secret providers:', e);
+		}
+	}
 
 	onDestroy(() => {
 		window.removeEventListener('mousemove', handleMouseMove);
@@ -811,6 +926,18 @@
 			originalComposePath = data.composePath || null;
 			originalEnvPath = data.envPath || null;
 
+			// Load secret provider binding
+			try {
+				const sourcesRes = await fetch(appendEnvParam('/api/stacks/sources', envId));
+				if (sourcesRes.ok) {
+					const sourceMap = await sourcesRes.json();
+					const source = sourceMap?.[stackName];
+					formSecretProviderId = source?.secretProviderId ?? null;
+				}
+			} catch (e) {
+				console.warn('Failed to load stack source for secret provider binding:', e);
+			}
+
 			// Volumes/binds for the backup picker (managed/internal stack path).
 			try {
 				await loadStackVolumes(envId);
@@ -833,6 +960,8 @@
 				existingSecretKeys = new Set(
 					loadedVars.filter(v => v.isSecret && v.key.trim()).map(v => v.key.trim())
 				);
+				// Provider-injected key names from the last deploy (banner)
+				injectedSecretKeys = envData.injectedSecretKeys ?? [];
 			}
 
 			// Process raw .env file content
@@ -968,6 +1097,8 @@
 				requestBody.envPath = envPathToSave;
 			}
 
+			requestBody.secretProviderId = formSecretProviderId;
+
 			// Create the stack
 			response = await fetch(appendEnvParam('/api/stacks', envId), {
 				method: 'POST',
@@ -1098,6 +1229,8 @@
 			if (moveFromDir) {
 				requestBody.moveFromDir = moveFromDir;
 			}
+
+			requestBody.secretProviderId = formSecretProviderId;
 
 			// Save env files BEFORE compose to ensure deploy reads fresh values
 			// Save raw content to .env file (non-secrets only, comments preserved)
@@ -1271,6 +1404,7 @@
 				loadComposeFile().then(() => {
 					// Auto-validate after loading
 					validateEnvVars();
+					runProbe();
 				});
 			} else if (mode === 'create') {
 				// Set default compose content for create mode (library templates override default)
@@ -1282,6 +1416,7 @@
 				loading = false;
 				// Auto-validate default compose
 				validateEnvVars();
+				runProbe();
 			}
 		} else if (!open) {
 			hasInitialized = false; // Reset when modal closes
@@ -1297,6 +1432,7 @@
 		// Debounce to avoid too many API calls while typing
 		const timeout = setTimeout(() => {
 			validateEnvVars();
+			runProbe();
 		}, 800);
 
 		return () => clearTimeout(timeout);
@@ -1710,12 +1846,23 @@
 							</div>
 							<!-- Environment variables panel -->
 							<div class="flex-1 min-w-0 flex flex-col overflow-hidden bg-zinc-50 dark:bg-zinc-800/50">
+								<SecretProviderPicker
+									bind:secretProviderId={formSecretProviderId}
+									bind:envVars
+									providers={secretProviders}
+									onchange={() => { markDirty(); debouncedValidate(); }}
+								/>
 								<StackEnvVarsPanel
 									bind:this={envVarsPanelRef}
 									bind:variables={envVars}
 									bind:rawContent={rawEnvContent}
-									validation={envValidation}
+									validation={effectiveValidation}
 									existingSecretKeys={mode === 'edit' ? existingSecretKeys : new Set()}
+									injectedSecretKeys={mode === 'edit' ? injectedSecretKeys : []}
+									providerType={selectedProviderType}
+									providerName={selectedProviderName}
+									{probeError}
+									{providerKeySet}
 									{readonly}
 									onchange={() => { markDirty(); debouncedValidate(); }}
 									theme={editorTheme}
