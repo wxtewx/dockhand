@@ -28,6 +28,7 @@
 	import { Button } from "$lib/components/ui/button";
 	import { Input } from "$lib/components/ui/input";
 	import type { NetworkInfo } from "$lib/types";
+	import { getLabelText } from "$lib/types";
 
 	interface Props {
 		networks: NetworkInfo[];
@@ -51,11 +52,11 @@
 	let showLayoutMenu = $state(false);
 
 	const layoutOptions: { value: LayoutType; label: string; icon: string }[] = [
-		{ value: "breadthfirst", label: "Tree", icon: "tree" },
-		{ value: "grid", label: "Grid", icon: "grid" },
-		{ value: "circle", label: "Circle", icon: "circle" },
-		{ value: "concentric", label: "Radial", icon: "radial" },
-		{ value: "cose", label: "Force", icon: "force" },
+		{ value: "breadthfirst", label: "树状", icon: "tree" },
+		{ value: "grid", label: "网格", icon: "grid" },
+		{ value: "circle", label: "环形", icon: "circle" },
+		{ value: "concentric", label: "辐射", icon: "radial" },
+		{ value: "cose", label: "力导向", icon: "force" },
 	];
 
 	function buildGraphElements(nets: NetworkInfo[]) {
@@ -120,30 +121,15 @@
 			});
 		});
 
-		// Connect services to networks
 		services.forEach((service) => {
 			const serviceNetworks = service.networks;
 			if (serviceNetworks) {
 				serviceNetworks.forEach((network) => {
 					const netName = network.netName;
-					const foundName = networks.find((network) => network.name === netName);
-					if (foundName || netName === "default") {
-						const targetId = foundName ? `network-${netName}` : "network-default";
-						const defaultNet = networks.find((network) => network.name === "default");
-						if (netName === "default" && !defaultNet) {
-							const defaultExists = elements.find((e) => e.data.id === "network-default");
-							if (!defaultExists) {
-								elements.push({
-									data: {
-										id: "network-default",
-										label: "default",
-										type: "network",
-										driver: "bridge",
-										external: false,
-									},
-								});
-							}
-						}
+					const foundNetwork = networks.find(n => n.name === netName);
+
+					if (foundNetwork) {
+						const targetId = `network-${netName}`;
 						elements.push({
 							data: {
 								id: `net-${service.containerName}-${netName}`,
@@ -173,14 +159,12 @@
 	function createGraph(useExistingData = false, skipLayout = false) {
 		if (!containerEl) return;
 
-		// Even if parsing failed, we get at least an empty structure to render
 		if (!networks) {
 			networks = [];
 		}
 
 		const elements = buildGraphElements(networks);
 
-		// If skipping layout, store current positions before destroying
 		let savedPositions: Map<string, { x: number; y: number }> | null = null;
 		if (skipLayout && cy) {
 			savedPositions = new Map();
@@ -194,7 +178,6 @@
 			cy.destroy();
 		}
 
-		// Theme-based colors
 		const isDark = graphTheme === "dark";
 		const colors = {
 			service: {
@@ -254,7 +237,12 @@
 						"background-color": colors.network.bg,
 						"border-color": colors.network.border,
 						"border-width": 2,
-						label: (ele: any) => `${ele.data("label")}\nnetwork: ${ele.data("caption") || "bridge"}`,
+						label: (ele: any) => {
+							const label = ele.data("label");
+							const driver = ele.data("caption") || "bridge";
+							const driverText = getLabelText(String(driver));
+							return `${label}\n网络: ${driverText}`;
+						},
 						color: colors.network.text,
 						"text-valign": "center",
 						"text-halign": "center",
@@ -318,45 +306,24 @@
 						"target-arrow-color": "#f59e0b",
 					},
 				},
-				// Connection mode - highlight services
-				{
-					selector: "node.connection-source",
-					style: {
-						"border-width": 4,
-						"border-color": "#22c55e",
-						"overlay-color": "#22c55e",
-						"overlay-padding": 5,
-						"overlay-opacity": 0.3,
-					},
-				},
-				{
-					selector: "node.connection-target",
-					style: {
-						"border-color": "#3b82f6",
-						"border-width": 3,
-						"overlay-color": "#3b82f6",
-						"overlay-padding": 3,
-						"overlay-opacity": 0.2,
-					},
-				},
 			],
 			layout:
 				skipLayout && savedPositions
 					? { name: "preset" }
 					: {
 							name: "breadthfirst",
-							directed: true,
+							directed: false,
 							padding: 50,
-							spacingFactor: 1.5,
+							spacingFactor: 1.8,
 							avoidOverlap: true,
 							nodeDimensionsIncludeLabels: true,
+							grid: true
 						},
 			wheelSensitivity: 0.3,
 			minZoom: 0.3,
 			maxZoom: 3,
 		});
 
-		// Restore saved positions if skipping layout
 		if (skipLayout && savedPositions) {
 			cy.nodes().forEach((node) => {
 				const savedPos = savedPositions!.get(node.id());
@@ -366,17 +333,16 @@
 			});
 		}
 
-		// Handle node selection
 		cy.on("tap", "node", (evt) => {
-			const nodeData = evt.target.data();
-			console.log("Node tapped:", nodeData);
+			evt.preventDefault();
+			const node = evt.target;
+			if (!node || !node.data) return;
 
-			selectedNode = nodeData;
+			const nodeData = node.data();
+			selectedNode = JSON.parse(JSON.stringify(nodeData));
 			selectedEdge = null;
-			console.log("selectedNode set to:", selectedNode);
 		});
 
-		// Handle edge selection
 		cy.on("tap", "edge", (evt) => {
 			selectedEdge = evt.target.data();
 			selectedNode = null;
@@ -391,7 +357,6 @@
 
 		graphInitialized = true;
 
-		// Ensure the graph renders correctly after container is sized
 		setTimeout(() => {
 			if (cy) {
 				cy.resize();
@@ -415,11 +380,7 @@
 	// Exported function to handle container resize
 	export function resize() {
 		if (cy && containerEl) {
-			// Cytoscape caches container dimensions aggressively
-			// We need to unmount and remount to the container
 			cy!.unmount();
-
-			// Wait for DOM to update
 			requestAnimationFrame(() => {
 				if (cy && containerEl) {
 					cy!.mount(containerEl);
@@ -435,6 +396,8 @@
 			padding: 50,
 			avoidOverlap: true,
 			nodeDimensionsIncludeLabels: true,
+			fit: true,
+			animate: false
 		};
 
 		switch (layoutName) {
@@ -442,41 +405,27 @@
 				return {
 					...baseConfig,
 					name: "breadthfirst",
-					directed: true,
-					spacingFactor: 1.5,
+					directed: false,
+					spacingFactor: 1.8,
+					grid: true
 				};
 			case "grid":
-				return {
-					...baseConfig,
-					name: "grid",
-					rows: undefined,
-					cols: undefined,
-				};
+				return { ...baseConfig, name: "grid" };
 			case "circle":
-				return {
-					...baseConfig,
-					name: "circle",
-					spacingFactor: 1.2,
-				};
+				return { ...baseConfig, name: "circle" };
 			case "concentric":
 				return {
 					...baseConfig,
 					name: "concentric",
-					minNodeSpacing: 50,
-					concentric: (node: any) => {
-						// Services at center, resources around
-						return node.data("type") === "service" ? 2 : 1;
-					},
-					levelWidth: () => 1,
+					minNodeSpacing: 50
 				};
 			case "cose":
 				return {
 					...baseConfig,
 					name: "cose",
-					idealEdgeLength: () => 100,
-					nodeOverlap: 20,
-					animate: true,
-					animationDuration: 500,
+					idealEdgeLength: 100,
+					nodeOverlap: 30,
+					randomize: false
 				};
 			default:
 				return { ...baseConfig, name: layoutName };
@@ -499,17 +448,14 @@
 	}
 
 	onMount(() => {
-		// Follow app theme from localStorage
 		const appTheme = localStorage.getItem("theme");
 		if (appTheme === "dark" || appTheme === "light") {
 			graphTheme = appTheme;
 		} else {
-			// Fallback to system preference
 			graphTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 		}
 	});
 
-	// Create graph when container element becomes available
 	$effect(() => {
 		if (containerEl && networks && !graphInitialized) {
 			createGraph();
@@ -525,28 +471,22 @@
 
 	function toggleGraphTheme() {
 		graphTheme = graphTheme === "light" ? "dark" : "light";
-		createGraph(true); // Recreate graph with new theme, preserve local edits
+		createGraph(true);
 	}
 
 	function getNodeIcon(type: string) {
 		switch (type) {
-			case "service":
-				return Box;
-			case "network":
-				return Network;
-			default:
-				return Database;
+			case "service": return Box;
+			case "network": return Network;
+			default: return Database;
 		}
 	}
 
 	function getNodeColor(type: string) {
 		switch (type) {
-			case "service":
-				return "bg-blue-500";
-			case "network":
-				return "bg-violet-500";
-			default:
-				return "bg-slate-500";
+			case "service": return "bg-blue-500";
+			case "network": return "bg-violet-500";
+			default: return "bg-slate-500";
 		}
 	}
 </script>
@@ -562,7 +502,7 @@
 				<button
 					onclick={() => (showLayoutMenu = !showLayoutMenu)}
 					class="h-6 px-2 flex items-center gap-1 rounded text-xs text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
-					title="Change layout"
+					title="切换布局"
 				>
 					{#if currentLayout === "breadthfirst"}
 						<GitBranch class="w-3 h-3" />
@@ -590,7 +530,7 @@
 							onclick={() => applyLayout("breadthfirst")}
 						>
 							<GitBranch class="w-3.5 h-3.5" />
-							Tree
+							树状
 						</button>
 						<button
 							class="w-full px-3 py-1.5 text-left text-xs flex items-center gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 {currentLayout === 'grid'
@@ -599,7 +539,7 @@
 							onclick={() => applyLayout("grid")}
 						>
 							<LayoutGrid class="w-3.5 h-3.5" />
-							Grid
+							网格
 						</button>
 						<button
 							class="w-full px-3 py-1.5 text-left text-xs flex items-center gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 {currentLayout === 'circle'
@@ -608,7 +548,7 @@
 							onclick={() => applyLayout("circle")}
 						>
 							<Circle class="w-3.5 h-3.5" />
-							Circle
+							环形
 						</button>
 						<button
 							class="w-full px-3 py-1.5 text-left text-xs flex items-center gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 {currentLayout === 'concentric'
@@ -617,7 +557,7 @@
 							onclick={() => applyLayout("concentric")}
 						>
 							<Target class="w-3.5 h-3.5" />
-							Radial
+							辐射
 						</button>
 						<button
 							class="w-full px-3 py-1.5 text-left text-xs flex items-center gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 {currentLayout === 'cose'
@@ -626,7 +566,7 @@
 							onclick={() => applyLayout("cose")}
 						>
 							<Sparkles class="w-3.5 h-3.5" />
-							Force
+							力导向
 						</button>
 					</div>
 				{/if}
@@ -636,7 +576,7 @@
 			<button
 				onclick={toggleGraphTheme}
 				class="h-6 w-6 flex items-center justify-center rounded text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
-				title={graphTheme === "light" ? "Switch to dark theme" : "Switch to light theme"}
+				title={graphTheme === "light" ? "切换到深色主题" : "切换到浅色主题"}
 			>
 				{#if graphTheme === "light"}
 					<Moon class="w-3.5 h-3.5" />
@@ -672,11 +612,11 @@
 				>
 					<div class="flex items-center gap-1 flex-shrink-0">
 						<div class="w-2 h-2 rounded-sm bg-blue-500 flex-shrink-0"></div>
-						<span class="text-zinc-600 dark:text-zinc-300">Service</span>
+						<span class="text-zinc-600 dark:text-zinc-300">服务</span>
 					</div>
 					<div class="flex items-center gap-1 flex-shrink-0">
 						<div class="w-2 h-2 rounded-sm bg-violet-500 flex-shrink-0"></div>
-						<span class="text-zinc-600 dark:text-zinc-300">Network</span>
+						<span class="text-zinc-600 dark:text-zinc-300">网络</span>
 					</div>
 				</div>
 			</div>
@@ -693,11 +633,11 @@
 										<NodeIcon class="w-3.5 h-3.5 text-white" />
 									</div>
 									<div>
-										<h3 class="font-semibold text-sm text-zinc-800 dark:text-zinc-100">
+										<h3 class="font-semibold text-sm text-zinc-800 dark:zinc-100">
 											{selectedNode.label}
 										</h3>
 										<p class="text-xs text-zinc-500 dark:text-zinc-400 capitalize">
-											{selectedNode.type}
+											{selectedNode.type === 'service' ? '服务' : '网络'}
 										</p>
 									</div>
 								</div>
@@ -710,7 +650,7 @@
 											selectedNode = null;
 											selectedEdge = null;
 										}}
-										title="Close"
+										title="关闭"
 									>
 										<X class="w-3.5 h-3.5" />
 									</Button>
@@ -723,7 +663,7 @@
 							<div class="flex items-center justify-between">
 								<div>
 									<h3 class="font-semibold text-sm text-zinc-800 dark:text-zinc-100 capitalize">
-										{selectedEdge.type.replace("-", " ")}
+										{selectedEdge.type.replace("-", " ") === 'network connection' ? '网络连接' : '连接'}
 									</h3>
 									<p class="text-xs text-zinc-500 dark:text-zinc-400">
 										{selectedEdge.source.replace(/^(service|network)-/, "")}
@@ -740,7 +680,7 @@
 											selectedNode = null;
 											selectedEdge = null;
 										}}
-										title="Close"
+										title="关闭"
 									>
 										<X class="w-3.5 h-3.5" />
 									</Button>
@@ -756,7 +696,7 @@
 									<!-- Container Id -->
 									<div class="space-y-1.5">
 										<div class="flex items-center justify-between">
-											<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">Container Id</span>
+											<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">容器 ID</span>
 										</div>
 										<Input value={selectedNode.config.containerId} placeholder="containerId" class="h-8 text-xs" readonly />
 									</div>
@@ -765,7 +705,7 @@
 								<div class="space-y-3 text-sm">
 									<!-- Driver -->
 									<div class="space-y-1.5">
-										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">Driver</span>
+										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">驱动类型</span>
 										<!-- Simulate the select element -->
 										<div class="flex items-center justify-between w-fit h-8 px-3 py-2 text-xs border rounded-md border-input bg-background shadow-sm dark:bg-input/30">
 											<span class="flex items-center gap-1.5">
@@ -782,46 +722,45 @@
 												{:else}
 													<CircleOff class="w-3.5 h-3.5 text-muted-foreground" />
 												{/if}
-												<span class="capitalize">{selectedNode.config.driver}</span>
+												<span class="capitalize">{getLabelText(String(selectedNode.config.driver || 'bridge'))}</span>
 											</span>
 										</div>
 									</div>
 
 									<!-- IPAM Config -->
 									<div class="space-y-1.5">
-										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">IPAM configuration</span>
+										<span class="text-xs font-medium text-zinc-600 dark:text-zinc-300">IPAM 配置</span>
 										<div class="space-y-4 pt-2">
 											<div class="relative">
-												<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">Subnet</span>
-												<Input value={selectedNode.config.ipam?.config?.[0].subnet} placeholder="172.20.0.0/16" class="h-9 pt-3 text-xs" readonly />
+												<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">子网</span>
+												<Input value={selectedNode.config.ipam?.config?.[0]?.subnet || ''} placeholder="172.20.0.0/16" class="h-9 pt-3 text-xs" readonly />
 											</div>
 											<div class="relative">
-												<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">Gateway</span>
-												<Input value={selectedNode.config.ipam?.config?.[0].gateway} placeholder="172.20.0.1" class="h-9 pt-3 text-xs" readonly />
+												<span class="absolute -top-2 left-2 text-[9px] text-zinc-400 bg-white dark:bg-zinc-800 px-1 z-10">网关</span>
+												<Input value={selectedNode.config.ipam?.config?.[0]?.gateway || ''} placeholder="172.20.0.1" class="h-9 pt-3 text-xs" readonly />
 											</div>
 										</div>
 									</div>
 
-									<!-- Boolean flags -->
 									<div class="space-y-2 pointer-events-none select-none">
 										<label class="flex items-center gap-2 cursor-pointer">
-											<input type="checkbox" bind:checked={selectedNode.config.external} class="rounded border-zinc-300" />
-											<span class="text-xs text-zinc-600">External network</span>
+											<input type="checkbox" checked={selectedNode.config.external} disabled class="rounded border-zinc-300" />
+											<span class="text-xs text-zinc-600">外部网络</span>
 										</label>
 										<label class="flex items-center gap-2 cursor-pointer">
-											<input type="checkbox" bind:checked={selectedNode.config.internal} class="rounded border-zinc-300" />
-											<span class="text-xs text-zinc-600">Internal network</span>
+											<input type="checkbox" checked={selectedNode.config.internal} disabled class="rounded border-zinc-300" />
+											<span class="text-xs text-zinc-600">内部网络</span>
 										</label>
 										<label class="flex items-center gap-2 cursor-pointer">
-											<input type="checkbox" bind:checked={selectedNode.config.attachable} class="rounded border-zinc-300" />
-											<span class="text-xs text-zinc-600">Attachable</span>
+											<input type="checkbox" checked={selectedNode.config.attachable} disabled class="rounded border-zinc-300" />
+											<span class="text-xs text-zinc-600">可附加</span>
 										</label>
 									</div>
 								</div>
 							{/if}
 						{:else if selectedEdge}
 							{#if selectedEdge.type === "network-connection"}
-								<p class="text-xs text-zinc-500 dark:text-zinc-400">Service connected to this network.</p>
+								<p class="text-xs text-zinc-500 dark:text-zinc-400">服务已连接到此网络。</p>
 							{/if}
 						{/if}
 					</div>

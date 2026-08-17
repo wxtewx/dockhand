@@ -56,8 +56,8 @@ export const GET: RequestHandler = async ({ cookies }) => {
 		const prefs = await getPrefs(userId);
 		return json(prefs);
 	} catch (error) {
-		console.error('Failed to get dashboard preferences:', error);
-		return json({ error: 'Failed to get dashboard preferences' }, { status: 500 });
+		console.error('获取仪表板偏好设置失败:', error);
+		return json({ error: '获取仪表板偏好设置失败' }, { status: 500 });
 	}
 };
 
@@ -84,7 +84,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		await savePrefs(userId, current);
 		return json(current);
 	} catch (error) {
-		console.error('Failed to save dashboard preferences:', error);
-		return json({ error: 'Failed to save dashboard preferences' }, { status: 500 });
+		console.error('保存仪表板偏好设置失败:', error);
+		return json({ error: '保存仪表板偏好设置失败' }, { status: 500 });
 	}
 };

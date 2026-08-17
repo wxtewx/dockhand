@@ -175,15 +175,15 @@
 		if (mode !== 'create') return undefined;
 		// Show hint when user selected a directory but hasn't entered stack name yet
 		if (browsedBaseDirectory && !workingComposePath) {
-			return `Will create in ${browsedBaseDirectory}/`;
+			return `将创建于 ${browsedBaseDirectory}/`;
 		}
 		if (!workingComposePath) return undefined;
 		switch (pathSource) {
 			case 'browsed':
 			case 'custom':
-				return 'Custom location';
+				return '自定义位置';
 			case 'default':
-				return 'Using default location';
+				return '使用默认位置';
 			default:
 				return undefined;
 		}
@@ -221,7 +221,7 @@
 		// For tracked stacks, allow both files and directories
 		const isUntracked = needsFileLocation;
 		fileBrowserConfig = {
-			title: isUntracked ? 'Select compose file' : 'Select compose file or directory',
+			title: isUntracked ? '选择 Compose 文件' : '选择 Compose 文件或目录',
 			selectFilter: /\.ya?ml$/,
 			selectMode: isUntracked ? 'file' : 'file_or_directory',
 			onSelect: handleComposeSelect
@@ -231,7 +231,7 @@
 
 	function openEnvBrowser() {
 		fileBrowserConfig = {
-			title: 'Select environment file or directory',
+			title: '选择环境变量文件或目录',
 			selectFilter: /\.env($|\.)/,  // matches .env, .env.local, app.env, etc.
 			selectMode: 'file_or_directory',
 			onSelect: handleEnvSelect
@@ -242,7 +242,7 @@
 	function openChangeLocationBrowser() {
 		const displayName = mode === 'edit' ? stackName : newStackName;
 		fileBrowserConfig = {
-			title: `Relocate ${displayName}`,
+			title: `迁移 ${displayName}`,
 			icon: FolderSync,
 			selectMode: 'directory',
 			onSelect: handleChangeLocation
@@ -298,7 +298,7 @@
 				}
 			}
 		} catch (e) {
-			console.warn('Failed to check path changes:', e);
+			console.warn('检查路径变更失败:', e);
 		}
 
 		// No files to move, just update paths
@@ -366,8 +366,8 @@
 
 		} catch (e: any) {
 			operationError = {
-				title: 'Failed to move files',
-				message: e.message || 'An error occurred while moving files'
+				title: '移动文件失败',
+				message: e.message || '移动文件时发生错误'
 			};
 		} finally {
 			movingLocation = false;
@@ -536,7 +536,7 @@
 					rawEnvContent = '';
 				}
 			} catch (e) {
-				console.error('Failed to load env file:', e);
+				console.error('加载环境变量文件失败:', e);
 			}
 		}
 
@@ -568,7 +568,7 @@
 				stackContainers = [];
 			} else {
 				const err = await composeResponse.json();
-				console.error('Failed to load compose file:', err.error);
+				console.error('加载 Compose 文件失败:', err.error);
 			}
 
 			// Try to load .env file (only set workingEnvPath if it exists AND we're in edit mode)
@@ -591,7 +591,7 @@
 				}
 			}
 		} catch (e) {
-			console.error('Failed to load files:', e);
+			console.error('加载文件失败:', e);
 		}
 	}
 
@@ -738,7 +738,7 @@
 			const data = await response.json();
 			if (!response.ok || !data.ok) {
 				providerKeySet = new Set();
-				probeError = data.error || `Provider check failed (${response.status})`;
+				probeError = data.error || `提供程序检测失败 (${response.status})`;
 			} else {
 				const names = [
 					...(data.bulkKeys ?? []),
@@ -750,7 +750,7 @@
 		} catch (e) {
 			if (seq !== probeSeq) return;
 			providerKeySet = new Set();
-			probeError = e instanceof Error ? e.message : 'Provider check failed';
+			probeError = e instanceof Error ? e.message : '提供程序检测失败';
 		}
 		updateEditorMarkers();
 	}
@@ -767,7 +767,7 @@
 	}
 
 	// Display title
-	const displayName = $derived(mode === 'edit' ? stackName : (newStackName || 'New stack'));
+	const displayName = $derived(mode === 'edit' ? stackName : (newStackName || '新建堆栈'));
 
 	onMount(() => {
 		// Load saved editor theme, or fall back to app theme / system preference
@@ -807,7 +807,7 @@
 			const data = await response.json();
 			secretProviders = (data ?? []).map((p: any) => ({ id: p.id, name: p.name, type: p.type }));
 		} catch (e) {
-			console.warn('Failed to load secret providers:', e);
+			console.warn('加载密钥提供程序失败:', e);
 		}
 	}
 
@@ -911,11 +911,11 @@
 						// containers' mounts (same normalizer used by the other backup surfaces).
 						await loadStackVolumes(envId);
 					} catch (e) {
-						console.error('Failed to fetch stack containers:', e);
+						console.error('获取堆栈容器失败:', e);
 					}
 					return;
 				}
-				throw new Error((typeof data.error === 'string' ? data.error : data.message) || 'Failed to load compose file');
+				throw new Error((typeof data.error === 'string' ? data.error : data.message) || '加载 Compose 文件失败');
 			}
 
 			composeContent = data.content;
@@ -935,14 +935,14 @@
 					formSecretProviderId = source?.secretProviderId ?? null;
 				}
 			} catch (e) {
-				console.warn('Failed to load stack source for secret provider binding:', e);
+				console.warn('加载用于密钥提供程序绑定的堆栈源失败:', e);
 			}
 
 			// Volumes/binds for the backup picker (managed/internal stack path).
 			try {
 				await loadStackVolumes(envId);
 			} catch (e) {
-				console.error('Failed to load stack volumes:', e);
+				console.error('加载堆栈数据卷失败:', e);
 			}
 
 			// Load both env endpoints in parallel, then process results together
@@ -1008,7 +1008,7 @@
 				setTimeout(() => updateEditorMarkers(), 0);
 			}
 		} catch (e) {
-			console.error('Failed to validate env vars:', e);
+			console.error('验证环境变量失败:', e);
 		} finally {
 			validating = false;
 		}
@@ -1028,16 +1028,16 @@
 		let hasErrors = false;
 
 		if (!newStackName.trim()) {
-			errors.stackName = 'Stack name is required';
+			errors.stackName = '堆栈名称为必填项';
 			hasErrors = true;
 		} else if (!/^[a-z0-9][a-z0-9_-]*$/.test(newStackName.trim())) {
-			errors.stackName = 'Must be lowercase, start with a letter or number, and only contain letters, numbers, hyphens, and underscores';
+			errors.stackName = '必须为小写，以字母或数字开头，且仅包含字母、数字、连字符和下划线';
 			hasErrors = true;
 		}
 
 		const content = composeContent || defaultCompose;
 		if (!content.trim()) {
-			errors.compose = 'Compose file content is required';
+			errors.compose = 'Compose 文件内容为必填项';
 			hasErrors = true;
 		}
 
@@ -1059,7 +1059,7 @@
 				}
 			}
 		} catch (e) {
-			console.warn('Failed to check for existing stacks:', e);
+			console.warn('检查现有堆栈失败:', e);
 			// Continue with creation if check fails
 		}
 
@@ -1100,7 +1100,7 @@
 			requestBody.secretProviderId = formSecretProviderId;
 
 			// Create the stack
-			response = await fetch(appendEnvParam('/api/stacks', envId), {
+			const response = await fetch(appendEnvParam('/api/stacks', envId), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(requestBody)
@@ -1110,19 +1110,19 @@
 			const data = start ? await readJobResponse(response) : await response.json();
 
 			if (!response.ok && !data.success) {
-				throw new Error((typeof data.error === 'string' ? data.error : data.message) || 'Failed to create stack');
+				throw new Error((typeof data.error === 'string' ? data.error : data.message) || '创建堆栈失败');
 			}
 			if (data.success === false) {
-				throw new Error(data.error || 'Failed to create stack');
+				throw new Error(data.error || '创建堆栈失败');
 			}
 
-			toast.success(`Created stack "${newStackName.trim()}"`);
+			toast.success(`已创建堆栈 "${newStackName.trim()}"`);
 			onSuccess();
 			handleClose();
 		} catch (e: any) {
 			operationError = {
-				title: 'Failed to create stack',
-				message: e.message || 'An error occurred while creating the stack',
+				title: '创建堆栈失败',
+				message: e.message || '创建堆栈时发生错误',
 				details: e.details
 			};
 			// Only transition to edit mode if the stack was actually persisted (response was ok
@@ -1143,13 +1143,13 @@
 
 		// Validate compose content (unless file location is needed and we have a path)
 		if (!composeContent.trim() && !workingComposePath.trim()) {
-			errors.compose = 'Compose file content or path is required';
+			errors.compose = 'Compose 文件内容或路径为必填项';
 			return;
 		}
 
 		// If file location is needed, require a compose path
 		if (needsFileLocation && !workingComposePath.trim()) {
-			errors.compose = 'Please select a compose file location';
+			errors.compose = '请选择 Compose 文件位置';
 			return;
 		}
 
@@ -1183,7 +1183,7 @@
 						}
 					}
 				} catch (e) {
-					console.warn('Failed to check path changes:', e);
+					console.warn('检查路径变更失败:', e);
 					// Continue with save even if check fails
 				}
 			}
@@ -1244,8 +1244,8 @@
 			);
 
 			if (!rawEnvResponse.ok) {
-				const rawEnvError = await rawEnvResponse.json().catch(() => ({ error: 'Failed to save environment file' }));
-				throw new Error((typeof rawEnvError.error === 'string' ? rawEnvError.error : rawEnvError.message) || 'Failed to save environment file');
+				const rawEnvError = await rawEnvResponse.json().catch(() => ({ error: '保存环境变量文件失败' }));
+				throw new Error((typeof rawEnvError.error === 'string' ? rawEnvError.error : rawEnvError.message) || '保存环境变量文件失败');
 			}
 
 			// Save only secrets to DB (non-secrets are in the .env file written above)
@@ -1268,7 +1268,7 @@
 
 				if (!envResponse.ok) {
 					// Log but don't fail - DB stores secret values
-					console.warn('Failed to save secret variables to database');
+					console.warn('保存密钥变量到数据库失败');
 				}
 
 				hadExistingDbVars = secretVars.length > 0;
@@ -1291,14 +1291,14 @@
 			const data = restart ? await readJobResponse(response) : await response.json();
 
 			if (!response.ok && !data.success) {
-				throw new Error((typeof data.error === 'string' ? data.error : data.message) || 'Failed to save compose file');
+				throw new Error((typeof data.error === 'string' ? data.error : data.message) || '保存 Compose 文件失败');
 			}
 			if (data.success === false) {
-				throw new Error(data.error || 'Failed to save compose file');
+				throw new Error(data.error || '保存 Compose 文件失败');
 			}
 
 			isDirty = false; // Reset dirty flag after successful save
-			toast.success(restart ? 'Stack applied' : 'Stack saved');
+			toast.success(restart ? '堆栈已应用' : '堆栈已保存');
 			onSuccess();
 
 			if (!restart) {
@@ -1309,8 +1309,8 @@
 			}
 		} catch (e: any) {
 			operationError = {
-				title: restart ? 'Failed to apply stack' : 'Failed to save stack',
-				message: e.message || (restart ? 'An error occurred while applying the stack' : 'An error occurred while saving the stack'),
+				title: restart ? '应用堆栈失败' : '保存堆栈失败',
+				message: e.message || (restart ? '应用堆栈时发生错误' : '保存堆栈时发生错误'),
 				details: e.details
 			};
 		} finally {
@@ -1538,21 +1538,21 @@
 						<div>
 							<Dialog.Title class="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
 								{#if mode === 'create'}
-									Create compose stack
+									创建 Compose 堆栈
 								{:else}
 									{stackName}
 								{/if}
 								{#if $currentEnvironment}
-									<span class="font-semibold">on <span class="text-amber-600 dark:text-amber-400">{$currentEnvironment.name}</span></span>
+									<span class="font-semibold">位于 <span class="text-amber-600 dark:text-amber-400">{$currentEnvironment.name}</span></span>
 								{/if}
 							</Dialog.Title>
 							<Dialog.Description class="text-xs text-zinc-500 dark:text-zinc-400">
 								{#if mode === 'create'}
-									Create a new Docker Compose stack
+									创建全新 Docker Compose 堆栈
 								{:else if readonly}
-									View compose file and dependency graph
+									查看编排文件与依赖关系图
 								{:else}
-									Edit compose file and environment variables
+									编辑 Compose 文件和环境变量
 								{/if}
 							</Dialog.Description>
 						</div>
@@ -1577,14 +1577,14 @@
 				class="relative -mb-px flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm transition-colors {activeTab === 'editor' ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}"
 				onclick={() => activeTab = 'editor'}
 			>
-				<Code class="h-3.5 w-3.5" /> Editor
+				<Code class="h-3.5 w-3.5" /> 编辑器
 			</button>
 			<button
 				type="button"
 				class="relative -mb-px flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm transition-colors {activeTab === 'graph' ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}"
 				onclick={() => activeTab = 'graph'}
 			>
-				<GitGraph class="h-3.5 w-3.5" /> Graph
+				<GitGraph class="h-3.5 w-3.5" /> 依赖图
 			</button>
 			<!-- BETA GATE: Backups tab hidden unless FEAT_BACKUPS_ENABLED (see features.ts).
 			     Also hidden for UNTRACKED stacks: with no known compose file the backup
@@ -1596,7 +1596,7 @@
 					class="relative -mb-px flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm transition-colors {activeTab === 'backups' ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}"
 					onclick={() => activeTab = 'backups'}
 				>
-					<Archive class="h-3.5 w-3.5" /> Backups
+					<Archive class="h-3.5 w-3.5" /> 备份
 					{#if backupCount > 0}<span class="bg-primary/15 text-primary text-[10px] px-1.5 rounded-full font-medium">{backupCount}</span>{/if}
 					{#if backupTally.ok > 0}<span class="inline-flex items-center gap-0.5 rounded-full bg-emerald-500/15 px-1.5 text-[10px] font-medium text-emerald-500"><Check class="w-2.5 h-2.5" />{backupTally.ok}</span>{/if}
 					{#if backupTally.failed > 0}<span class="inline-flex items-center gap-0.5 rounded-full bg-red-500/15 px-1.5 text-[10px] font-semibold text-red-500"><X class="w-2.5 h-2.5" />{backupTally.failed}</span>{/if}
@@ -1616,7 +1616,7 @@
 				<div class="flex-1 flex items-center justify-center">
 					<div class="flex items-center gap-3 text-zinc-400 dark:text-zinc-500">
 						<Loader2 class="w-5 h-5 animate-spin" />
-						<span>Loading compose file...</span>
+						<span>正在加载 Compose 文件...</span>
 					</div>
 				</div>
 			{:else}
@@ -1625,7 +1625,7 @@
 					<div class="px-6 py-4 border-b border-zinc-200 dark:border-zinc-700">
 						<div class="flex gap-4 items-start">
 							<div class="flex-1 max-w-xs space-y-1">
-								<Label for="stack-name">Stack name</Label>
+								<Label for="stack-name">堆栈名称</Label>
 								<Input
 									id="stack-name"
 									bind:value={newStackName}
@@ -1648,11 +1648,11 @@
 							<AlertCircle class="w-4 h-4 shrink-0 text-amber-500 mt-0.5" />
 							<div class="flex-1 min-w-0">
 								<p class="text-sm text-zinc-600 dark:text-zinc-400 mb-2">
-									<span class="font-medium text-amber-800 dark:text-amber-300">Untracked stack</span> — this stack is running in Docker but Dockhand doesn't know where its compose file is stored on disk. Browse to locate the file to start editing and managing it.
+									<span class="font-medium text-amber-800 dark:text-amber-300">未跟踪堆栈</span> — 该堆栈正在 Docker 中运行，但 Dockhand 不知道其 Compose 文件在磁盘上的存储位置。请浏览定位文件，以便开始编辑和管理。
 								</p>
 								{#if stackContainers.length > 0}
 									<div class="text-xs text-zinc-500 dark:text-zinc-400">
-										<span class="font-medium text-zinc-700 dark:text-zinc-300">Running containers:</span>
+										<span class="font-medium text-zinc-700 dark:text-zinc-300">运行中的容器：</span>
 										<div class="mt-1.5 flex flex-wrap gap-1.5">
 											{#each stackContainers as container}
 												<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs {container.state === 'running' ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'}">
@@ -1675,7 +1675,7 @@
 						<div class="flex items-center border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/30">
 							{#if readonly}
 								<span class="ml-4 flex shrink-0 items-center gap-1 rounded-full border border-purple-500/30 bg-purple-500/10 px-2 py-0.5 text-2xs font-medium text-purple-600 dark:text-purple-400" title="This is a Git-managed stack — Dockhand shows its compose read-only; edit it in the repository.">
-									<GitBranch class="h-3 w-3" /> Git · read-only
+									<GitBranch class="h-3 w-3" /> Git · 只读
 								</span>
 								{#if gitInfo && (gitInfo.commit || gitInfo.url || gitInfo.branch)}
 									<div class="ml-3 flex min-w-0 items-center gap-3 text-2xs text-muted-foreground">
@@ -1683,7 +1683,7 @@
 											<span class="flex shrink-0 items-center gap-1">
 												<GitCommitHorizontal class="h-3.5 w-3.5 shrink-0 opacity-70" />
 												<code class="font-mono">{gitInfo.commit}</code>
-												<button type="button" class="rounded p-0.5 hover:bg-muted transition-colors" title="Copy commit hash" onclick={() => copyText(gitInfo.commit ?? null, (v) => gitCommitCopied = v)}>
+												<button type="button" class="rounded p-0.5 hover:bg-muted transition-colors" title="复制提交哈希值" onclick={() => copyText(gitInfo.commit ?? null, (v) => gitCommitCopied = v)}>
 													{#if gitCommitCopied === 'ok'}<Check class="h-3 w-3 text-green-500" />{:else}<Copy class="h-3 w-3" />{/if}
 												</button>
 											</span>
@@ -1692,7 +1692,7 @@
 											<span class="flex min-w-0 items-center gap-1">
 												<Github class="h-3.5 w-3.5 shrink-0 opacity-70" />
 												<span class="truncate">{gitInfo.url}</span>
-												<button type="button" class="rounded p-0.5 hover:bg-muted transition-colors shrink-0" title="Copy repository URL" onclick={() => copyText(gitInfo.url ?? null, (v) => gitUrlCopied = v)}>
+												<button type="button" class="rounded p-0.5 hover:bg-muted transition-colors shrink-0" title="复制仓库地址" onclick={() => copyText(gitInfo.url ?? null, (v) => gitUrlCopied = v)}>
 													{#if gitUrlCopied === 'ok'}<Check class="h-3 w-3 text-green-500" />{:else}<Copy class="h-3 w-3" />{/if}
 												</button>
 											</span>
@@ -1709,14 +1709,14 @@
 							<!-- Compose path -->
 							<div class="flex-shrink-0 px-4 py-2" style="width: {splitRatio}%">
 								<PathBarItem
-									label="Compose file"
+									label="Compose 文件"
 									path={workingComposePath || null}
 									placeholder="/path/to/compose.yaml"
 									copied={composePathCopied}
 									onCopy={() => copyText(workingComposePath, (v) => composePathCopied = v)}
 									onBrowse={readonly ? undefined : openComposeBrowser}
 									onChangeLocation={mode === 'edit' && !needsFileLocation && !readonly ? openChangeLocationBrowser : undefined}
-									defaultText={mode === 'create' ? 'Enter stack name above' : 'Not specified'}
+									defaultText={mode === 'create' ? '请在上方输入堆栈名称' : '未指定'}
 									sourceHint={pathSourceHint}
 								/>
 							</div>
@@ -1725,16 +1725,16 @@
 							<!-- Env path -->
 							<div class="flex-1 min-w-0 px-4 py-2 bg-zinc-100/50 dark:bg-zinc-800/50">
 								<PathBarItem
-									label="Env file"
+									label="环境变量文件"
 									path={displayEnvPath || null}
 									selectedPath={workingEnvPath || suggestedEnvPath || ''}
-									placeholder="/path/to/.env (optional)"
+									placeholder="/path/to/.env (可选)"
 									copied={envPathCopied}
 									onCopy={() => copyText(displayEnvPath, (v) => envPathCopied = v)}
 									onBrowse={readonly ? undefined : openEnvBrowser}
 									isEditable={!readonly}
 									isCustom={!!workingEnvPath}
-									defaultText={mode === 'create' ? 'Enter stack name above' : 'Not specified'}
+									defaultText={mode === 'create' ? '请在上方输入堆栈名称' : '未指定'}
 									isSuggested={isEnvPathSuggested}
 									onPathChange={(value) => {
 										workingEnvPath = value;
@@ -1747,7 +1747,7 @@
 								<button
 									onclick={toggleEditorTheme}
 									class="p-1 rounded text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
-									title={editorTheme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'}
+									title={editorTheme === 'light' ? '切换至深色主题' : '切换至浅色主题'}
 								>
 									{#if editorTheme === 'light'}
 										<Moon class="w-3.5 h-3.5" />
@@ -1766,27 +1766,27 @@
 										{#if readonly && needsFileLocation && !composeContent}
 											<div class="h-full rounded-md border border-dashed border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800/30 flex flex-col items-center justify-center text-center px-8">
 												<GitGraph class="w-12 h-12 text-zinc-300 dark:text-zinc-600 mb-4" />
-												<h3 class="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Compose file not available</h3>
+												<h3 class="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Compose 文件不可用</h3>
 												<p class="text-xs text-zinc-500 dark:text-zinc-400 max-w-sm">
-													Deploy or sync this Git stack first so Dockhand has a local copy of its compose file.
+													先部署或同步此 Git 堆栈，使 Dockhand 获取该 compose 文件的本地副本。
 												</p>
 											</div>
 										{:else if needsFileLocation && !composeContent}
 											<!-- Empty state for untracked stacks -->
 											<div class="h-full rounded-md border border-dashed border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800/30 flex flex-col items-center justify-center text-center px-8">
 												<FolderOpen class="w-12 h-12 text-zinc-300 dark:text-zinc-600 mb-4" />
-												<h3 class="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">No compose file selected</h3>
+												<h3 class="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">未选择 Compose 文件</h3>
 												<p class="text-xs text-zinc-500 dark:text-zinc-400 mb-4 max-w-sm">
-													Browse to locate the compose file for this stack. The editor will load the file contents once selected.
+													浏览并定位该堆栈的 Compose 文件。选择后编辑器将加载文件内容。
 												</p>
 												<Button variant="outline" size="sm" onclick={openComposeBrowser}>
 													<FolderOpen class="w-4 h-4" />
-													Browse for compose file
+													浏览选择 Compose 文件
 												</Button>
 												<!-- Info box explaining what happens -->
 												<div class="mt-6 max-w-md flex items-start gap-2.5 text-xs bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-md px-3 py-2.5 text-left">
 													<Info class="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-													<span><span class="font-medium text-amber-600 dark:text-amber-400">What happens when you select a file:</span> <span class="text-zinc-600 dark:text-zinc-400">Dockhand will track this compose file, letting you edit, start, and stop the stack from the UI. Your files stay in their current location.</span></span>
+													<span><span class="font-medium text-amber-600 dark:text-amber-400">选择文件后会发生什么：</span> <span class="text-zinc-600 dark:text-zinc-400">Dockhand 会跟踪该 Compose 文件，让你可以在界面中编辑、启动和停止堆栈。你的文件将保留在当前位置。</span></span>
 												</div>
 											</div>
 										{:else}
@@ -1805,15 +1805,15 @@
 																<Tooltip.Trigger>
 																	<XCircle class="w-3 h-3 text-red-500" />
 																</Tooltip.Trigger>
-																<Tooltip.Content>Copy requires HTTPS</Tooltip.Content>
+																<Tooltip.Content>复制需要 HTTPS</Tooltip.Content>
 															</Tooltip.Root>
-															Failed
+															失败
 														{:else if composeContentCopied === 'ok'}
 															<Check class="w-3 h-3 text-green-500" />
-															Copied
+															已复制
 														{:else}
 															<Copy class="w-3 h-3" />
-															Copy
+															复制
 														{/if}
 													</Button>
 												</div>
@@ -1866,7 +1866,7 @@
 									{readonly}
 									onchange={() => { markDirty(); debouncedValidate(); }}
 									theme={editorTheme}
-									infoText="These variables will be written to a .env file in the stack directory and passed to the compose command."
+									infoText="这些变量将写入堆栈目录下的 .env 文件，并传递给 compose 命令。"
 								/>
 							</div>
 						</div>
@@ -1901,18 +1901,18 @@
 				{#if readonly}
 					Read-only
 				{:else if isDirty}
-					<span class="text-amber-600 dark:text-amber-500">Unsaved changes</span>
+					<span class="text-amber-600 dark:text-amber-500">未保存的更改</span>
 				{:else}
-					No changes
+					无更改
 				{/if}
 			</div>
 
 			<div class="flex items-center gap-2">
 				{#if readonly}
-					<Button onclick={tryClose}>Close</Button>
+					<Button onclick={tryClose}>关闭</Button>
 				{:else}
 					<Button variant="outline" onclick={tryClose} disabled={saving}>
-						Cancel
+						取消
 					</Button>
 				{/if}
 
@@ -1921,19 +1921,19 @@
 					<Button variant="outline" onclick={() => handleCreate(false)} disabled={saving}>
 						{#if saving}
 							<Loader2 class="w-4 h-4 animate-spin" />
-							Creating...
+							创建中...
 						{:else}
 							<Save class="w-4 h-4" />
-							Create
+							创建
 						{/if}
 					</Button>
 					<Button onclick={() => handleCreate(true)} disabled={saving}>
 						{#if saving}
 							<Loader2 class="w-4 h-4 animate-spin" />
-							Starting...
+							启动中...
 						{:else}
 							<Play class="w-4 h-4" />
-							Create & Start
+							创建并启动
 						{/if}
 					</Button>
 				{:else if !readonly}
@@ -1941,19 +1941,19 @@
 					<Button variant="outline" class="w-24" onclick={() => handleSave(false)} disabled={saving || loading || (needsFileLocation && !workingComposePath.trim())}>
 						{#if saving && !savingWithRestart}
 							<Loader2 class="w-4 h-4 animate-spin" />
-							Saving...
+							保存中...
 						{:else}
 							<Save class="w-4 h-4" />
-							Save
+							保存
 						{/if}
 					</Button>
 					<Button class="w-36" onclick={() => handleSave(true)} disabled={saving || loading || (needsFileLocation && !workingComposePath.trim())}>
 						{#if saving && savingWithRestart}
 							<Loader2 class="w-4 h-4 animate-spin" />
-							Deploying...
+							部署中...
 						{:else}
 							<Play class="w-4 h-4" />
-							Save & redeploy
+							保存并重新部署
 						{/if}
 					</Button>
 				{/if}
@@ -1966,17 +1966,17 @@
 <Dialog.Root bind:open={showConfirmClose}>
 	<Dialog.Content class="max-w-sm">
 		<Dialog.Header>
-			<Dialog.Title>Unsaved changes</Dialog.Title>
+			<Dialog.Title>未保存的更改</Dialog.Title>
 			<Dialog.Description>
-				You have unsaved changes. Are you sure you want to close without saving?
+				你有未保存的更改。确定要关闭且不保存吗？
 			</Dialog.Description>
 		</Dialog.Header>
 		<div class="flex justify-end gap-1.5 mt-4">
 			<Button variant="outline" size="sm" onclick={() => showConfirmClose = false}>
-				Continue editing
+				继续编辑
 			</Button>
 			<Button variant="destructive" size="sm" onclick={discardAndClose}>
-				Discard changes
+				放弃更改
 			</Button>
 		</div>
 	</Dialog.Content>
@@ -1986,9 +1986,9 @@
 <Dialog.Root bind:open={showPathChangeConfirm}>
 	<Dialog.Content class="max-w-md">
 		<Dialog.Header>
-			<Dialog.Title>Move stack files?</Dialog.Title>
+			<Dialog.Title>移动堆栈文件？</Dialog.Title>
 			<Dialog.Description>
-				You've changed the stack location. There {pathChangeFileCount === 1 ? 'is' : 'are'} {pathChangeFileCount} file{pathChangeFileCount === 1 ? '' : 's'} in the old location that can be moved to the new location.
+				你已更改堆栈位置。原位置有 {pathChangeFileCount} 个文件，可以移动到新位置。
 			</Dialog.Description>
 		</Dialog.Header>
 		{#if pathChangeOldDir}
@@ -2000,18 +2000,18 @@
 			</div>
 		{/if}
 		<p class="text-sm text-muted-foreground">
-			Would you like to move all files to the new location, or leave them in place?
+			你要将所有文件移动到新位置，还是保留在原地？
 		</p>
 		<div class="flex justify-end gap-1.5 mt-4">
 			<Button variant="outline" size="sm" onclick={() => showPathChangeConfirm = false}>
-				Cancel
+				取消
 			</Button>
 			<Button variant="secondary" size="sm" onclick={confirmPathChangeKeepFiles}>
-				Leave files
+				保留文件
 			</Button>
 			<Button variant="default" size="sm" onclick={confirmPathChangeAndMove}>
 				<ArrowRight class="w-3.5 h-3.5" />
-				Move files
+				移动文件
 			</Button>
 		</div>
 	</Dialog.Content>
@@ -2021,21 +2021,21 @@
 <Dialog.Root bind:open={showBrowseConfirm}>
 	<Dialog.Content class="max-w-lg">
 		<Dialog.Header>
-			<Dialog.Title>Replace editor content?</Dialog.Title>
+			<Dialog.Title>替换编辑器内容？</Dialog.Title>
 			<Dialog.Description>
-				Loading a different compose file will replace the current editor content.
+				加载其他 Compose 文件将替换当前编辑器内容。
 			</Dialog.Description>
 		</Dialog.Header>
 		<div class="my-3 space-y-2 text-sm">
 			<div class="flex items-start gap-2 text-muted-foreground">
-				<span class="text-xs font-medium text-zinc-500 shrink-0 pt-0.5">Current:</span>
+				<span class="text-xs font-medium text-zinc-500 shrink-0 pt-0.5">当前：</span>
 				<code class="text-xs font-mono bg-muted px-1.5 py-0.5 rounded break-all">
-					{workingComposePath || '(unsaved)'}
+					{workingComposePath || '(未保存)'}
 				</code>
 			</div>
 			<div class="flex items-start gap-2">
 				<ArrowRight class="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
-				<span class="text-xs font-medium text-zinc-500 shrink-0 pt-0.5">New:</span>
+				<span class="text-xs font-medium text-zinc-500 shrink-0 pt-0.5">新文件：</span>
 				<code class="text-xs font-mono bg-muted px-1.5 py-0.5 rounded break-all">
 					{pendingBrowsePath}
 				</code>
@@ -2043,10 +2043,10 @@
 		</div>
 		<div class="flex justify-end gap-1.5 mt-4">
 			<Button variant="outline" size="sm" onclick={cancelBrowseConfirm}>
-				Cancel
+				取消
 			</Button>
 			<Button variant="default" size="sm" onclick={confirmBrowseAndLoad}>
-				Replace content
+				替换内容
 			</Button>
 		</div>
 	</Dialog.Content>
@@ -2058,15 +2058,15 @@
 		<Dialog.Header>
 			<Dialog.Title class="flex items-center gap-2">
 				<FolderSync class="w-5 h-5" />
-				Relocate stack?
+				迁移堆栈？
 			</Dialog.Title>
 			<Dialog.Description>
-				All {changeLocationFileCount} file{changeLocationFileCount === 1 ? '' : 's'} in the stack folder will be moved.
+				堆栈文件夹中的全部 {changeLocationFileCount} 个文件将被移动。
 			</Dialog.Description>
 		</Dialog.Header>
 		<div class="my-3 space-y-1 text-sm">
 			<div class="flex items-start gap-2 text-muted-foreground">
-				<span class="text-xs font-medium text-zinc-500 shrink-0 w-10">From</span>
+				<span class="text-xs font-medium text-zinc-500 shrink-0 w-10">从</span>
 				<code class="text-xs font-mono bg-muted px-1.5 py-0.5 rounded break-all">
 					{changeLocationOldDir}
 				</code>
@@ -2075,7 +2075,7 @@
 				<ArrowDown class="w-4 h-4 text-amber-500" />
 			</div>
 			<div class="flex items-start gap-2">
-				<span class="text-xs font-medium text-zinc-500 shrink-0 w-10">To</span>
+				<span class="text-xs font-medium text-zinc-500 shrink-0 w-10">到</span>
 				<code class="text-xs font-mono bg-muted px-1.5 py-0.5 rounded break-all">
 					{pendingNewLocation}
 				</code>
@@ -2083,15 +2083,15 @@
 		</div>
 		<div class="flex justify-end gap-1.5 mt-4">
 			<Button variant="outline" size="sm" onclick={cancelChangeLocation} disabled={movingLocation}>
-				Cancel
+				取消
 			</Button>
 			<Button variant="default" size="sm" onclick={confirmChangeLocation} disabled={movingLocation}>
 				{#if movingLocation}
 					<Loader2 class="w-3.5 h-3.5 animate-spin" />
-					Moving...
+					移动中...
 				{:else}
 					<FolderSync class="w-3.5 h-3.5" />
-					Move files
+					移动文件
 				{/if}
 			</Button>
 		</div>
@@ -2104,15 +2104,15 @@
 		<Dialog.Header>
 			<Dialog.Title class="flex items-center gap-2">
 				<TriangleAlert class="w-5 h-5 text-amber-500" />
-				Stack already exists
+				堆栈已存在
 			</Dialog.Title>
 			<Dialog.Description>
-				A stack named "{newStackName}" already exists. Please choose a different name.
+				名为 "{newStackName}" 的堆栈已存在。请选择其他名称。
 			</Dialog.Description>
 		</Dialog.Header>
 		<div class="flex justify-end mt-4">
 			<Button size="sm" onclick={() => showExistsWarning = false}>
-				OK
+				确定
 			</Button>
 		</div>
 	</Dialog.Content>

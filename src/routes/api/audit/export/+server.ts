@@ -2,6 +2,31 @@ import { authorize, enterpriseRequired } from '$lib/server/authorize';
 import { getAuditLogs, type AuditLogFilters, type AuditEntityType, type AuditAction, type AuditLog } from '$lib/server/db';
 import { rowsToCSV } from '$lib/server/csv';
 import type { RequestHandler } from './$types';
+import { getLabelText } from '$lib/types';
+
+let REQUEST_TIMEZONE = 'UTC';
+
+function formatTimestamp(ts: string): string {
+  const date = new Date(ts);
+
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: REQUEST_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  }).formatToParts(date);
+
+  const values = parts.reduce((acc, part) => {
+    acc[part.type] = part.value;
+    return acc;
+  }, {} as Record<string, string>);
+
+  return `${values.year}-${values.month}-${values.day} ${values.hour}:${values.minute}:${values.second}`;
+}
 
 function formatToJSON(logs: AuditLog[]): string {
 	return JSON.stringify(logs, null, 2);
@@ -10,17 +35,17 @@ function formatToJSON(logs: AuditLog[]): string {
 function formatToCSV(logs: AuditLog[]): string {
 	const headers = [
 		'ID',
-		'Timestamp',
-		'Username',
-		'Action',
-		'Entity Type',
-		'Entity ID',
-		'Entity Name',
-		'Environment ID',
-		'Description',
-		'IP Address',
-		'User Agent',
-		'Details'
+		'时间戳',
+		'用户名',
+		'操作',
+		'实体类型',
+		'实体 ID',
+		'实体名称',
+		'环境 ID',
+		'描述',
+		'IP 地址',
+		'用户代理',
+		'详情'
 	];
 
 	const rows = logs.map((log) => [
@@ -44,33 +69,33 @@ function formatToCSV(logs: AuditLog[]): string {
 function formatToMarkdown(logs: AuditLog[]): string {
 	const lines: string[] = [];
 
-	lines.push('# Audit Log Export');
+	lines.push('# 审计日志导出');
 	lines.push('');
-	lines.push(`Generated: ${new Date().toISOString()}`);
+	lines.push(`生成时间: ${formatTimestamp(new Date().toISOString())}`);
 	lines.push('');
-	lines.push(`Total entries: ${logs.length}`);
+	lines.push(`总条目数: ${logs.length}`);
 	lines.push('');
 	lines.push('---');
 	lines.push('');
 
 	for (const log of logs) {
-		lines.push(`## ${log.action.toUpperCase()} - ${log.entityType}`);
+		lines.push(`## ${getLabelText(log.action)} - ${getLabelText(log.entityType)}`);
 		lines.push('');
-		lines.push(`| Field | Value |`);
+		lines.push(`| 字段 | 值 |`);
 		lines.push(`|-------|-------|`);
-		lines.push(`| Timestamp | ${log.createdAt} |`);
-		lines.push(`| User | ${log.username} |`);
-		lines.push(`| Action | ${log.action} |`);
-		lines.push(`| Entity Type | ${log.entityType} |`);
-		if (log.entityName) lines.push(`| Entity Name | ${log.entityName} |`);
-		if (log.entityId) lines.push(`| Entity ID | \`${log.entityId}\` |`);
-		if (log.environmentId) lines.push(`| Environment ID | ${log.environmentId} |`);
-		if (log.description) lines.push(`| Description | ${log.description} |`);
-		if (log.ipAddress) lines.push(`| IP Address | ${log.ipAddress} |`);
+		lines.push(`| 时间戳 | ${formatTimestamp(log.createdAt)} |`);
+		lines.push(`| 用户 | ${log.username} |`);
+		lines.push(`| 操作 | ${getLabelText(log.action)} |`);
+		lines.push(`| 实体类型 | ${getLabelText(log.entityType)} |`);
+		if (log.entityName) lines.push(`| 实体名称 | ${log.entityName} |`);
+		if (log.entityId) lines.push(`| 实体 ID | \`${log.entityId}\` |`);
+		if (log.environmentId) lines.push(`| 环境 ID | ${log.environmentId} |`);
+		if (log.description) lines.push(`| 描述 | ${getLabelText(log.description)} |`);
+		if (log.ipAddress) lines.push(`| IP 地址 | ${log.ipAddress} |`);
 
 		if (log.details) {
 			lines.push('');
-			lines.push('**Details:**');
+			lines.push('**详情:**');
 			lines.push('```json');
 			lines.push(JSON.stringify(log.details, null, 2));
 			lines.push('```');
@@ -97,7 +122,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 	// Check permission
 	if (!await auth.canViewAuditLog()) {
-		return new Response(JSON.stringify({ error: 'Permission denied' }), {
+		return new Response(JSON.stringify({ error: '权限不足' }), {
 			status: 403,
 			headers: { 'Content-Type': 'application/json' }
 		});
@@ -106,6 +131,8 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 	try {
 		// Parse query parameters
 		const filters: AuditLogFilters = {};
+
+		REQUEST_TIMEZONE = url.searchParams.get('timeZone') || 'UTC';
 
 		const username = url.searchParams.get('username');
 		if (username) filters.username = username;
@@ -157,6 +184,11 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 				break;
 		}
 
+		if (format === 'csv') {
+			const bom = '\ufeff';
+			content = bom + content;
+		}
+
 		return new Response(content, {
 			status: 200,
 			headers: {
@@ -165,8 +197,8 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 			}
 		});
 	} catch (error) {
-		console.error('Error exporting audit logs:', error);
-		return new Response(JSON.stringify({ error: 'Failed to export audit logs' }), {
+		console.error('导出审计日志失败:', error);
+		return new Response(JSON.stringify({ error: '导出审计日志失败' }), {
 			status: 500,
 			headers: { 'Content-Type': 'application/json' }
 		});

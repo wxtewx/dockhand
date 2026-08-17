@@ -104,7 +104,7 @@ export function isSafeVolumeInclude(inc: string): boolean {
 /** Throwing variant — use at the boundary before building a restore script. */
 export function assertSafeVolumeInclude(inc: string): void {
 	if (!isSafeVolumeInclude(inc)) {
-		throw new Error(`Unsafe restore include path: ${inc}`);
+		throw new Error(`不安全的恢复包含路径: ${inc}`);
 	}
 }
 
@@ -127,7 +127,7 @@ export function isPathWithin(root: string, target: string): boolean {
 /** Throwing variant. `label` names the thing being restored for the error. */
 export function assertTargetWithin(root: string, target: string, label = 'restore target'): void {
 	if (!isPathWithin(root, target)) {
-		throw new Error(`Refusing: ${label} "${target}" resolves outside the allowed directory "${root}".`);
+		throw new Error(`拒绝执行：${label} "${target}" 解析路径超出允许目录 "${root}"。`);
 	}
 }
 
@@ -146,15 +146,15 @@ const FORBIDDEN_RESTORE_ROOTS = [
  * forbidden-root compare — a string-only prefix check would miss those. */
 export function unsafeRestoreTargetReason(targetPath: string): string | null {
 	const raw = (targetPath ?? '').trim();
-	if (!raw) return 'a target path is required';
-	if (!raw.startsWith('/')) return 'target path must be absolute';
-	if (raw.includes('\0')) return 'target path must not contain NUL';
+	if (!raw) return '必须指定还原目标路径';
+	if (!raw.startsWith('/')) return '目标路径必须为绝对路径';
+	if (raw.includes('\0')) return '目标路径不能包含空字符 (NUL)';
 	const norm = resolvePath(raw); // collapses .. and trailing slashes
 	for (const root of FORBIDDEN_RESTORE_ROOTS) {
 		if (norm === root || norm.startsWith(root === '/' ? '/' : root + pathSep)) {
 			// `/` matches everything by the prefix rule; only flag `/` itself for that root.
 			if (root === '/' && norm !== '/') continue;
-			return `target path "${norm}" is inside a protected system directory (${root})`;
+			return `目标路径 "${norm}" 位于受保护的系统目录内 (${root})`;
 		}
 	}
 	return null;
@@ -163,7 +163,7 @@ export function unsafeRestoreTargetReason(targetPath: string): string | null {
 /** Throwing variant for the service layer (defense-in-depth behind API validation). */
 export function assertSafeRestoreTarget(targetPath: string): void {
 	const reason = unsafeRestoreTargetReason(targetPath);
-	if (reason) throw new Error(`Refusing new-location restore: ${reason}`);
+	if (reason) throw new Error(`拒绝执行异地还原操作: ${reason}`);
 }
 
 /**

@@ -73,16 +73,16 @@ export const infisicalProvider: SecretProvider<InfisicalConfig> = {
 		const environment = config.environment?.trim();
 
 		if (!host) {
-			return { ok: false, error: 'Host is empty' };
+			return { ok: false, error: '主机地址为空' };
 		}
 		if (!token) {
-			return { ok: false, error: 'Token is empty' };
+			return { ok: false, error: '令牌为空' };
 		}
 		if (!projectId) {
-			return { ok: false, error: 'Project ID is empty' };
+			return { ok: false, error: '项目 ID 为空' };
 		}
 		if (!environment) {
-			return { ok: false, error: 'Environment is empty' };
+			return { ok: false, error: '环境为空' };
 		}
 
 		try {
@@ -98,22 +98,22 @@ export const infisicalProvider: SecretProvider<InfisicalConfig> = {
 			const rawBody = await body.text().catch(() => '');
 			if (statusCode >= 200 && statusCode < 300) {
 				if (!isJsonResponse(rawBody)) {
-					return { ok: false, error: 'Infisical did not return a JSON response - the host may not be an Infisical server' };
+					return { ok: false, error: 'Infisical 未返回 JSON 响应，该主机可能不是 Infisical 服务端' };
 				}
 				return { ok: true };
 			}
 			if (rawBody) console.warn(`[Infisical] testConnection ${statusCode}: ${rawBody}`);
 			const safe = parseProviderError(rawBody);
-			return { ok: false, error: `Infisical returned HTTP ${statusCode}${safe ? `: ${safe}` : ''}` };
+			return { ok: false, error: `Infisical 返回 HTTP ${statusCode}${safe ? `: ${safe}` : ''}` };
 		} catch (e: unknown) {
 			const message = e instanceof Error ? e.message : String(e);
-			return { ok: false, error: message || 'Connection failed' };
+			return { ok: false, error: message || '连接失败' };
 		}
 	},
 
 	async resolveSecretReferences(): Promise<Map<string, string>> {
 		throw new UnsupportedOperationError(
-			'Infisical does not support inline references; use bulk pull (project/environment/path).'
+			'Infisical 不支持内联引用，请使用批量拉取(项目/环境/路径)。'
 		);
 	},
 
@@ -125,16 +125,16 @@ export const infisicalProvider: SecretProvider<InfisicalConfig> = {
 		const secretPath = selector?.trim() || config.path?.trim() || '/';
 
 		if (!host) {
-			throw new Error('[Infisical] Host is required for a bulk pull');
+			throw new Error('[Infisical] 批量拉取需要提供主机地址');
 		}
 		if (!token) {
-			throw new Error('[Infisical] Token is required for a bulk pull');
+			throw new Error('[Infisical] 批量拉取需要提供令牌');
 		}
 		if (!projectId) {
-			throw new Error('[Infisical] Project ID is required for a bulk pull');
+			throw new Error('[Infisical] 批量拉取需要提供项目 ID');
 		}
 		if (!environment) {
-			throw new Error('[Infisical] Environment is required for a bulk pull');
+			throw new Error('[Infisical] 批量拉取需要提供环境');
 		}
 
 		const { statusCode, body } = await request(
@@ -149,7 +149,7 @@ export const infisicalProvider: SecretProvider<InfisicalConfig> = {
 			// Drain the body, log it server-side, but never reflect it to the client.
 			const detail = await body.text().catch(() => '');
 			if (detail) console.warn(`[Infisical] bulk pull ${statusCode}: ${detail}`);
-			throw new Error(`[Infisical] Bulk pull failed with HTTP ${statusCode}`);
+			throw new Error(`[Infisical] 批量拉取失败，HTTP ${statusCode}`);
 		}
 
 		const payload = (await body.json()) as RawSecretsResponse;

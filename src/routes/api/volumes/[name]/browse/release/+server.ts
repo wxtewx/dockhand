@@ -19,7 +19,7 @@ export const POST: RequestHandler = async ({ params, url, cookies }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('volumes', 'inspect', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -28,9 +28,9 @@ export const POST: RequestHandler = async ({ params, url, cookies }) => {
 
 		return json({ success: true });
 	} catch (error: any) {
-		console.error('Failed to release volume helper:', error);
+		console.error('释放数据卷辅助容器失败：', error);
 		return json({
-			error: 'Failed to release volume helper',
+			error: '释放数据卷辅助容器失败',
 			details: error.message || String(error)
 		}, { status: 500 });
 	}

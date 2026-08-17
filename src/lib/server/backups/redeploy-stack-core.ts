@@ -22,14 +22,14 @@ export async function runRedeployStack(steps: RedeployStackSteps): Promise<void>
 	await steps.restoreSecrets();
 
 	const wrote = await steps.materialise();
-	if (!wrote) throw new Error('could not materialise stack files; cannot redeploy');
-	log('materialised OK');
+	if (!wrote) throw new Error('无法生成堆栈文件，无法执行重新部署');
+	log('文件生成完成');
 
 	// Register BEFORE deploy - see the module header. This line order is the whole point.
 	await steps.register();
-	log('registered as managed (internal)');
+	log('已注册为内部托管堆栈');
 
-	log('redeploying (docker compose up)');
+	log('开始重新部署 (执行 docker compose up)');
 	await steps.deploy();
-	log('redeploy OK');
+	log('重新部署执行成功');
 }

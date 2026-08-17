@@ -78,7 +78,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
 				return {
 					id: setting.id,
 					type: 'container_update' as const,
-					name: `Update container: ${setting.containerName}`,
+					name: `更新容器：${setting.containerName}`,
 					entityName: setting.containerName,
 					environmentId: setting.environmentId ?? null,
 					environmentName: env?.name ?? null,
@@ -112,7 +112,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
 				return {
 					id: stack.id,
 					type: 'git_stack_sync' as const,
-					name: `Git sync: ${stack.stackName}`,
+					name: `Git 同步：${stack.stackName}`,
 					entityName: stack.stackName,
 					environmentId: stack.environmentId ?? null,
 					environmentName: env?.name ?? null,
@@ -146,16 +146,16 @@ export const GET: RequestHandler = async ({ cookies }) => {
 				// Build description based on autoUpdate and scanning status
 				let description: string;
 				if (settings.autoUpdate) {
-					description = envHasScanning ? 'Check, scan & auto-update containers' : 'Check & auto-update containers';
+					description = envHasScanning ? '检查、扫描并自动更新容器' : '检查并自动更新容器';
 				} else {
-					description = 'Check containers for updates (notify only)';
+					description = '检查容器更新 (仅通知)';
 				}
 
 				return {
 					id: envId,
 					type: 'env_update_check' as const,
-					name: `Update environment: ${env?.name || 'Unknown'}`,
-					entityName: env?.name || 'Unknown',
+					name: `更新环境：${env?.name || '未知'}`,
+					entityName: env?.name || '未知',
 					description,
 					environmentId: envId,
 					environmentName: env?.name ?? null,
@@ -189,14 +189,14 @@ export const GET: RequestHandler = async ({ cookies }) => {
 
 				// Build description based on prune mode
 				const description = settings.pruneMode === 'all'
-					? 'Prune all unused images'
-					: 'Prune dangling images only';
+					? '清理所有未使用的镜像'
+					: '仅清理悬空镜像';
 
 				return {
 					id: envId,
 					type: 'image_prune' as const,
-					name: `Prune images: ${env?.name || 'Unknown'}`,
-					entityName: env?.name || 'Unknown',
+					name: `清理镜像：${env?.name || '未知'}`,
+					entityName: env?.name || '未知',
 					description,
 					environmentId: envId,
 					environmentName: env?.name ?? null,
@@ -232,9 +232,9 @@ export const GET: RequestHandler = async ({ cookies }) => {
 					return {
 						id: config.id,
 						type: 'backup' as const,
-						name: `Backup: ${config.targetName}`,
+						name: `备份: ${config.targetName}`,
 						entityName: config.targetName,
-						description: `Back up ${config.type} to ${dest?.name || 'unknown destination'}`,
+						description: `将${config.type}备份至${dest?.name || '未知目标存储位置'}`,
 						environmentId: config.environmentId,
 						environmentName: env?.name ?? null,
 						enabled: isEnabled,
@@ -265,9 +265,9 @@ export const GET: RequestHandler = async ({ cookies }) => {
 				schedules.push({
 					id: dest.id + 100000,
 					type: 'repo_prune' as const,
-					name: `Prune: ${dest.name}`,
+					name: `清理: ${dest.name}`,
 					entityName: dest.name,
-					description: `Prune unused data from ${dest.name} (max unused ${maxUnused}%)`,
+					description: `清理${dest.name}内未使用的数据 (最大保留未使用数据 ${maxUnused}%)`,
 					environmentId: null,
 					environmentName: null,
 					enabled: true,
@@ -288,9 +288,9 @@ export const GET: RequestHandler = async ({ cookies }) => {
 				schedules.push({
 					id: dest.id + 200000,
 					type: 'repo_check' as const,
-					name: `Check: ${dest.name}`,
+					name: `校验: ${dest.name}`,
 					entityName: dest.name,
-					description: `Check integrity of ${dest.name}`,
+					description: `检查${dest.name}的数据完整性`,
 					environmentId: null,
 					environmentName: null,
 					enabled: true,
@@ -312,9 +312,9 @@ export const GET: RequestHandler = async ({ cookies }) => {
 				schedules.push({
 					id: dest.id + 300000,
 					type: 'repo_verify' as const,
-					name: `Verify: ${dest.name}`,
+					name: `验证: ${dest.name}`,
 					entityName: dest.name,
-					description: `Verify ${subset} of data in ${dest.name}`,
+					description: `验证 ${dest.name} 中 ${subset} 的数据`,
 					environmentId: null,
 					environmentName: null,
 					enabled: true,
@@ -375,7 +375,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
 
 		return json({ schedules: filtered });
 	} catch (error: any) {
-		console.error('Failed to get schedules:', error);
+		console.error('获取定时任务失败:', error);
 		return json({ error: error.message }, { status: 500 });
 	}
 };

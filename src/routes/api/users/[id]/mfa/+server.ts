@@ -15,14 +15,14 @@ export const POST: RequestHandler = async (event) => {
 	const currentUser = await validateSession(cookies);
 
 	if (!params.id) {
-		return json({ error: 'User ID is required' }, { status: 400 });
+		return json({ error: '用户 ID 为必填项' }, { status: 400 });
 	}
 
 	const userId = parseInt(params.id);
 
 	// Users can only setup MFA for themselves, or admins can do it for others
 	if (!currentUser || (currentUser.id !== userId && !currentUser.isAdmin)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -31,12 +31,12 @@ export const POST: RequestHandler = async (event) => {
 		// Check if this is a verification request
 		if (body.action === 'verify') {
 			if (!body.token) {
-				return json({ error: 'MFA token is required' }, { status: 400 });
+				return json({ error: 'MFA 令牌为必填项' }, { status: 400 });
 			}
 
 			const result = await verifyAndEnableMfa(userId, body.token);
 			if (!result.success) {
-				return json({ error: 'Invalid MFA code' }, { status: 400 });
+				return json({ error: '无效的 MFA 验证码' }, { status: 400 });
 			}
 
 			// Audit log - MFA enabled
@@ -50,7 +50,7 @@ export const POST: RequestHandler = async (event) => {
 
 			return json({
 				success: true,
-				message: 'MFA enabled successfully',
+				message: 'MFA 启用成功',
 				backupCodes: result.backupCodes
 			});
 		}
@@ -66,12 +66,12 @@ export const POST: RequestHandler = async (event) => {
 		// Generate new MFA setup
 		const setup = await generateMfaSetup(userId);
 		if (!setup) {
-			return json({ error: 'User not found' }, { status: 404 });
+			return json({ error: '用户不存在' }, { status: 404 });
 		}
 		if ('alreadyEnabled' in setup) {
 			// Refuse to overwrite a live enrolment - would lock the user out (#1399). They must
 			// disable MFA first, then set it up again.
-			return json({ error: 'MFA is already enabled. Disable it before setting it up again.' }, { status: 409 });
+			return json({ error: 'MFA 已启用，请先将其关闭后再重新配置。' }, { status: 409 });
 		}
 
 		return json({
@@ -79,8 +79,8 @@ export const POST: RequestHandler = async (event) => {
 			qrDataUrl: setup.qrDataUrl
 		});
 	} catch (error) {
-		console.error('MFA setup error:', error);
-		return json({ error: 'Failed to setup MFA' }, { status: 500 });
+		console.error('MFA 设置错误：', error);
+		return json({ error: 'MFA 设置失败' }, { status: 500 });
 	}
 };
 
@@ -90,26 +90,26 @@ export const DELETE: RequestHandler = async (event) => {
 	const currentUser = await validateSession(cookies);
 
 	if (!params.id) {
-		return json({ error: 'User ID is required' }, { status: 400 });
+		return json({ error: '用户ID为必填项' }, { status: 400 });
 	}
 
 	const userId = parseInt(params.id);
 
 	// Users can only disable their own MFA, or admins can do it for others
 	if (!currentUser || (currentUser.id !== userId && !currentUser.isAdmin)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		// Get user info before disabling for audit
 		const targetUser = await getUser(userId);
 		if (!targetUser) {
-			return json({ error: 'User not found' }, { status: 404 });
+			return json({ error: '用户不存在' }, { status: 404 });
 		}
 
 		const success = await disableMfa(userId);
 		if (!success) {
-			return json({ error: 'Failed to disable MFA' }, { status: 500 });
+			return json({ error: 'MFA 禁用失败' }, { status: 500 });
 		}
 
 		// Audit log - MFA disabled
@@ -118,9 +118,9 @@ export const DELETE: RequestHandler = async (event) => {
 			disabledBy: currentUser?.id === userId ? 'self' : currentUser?.username
 		});
 
-		return json({ success: true, message: 'MFA disabled successfully' });
+		return json({ success: true, message: 'MFA 禁用成功' });
 	} catch (error) {
-		console.error('MFA disable error:', error);
-		return json({ error: 'Failed to disable MFA' }, { status: 500 });
+		console.error('MFA 禁用错误：', error);
+		return json({ error: 'MFA 禁用失败' }, { status: 500 });
 	}
 };

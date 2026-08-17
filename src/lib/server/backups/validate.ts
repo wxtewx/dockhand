@@ -47,27 +47,27 @@ export function validateBackupConfig(input: BackupConfigInput): ValidationResult
 	const issues: ValidationIssue[] = [];
 
 	if (input.type !== 'container' && input.type !== 'stack') {
-		issues.push({ field: 'type', message: `type must be "container" or "stack" (got "${input.type}")` });
+		issues.push({ field: 'type', message: `类型必须为 "container" 或 "stack" (当前值: "${input.type}")` });
 	}
 	if (!input.targetName || !input.targetName.trim()) {
-		issues.push({ field: 'targetName', message: 'a target name is required' });
+		issues.push({ field: 'targetName', message: '请填写目标名称' });
 	}
 	if (input.destinationId == null || !Number.isInteger(input.destinationId) || input.destinationId <= 0) {
-		issues.push({ field: 'destinationId', message: 'a valid backup destination is required' });
+		issues.push({ field: 'destinationId', message: '请选择有效的备份存储位置' });
 	}
 	if (input.schedule != null && input.schedule.trim() && !isValidCron(input.schedule.trim())) {
-		issues.push({ field: 'schedule', message: `not a valid cron expression: "${input.schedule}"` });
+		issues.push({ field: 'schedule', message: `无效的 cron 表达式: "${input.schedule}"` });
 	}
 	// parseRetention already coerces a bad blob to "none" (safe), so retention is
 	// never a hard error — but a non-object string that isn't empty is suspicious.
 	if (typeof input.retention === 'string' && input.retention.trim()) {
 		try { JSON.parse(input.retention); }
-		catch { issues.push({ field: 'retention', message: 'retention is not valid JSON' }); }
+		catch { issues.push({ field: 'retention', message: '保留策略不是合法的 JSON' }); }
 	}
 	if (input.allVolumes === false) {
 		const sel = input.selectedVolumes;
 		if (!Array.isArray(sel) || sel.length === 0) {
-			issues.push({ field: 'selectedVolumes', message: 'select at least one volume, or enable "all volumes"' });
+			issues.push({ field: 'selectedVolumes', message: '至少选择一个数据卷，或开启 “全部数据卷” 选项' });
 		}
 	}
 
@@ -111,18 +111,18 @@ export function validateRestoreRequest(input: RestoreRequestInput): ValidationRe
 	const issues: ValidationIssue[] = [];
 
 	if (input.destinationId == null || !Number.isInteger(input.destinationId) || input.destinationId <= 0) {
-		issues.push({ field: 'destinationId', message: 'a valid backup destination is required' });
+		issues.push({ field: 'destinationId', message: '请选择有效的备份存储位置' });
 	}
 	if (!input.snapshotId || !isValidSnapshotId(input.snapshotId)) {
-		issues.push({ field: 'snapshotId', message: 'a valid snapshot id is required' });
+		issues.push({ field: 'snapshotId', message: '请填写合法的快照 ID' });
 	}
 	if (input.mode !== 'in-place' && input.mode !== 'new-location') {
-		issues.push({ field: 'mode', message: 'mode must be "in-place" or "new-location"' });
+		issues.push({ field: 'mode', message: '恢复模式必须为 "in-place" 或 "new-location"' });
 	}
 	if (input.mode === 'in-place' && input.confirmOverwrite !== true) {
 		issues.push({
 			field: 'confirmOverwrite',
-			message: 'an in-place restore overwrites live data and requires explicit confirmation',
+			message: '就地恢复将会覆盖正在运行的数据，需要显式确认',
 		});
 	}
 	// A CLONE (new-location that populates real destinations and/or starts the
@@ -136,7 +136,7 @@ export function validateRestoreRequest(input: RestoreRequestInput): ValidationRe
 	// loose). Require it for a plain new-location, or a clone that still has loose
 	// (un-mapped) volumes — the service falls those back to targetPath.
 	if (input.mode === 'new-location' && !isClone && (!input.targetPath || !input.targetPath.trim())) {
-		issues.push({ field: 'targetPath', message: 'a target path is required for a new-location restore' });
+		issues.push({ field: 'targetPath', message: '全新路径恢复需要指定目标路径' });
 	}
 	// Containment: whenever a targetPath is supplied for a new-location restore it must not
 	// point at a protected system dir (the helper mounts it rw as root and restic writes into
@@ -150,40 +150,40 @@ export function validateRestoreRequest(input: RestoreRequestInput): ValidationRe
 		const looseCount = (input.volumes ?? []).filter((v) => !mappedVols.has(v)).length;
 		// If any requested volume is un-mapped, it falls back to targetPath extraction.
 		if (looseCount > 0 && (!input.targetPath || !input.targetPath.trim())) {
-			issues.push({ field: 'targetPath', message: 'a target path is required for volumes without a destination' });
+			issues.push({ field: 'targetPath', message: '未指定目标的数据包需要填写解压路径' });
 		}
 		if ((input.postRestore === 'recreate' || input.postRestore === 'redeploy')
 			&& (!input.targetName || !input.targetName.trim())) {
-			issues.push({ field: 'targetName', message: 'a target name is required to recreate/redeploy after a clone' });
+			issues.push({ field: 'targetName', message: '重建/重新部署操作需要填写目标名称' });
 		}
 		for (const d of input.volumeDestinations ?? []) {
 			if (!d || typeof d.volume !== 'string' || !d.volume) {
-				issues.push({ field: 'volumeDestinations', message: 'each destination needs a volume name' });
+				issues.push({ field: 'volumeDestinations', message: '每条映射配置必须指定数据卷名称' });
 				continue;
 			}
 			if (input.volumes && input.volumes.length > 0 && !input.volumes.includes(d.volume)) {
-				issues.push({ field: 'volumeDestinations', message: `destination for "${d.volume}" is not among the restored volumes` });
+				issues.push({ field: 'volumeDestinations', message: `映射配置中的 "${d.volume}" 不在待恢复列表内` });
 			}
 			if (d.kind === 'path') {
 				if (typeof d.target !== 'string' || !d.target.startsWith('/') || d.target.includes('..')) {
-					issues.push({ field: 'volumeDestinations', message: `path destination for "${d.volume}" must be an absolute path (no "..")` });
+					issues.push({ field: 'volumeDestinations', message: `"${d.volume}" 的路径目标必须为绝对路径，禁止包含 ".." 上级跳转符号` });
 				} else {
 					// Same protected-root guard as targetPath: the helper mounts this path rw as root
 					// and restic writes into it, so a clone must never target /etc, /var/run, etc.
 					const reason = unsafeRestoreTargetReason(d.target);
-					if (reason) issues.push({ field: 'volumeDestinations', message: `path destination for "${d.volume}": ${reason}` });
+					if (reason) issues.push({ field: 'volumeDestinations', message: `"${d.volume}" 路径目标校验不通过: ${reason}` });
 				}
 			} else if (d.kind === 'volume') {
 				if (typeof d.target !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/.test(d.target)) {
-					issues.push({ field: 'volumeDestinations', message: `volume destination for "${d.volume}" is not a valid volume name` });
+					issues.push({ field: 'volumeDestinations', message: `"${d.volume}" 指定的数据卷名称格式非法` });
 				}
 			} else {
-				issues.push({ field: 'volumeDestinations', message: `destination for "${d.volume}" must be kind "volume" or "path"` });
+				issues.push({ field: 'volumeDestinations', message: `"${d.volume}" 的类型必须填写 "volume" 或 "path"` });
 			}
 		}
 	}
 	if (input.stackName != null && input.stackName !== '' && !isSafePathSegment(input.stackName)) {
-		issues.push({ field: 'stackName', message: 'invalid stack name (no path separators or "..")' });
+		issues.push({ field: 'stackName', message: '堆栈名称非法，不能包含路径分隔符或 ".." ' });
 	}
 
 	return result(issues);
@@ -219,7 +219,7 @@ export async function assertBackupableWith(
 	if (composeResult.needsFileLocation) {
 		return {
 			ok: false,
-			reason: `Stack "${targetName}" is external — compose file location is unknown, so a backup would be incomplete at restore time. Adopt the stack in Dockhand (Stacks → Import) and try again.`,
+			reason: `堆栈 "${targetName}" 为外部堆栈，无法获取 compose 文件位置，备份产物无法完整恢复。请先将该堆栈接入 Dockhand (堆栈 → 导入) 后重试。`,
 		};
 	}
 	return { ok: true };

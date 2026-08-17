@@ -28,7 +28,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('stacks', 'view', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -36,8 +36,8 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 		const stacks = await getGitStacks(envIdNum);
 		return json(stacks);
 	} catch (error) {
-		console.error('Failed to get git stacks:', error);
-		return json({ error: 'Failed to get git stacks' }, { status: 500 });
+		console.error('获取 Git 堆栈列表失败:', error);
+		return json({ error: '获取 Git 堆栈列表失败' }, { status: 500 });
 	}
 };
 
@@ -50,16 +50,16 @@ export const POST: RequestHandler = async (event) => {
 
 		// Permission check with environment context
 		if (auth.authEnabled && !await auth.can('stacks', 'create', data.environmentId || undefined)) {
-			return json({ error: 'Permission denied' }, { status: 403 });
+			return json({ error: '权限不足' }, { status: 403 });
 		}
 
 		if (!data.stackName || typeof data.stackName !== 'string') {
-			return json({ error: 'Stack name is required' }, { status: 400 });
+			return json({ error: '堆栈名称为必填项' }, { status: 400 });
 		}
 
 		const trimmedStackName = data.stackName.trim();
 		if (!STACK_NAME_REGEX.test(trimmedStackName)) {
-			return json({ error: 'Stack name must be lowercase, start with a letter or number, and contain only letters, numbers, hyphens, and underscores' }, { status: 400 });
+			return json({ error: '堆栈名称必须为小写字符，首字符为字母或数字，仅允许使用字母、数字、连字符与下划线' }, { status: 400 });
 		}
 
 		if (
@@ -67,7 +67,7 @@ export const POST: RequestHandler = async (event) => {
 			data.secretProviderId !== null &&
 			typeof data.secretProviderId !== 'number'
 		) {
-			return json({ error: 'secretProviderId must be a number or null' }, { status: 400 });
+			return json({ error: 'secretProviderId 必须为数字或 null' }, { status: 400 });
 		}
 
 		// Binding a secret provider resolves its secrets into the container at deploy;
@@ -78,18 +78,18 @@ export const POST: RequestHandler = async (event) => {
 			auth.authEnabled &&
 			!(await auth.can('secrets', 'view', data.environmentId || undefined))
 		) {
-			return json({ error: 'Permission denied: binding a secret provider requires the secrets permission' }, { status: 403 });
+			return json({ error: '权限拒绝：绑定密钥提供程序需要密钥相关权限' }, { status: 403 });
 		}
 
 		// Check for name conflicts with existing stacks (regular/external/git)
 		const existing = await getStackSource(trimmedStackName, data.environmentId || null);
 		if (existing) {
-			return json({ error: 'A stack with this name already exists on this environment' }, { status: 409 });
+			return json({ error: '此环境中已存在同名堆栈' }, { status: 409 });
 		}
 
 		// A secret is mandatory when the webhook is enabled.
 		if (data.webhookEnabled && !data.webhookSecret?.trim()) {
-			return json({ error: 'A webhook secret is required when the webhook is enabled' }, { status: 400 });
+			return json({ error: '启用 Webhook 时必须填写密钥' }, { status: 400 });
 		}
 
 		// Either repositoryId or new repo details (url, branch) must be provided
@@ -98,7 +98,7 @@ export const POST: RequestHandler = async (event) => {
 		if (!repositoryId) {
 			// Create a new repository if URL is provided
 			if (!data.url || typeof data.url !== 'string') {
-				return json({ error: 'Repository URL or existing repository ID is required' }, { status: 400 });
+				return json({ error: '必须提供仓库 URL 或现有仓库 ID' }, { status: 400 });
 			}
 
 			// Validate credential if provided
@@ -106,7 +106,7 @@ export const POST: RequestHandler = async (event) => {
 				const credentials = await getGitCredentials();
 				const credential = credentials.find(c => c.id === data.credentialId);
 				if (!credential) {
-					return json({ error: 'Invalid credential ID' }, { status: 400 });
+					return json({ error: '无效的凭据 ID' }, { status: 400 });
 				}
 			}
 
@@ -122,7 +122,7 @@ export const POST: RequestHandler = async (event) => {
 				repositoryId = repo.id;
 			} catch (error: any) {
 				if (error.message?.includes('UNIQUE constraint failed')) {
-					return json({ error: 'A repository with this name already exists' }, { status: 400 });
+					return json({ error: '同名仓库已存在' }, { status: 400 });
 				}
 				throw error;
 			}
@@ -130,7 +130,7 @@ export const POST: RequestHandler = async (event) => {
 			// Verify repository exists
 			const repo = await getGitRepository(repositoryId);
 			if (!repo) {
-				return json({ error: 'Repository not found' }, { status: 400 });
+				return json({ error: '仓库不存在' }, { status: 400 });
 			}
 		}
 
@@ -199,10 +199,10 @@ export const POST: RequestHandler = async (event) => {
 						deployResult: deployResult
 					});
 				} catch (error) {
-					console.error('Failed to deploy git stack:', error);
+					console.error('部署 Git 堆栈失败:', error);
 					send('result', {
 						...gitStack,
-						deployResult: { success: false, error: 'Failed to deploy git stack' }
+						deployResult: { success: false, error: '部署 Git 堆栈失败' }
 					});
 				}
 			}, request);
@@ -210,13 +210,13 @@ export const POST: RequestHandler = async (event) => {
 
 		return json(gitStack);
 	} catch (error: any) {
-		console.error('Failed to create git stack:', error);
+		console.error('创建 Git 堆栈失败:', error);
 		if (error.message?.includes('UNIQUE constraint failed')) {
 			if (error.message?.includes('stack_environment_variables')) {
-				return json({ error: 'Duplicate environment variable keys detected' }, { status: 400 });
+				return json({ error: '检测到重复的环境变量键' }, { status: 400 });
 			}
-			return json({ error: 'A git stack with this name already exists for this environment' }, { status: 400 });
+			return json({ error: '该环境下已存在同名 Git 堆栈' }, { status: 400 });
 		}
-		return json({ error: 'Failed to create git stack' }, { status: 500 });
+		return json({ error: '创建 Git 堆栈失败' }, { status: 500 });
 	}
 };

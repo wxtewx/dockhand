@@ -48,33 +48,33 @@ const EXIT_NOT_INITIALIZED = 10;
 export function classifyRepoFailure(run: ResticRun): { code: BackupError['code']; error: string } {
 	const text = (run.stderr + '\n' + run.stdout).toLowerCase();
 	if (run.exitCode === EXIT_NOT_INITIALIZED || text.includes('is not a restic repository') || text.includes('unable to open config')) {
-		return { code: 'REPO_NOT_INITIALIZED', error: 'repository is not initialised' };
+		return { code: 'REPO_NOT_INITIALIZED', error: '仓库尚未初始化' };
 	}
 	if (text.includes('wrong password') || text.includes('bad password') || text.includes('decrypt')) {
-		return { code: 'WRONG_PASSWORD', error: 'wrong repository password' };
+		return { code: 'WRONG_PASSWORD', error: '仓库密码错误' };
 	}
 	if (text.includes('repository is already locked') || text.includes('unable to create lock')) {
-		return { code: 'REPO_LOCKED', error: 'repository is locked by another operation' };
+		return { code: 'REPO_LOCKED', error: '仓库已被其他操作锁定' };
 	}
 	if (run.exitCode === undefined) {
-		return { code: 'RESTIC', error: 'restic did not complete (unknown outcome)' };
+		return { code: 'RESTIC', error: 'restic 未正常执行，结果未知' };
 	}
-	return { code: 'RESTIC', error: run.stderr.trim() || run.stdout.trim() || `restic exited ${run.exitCode}` };
+	return { code: 'RESTIC', error: run.stderr.trim() || run.stdout.trim() || `restic 退出码 ${run.exitCode}` };
 }
 
 function toResult(run: ResticRun): RepoResult {
-	if (run.exitCode === 0) return { ok: true, output: (run.stdout.trim() || run.stderr.trim() || 'ok') };
+	if (run.exitCode === 0) return { ok: true, output: (run.stdout.trim() || run.stderr.trim() || '操作成功') };
 	return { ok: false, ...classifyRepoFailure(run) };
 }
 
 /** Initialise a repository. Succeeds if init works OR the repo already exists. */
 export async function initRepository(restic: ResticLocal, destination: any): Promise<RepoResult> {
 	const run = await restic.runLocal(destination, ['init']);
-	if (run.exitCode === 0) return { ok: true, output: 'repository initialised' };
+	if (run.exitCode === 0) return { ok: true, output: '仓库初始化完成' };
 	// Already-initialised is a success for our purposes.
 	if ((run.stderr + run.stdout).toLowerCase().includes('already initialized') ||
 		(run.stderr + run.stdout).toLowerCase().includes('already exists')) {
-		return { ok: true, output: 'repository already initialised' };
+		return { ok: true, output: '仓库已存在，无需重复初始化' };
 	}
 	return { ok: false, ...classifyRepoFailure(run) };
 }
@@ -186,17 +186,17 @@ export async function rotateDestinationPassword(
 	newPassword: string,
 ): Promise<RotateResult> {
 	if (!newPassword || newPassword.length < 8) {
-		return { ok: false, error: 'New password must be at least 8 characters' };
+		return { ok: false, error: '新密码长度至少为 8 位' };
 	}
 	if (currentPassword === newPassword) {
-		return { ok: false, error: 'New password must differ from current password' };
+		return { ok: false, error: '新密码不能与当前密码一致' };
 	}
 
 	const destination = await ports.getDecryptedDestination(destinationId);
-	if (!destination) return { ok: false, error: 'Destination not found' };
+	if (!destination) return { ok: false, error: '存储目标不存在' };
 
 	if (!timingSafeStrEqual(destination.decryptedPassword, currentPassword)) {
-		return { ok: false, error: 'Current password does not match' };
+		return { ok: false, error: '当前密码不匹配' };
 	}
 
 	const { writeFileSync, unlinkSync } = await import('fs');
@@ -215,7 +215,7 @@ export async function rotateDestinationPassword(
 	}
 
 	if (run.exitCode !== 0) {
-		return { ok: false, error: cleanErrorMsg(run.stderr.trim() || run.stdout.trim() || 'restic key change failed') };
+		return { ok: false, error: cleanErrorMsg(run.stderr.trim() || run.stdout.trim() || 'restic 密钥修改失败') };
 	}
 
 	// restic accepted the new password and removed the old key. From now on the
@@ -227,7 +227,7 @@ export async function rotateDestinationPassword(
 		return {
 			ok: false,
 			dbOutOfSync: true,
-			error: `Repository password was rotated but Dockhand could not persist the new password to its database. Manually update the destination password to the new value to restore access. (${msg})`,
+			error: `仓库密码已完成轮换，但 Dockhand 无法将新密码保存至数据库。请手动修改存储目标密码以恢复访问。(${msg})`,
 		};
 	}
 

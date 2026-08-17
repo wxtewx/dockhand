@@ -18,10 +18,10 @@ export const GET: RequestHandler = async ({ params, url, cookies, request }) => 
 	if (invalidSnap) return invalidSnap;
 
 	const destIdParam = url.searchParams.get('destinationId');
-	if (!destIdParam) return json({ error: 'destinationId is required' }, { status: 400 });
+	if (!destIdParam) return json({ error: '必须提供 destinationId' }, { status: 400 });
 
 	const destinationId = parseInt(destIdParam);
-	if (isNaN(destinationId)) return json({ error: 'Invalid destinationId' }, { status: 400 });
+	if (isNaN(destinationId)) return json({ error: '无效的 destinationId' }, { status: 400 });
 
 	// (HIGH #8) Enforce per-environment access on the snapshot's owning env.
 	const envDenied = await guardSnapshotEnvAccess(auth, destinationId, snapshotId);
@@ -30,7 +30,7 @@ export const GET: RequestHandler = async ({ params, url, cookies, request }) => 
 	// Job-polling: reading metadata runs `restic dump` which a proxy would abort at ~15s.
 	return jobResult(request, async () => {
 		const metadata = await getSnapshotMetadata(destinationId, snapshotId);
-		if (!metadata) return { error: 'No metadata available' };
+		if (!metadata) return { error: '无可用元数据' };
 		// Single redaction point: strips stack.secrets values AND container inspect
 		// Config.Env/Labels (plaintext secrets) before anything reaches the client.
 		return redactSnapshotLayout(metadata);

@@ -66,7 +66,7 @@ export const dopplerProvider: SecretProvider<DopplerConfig> = {
 	async testConnection(config: DopplerConfig): Promise<TestConnectionResult> {
 		const token = config.token?.trim();
 		if (!token) {
-			return { ok: false, error: 'Token is empty' };
+			return { ok: false, error: '令牌为空' };
 		}
 		try {
 			const { statusCode, body } = await request(downloadUrl(config), {
@@ -78,29 +78,29 @@ export const dopplerProvider: SecretProvider<DopplerConfig> = {
 			const rawBody = await body.text().catch(() => '');
 			if (statusCode >= 200 && statusCode < 300) {
 				if (!isJsonResponse(rawBody)) {
-					return { ok: false, error: 'Doppler did not return a JSON response - the host may not be a Doppler server' };
+					return { ok: false, error: 'Doppler 未返回 JSON 响应，该地址可能并非 Doppler 服务端' };
 				}
 				return { ok: true };
 			}
 			if (rawBody) console.warn(`[Doppler] testConnection ${statusCode}: ${rawBody}`);
 			const safe = parseProviderError(rawBody);
-			return { ok: false, error: `Doppler returned HTTP ${statusCode}${safe ? `: ${safe}` : ''}` };
+			return { ok: false, error: `Doppler 返回 HTTP ${statusCode}${safe ? `: ${safe}` : ''}` };
 		} catch (e: unknown) {
 			const message = e instanceof Error ? e.message : String(e);
-			return { ok: false, error: message || 'Connection failed' };
+			return { ok: false, error: message || '连接失败' };
 		}
 	},
 
 	async resolveSecretReferences(): Promise<Map<string, string>> {
 		throw new UnsupportedOperationError(
-			'Doppler does not support inline references; a service token bulk-pulls its whole config.'
+			'Doppler 不支持内联引用；服务令牌会批量拉取全部配置。'
 		);
 	},
 
 	async resolveBulk(config: DopplerConfig, _selector: string): Promise<Record<string, string>> {
 		const token = config.token?.trim();
 		if (!token) {
-			throw new Error('[Doppler] Token is required for a bulk pull');
+			throw new Error('[Doppler] 批量拉取需要提供令牌');
 		}
 
 		const { statusCode, body } = await request(downloadUrl(config), {
@@ -110,7 +110,7 @@ export const dopplerProvider: SecretProvider<DopplerConfig> = {
 
 		if (statusCode < 200 || statusCode >= 300) {
 			const detail = await body.text().catch(() => '');
-			throw new Error(`[Doppler] Bulk pull failed with HTTP ${statusCode}${detail ? `: ${detail}` : ''}`);
+			throw new Error(`[Doppler] 批量拉取失败，HTTP ${statusCode}${detail ? `: ${detail}` : ''}`);
 		}
 
 		// format=json returns a flat { KEY: value } object; coerce non-string values

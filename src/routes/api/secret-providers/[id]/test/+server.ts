@@ -16,17 +16,17 @@ import type { SecretProviderConfig } from '$lib/server/secretproviders/shared';
 export const POST: RequestHandler = async ({ params, cookies, request }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !(await auth.can('secrets', 'view'))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限拒绝' }, { status: 403 });
 	}
 
 	const id = Number.parseInt(params.id);
 	if (Number.isNaN(id)) {
-		return json({ error: 'Invalid secret provider ID' }, { status: 400 });
+		return json({ error: '无效的密钥提供程序 ID' }, { status: 400 });
 	}
 
 	const provider = await getSecretProviderById(id);
 	if (!provider) {
-		return json({ error: 'Secret provider not found' }, { status: 404 });
+		return json({ error: '未找到密钥提供程序' }, { status: 404 });
 	}
 
 	let configToTest: SecretProviderConfig = provider.config;

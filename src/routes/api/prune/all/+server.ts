@@ -13,7 +13,7 @@ export const POST: RequestHandler = async (event) => {
 
 	// Prune all requires remove permission on all resource types (with environment context)
 	if (auth.authEnabled && (!await auth.can('containers', 'remove', envIdNum) || !await auth.can('images', 'remove', envIdNum) || !await auth.can('volumes', 'remove', envIdNum) || !await auth.can('networks', 'remove', envIdNum))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -23,13 +23,13 @@ export const POST: RequestHandler = async (event) => {
 		await audit(event, 'prune', 'settings', {
 			environmentId: envIdNum,
 			entityName: 'system',
-			description: 'Pruned all unused Docker resources',
+			description: '已清理所有未使用的 Docker 资源',
 			details: { result }
 		});
 
 		return json({ success: true, result });
 	} catch (error: any) {
-		console.error('Error pruning all:', error?.message || error, error?.stack);
-		return json({ error: 'Failed to prune system', details: error?.message }, { status: 500 });
+		console.error('清理系统资源失败:', error?.message || error, error?.stack);
+		return json({ error: '清理系统资源失败', details: error?.message }, { status: 500 });
 	}
 };

@@ -22,14 +22,14 @@ export const POST: RequestHandler = async (event) => {
 	const snapshotId: string | undefined = body.snapshotId;
 	// (audit #57) Validate snapshotId when supplied, matching the restore POST route.
 	if (snapshotId !== undefined && !isValidSnapshotId(snapshotId)) {
-		return json({ error: 'Invalid snapshotId' }, { status: 400 });
+		return json({ error: '无效的 snapshotId' }, { status: 400 });
 	}
 	const environmentId: number | undefined =
 		typeof body.environmentId === 'number' ? body.environmentId : undefined;
 
 	// Enforce environment-scoped access when targeting a specific env.
 	if (environmentId && auth.isEnterprise && !await auth.canAccessEnvironment(environmentId)) {
-		return json({ error: 'Environment access denied' }, { status: 403 });
+		return json({ error: '无权访问该环境' }, { status: 403 });
 	}
 
 	try {

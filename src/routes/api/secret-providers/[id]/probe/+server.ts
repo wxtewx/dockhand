@@ -15,21 +15,21 @@ import { probeBulkKeysCached } from '$lib/server/secretproviders/probe-cache';
 export const POST: RequestHandler = async ({ params, cookies, request }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !(await auth.can('secrets', 'view'))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限拒绝' }, { status: 403 });
 	}
 
 	const id = Number.parseInt(params.id);
 	if (Number.isNaN(id)) {
-		return json({ error: 'Invalid secret provider ID' }, { status: 400 });
+		return json({ error: '无效的密钥提供程序 ID' }, { status: 400 });
 	}
 
 	const row = await getSecretProviderById(id);
 	if (!row) {
-		return json({ error: 'Secret provider not found' }, { status: 404 });
+		return json({ error: '未找到密钥提供程序' }, { status: 404 });
 	}
 	const provider = getProvider(row.type);
 	if (!provider) {
-		return json({ error: `Unknown secret provider type: ${row.type}` }, { status: 400 });
+		return json({ error: `未知的密钥提供程序类型: ${row.type}` }, { status: 400 });
 	}
 
 	let selector: string | undefined;

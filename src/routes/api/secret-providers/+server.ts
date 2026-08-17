@@ -8,7 +8,7 @@ import { auditSecretProvider } from '$lib/server/audit';
 export const GET: RequestHandler = async ({ cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !(await auth.can('secrets', 'view'))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限拒绝' }, { status: 403 });
 	}
 
 	try {
@@ -16,8 +16,8 @@ export const GET: RequestHandler = async ({ cookies }) => {
 		const providers = await getSecretProviders();
 		return json(providers);
 	} catch (error) {
-		console.error('Error fetching secret providers:', error);
-		return json({ error: 'Failed to fetch secret providers' }, { status: 500 });
+		console.error('获取密钥提供程序时出错:', error);
+		return json({ error: '获取密钥提供程序失败' }, { status: 500 });
 	}
 };
 
@@ -25,7 +25,7 @@ export const POST: RequestHandler = async (event) => {
 	const { request, cookies } = event;
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !(await auth.can('secrets', 'create'))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限拒绝' }, { status: 403 });
 	}
 
 	try {
@@ -35,18 +35,18 @@ export const POST: RequestHandler = async (event) => {
 		const config = data.config;
 
 		if (!name || !type) {
-			return json({ error: 'Name and type are required' }, { status: 400 });
+			return json({ error: '名称与类型为必填项' }, { status: 400 });
 		}
 		if (!hasProvider(type)) {
-			return json({ error: `Unknown secret provider type: ${type}` }, { status: 400 });
+			return json({ error: `未知的密钥提供程序类型: ${type}` }, { status: 400 });
 		}
 		if (!config || typeof config !== 'object' || Array.isArray(config)) {
-			return json({ error: 'Config is required' }, { status: 400 });
+			return json({ error: '配置为必填项' }, { status: 400 });
 		}
 
 		const existing = await getSecretProviders();
 		if (existing.some((p) => p.name.trim() === name)) {
-			return json({ error: 'A secret provider with this name already exists' }, { status: 400 });
+			return json({ error: '已存在同名的密钥提供程序' }, { status: 400 });
 		}
 
 		const provider = await createSecretProvider({ type, name, config });
@@ -54,7 +54,7 @@ export const POST: RequestHandler = async (event) => {
 		// Never return the decrypted config.
 		return json(provider, { status: 201 });
 	} catch (error: any) {
-		console.error('Error creating secret provider:', error);
-		return json({ error: 'Failed to create secret provider' }, { status: 500 });
+		console.error('创建密钥提供程序时出错:', error);
+		return json({ error: '创建密钥提供程序失败' }, { status: 500 });
 	}
 };

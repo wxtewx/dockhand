@@ -6,7 +6,8 @@ import { sendEventNotification } from './notifications';
 // RSA Public Key for license verification
 // This key can only VERIFY signatures, not create them
 // The private key is kept secret and used only for license generation
-const LICENSE_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
+const LICENSE_PUBLIC_KEYS = [
+`-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoGJOObrKQyOPrDC+xSVh
 Cq5WeUQqwvAl2xEoI5iOhJtHIvnlxayc2UKt9D5WVWS0dgzi41L7VD2OjTayrbL8
 RxPXYh0EfMtnKoJZyFwN1XdlYk8yUjs2TRXnrw8Y+riuMjFWgUHmWUQTA7yBnJG6
@@ -14,7 +15,17 @@ RxPXYh0EfMtnKoJZyFwN1XdlYk8yUjs2TRXnrw8Y+riuMjFWgUHmWUQTA7yBnJG6
 OgRZRNWPljc/cX5DLSaB1RXFUnBM4O9YalNCNOR3HvEV/8HULFtDpZT0ZwRbC3K3
 R8GFY97lrqADuWVaEdRRYdr402eAcd4DnRT62OjpEllNbRI3U5Wyj6EmYm3Cmc9Q
 GwIDAQAB
------END PUBLIC KEY-----`;
+-----END PUBLIC KEY-----`,
+`-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAv/roIIYNIzYtQL7VUA4V
+4YzsuJSnUj9EOnfW80z5XOmTPQySeOQ2E3TfJifJIbsH1cyFmEF4x4RGoZhELMP4
+cF4klnNJG4cztgwzPbpRCMgDEXfuhY0IrfxGwMneA2yd3Ax3Di4jQpBsEcoTSjwx
+UwhHzv3AYk/ToG1QKfTCmtR0MsINkMvopYbRwl/tDs+D/4emIqRLH0VXspbgFA5a
+hM1ENju1eIYxxwlEcKlvuCY+ui/CzWto51tAeSOCTtNPYvlx52atrXVXTugZBQza
+KkcLg3hDoBRakbs56e9hsr8cWeE2bT2FPwkOLZ9DnvDdjTzAFwCJYISRP56tqDMd
+/QIDAQAB
+-----END PUBLIC KEY-----`
+];
 
 export type LicenseType = 'enterprise' | 'smb';
 
@@ -50,18 +61,24 @@ export function validateLicense(licenseKey: string, currentHost?: string): Licen
 
 		const parts = cleanKey.split('.');
 		if (parts.length !== 2) {
-			return { valid: false, active: false, error: 'Invalid license format' };
+			return { valid: false, active: false, error: '许可证格式无效' };
 		}
 
 		const [payloadBase64, signature] = parts;
 
 		// Verify RSA-SHA256 signature
-		const verify = crypto.createVerify('RSA-SHA256');
-		verify.update(payloadBase64);
-		const isValid = verify.verify(LICENSE_PUBLIC_KEY, signature, 'base64url');
+		let isValid = false;
+		for (const pubKey of LICENSE_PUBLIC_KEYS) {
+			const verify = crypto.createVerify('RSA-SHA256');
+			verify.update(payloadBase64);
+			if (verify.verify(pubKey, signature, 'base64url')) {
+				isValid = true;
+				break;
+			}
+		}
 
 		if (!isValid) {
-			return { valid: false, active: false, error: 'Invalid license signature' };
+			return { valid: false, active: false, error: '许可证签名无效' };
 		}
 
 		// Decode payload
@@ -71,7 +88,7 @@ export function validateLicense(licenseKey: string, currentHost?: string): Licen
 
 		// Check expiration
 		if (payload.expires && new Date(payload.expires) < new Date()) {
-			return { valid: false, active: false, error: 'License has expired', payload };
+			return { valid: false, active: false, error: '许可证已过期', payload };
 		}
 
 		// Check host (allow wildcard matching)
@@ -85,7 +102,7 @@ export function validateLicense(licenseKey: string, currentHost?: string): Licen
 				return {
 					valid: false,
 					active: false,
-					error: `License is not valid for this host (${hostToCheck})`,
+					error: `许可证不适用于此主机 (${hostToCheck})`,
 					payload
 				};
 			}
@@ -96,7 +113,7 @@ export function validateLicense(licenseKey: string, currentHost?: string): Licen
 		return {
 			valid: false,
 			active: false,
-			error: `License validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+			error: `许可证验证失败：${error instanceof Error ? error.message : '未知错误'}`
 		};
 	}
 }
@@ -129,7 +146,7 @@ export async function activateLicense(
 	if (validation.payload && validation.payload.name !== name.trim()) {
 		return {
 			success: false,
-			error: `License name mismatch. Expected "${validation.payload.name}", got "${name.trim()}"`
+			error: `许可证名称不匹配。预期为 "${validation.payload.name}"，实际为 "${name.trim()}"`
 		};
 	}
 
@@ -236,12 +253,12 @@ export async function checkLicenseExpiry(): Promise<void> {
 				return;
 			}
 
-			const licenseTypeName = status.payload.type === 'enterprise' ? 'Enterprise' : 'SMB';
-			console.log(`[License] ${licenseTypeName} license expiring in ${daysUntilExpiry} days`);
+			const licenseTypeName = status.payload.type === 'enterprise' ? '企业版' : 'SMB 版';
+			console.log(`[许可证] ${licenseTypeName}许可证将在 ${daysUntilExpiry} 天后过期`);
 
 			await sendEventNotification('license_expiring', {
-				title: 'License expiring soon',
-				message: `Your ${licenseTypeName} license expires in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? '' : 's'} (${expiryDate.toLocaleDateString()}). Contact support to renew.`,
+				title: '许可证即将过期',
+				message: `您的 ${licenseTypeName} 许可证将在 ${daysUntilExpiry} 天后过期 (${expiryDate.toLocaleDateString()})。请联系技术支持进行续期。`,
 				type: 'warning'
 			});
 
@@ -249,6 +266,6 @@ export async function checkLicenseExpiry(): Promise<void> {
 		}
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		console.error('[License] Failed to check license expiry:', errorMsg);
+		console.error('[许可证] 检查许可证过期状态失败：', errorMsg);
 	}
 }

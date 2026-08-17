@@ -302,7 +302,7 @@ func buildClients(cfg *EnvConfig) (client *http.Client, streamClient *http.Clien
 		baseURL = fmt.Sprintf("https://%s:%d", cfg.Host, cfg.Port)
 
 	default:
-		return nil, nil, nil, nil, "", fmt.Errorf("unsupported connection type: %s", cfg.Type)
+		return nil, nil, nil, nil, "", fmt.Errorf("不支持的连接类型: %s", cfg.Type)
 	}
 
 	client = &http.Client{Transport: transport, Timeout: 30 * time.Second}
@@ -312,7 +312,7 @@ func buildClients(cfg *EnvConfig) (client *http.Client, streamClient *http.Clien
 
 func buildTLSConfig(cfg *EnvConfig) (*tls.Config, error) {
 	if cfg.SkipVerify {
-		fmt.Fprintf(os.Stderr, "[collector] WARNING: TLS verification disabled for %s — this is insecure\n", cfg.Host)
+		fmt.Fprintf(os.Stderr, "[采集器] 警告：已关闭 %s 的 TLS 证书校验 — 此操作存在安全风险\n", cfg.Host)
 	}
 	tlsCfg := &tls.Config{
 		InsecureSkipVerify: cfg.SkipVerify,
@@ -326,7 +326,7 @@ func buildTLSConfig(cfg *EnvConfig) (*tls.Config, error) {
 			pool = x509.NewCertPool()
 		}
 		if !pool.AppendCertsFromPEM([]byte(cfg.CA)) {
-			return nil, fmt.Errorf("failed to parse CA certificate")
+			return nil, fmt.Errorf("解析 CA 证书失败")
 		}
 		tlsCfg.RootCAs = pool
 	}
@@ -334,7 +334,7 @@ func buildTLSConfig(cfg *EnvConfig) (*tls.Config, error) {
 	if cfg.Cert != "" && cfg.Key != "" {
 		cert, err := tls.X509KeyPair([]byte(cfg.Cert), []byte(cfg.Key))
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse client cert/key: %w", err)
+			return nil, fmt.Errorf("解析客户端 证书/私钥 失败: %w", err)
 		}
 		tlsCfg.Certificates = []tls.Certificate{cert}
 	}
@@ -378,7 +378,7 @@ func (e *environment) ping(ctx context.Context) error {
 		}
 		drainAndClose(resp)
 		if resp.StatusCode != 200 {
-			return fmt.Errorf("ping returned status %d", resp.StatusCode)
+			return fmt.Errorf("Ping 接口返回状态码 %d", resp.StatusCode)
 		}
 		return nil
 	}
@@ -423,7 +423,7 @@ func (m *manager) runMetrics(env *environment) {
 func (m *manager) collectMetrics(env *environment) {
 	if err := env.ping(env.ctx); err != nil {
 		if env.markOffline() {
-			m.send(OutMessage{Type: "env_status", EnvID: env.id, Online: boolPtr(false), Error: "Docker not reachable: " + err.Error()})
+			m.send(OutMessage{Type: "env_status", EnvID: env.id, Online: boolPtr(false), Error: "无法连接 Docker: " + err.Error()})
 		}
 		return
 	}
@@ -438,7 +438,7 @@ func (m *manager) collectMetrics(env *environment) {
 
 	resp, err := env.doRequest(ctx, "GET", "/containers/json?all=false")
 	if err != nil {
-		m.send(OutMessage{Type: "error", EnvID: env.id, Error: fmt.Sprintf("list containers: %s", err)})
+		m.send(OutMessage{Type: "error", EnvID: env.id, Error: fmt.Sprintf("获取容器列表失败: %s", err)})
 		return
 	}
 	defer resp.Body.Close()
@@ -627,7 +627,7 @@ func (m *manager) runEvents(env *environment) {
 		// Stream mode
 		if err := env.ping(env.ctx); err != nil {
 			if env.markOffline() {
-				m.send(OutMessage{Type: "env_status", EnvID: env.id, Online: boolPtr(false), Error: "Docker not reachable: " + err.Error()})
+				m.send(OutMessage{Type: "env_status", EnvID: env.id, Online: boolPtr(false), Error: "无法连接 Docker: " + err.Error()})
 			}
 			if !waitOrCancel(reconnectDelay) {
 				return
@@ -738,7 +738,7 @@ func (m *manager) runEvents(env *environment) {
 func (m *manager) pollEvents(env *environment) {
 	if err := env.ping(env.ctx); err != nil {
 		if env.markOffline() {
-			m.send(OutMessage{Type: "env_status", EnvID: env.id, Online: boolPtr(false), Error: "Docker not reachable: " + err.Error()})
+			m.send(OutMessage{Type: "env_status", EnvID: env.id, Online: boolPtr(false), Error: "无法连接 Docker: " + err.Error()})
 		}
 		return
 	}
@@ -909,7 +909,7 @@ func (m *manager) configure(msg InMessage) {
 	go m.runEvents(env)
 	go m.runDiskChecks(env)
 
-	fmt.Fprintf(os.Stderr, "[collector] configured env %d (%s) type=%s base=%s\n", env.id, env.name, msg.ConnectionType, baseURL)
+	fmt.Fprintf(os.Stderr, "[采集器] 已配置环境 %d (%s) 类型=%s 基础地址=%s\n", env.id, env.name, msg.ConnectionType, baseURL)
 }
 
 func (m *manager) remove(envID int) {
@@ -920,7 +920,7 @@ func (m *manager) remove(envID int) {
 		env.cancel()
 		env.closeTransports()
 		delete(m.envs, envID)
-		fmt.Fprintf(os.Stderr, "[collector] removed env %d\n", envID)
+		fmt.Fprintf(os.Stderr, "[采集器] 已移除环境 %d\n", envID)
 	}
 }
 
@@ -933,7 +933,7 @@ func (m *manager) shutdown() {
 		env.closeTransports()
 		delete(m.envs, id)
 	}
-	fmt.Fprintf(os.Stderr, "[collector] shutdown complete\n")
+	fmt.Fprintf(os.Stderr, "[采集器] 关闭完成\n")
 }
 
 func (m *manager) setMetricsInterval(ms int) {
@@ -941,7 +941,7 @@ func (m *manager) setMetricsInterval(ms int) {
 	defer m.mu.Unlock()
 	if ms > 0 {
 		m.metricsInterval = time.Duration(ms) * time.Millisecond
-		fmt.Fprintf(os.Stderr, "[collector] metrics interval set to %dms\n", ms)
+		fmt.Fprintf(os.Stderr, "[采集器] 指标间隔已设置为 %d 毫秒\n", ms)
 	}
 }
 
@@ -954,7 +954,7 @@ func (m *manager) setEventMode(mode string, pollMs int) {
 	if pollMs > 0 {
 		m.pollInterval = time.Duration(pollMs) * time.Millisecond
 	}
-	fmt.Fprintf(os.Stderr, "[collector] event mode=%s pollInterval=%dms\n", m.eventMode, m.pollInterval/time.Millisecond)
+	fmt.Fprintf(os.Stderr, "[采集器] 事件模式=%s 轮询间隔=%d毫秒\n", m.eventMode, m.pollInterval/time.Millisecond)
 }
 
 // ---------------------------------------------------------------------------
@@ -962,7 +962,7 @@ func (m *manager) setEventMode(mode string, pollMs int) {
 // ---------------------------------------------------------------------------
 
 func main() {
-	fmt.Fprintf(os.Stderr, "[collector] starting...\n")
+	fmt.Fprintf(os.Stderr, "[采集器] 正在启动...\n")
 
 	encoder := json.NewEncoder(os.Stdout)
 	mgr := newManager(encoder)
@@ -972,7 +972,7 @@ func main() {
 
 	go func() {
 		<-sigCh
-		fmt.Fprintf(os.Stderr, "[collector] received signal, shutting down\n")
+		fmt.Fprintf(os.Stderr, "[采集器] 收到信号，正在关闭\n")
 		mgr.shutdown()
 		os.Exit(0)
 	}()
@@ -990,7 +990,7 @@ func main() {
 
 		var msg InMessage
 		if err := json.Unmarshal(line, &msg); err != nil {
-			fmt.Fprintf(os.Stderr, "[collector] invalid message: %s\n", err)
+			fmt.Fprintf(os.Stderr, "[采集器] 无效消息：%s\n", err)
 			continue
 		}
 
@@ -1007,16 +1007,16 @@ func main() {
 			mgr.shutdown()
 			os.Exit(0)
 		default:
-			fmt.Fprintf(os.Stderr, "[collector] unknown message type: %s\n", msg.Type)
+			fmt.Fprintf(os.Stderr, "[采集器] 未知消息类型：%s\n", msg.Type)
 		}
 	}
 
 	// stdin closed — parent process exited or pipe broke. Shut down cleanly
 	// so Node.js can restart us if needed.
 	if err := scanner.Err(); err != nil {
-		fmt.Fprintf(os.Stderr, "[collector] stdin read error: %v\n", err)
+		fmt.Fprintf(os.Stderr, "[采集器] 标准输入读取错误：%v\n", err)
 	}
-	fmt.Fprintf(os.Stderr, "[collector] stdin closed, exiting\n")
+	fmt.Fprintf(os.Stderr, "[采集器] 标准输入已关闭，正在退出\n")
 	mgr.shutdown()
 }
 

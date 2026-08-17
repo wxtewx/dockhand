@@ -8,7 +8,7 @@ import { createJobResponse } from '$lib/server/sse';
 export const GET: RequestHandler = async ({ params, url, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !(await auth.can('stacks', 'view'))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const { name } = params;
@@ -36,8 +36,8 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 			suggestedEnvPath: result.suggestedEnvPath
 		});
 	} catch (error: any) {
-		console.error(`Error getting compose file for stack ${name}:`, error);
-		return json({ error: error.message || 'Failed to get compose file' }, { status: 500 });
+		console.error(`获取堆栈 ${name} 的 Compose 文件时出错：`, error);
+		return json({ error: error.message || '获取 Compose 文件失败' }, { status: 500 });
 	}
 };
 
@@ -51,7 +51,7 @@ export const PUT: RequestHandler = async ({ params, request, url, cookies }) => 
 
 	// Permission check with environment context
 	if (auth.authEnabled && !(await auth.can('stacks', 'edit', envIdNum))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -59,7 +59,7 @@ export const PUT: RequestHandler = async ({ params, request, url, cookies }) => 
 		const { content, restart = false, composePath, envPath, moveFromDir, oldComposePath, oldEnvPath, secretProviderId } = body;
 
 		if (!content || typeof content !== 'string') {
-			return json({ error: 'Compose file content is required' }, { status: 400 });
+			return json({ error: 'Compose 文件内容为必填项' }, { status: 400 });
 		}
 
 		if (
@@ -67,7 +67,7 @@ export const PUT: RequestHandler = async ({ params, request, url, cookies }) => 
 			secretProviderId !== null &&
 			typeof secretProviderId !== 'number'
 		) {
-			return json({ error: 'secretProviderId must be a number or null' }, { status: 400 });
+			return json({ error: 'secretProviderId 必须为数字或 null' }, { status: 400 });
 		}
 
 		// Binding a secret provider resolves its secrets into the container at deploy;
@@ -78,7 +78,7 @@ export const PUT: RequestHandler = async ({ params, request, url, cookies }) => 
 			auth.authEnabled &&
 			!(await auth.can('secrets', 'view', envIdNum))
 		) {
-			return json({ error: 'Permission denied: binding a secret provider requires the secrets permission' }, { status: 403 });
+			return json({ error: '权限拒绝：绑定密钥提供程序需要密钥查看权限' }, { status: 403 });
 		}
 
 		// Build options object for custom paths, move operation, file renames, and secret provider binding
@@ -120,8 +120,8 @@ export const PUT: RequestHandler = async ({ params, request, url, cookies }) => 
 					}
 					send('result', { success: true });
 				} catch (error: any) {
-					console.error(`Error deploying stack ${name}:`, error);
-					send('result', { success: false, error: error.message || 'Failed to deploy stack' });
+					console.error(`部署堆栈 ${name} 时出错：`, error);
+					send('result', { success: false, error: error.message || '部署堆栈失败' });
 				}
 			}, request);
 		}
@@ -129,7 +129,7 @@ export const PUT: RequestHandler = async ({ params, request, url, cookies }) => 
 		// No restart: the content is already persisted above.
 		return json({ success: true });
 	} catch (error: any) {
-		console.error(`Error updating compose file for stack ${name}:`, error);
-		return json({ error: error.message || 'Failed to update compose file' }, { status: 500 });
+		console.error(`更新堆栈 ${name} 的 Compose 文件时出错：`, error);
+		return json({ error: error.message || '更新 Compose 文件失败' }, { status: 500 });
 	}
 };

@@ -15,18 +15,18 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 	if (denied) return denied;
 
 	const targetName = url.searchParams.get('target');
-	if (!targetName) return json({ error: 'target is required' }, { status: 400 });
+	if (!targetName) return json({ error: '必须传入 target 参数' }, { status: 400 });
 	const envParam = url.searchParams.get('env');
 	const environmentId = envParam ? parseInt(envParam) : null;
 
 	if (environmentId != null && auth.isEnterprise && !await auth.canAccessEnvironment(environmentId)) {
-		return json({ error: 'Environment access denied' }, { status: 403 });
+		return json({ error: '无权限访问该环境' }, { status: 403 });
 	}
 
 	try {
 		const result = await probeStackDir(targetName, environmentId);
 		return json(result);
 	} catch (e) {
-		return json({ kind: 'unknown', reason: e instanceof Error ? e.message : 'failed to probe stack directory' });
+		return json({ kind: 'unknown', reason: e instanceof Error ? e.message : '探测堆栈目录失败' });
 	}
 };

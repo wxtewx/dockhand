@@ -25,18 +25,18 @@ export const POST: RequestHandler = async (event) => {
 	if (denied) return denied;
 
 	const id = parseInt(params.id);
-	if (isNaN(id)) return json({ error: 'Invalid ID' }, { status: 400 });
+	if (isNaN(id)) return json({ error: 'ID 格式非法' }, { status: 400 });
 
 	const body = await request.json().catch(() => ({}));
 	const currentPassword = typeof body.currentPassword === 'string' ? body.currentPassword : '';
 	const newPassword = typeof body.newPassword === 'string' ? body.newPassword : '';
 
 	if (!currentPassword || !newPassword) {
-		return json({ error: 'currentPassword and newPassword are required' }, { status: 400 });
+		return json({ error: 'currentPassword 与 newPassword 为必填参数' }, { status: 400 });
 	}
 
 	const dest = await getBackupDestination(id);
-	if (!dest) return json({ error: 'Destination not found' }, { status: 404 });
+	if (!dest) return json({ error: '未找到该存储位置' }, { status: 404 });
 
 	const result = await rotateDestinationPassword(id, currentPassword, newPassword);
 	if (!result.ok) {
@@ -55,7 +55,7 @@ export const POST: RequestHandler = async (event) => {
 		// "no key found" — surface a clearer 400 so the UI can say the current
 		// password is incorrect rather than a generic failure.
 		if (/wrong password|no key found/i.test(result.error)) {
-			return json({ error: 'Current password incorrect' }, { status: 400 });
+			return json({ error: '当前密码不正确' }, { status: 400 });
 		}
 		if (result.error.toLowerCase().includes('does not match') || result.error.toLowerCase().includes('must')) {
 			return json({ error: result.error }, { status: 400 });

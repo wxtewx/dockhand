@@ -17,10 +17,10 @@ export const GET: RequestHandler = async ({ params, url, cookies, request }) => 
 	if (invalidSnap) return invalidSnap;
 
 	const destIdParam = url.searchParams.get('destinationId');
-	if (!destIdParam) return json({ error: 'destinationId parameter is required' }, { status: 400 });
+	if (!destIdParam) return json({ error: '必须提供 destinationId 参数' }, { status: 400 });
 
 	const destinationId = parseInt(destIdParam);
-	if (isNaN(destinationId)) return json({ error: 'Invalid destinationId' }, { status: 400 });
+	if (isNaN(destinationId)) return json({ error: '无效的 destinationId' }, { status: 400 });
 
 	const path = url.searchParams.get('path') || '/';
 
@@ -36,7 +36,7 @@ export const GET: RequestHandler = async ({ params, url, cookies, request }) => 
 
 	// Additional check on any explicitly-supplied env param (enterprise RBAC).
 	if (envId !== undefined && !isNaN(envId) && auth.isEnterprise && !await auth.canAccessEnvironment(envId)) {
-		return json({ error: 'Environment access denied' }, { status: 403 });
+		return json({ error: '无权访问该环境' }, { status: 403 });
 	}
 
 	// Job-polling: `restic ls` behind a reverse proxy would abort at ~15s and SIGTERM restic

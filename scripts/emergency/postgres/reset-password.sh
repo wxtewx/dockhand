@@ -15,15 +15,15 @@
 set -e
 
 echo "========================================"
-echo "  Dockhand - Reset User Password (PostgreSQL)"
+echo "  Dockhand - 重置用户密码 (PostgreSQL)"
 echo "========================================"
 echo ""
 
 # Check arguments
 if [ -z "$1" ] || [ -z "$2" ]; then
-    echo "Usage: $0 <username> <new_password>"
+    echo "用法: $0 <用户名> <新密码>"
     echo ""
-    echo "Example:"
+    echo "示例:"
     echo "  $0 admin MyNewPassword123"
     exit 1
 fi
@@ -33,15 +33,15 @@ NEW_PASSWORD="$2"
 
 # Validate password length
 if [ ${#NEW_PASSWORD} -lt 8 ]; then
-    echo "Error: Password must be at least 8 characters"
+    echo "错误: 密码长度至少为 8 个字符"
     exit 1
 fi
 
 # Check DATABASE_URL
 if [ -z "$DATABASE_URL" ]; then
-    echo "Error: DATABASE_URL environment variable not set"
+    echo "错误: 未设置 DATABASE_URL 环境变量"
     echo ""
-    echo "Example: DATABASE_URL=postgres://user:pass@host:5432/dockhand"
+    echo "示例: DATABASE_URL=postgres://user:pass@host:5432/dockhand"
     exit 1
 fi
 
@@ -66,9 +66,9 @@ export PGPASSWORD="$DB_PASS"
 EXISTING=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT COUNT(*) FROM users WHERE username='$USERNAME';" 2>/dev/null | tr -d ' ')
 
 if [ "$EXISTING" -eq "0" ]; then
-    echo "Error: User '$USERNAME' not found"
+    echo "错误: 未找到用户 '$USERNAME'"
     echo ""
-    echo "Available users:"
+    echo "可用用户:"
     psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT username FROM users;" 2>/dev/null | while read user; do
         user=$(echo "$user" | tr -d ' ')
         if [ -n "$user" ]; then
@@ -78,26 +78,26 @@ if [ "$EXISTING" -eq "0" ]; then
     exit 1
 fi
 
-echo "This script will reset the password for user '$USERNAME'."
+echo "此脚本将重置用户 '$USERNAME' 的密码。"
 echo ""
-echo "Database: $DB_HOST:$DB_PORT/$DB_NAME"
-echo "Username: $USERNAME"
+echo "数据库: $DB_HOST:$DB_PORT/$DB_NAME"
+echo "用户名: $USERNAME"
 echo ""
-printf "Continue? [y/N]: "
+printf "是否继续? [y/N]: "
 read CONFIRM
 
 case "$CONFIRM" in
     [yY]|[yY][eE][sS])
         ;;
     *)
-        echo "Aborted."
+        echo "已中止。"
         exit 0
         ;;
 esac
 
 # Generate password hash using node (argon2 is available in the app)
 echo ""
-echo "Generating password hash..."
+echo "正在生成密码哈希值..."
 
 # Check if node and argon2 are available
 if command -v node >/dev/null 2>&1; then
@@ -112,28 +112,28 @@ if command -v node >/dev/null 2>&1; then
     " 2>/dev/null)
 
     if [ -z "$PASSWORD_HASH" ]; then
-        echo "Error: Could not generate password hash (argon2 not available)"
-        echo "This script requires Node.js with argon2 module"
+         echo "错误: 无法生成密码哈希值 (argon2 不可用)"
+        echo "此脚本需要安装了 argon2 模块的 Node.js"
         exit 1
     fi
 else
-    echo "Error: Node.js is required to generate password hash"
+    echo "错误: 需要 Node.js 才能生成密码哈希值"
     exit 1
 fi
 
-echo "Resetting password for user '$USERNAME'..."
+echo "正在为用户 '$USERNAME' 重置密码..."
 psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "UPDATE users SET password_hash='$PASSWORD_HASH', updated_at=NOW() WHERE username='$USERNAME';"
 
 if [ $? -eq 0 ]; then
     echo ""
-    echo "Password reset successfully for user '$USERNAME'"
+    echo "用户 '$USERNAME' 的密码已成功重置"
     echo ""
     # Invalidate sessions
     USER_ID=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT id FROM users WHERE username='$USERNAME';" 2>/dev/null | tr -d ' ')
     psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "DELETE FROM sessions WHERE user_id=$USER_ID;" 2>/dev/null || true
-    echo "All existing sessions have been invalidated."
-    echo "The user can now log in with the new password."
+    echo "所有现有会话已失效。"
+    echo "用户现在可以使用新密码登录。"
 else
-    echo "Error: Failed to reset password"
+    echo "错误: 密码重置失败"
     exit 1
 fi

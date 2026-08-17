@@ -18,14 +18,14 @@ export const GET: RequestHandler = async ({ url, cookies, request }) => {
 
 	if (configIdParam) {
 		const configId = parseInt(configIdParam);
-		if (isNaN(configId)) return json({ error: 'Invalid configId' }, { status: 400 });
+		if (isNaN(configId)) return json({ error: '无效的 configId' }, { status: 400 });
 		const config = await getBackupConfig(configId);
-		if (!config) return json({ error: 'Config not found' }, { status: 404 });
+		if (!config) return json({ error: '未找到配置' }, { status: 404 });
 
 		// (audit #41) The config is environment-scoped; enforce env access before
 		// listing snapshots (ids/sizes/paths/tags reveal the env-B workload).
 		if (config.environmentId && auth.isEnterprise && !await auth.canAccessEnvironment(config.environmentId)) {
-			return json({ error: 'Environment access denied' }, { status: 403 });
+			return json({ error: '无权访问该环境' }, { status: 403 });
 		}
 
 		// Narrow to THIS config's identity by its stable config-id tag so a sibling
@@ -45,7 +45,7 @@ export const GET: RequestHandler = async ({ url, cookies, request }) => {
 				const withTimeout = <T>(p: Promise<T>, name: string): Promise<T> =>
 					Promise.race([
 						p,
-						new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`timed out after ${PER_DEST_MS}ms`)), PER_DEST_MS)),
+						new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`操作超时 ${PER_DEST_MS} 毫秒`)), PER_DEST_MS)),
 					]);
 				const results = await Promise.allSettled(
 					destinations.map(dest => withTimeout(listSnapshots(dest.id, config.id), dest.name).then(snaps =>
@@ -73,7 +73,7 @@ export const GET: RequestHandler = async ({ url, cookies, request }) => {
 				});
 				allSnapshots.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
 				if (failed.length > 0) {
-					console.warn(`[Backup] Snapshot search incomplete — ${failed.length} destination(s) failed: ${failed.join('; ')}`);
+					console.warn(`[备份] 快照搜索未完成 — ${failed.length} 个目标位置失败：${failed.join('; ')}`);
 				}
 				return allSnapshots;
 			});
@@ -83,7 +83,7 @@ export const GET: RequestHandler = async ({ url, cookies, request }) => {
 		return jobResult(request, () => listSnapshots(config.destinationId, config.id));
 	} else if (destIdParam) {
 		const destinationId = parseInt(destIdParam);
-		if (isNaN(destinationId)) return json({ error: 'Invalid destinationId' }, { status: 400 });
+		if (isNaN(destinationId)) return json({ error: '无效的 destinationId' }, { status: 400 });
 
 		// Job-polling: `restic snapshots` would otherwise be aborted at the proxy's ~15s cap.
 		// Returns a bare snapshot array (unchanged contract). The per-snapshot dockhand:instance=
@@ -102,6 +102,6 @@ export const GET: RequestHandler = async ({ url, cookies, request }) => {
 			return snapshots;
 		});
 	} else {
-		return json({ error: 'configId or destinationId parameter is required' }, { status: 400 });
+		return json({ error: '必须提供 configId 或 destinationId 参数' }, { status: 400 });
 	}
 };

@@ -109,7 +109,7 @@ interface ExecutionDetails {
 async function scanAndCheckBlock(ctx: ScanContext): Promise<ScanOutcome> {
 	const { newImageId, currentImageId, envId, vulnerabilityCriteria, log } = ctx;
 
-	log(`Scanning new image for vulnerabilities...`);
+	log(`正在扫描新镜像的漏洞...`);
 
 	const scanResults = await scanImage(newImageId, envId, (progress) => {
 		const scannerTag = progress.scanner ? `[${progress.scanner}]` : '[scan]';
@@ -126,7 +126,7 @@ async function scanAndCheckBlock(ctx: ScanContext): Promise<ScanOutcome> {
 	}
 
 	const scanSummary = combineScanSummaries(scanResults);
-	log(`Scan result: ${scanSummary.critical} critical, ${scanSummary.high} high, ${scanSummary.medium} medium, ${scanSummary.low} low`);
+	log(`扫描结果：严重 ${scanSummary.critical} 个，高危 ${scanSummary.high} 个，中危 ${scanSummary.medium} 个，低危 ${scanSummary.low} 个`);
 
 	// Save scan results
 	for (const result of scanResults) {
@@ -148,7 +148,7 @@ async function scanAndCheckBlock(ctx: ScanContext): Promise<ScanOutcome> {
 				error: result.error ?? null
 			});
 		} catch (saveError: any) {
-			log(`Warning: Could not save scan results: ${saveError.message}`);
+			log(`警告：无法保存扫描结果：${saveError.message}`);
 		}
 	}
 
@@ -164,11 +164,11 @@ async function scanAndCheckBlock(ctx: ScanContext): Promise<ScanOutcome> {
 	);
 
 	if (blocked) {
-		log(`UPDATE BLOCKED: ${reason}`);
+		log(`已阻止更新：${reason}`);
 		return { blocked: true, reason, scanResults, scanSummary };
 	}
 
-	log(`Scan passed vulnerability criteria`);
+	log(`扫描通过漏洞检测规则`);
 	return { blocked: false, scanResults, scanSummary };
 }
 
@@ -280,12 +280,12 @@ export async function runContainerUpdate(
 	});
 
 	const log = (message: string) => {
-		console.log(`[Auto-update] ${message}`);
+		console.log(`[自动更新] ${message}`);
 		appendScheduleExecutionLog(execution.id, `[${new Date().toISOString()}] ${message}`);
 	};
 
 	try {
-		log(`Checking container: ${containerName}`);
+		log(`正在检查容器：${containerName}`);
 		await updateAutoUpdateLastChecked(containerName, envId);
 
 		// Find the container
@@ -293,12 +293,12 @@ export async function runContainerUpdate(
 		const container = containers.find(c => c.name === containerName);
 
 		if (!container) {
-			log(`Container not found: ${containerName}`);
+			log(`未找到容器：${containerName}`);
 			await updateScheduleExecution(execution.id, {
 				status: 'failed',
 				completedAt: new Date().toISOString(),
 				duration: Date.now() - startTime,
-				errorMessage: 'Container not found'
+				errorMessage: '未找到容器'
 			});
 			return;
 		}
@@ -306,12 +306,12 @@ export async function runContainerUpdate(
 		// Podman pod-infra containers (#1221): silently skip before any inspect /
 		// image-resolution that would fail with "Could not determine image name".
 		if (isPodmanInfraContainer(containerName)) {
-			log(`Skipping Podman pod-infra container`);
+			log(`跳过 Podman pod-infra 容器`);
 			await updateScheduleExecution(execution.id, {
 				status: 'skipped',
 				completedAt: new Date().toISOString(),
 				duration: Date.now() - startTime,
-				details: { reason: 'Podman pod-infra container' }
+				details: { reason: 'Podman pod-infra 容器' }
 			});
 			return;
 		}
@@ -321,12 +321,12 @@ export async function runContainerUpdate(
 		const imageNameFromConfig = inspectData.Config?.Image;
 
 		if (!imageNameFromConfig) {
-			log(`Could not determine image name from container config`);
+			log(`无法从容器配置中获取镜像名称`);
 			await updateScheduleExecution(execution.id, {
 				status: 'failed',
 				completedAt: new Date().toISOString(),
 				duration: Date.now() - startTime,
-				errorMessage: 'Could not determine image name'
+				errorMessage: '无法确定镜像名称'
 			});
 			return;
 		}
@@ -335,9 +335,9 @@ export async function runContainerUpdate(
 		const systemContainerType = isSystemContainer(imageNameFromConfig);
 		if (systemContainerType) {
 			const reason = systemContainerType === 'dockhand'
-				? 'Cannot auto-update Dockhand itself'
-				: 'Cannot auto-update Hawser agent';
-			log(`Skipping ${systemContainerType} container - ${reason}`);
+				? '无法自动更新 Dockhand 自身'
+				: '无法自动更新 Hawser 代理';
+			log(`跳过 ${systemContainerType} 容器 - ${reason}`);
 			await updateScheduleExecution(execution.id, {
 				status: 'skipped',
 				completedAt: new Date().toISOString(),
@@ -349,36 +349,36 @@ export async function runContainerUpdate(
 
 		// Check dockhand.update label (label wins over DB settings)
 		if (isUpdateDisabledByLabel(inspectData.Config?.Labels)) {
-			log(`Skipping - dockhand.update=false label set on container`);
+			log(`已跳过 - 容器上设置了 dockhand.update=false 标签`);
 			await updateScheduleExecution(execution.id, {
 				status: 'skipped',
 				completedAt: new Date().toISOString(),
 				duration: Date.now() - startTime,
-				details: { reason: 'Skipped by dockhand.update=false label' }
+				details: { reason: '已通过 dockhand.update=false 标签跳过' }
 			});
 			return;
 		}
 
 		// Hidden containers are excluded from update polling and auto-updates (#1083)
 		if (isHiddenByLabel(inspectData.Config?.Labels)) {
-			log(`Skipping - dockhand.hidden=true label set on container`);
+			log(`已跳过 - 容器存在 dockhand.hidden=true 标签`);
 			await updateScheduleExecution(execution.id, {
 				status: 'skipped',
 				completedAt: new Date().toISOString(),
 				duration: Date.now() - startTime,
-				details: { reason: 'Skipped by dockhand.hidden=true label' }
+				details: { reason: '因标签 dockhand.hidden=true 跳过本次更新检测' }
 			});
 			return;
 		}
 
 		// Skip digest-pinned images - they are explicitly locked to a specific version
 		if (isDigestBasedImage(imageNameFromConfig)) {
-			log(`Skipping ${containerName} - image pinned to specific digest`);
+			log(`已跳过 ${containerName} - 镜像已固定到指定摘要`);
 			await updateScheduleExecution(execution.id, {
 				status: 'skipped',
 				completedAt: new Date().toISOString(),
 				duration: Date.now() - startTime,
-				details: { reason: 'Image pinned to specific digest' }
+				details: { reason: '镜像已固定到指定摘要' }
 			});
 			return;
 		}
@@ -396,8 +396,8 @@ export async function runContainerUpdate(
 			// Best-effort; rebase falls back if unavailable.
 		}
 
-		log(`Container is using image: ${imageNameFromConfig}`);
-		log(`Current image ID: ${currentImageId?.substring(0, 19)}`);
+		log(`容器使用的镜像: ${imageNameFromConfig}`);
+		log(`当前镜像 ID: ${currentImageId?.substring(0, 19)}`);
 
 		// Get scanner and schedule settings early to determine scan strategy
 		const [scannerSettings, updateSetting] = await Promise.all([
@@ -412,43 +412,43 @@ export async function runContainerUpdate(
 		// CHECK FOR UPDATES
 		// =============================================================================
 
-		log(`Checking registry for updates: ${imageNameFromConfig}`);
+		log(`正在检查镜像仓库更新：${imageNameFromConfig}`);
 		const registryCheck = await checkImageUpdateAvailable(imageNameFromConfig, currentImageId, envId);
 
 		if (registryCheck.isLocalImage) {
-			log(`Local image detected - skipping (auto-update requires registry)`);
+			log(`检测到本地镜像 - 已跳过 (自动更新需要镜像仓库)`);
 			await updateScheduleExecution(execution.id, {
 				status: 'skipped',
 				completedAt: new Date().toISOString(),
 				duration: Date.now() - startTime,
-				details: { reason: 'Local image - no registry available' }
+				details: { reason: '本地镜像 - 无可用镜像仓库' }
 			});
 			return;
 		}
 
 		if (registryCheck.error) {
-			log(`Registry check error: ${registryCheck.error}`);
+			log(`镜像仓库检查错误：${registryCheck.error}`);
 			await updateScheduleExecution(execution.id, {
 				status: 'skipped',
 				completedAt: new Date().toISOString(),
 				duration: Date.now() - startTime,
-				details: { reason: `Registry check failed: ${registryCheck.error}` }
+				details: { reason: `镜像仓库检查失败：${registryCheck.error}` }
 			});
 			return;
 		}
 
 		if (!registryCheck.hasUpdate) {
-			log(`Already up-to-date: ${containerName} is running the latest version`);
+			log(`已是最新版本：${containerName} 运行的是最新镜像`);
 			await updateScheduleExecution(execution.id, {
 				status: 'skipped',
 				completedAt: new Date().toISOString(),
 				duration: Date.now() - startTime,
-				details: { reason: 'Already up-to-date' }
+				details: { reason: '已是最新版本' }
 			});
 			return;
 		}
 
-		log(`Update available! Registry digest: ${registryCheck.registryDigest?.substring(0, 19) || 'unknown'}`);
+		log(`发现可用更新！仓库摘要：${registryCheck.registryDigest?.substring(0, 19) || '未知'}`);
 		const newDigest = registryCheck.registryDigest;
 
 		// =============================================================================
@@ -466,29 +466,29 @@ export async function runContainerUpdate(
 
 		if (shouldScan && !isDigestBasedImage(imageNameFromConfig)) {
 			const tempTag = getTempImageTag(imageNameFromConfig);
-			log(`Using temp tag for safe pull: ${tempTag}`);
+			log(`使用临时标签安全拉取：${tempTag}`);
 
 			try {
 				// Pull new image
-				log(`Pulling new image: ${imageNameFromConfig}`);
+				log(`正在拉取新镜像：${imageNameFromConfig}`);
 				await pullImage(imageNameFromConfig, undefined, envId);
 
 				// Get new image ID
 				newImageId = await getImageIdByTag(imageNameFromConfig, envId);
 				if (!newImageId) {
-					throw new Error('Failed to get new image ID after pull');
+					throw new Error('拉取后无法获取新镜像 ID');
 				}
-				log(`New image pulled: ${newImageId.substring(0, 19)}`);
+				log(`新镜像已拉取：${newImageId.substring(0, 19)}`);
 
 				// Restore original tag to OLD image for safety
-				log(`Restoring original tag to safe image...`);
+				log(`正在将原始标签恢复到安全镜像...`);
 				const [oldRepo, oldTag] = parseImageNameAndTag(imageNameFromConfig);
 				await tagImage(currentImageId, oldRepo, oldTag, envId);
 
 				// Tag new image with temp suffix
 				const [tempRepo, tempTagName] = parseImageNameAndTag(tempTag);
 				await tagImage(newImageId, tempRepo, tempTagName, envId);
-				log(`New image tagged as: ${tempTag}`);
+				log(`新镜像已标记为：${tempTag}`);
 
 				// Scan new image (by ID, not temp tag - for proper cache storage)
 				try {
@@ -501,7 +501,7 @@ export async function runContainerUpdate(
 					});
 
 					if (scanOutcome.blocked) {
-						log(`Removing blocked image: ${tempTag}`);
+						log(`正在移除被阻止的镜像：${tempTag}`);
 						await removeTempImage(newImageId, envId);
 
 						await updateScheduleExecution(execution.id, {
@@ -518,29 +518,29 @@ export async function runContainerUpdate(
 						});
 
 						await sendEventNotification('auto_update_blocked', {
-							title: 'Auto-update blocked',
-							message: `Container "${containerName}" update blocked: ${scanOutcome.reason}`,
+							title: '已阻止自动更新',
+							message: `容器 "${containerName}" 更新已被阻止：${scanOutcome.reason}`,
 							type: 'warning'
 						}, envId);
 
 						return;
 					}
 				} catch (scanError: any) {
-					log(`Scan failed: ${scanError.message}`);
-					log(`Removing temp image...`);
+					log(`扫描失败：${scanError.message}`);
+					log(`正在移除临时镜像...`);
 					await removeTempImage(newImageId, envId);
 
 					await updateScheduleExecution(execution.id, {
 						status: 'failed',
 						completedAt: new Date().toISOString(),
 						duration: Date.now() - startTime,
-						errorMessage: `Vulnerability scan failed: ${scanError.message}`
+						errorMessage: `漏洞扫描失败：${scanError.message}`
 					});
 					return;
 				}
 
 				// Re-tag approved image to original
-				log(`Re-tagging approved image to: ${imageNameFromConfig}`);
+				log(`正在将通过检测的镜像重新标记为：${imageNameFromConfig}`);
 				await tagImage(newImageId, oldRepo, oldTag, envId);
 
 				// Clean up temp tag
@@ -549,28 +549,28 @@ export async function runContainerUpdate(
 				} catch { /* ignore */ }
 
 			} catch (pullError: any) {
-				log(`Pull failed: ${pullError.message}`);
+				log(`拉取失败：${pullError.message}`);
 				await updateScheduleExecution(execution.id, {
 					status: 'failed',
 					completedAt: new Date().toISOString(),
 					duration: Date.now() - startTime,
-					errorMessage: `Failed to pull image: ${pullError.message}`
+					errorMessage: `镜像拉取失败：${pullError.message}`
 				});
 				return;
 			}
 		} else {
 			// No scanning - simple pull
-			log(`Pulling update (no vulnerability scan)...`);
+			log(`正在拉取更新 (不进行漏洞扫描)...`);
 			try {
 				await pullImage(imageNameFromConfig, undefined, envId);
-				log(`Image pulled successfully`);
+				log(`镜像拉取成功`);
 			} catch (pullError: any) {
-				log(`Pull failed: ${pullError.message}`);
+				log(`拉取失败：${pullError.message}`);
 				await updateScheduleExecution(execution.id, {
 					status: 'failed',
 					completedAt: new Date().toISOString(),
 					duration: Date.now() - startTime,
-					errorMessage: `Failed to pull image: ${pullError.message}`
+					errorMessage: `镜像拉取失败：${pullError.message}`
 				});
 				return;
 			}
@@ -580,7 +580,7 @@ export async function runContainerUpdate(
 		// RECREATE CONTAINER (full config passthrough from inspect data)
 		// =============================================================================
 
-		log(`Recreating container with full config passthrough...`);
+		log(`正在使用完整配置重新创建容器...`);
 		const result = await recreateContainer(containerName, envId, {
 			log,
 			imageNameOverride: imageNameFromConfig,
@@ -589,7 +589,7 @@ export async function runContainerUpdate(
 
 		if (result.success) {
 			await updateAutoUpdateLastUpdated(containerName, envId);
-			log(`Successfully updated container: ${containerName}`);
+			log(`容器更新成功：${containerName}`);
 
 			await updateScheduleExecution(execution.id, {
 				status: 'success',
@@ -605,16 +605,16 @@ export async function runContainerUpdate(
 			});
 
 			await sendEventNotification('auto_update_success', {
-				title: 'Container auto-updated',
-				message: `Container "${containerName}" was updated to a new image version`,
+				title: '容器已自动更新',
+				message: `容器 "${containerName}" 已更新到新版本镜像`,
 				type: 'success'
 			}, envId);
 		} else {
-			throw new Error(result.error || 'Failed to recreate container');
+			throw new Error(result.error || '重新创建容器失败');
 		}
 
 	} catch (error: any) {
-		log(`Error: ${error.message}`);
+		log(`错误：${error.message}`);
 		await updateScheduleExecution(execution.id, {
 			status: 'failed',
 			completedAt: new Date().toISOString(),
@@ -623,8 +623,8 @@ export async function runContainerUpdate(
 		});
 
 		await sendEventNotification('auto_update_failed', {
-			title: 'Auto-update failed',
-			message: `Container "${containerName}" auto-update failed: ${error.message}`,
+			title: '自动更新失败',
+			message: `容器 "${containerName}" 自动更新失败：${error.message}`,
 			type: 'error'
 		}, envId);
 	}
@@ -663,8 +663,8 @@ export async function recreateContainer(
 		const container = containers.find(c => c.name === containerName);
 
 		if (!container) {
-			log?.(`Container not found: ${containerName}`);
-			return { success: false, error: `Container not found: ${containerName}` };
+			log?.(`未找到容器：${containerName}`);
+			return { success: false, error: `未找到容器：${containerName}` };
 		}
 
 		const inspectData = await inspectContainer(container.id, envId) as any;
@@ -676,7 +676,7 @@ export async function recreateContainer(
 		// with "joining network namespace of container: No such container" (#570).
 		const oldParentId: string = inspectData.Id;
 
-		log?.(`Recreating container: ${containerName} (image: ${imageName})`);
+		log?.(`正在重新创建容器：${containerName} (镜像：${imageName})`);
 
 		await recreateContainerFromInspect(inspectData, imageName, envId, log, oldImageConfig);
 
@@ -688,14 +688,14 @@ export async function recreateContainer(
 		try {
 			const reconnected = await reconnectDependentChildren(oldParentId, containerName, envId, log);
 			if (reconnected > 0) {
-				log?.(`Reconnected ${reconnected} dependent container${reconnected === 1 ? '' : 's'} to the new parent`);
+				log?.(`已将 ${reconnected} 个依赖容器重新连接至新父容器`);
 			}
 		} catch (e: any) {
-			log?.(`WARNING: dependent-child reconnect step errored (parent update stands): ${e?.message}`);
+			log?.(`警告：重新连接依赖子容器步骤发生错误 (父容器更新已生效)：${e?.message}`);
 		}
 		return { success: true };
 	} catch (error: any) {
-		log?.(`Failed to recreate container: ${error.message}`);
+		log?.(`重新创建容器失败：${error.message}`);
 		return { success: false, error: error.message };
 	}
 }
@@ -732,7 +732,7 @@ async function reconnectDependentChildren(
 		// Match the parent by full id, or defensively by short (12-char) id.
 		if (ref !== oldParentId && ref !== oldParentId.slice(0, 12) && !oldParentId.startsWith(ref)) continue;
 
-		log?.(`Reconnecting dependent container "${c.name}" -> container:${newParentName}`);
+		log?.(`正在重新连接依赖容器 "${c.name}" -> container:${newParentName}`);
 		const oldChildId: string = ci.Id;
 		ci.HostConfig.NetworkMode = `container:${newParentName}`;
 		try {
@@ -743,7 +743,7 @@ async function reconnectDependentChildren(
 				count += await reconnectDependentChildren(oldChildId, c.name, envId, log, visited);
 			}
 		} catch (e: any) {
-			log?.(`WARNING: failed to reconnect dependent "${c.name}": ${e?.message}`);
+			log?.(`警告：重新连接依赖容器 "${c.name}" 失败：${e?.message}`);
 		}
 	}
 	return count;
