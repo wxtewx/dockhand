@@ -5,55 +5,55 @@
     "changes": [
       {
         "type": "feature",
-        "text": "optional indentation guides in the compose/YAML editor (#1410)"
+        "text": "Compose/YAML 编辑器支持可选缩进参考线 (#1410)"
       },
       {
         "type": "feature",
-        "text": "support caddy-docker-proxy labels (#1390)"
+        "text": "支持 caddy-docker-proxy 标签 (#1390)"
       },
       {
         "type": "fix",
-        "text": "updating a compose file over the API now saves it, not just deploys it (#1383)"
+        "text": "通过 API 更新 Compose 文件现在会保存文件，而不只是执行部署 (#1383)"
       },
       {
         "type": "fix",
-        "text": "reopening the MFA setup screen while MFA is enabled no longer wipes the secret and backup codes (#1399)"
+        "text": "MFA 已启用时重新打开 MFA 设置界面，不再清空密钥与恢复码 (#1399)"
       },
       {
         "type": "feature",
-        "text": "upload a Docker image .tar through the UI (docker load) for air-gapped hosts (#88, #1389)"
+        "text": "UI 界面上传 Docker 镜像 .tar 包 (docker load)，适用于离线隔离主机 (#88, #1389)"
       },
       {
         "type": "fix",
-        "text": "stack deploys no longer leak Dockhand's own DOCKER_HOST into services (#1393)"
+        "text": "堆栈部署不再将 Dockhand 自身的 DOCKER_HOST 泄露至业务服务 (#1393)"
       },
       {
         "type": "feature",
-        "text": "stack secrets from external providers (1Password, HashiCorp Vault, Infisical and Doppler) (PR#1360, @wintech147, @GooRoo)"
+        "text": "支持外部提供程序提供堆栈密钥 (1Password、HashiCorp Vault、Infisical、Doppler) (PR#1360, @wintech147, @GooRoo)"
       },
       {
         "type": "fix",
-        "text": "container update no longer fails on Podman when CPU limits are set (#1381)"
+        "text": "Podman 环境设置 CPU 限制时，容器更新不再失败 (#1381)"
       },
       {
         "type": "fix",
-        "text": "container update no longer fails on Podman for containers using userns_mode: keep-id (#1409)"
+        "text": "Podman 环境下使用 userns_mode: keep-id 的容器，更新操作不再失败 (#1409)"
       },
       {
         "type": "fix",
-        "text": "stack deploy now respects DOCKER_CONFIG when pulling private images (#1376)"
+        "text": "堆栈拉取私有镜像时会读取 DOCKER_CONFIG 配置 (#1376)"
       },
       {
         "type": "fix",
-        "text": "start, stop or restart on Hawser updates its files on the remote host, not only on redeploy (#1240)"
+        "text": "Hawser 执行启动、停止、重启操作时会更新远程主机上的文件，不再仅在重新部署时更新 (#1240)"
       },
       {
         "type": "fix",
-        "text": "grouped container logs now show one merged timeline sorted by time (#1406)"
+        "text": "分组容器日志现在展示按时间排序的合并时间线 (#1406)"
       },
       {
         "type": "fix",
-        "text": "multi-arch images no longer show false \"update available\" (#1367)"
+        "text": "多架构镜像不再错误显示 \"存在可用更新\" (#1367)"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.42"
