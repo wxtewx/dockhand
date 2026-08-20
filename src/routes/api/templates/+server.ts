@@ -1,6 +1,7 @@
 import type { RequestHandler } from '@sveltejs/kit';
 import { json } from '@sveltejs/kit';
 import { authorize } from '$lib/server/authorize';
+import { isSafeWebhookUrl } from '$lib/server/url-safety';
 import { getTemplateSources, type TemplateSource } from '$lib/server/templates';
 
 export interface TemplateItem {
@@ -156,11 +157,26 @@ async function fetchSource(source: TemplateSource): Promise<TemplateItem[]> {
 		return cached.data;
 	}
 
+	// The source URL is user-configured, so guard against SSRF: a template source
+	// always lives on a public host, so block loopback/private/link-local/metadata
+	// (strict policy) and refuse redirects that could bounce to a private host.
+	const safety = isSafeWebhookUrl(source.url);
+	if (!safety.ok) {
+		console.error(`[Templates] Refusing to fetch ${source.name}: ${safety.reason}`);
+		return cached?.data || [];
+	}
+
 	try {
 		const response = await fetch(source.url, {
 			headers: { 'Accept': 'application/json' },
+			redirect: 'manual',
 			signal: AbortSignal.timeout(15000),
 		});
+
+		if (response.status >= 300 && response.status < 400) {
+			console.error(`[Templates] Refusing to fetch ${source.name}: source redirected the request`);
+			return cached?.data || [];
+		}
 
 		if (!response.ok) {
 			console.error(`[Templates] Failed to fetch ${source.name}: ${response.status}`);
@@ -188,6 +204,15 @@ async function fetchSource(source: TemplateSource): Promise<TemplateItem[]> {
 	}
 }
 
+/**
+ * GET /api/templates - Aggregated app templates from enabled sources
+ *
+ * @openapi
+ * summary: Return the normalized app templates aggregated from all enabled template sources (server-side cached for 1 hour)
+ * resp-200: array<{id:string!, type:string!, title:string!, description:string!, logo:string!, categories:array<string>!, source:string!, image:string, projectUrl:string}>
+ * resp-200-example: [{"id":"a1b2c3","type":"container","title":"Nginx","description":"Web server","logo":"https://example.com/nginx.png","categories":["web"],"source":"LinuxServer.io","image":"lscr.io/linuxserver/nginx:latest","projectUrl":"https://github.com/linuxserver/docker-nginx"}]
+ * resp-403: Permission denied
+ */
 export const GET: RequestHandler = async ({ cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('templates', 'view')) {
