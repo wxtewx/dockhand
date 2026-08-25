@@ -21,7 +21,7 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           BODY=$(jq -r --arg v "$VERSION" '
             .[] | select(.version == $v) |
-            "## What'\''s new in v\(.version)\n\n" +
+            "## v\(.version) 更新内容\n\n" +
             ([.changes[] |
               if .type == "feature" then "- ✨ \(.text)"
               elif .type == "fix" then "- 🐛 \(.text)"
@@ -33,21 +33,21 @@ jobs:
           ' src/lib/data/changelog.json)
 
           if [ -z "$BODY" ]; then
-            BODY="Release ${GITHUB_REF_NAME}"
+            BODY="版本 ${GITHUB_REF_NAME}"
           fi
 
           cat <<EOF > /tmp/release-body.md
           ${BODY}
 
-          ## Docker image
+          ## Docker 镜像
 
           \`\`\`bash
-          docker pull fnsys/dockhand:${GITHUB_REF_NAME}
+          docker pull wxtewx/dockhand:${GITHUB_REF_NAME}
           \`\`\`
 
-          Also available as \`fnsys/dockhand:latest\`
+          同时提供标签 \`wxtewx/dockhand:latest\`
 
-          [View on Docker Hub](https://hub.docker.com/r/fnsys/dockhand)
+          [在 Docker Hub 查看](https://hub.docker.com/r/wxtewx/dockhand)
           EOF
 
           sed -i 's/^          //' /tmp/release-body.md
