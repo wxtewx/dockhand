@@ -15,6 +15,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: latest
+
+      - name: Generate package-lock.json
+        run: |
+          npm ci
+
       - name: Extract changelog
         id: changelog
         run: |
