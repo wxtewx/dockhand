@@ -43,6 +43,7 @@ import {
 	gitStacks,
 	secretProviders,
 	stackSources,
+	containerIconOverrides,
 	vulnerabilityScans,
 	auditLogs,
 	containerEvents,
@@ -2295,6 +2296,7 @@ export interface GitStackData {
 	environmentId: number | null;
 	repositoryId: number;
 	composePath: string;
+	branch: string | null; // Per-stack branch override; null = use repository default
 	envFilePath: string | null;
 	autoUpdate: boolean;
 	autoUpdateSchedule: 'daily' | 'weekly' | 'custom';
@@ -2333,6 +2335,7 @@ export async function getGitStacks(environmentId?: number): Promise<GitStackWith
 			stackName: gitStacks.stackName,
 			environmentId: gitStacks.environmentId,
 			repositoryId: gitStacks.repositoryId,
+			branch: gitStacks.branch,
 			composePath: gitStacks.composePath,
 			envFilePath: gitStacks.envFilePath,
 			autoUpdate: gitStacks.autoUpdate,
@@ -2366,6 +2369,7 @@ export async function getGitStacks(environmentId?: number): Promise<GitStackWith
 			stackName: gitStacks.stackName,
 			environmentId: gitStacks.environmentId,
 			repositoryId: gitStacks.repositoryId,
+			branch: gitStacks.branch,
 			composePath: gitStacks.composePath,
 			envFilePath: gitStacks.envFilePath,
 			autoUpdate: gitStacks.autoUpdate,
@@ -2399,6 +2403,7 @@ export async function getGitStacks(environmentId?: number): Promise<GitStackWith
 		stackName: row.stackName,
 		environmentId: row.environmentId,
 		repositoryId: row.repositoryId,
+		branch: row.branch ?? null,
 		composePath: row.composePath,
 		envFilePath: row.envFilePath,
 		autoUpdate: row.autoUpdate,
@@ -2434,6 +2439,7 @@ export async function getGitStacksForEnvironmentOnly(environmentId: number): Pro
 		stackName: gitStacks.stackName,
 		environmentId: gitStacks.environmentId,
 		repositoryId: gitStacks.repositoryId,
+		branch: gitStacks.branch,
 		composePath: gitStacks.composePath,
 		envFilePath: gitStacks.envFilePath,
 		autoUpdate: gitStacks.autoUpdate,
@@ -2467,6 +2473,7 @@ export async function getGitStacksForEnvironmentOnly(environmentId: number): Pro
 		stackName: row.stackName,
 		environmentId: row.environmentId,
 		repositoryId: row.repositoryId,
+		branch: row.branch ?? null,
 		composePath: row.composePath,
 		envFilePath: row.envFilePath,
 		autoUpdate: row.autoUpdate,
@@ -2501,6 +2508,7 @@ export async function getGitStack(id: number): Promise<GitStackWithRepo | null> 
 		stackName: gitStacks.stackName,
 		environmentId: gitStacks.environmentId,
 		repositoryId: gitStacks.repositoryId,
+		branch: gitStacks.branch,
 		composePath: gitStacks.composePath,
 		envFilePath: gitStacks.envFilePath,
 		autoUpdate: gitStacks.autoUpdate,
@@ -2536,6 +2544,7 @@ export async function getGitStack(id: number): Promise<GitStackWithRepo | null> 
 		stackName: row.stackName,
 		environmentId: row.environmentId,
 		repositoryId: row.repositoryId,
+		branch: row.branch ?? null,
 		composePath: row.composePath,
 		envFilePath: row.envFilePath,
 		autoUpdate: row.autoUpdate,
@@ -2571,6 +2580,7 @@ export async function getGitStackByName(stackName: string, environmentId?: numbe
 		stackName: gitStacks.stackName,
 		environmentId: gitStacks.environmentId,
 		repositoryId: gitStacks.repositoryId,
+		branch: gitStacks.branch,
 		composePath: gitStacks.composePath,
 		envFilePath: gitStacks.envFilePath,
 		autoUpdate: gitStacks.autoUpdate,
@@ -2610,6 +2620,7 @@ export async function getGitStackByName(stackName: string, environmentId?: numbe
 		stackName: row.stackName,
 		environmentId: row.environmentId,
 		repositoryId: row.repositoryId,
+		branch: row.branch ?? null,
 		composePath: row.composePath,
 		envFilePath: row.envFilePath,
 		autoUpdate: row.autoUpdate,
@@ -2644,6 +2655,7 @@ export async function getGitStackByWebhookSecret(secret: string): Promise<GitSta
 		stackName: gitStacks.stackName,
 		environmentId: gitStacks.environmentId,
 		repositoryId: gitStacks.repositoryId,
+		branch: gitStacks.branch,
 		composePath: gitStacks.composePath,
 		envFilePath: gitStacks.envFilePath,
 		autoUpdate: gitStacks.autoUpdate,
@@ -2678,6 +2690,7 @@ export async function getGitStackByWebhookSecret(secret: string): Promise<GitSta
 		stackName: row.stackName,
 		environmentId: row.environmentId,
 		repositoryId: row.repositoryId,
+		branch: row.branch ?? null,
 		composePath: row.composePath,
 		envFilePath: row.envFilePath,
 		autoUpdate: row.autoUpdate,
@@ -2710,6 +2723,7 @@ export async function createGitStack(data: {
 	stackName: string;
 	environmentId?: number | null;
 	repositoryId: number;
+	branch?: string | null;
 	composePath?: string;
 	envFilePath?: string | null;
 	autoUpdate?: boolean;
@@ -2727,6 +2741,7 @@ export async function createGitStack(data: {
 		stackName: data.stackName,
 		environmentId: data.environmentId ?? null,
 		repositoryId: data.repositoryId,
+		branch: data.branch || null,
 		composePath: data.composePath || 'compose.yaml',
 		envFilePath: data.envFilePath || null,
 		contextDir: data.contextDir || null,
@@ -2749,6 +2764,7 @@ export async function updateGitStack(id: number, data: Partial<GitStackData>): P
 	if (data.stackName !== undefined) updateData.stackName = data.stackName;
 	if (data.repositoryId !== undefined) updateData.repositoryId = data.repositoryId;
 	if (data.composePath !== undefined) updateData.composePath = data.composePath;
+	if (data.branch !== undefined) updateData.branch = data.branch || null;
 	if (data.envFilePath !== undefined) updateData.envFilePath = data.envFilePath;
 	if (data.autoUpdate !== undefined) updateData.autoUpdate = data.autoUpdate;
 	if (data.autoUpdateSchedule !== undefined) updateData.autoUpdateSchedule = data.autoUpdateSchedule;
@@ -2821,6 +2837,7 @@ export async function getEnabledAutoUpdateGitStacks(): Promise<GitStackWithRepo[
 		stackName: row.stackName,
 		environmentId: row.environmentId,
 		repositoryId: row.repositoryId,
+		branch: row.branch ?? null,
 		composePath: row.composePath,
 		envFilePath: row.envFilePath,
 		autoUpdate: row.autoUpdate,
@@ -2886,6 +2903,7 @@ export async function getAllAutoUpdateGitStacks(): Promise<GitStackWithRepo[]> {
 		stackName: row.stackName,
 		environmentId: row.environmentId,
 		repositoryId: row.repositoryId,
+		branch: row.branch ?? null,
 		composePath: row.composePath,
 		autoUpdate: row.autoUpdate,
 		autoUpdateSchedule: row.autoUpdateSchedule,
@@ -2929,6 +2947,7 @@ export interface StackSourceData {
 	composePath: string | null;
 	envPath: string | null;
 	secretProviderId: number | null;
+	icon: string | null;
 	createdAt: string;
 	updatedAt: string;
 }
@@ -3037,6 +3056,7 @@ export async function upsertStackSource(data: {
 	composePath?: string | null;
 	envPath?: string | null;
 	secretProviderId?: number | null;
+	icon?: string | null;
 }): Promise<StackSourceData> {
 	const existing = await getStackSource(data.stackName, data.environmentId);
 
@@ -3060,7 +3080,9 @@ export async function upsertStackSource(data: {
 				envPath: data.envPath ?? null,
 				updatedAt: new Date().toISOString(),
 				// Preserve existing binding when caller (like git) omits it
-				...(data.secretProviderId !== undefined && { secretProviderId: data.secretProviderId })
+				...(data.secretProviderId !== undefined && { secretProviderId: data.secretProviderId }),
+				// Same preserve-on-omit for the icon, so a git sync doesn't wipe a user's choice
+				...(data.icon !== undefined && { icon: data.icon })
 			})
 			.where(eq(stackSources.id, existing.id));
 		return getStackSource(data.stackName, data.environmentId) as Promise<StackSourceData>;
@@ -3074,7 +3096,8 @@ export async function upsertStackSource(data: {
 			gitStackId: data.gitStackId || null,
 			composePath: data.composePath ?? null,
 			envPath: data.envPath ?? null,
-			secretProviderId: data.secretProviderId ?? null
+			secretProviderId: data.secretProviderId ?? null,
+			icon: data.icon ?? null
 		});
 		return getStackSource(data.stackName, data.environmentId) as Promise<StackSourceData>;
 	}
@@ -3083,7 +3106,7 @@ export async function upsertStackSource(data: {
 export async function updateStackSource(
 	stackName: string,
 	environmentId: number | null,
-	updates: { composePath?: string | null; envPath?: string | null; secretProviderId?: number | null }
+	updates: { composePath?: string | null; envPath?: string | null; secretProviderId?: number | null; icon?: string | null }
 ): Promise<boolean> {
 	const existing = await getStackSource(stackName, environmentId);
 	if (!existing) return false;
@@ -3093,6 +3116,7 @@ export async function updateStackSource(
 			composePath: updates.composePath !== undefined ? updates.composePath : existing.composePath,
 			envPath: updates.envPath !== undefined ? updates.envPath : existing.envPath,
 			secretProviderId: updates.secretProviderId !== undefined ? updates.secretProviderId : existing.secretProviderId,
+			icon: updates.icon !== undefined ? updates.icon : existing.icon,
 			updatedAt: new Date().toISOString()
 		})
 		.where(eq(stackSources.id, existing.id));
@@ -3174,6 +3198,53 @@ export async function updateStackSourceName(
 				: isNull(stackSources.environmentId)
 		));
 	return true;
+}
+
+// =============================================================================
+// CONTAINER ICON OVERRIDES
+// =============================================================================
+// A user-picked icon for a container, keyed by (name, env). Absent -> the UI's
+// automatic image/name matching applies. The value is a lucide name,
+// 'selfhst:<ref>', or 'custom:container' (bytes on disk via container-icons.ts).
+
+function containerEnvClause(environmentId: number | null) {
+	return environmentId !== null
+		? eq(containerIconOverrides.environmentId, environmentId)
+		: isNull(containerIconOverrides.environmentId);
+}
+
+/** The icon override for one container, or null if none is set. */
+export async function getContainerIconOverride(containerName: string, environmentId: number | null): Promise<string | null> {
+	const rows = await db.select().from(containerIconOverrides)
+		.where(and(eq(containerIconOverrides.containerName, containerName), containerEnvClause(environmentId)))
+		.limit(1);
+	return rows[0]?.icon ?? null;
+}
+
+/** All overrides for an environment as a name->icon map, for the list page (no N+1). */
+export async function getContainerIconOverrides(environmentId: number | null): Promise<Record<string, string>> {
+	const rows = await db.select().from(containerIconOverrides).where(containerEnvClause(environmentId));
+	const map: Record<string, string> = {};
+	for (const row of rows) map[row.containerName] = row.icon;
+	return map;
+}
+
+/** Upsert the icon override for a container. */
+export async function setContainerIconOverride(containerName: string, environmentId: number | null, icon: string): Promise<void> {
+	const existing = await getContainerIconOverride(containerName, environmentId);
+	if (existing !== null) {
+		await db.update(containerIconOverrides)
+			.set({ icon, updatedAt: new Date().toISOString() })
+			.where(and(eq(containerIconOverrides.containerName, containerName), containerEnvClause(environmentId)));
+	} else {
+		await db.insert(containerIconOverrides).values({ containerName, environmentId, icon });
+	}
+}
+
+/** Remove a container's icon override (fall back to automatic matching). */
+export async function deleteContainerIconOverride(containerName: string, environmentId: number | null): Promise<void> {
+	await db.delete(containerIconOverrides)
+		.where(and(eq(containerIconOverrides.containerName, containerName), containerEnvClause(environmentId)));
 }
 
 // =============================================================================
@@ -5552,6 +5623,8 @@ export async function createBackupDestination(data: {
 	flags?: string | null;
 	hostPath?: string | null;
 	policies?: string | null;
+	cacert?: string | null;
+	tlsClientCert?: string | null;
 }): Promise<BackupDestination> {
 	const result = await db.insert(backupDestinations).values({
 		name: data.name,
@@ -5560,7 +5633,9 @@ export async function createBackupDestination(data: {
 		envVars: data.envVars ? encrypt(data.envVars) : null,
 		flags: data.flags ?? null,
 		hostPath: data.hostPath ?? null,
-		policies: data.policies ?? null
+		policies: data.policies ?? null,
+		cacert: data.cacert ? encrypt(data.cacert) : null,
+		tlsClientCert: data.tlsClientCert ? encrypt(data.tlsClientCert) : null
 	}).returning();
 	return result[0];
 }
@@ -5573,6 +5648,8 @@ export async function updateBackupDestination(id: number, data: {
 	flags?: string | null;
 	hostPath?: string | null;
 	policies?: string | null;
+	cacert?: string | null;
+	tlsClientCert?: string | null;
 	lastTestAt?: string | null;
 	lastTestStatus?: string | null;
 	lastTestError?: string | null;
@@ -5587,6 +5664,9 @@ export async function updateBackupDestination(id: number, data: {
 	// Same guard for envVars: an empty string would null out stored cloud creds.
 	// (An explicit '{}' JSON string is truthy and still clears them intentionally.)
 	if (data.envVars) updateData.envVars = encrypt(data.envVars);
+	// Certs (optional): undefined = keep, '' = clear (user removed it), value = encrypt.
+	if (data.cacert !== undefined) updateData.cacert = data.cacert ? encrypt(data.cacert) : null;
+	if (data.tlsClientCert !== undefined) updateData.tlsClientCert = data.tlsClientCert ? encrypt(data.tlsClientCert) : null;
 	if (data.flags !== undefined) updateData.flags = data.flags;
 	if (data.hostPath !== undefined) updateData.hostPath = data.hostPath;
 	if (data.policies !== undefined) updateData.policies = data.policies;
@@ -5614,7 +5694,7 @@ export async function updateBackupDestinationTestStatus(id: number, status: 'suc
 /**
  * Decrypt sensitive fields from a backup destination for runtime use.
  */
-export function decryptBackupDestination(dest: BackupDestination): BackupDestination & { decryptedPassword: string; decryptedEnvVars: Record<string, string> } {
+export function decryptBackupDestination(dest: BackupDestination): BackupDestination & { decryptedPassword: string; decryptedEnvVars: Record<string, string>; decryptedCacert: string | null; decryptedTlsClientCert: string | null } {
 	// (audit low #55) Fail closed: if the stored password is a genuine ciphertext
 	// blob that can't be decrypted (wrong/rotated key), decryptStrict throws rather
 	// than forwarding the literal `enc:v1:...` string as RESTIC_PASSWORD.
@@ -5630,7 +5710,12 @@ export function decryptBackupDestination(dest: BackupDestination): BackupDestina
 			}
 		}
 	}
-	return { ...dest, decryptedPassword, decryptedEnvVars };
+	// PEM certs for a self-signed TLS backend (#1451). Same fail-closed rule as the
+	// password: a genuine ciphertext that can't be decrypted throws rather than passing
+	// the literal enc:v1 string to restic.
+	const decryptedCacert = dest.cacert ? (decryptStrict(dest.cacert) || null) : null;
+	const decryptedTlsClientCert = dest.tlsClientCert ? (decryptStrict(dest.tlsClientCert) || null) : null;
+	return { ...dest, decryptedPassword, decryptedEnvVars, decryptedCacert, decryptedTlsClientCert };
 }
 
 // =============================================================================

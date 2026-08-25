@@ -1,5 +1,88 @@
 [
   {
+    "version": "1.0.44",
+    "date": "2026-08-25",
+    "changes": [
+      {
+        "type": "feature",
+        "text": "generate a compose file from any container - save as new or append to existing stack (#489)"
+      },
+      {
+        "type": "feature",
+        "text": "MQTT notification channel - publish events to a broker (#280)"
+      },
+      {
+        "type": "feature",
+        "text": "TLS backup repositories with a private CA and optional mutual TLS (#1451)"
+      },
+      {
+        "type": "feature",
+        "text": "custom stack and container icons, plus automatic container icons (#31)"
+      },
+      {
+        "type": "feature",
+        "text": "Azure Key Vault as a secret provider (bulk pull or inline azurekv:// references)"
+      },
+      {
+        "type": "feature",
+        "text": "Proton Pass inline references accept vault and item names, not just ids (pass://vault/item/field) (#1449)"
+      },
+      {
+        "type": "feature",
+        "text": "branch selector on git stack, with per-stack branch override (#649, PR#1343, @brx19)"
+      },
+      {
+        "type": "feature",
+        "text": "click the update icon in the image column to update a container (#1435)"
+      },
+      {
+        "type": "feature",
+        "text": "Pushover notifications can target specific devices (#1411)"
+      },
+      {
+        "type": "feature",
+        "text": "keep specific images from being pruned with a dockhand.prune=false label (#1391)"
+      },
+      {
+        "type": "fix",
+        "text": "Infisical secret references now resolve to their value instead of the raw reference (#1447)"
+      },
+      {
+        "type": "fix",
+        "text": "the version-update dialog no longer duplicates the old tag when the running image is digest-pinned (#1437)"
+      },
+      {
+        "type": "fix",
+        "text": "a compose stack with a restarting container now shows a Stop action instead of Start (#1438)"
+      },
+      {
+        "type": "fix",
+        "text": "optimize 1Password API calls on deploy (#1436)"
+      },
+      {
+        "type": "fix",
+        "text": "direct-remote staging pulls the alpine helper image instead of failing when it's missing (#1442)"
+      },
+      {
+        "type": "fix",
+        "text": "Proton Pass secrets now resolve on headless hosts with no system keyring (#1440)"
+      },
+      {
+        "type": "fix",
+        "text": "fix switching an Infisical provider back to a static token (#1448)"
+      },
+      {
+        "type": "fix",
+        "text": "fix backpressure in Docker streaming responses (PR#1445, @StefanSa)"
+      },
+      {
+        "type": "fix",
+        "text": "sort IPv6 subnets and addresses numerically instead of randomly (#1453)"
+      }
+    ],
+    "imageTag": "fnsys/dockhand:v1.0.44"
+  },
+  {
     "version": "1.0.43",
     "date": "2026-08-20",
     "changes": [

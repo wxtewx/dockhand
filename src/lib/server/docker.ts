@@ -14,6 +14,8 @@ import { Readable } from 'node:stream';
 import * as tls from 'node:tls';
 import { createHash } from 'node:crypto';
 import { pumpWebStreamToWritable } from './stream-pump';
+import { toWebReadableStream } from './node-readable-stream';
+import { buildImagePruneFilters } from './image-prune-core';
 import { computeRequestTimeoutMs } from './backups/request-timeout';
 import { helperWaitDeadline } from './helper-wait-core';
 import type { Environment } from './db';
@@ -467,14 +469,7 @@ export function httpsAgentRequest(
 			}
 
 			if (streaming) {
-				const readable = new ReadableStream({
-					start(controller) {
-						res.on('data', (chunk: Buffer) => controller.enqueue(new Uint8Array(chunk)));
-						res.on('end', () => controller.close());
-						res.on('error', (err) => controller.error(err));
-					},
-					cancel() { res.destroy(); }
-				});
+				const readable = toWebReadableStream(res);
 				resolve(new Response(readable, { status, statusText, headers }));
 			} else {
 				const chunks: Buffer[] = [];
@@ -792,22 +787,7 @@ export function unixSocketStreamRequest(
 				}
 			}
 
-			const readable = new ReadableStream({
-				start(controller) {
-					res.on('data', (chunk: Buffer) => {
-						controller.enqueue(new Uint8Array(chunk));
-					});
-					res.on('end', () => {
-						controller.close();
-					});
-					res.on('error', (err) => {
-						controller.error(err);
-					});
-				},
-				cancel() {
-					res.destroy();
-				}
-			});
+			const readable = toWebReadableStream(res);
 
 			resolve(new Response(readable, {
 				status: res.statusCode || 200,
@@ -4626,19 +4606,21 @@ export async function pruneImages(dangling = true, envId?: number | null) {
 	// scanner images are always tagged so they can't be dangling anyway.
 	if (dangling) {
 		return dockerJsonRequest(
-			`/images/prune?filters=${encodeURIComponent('{"dangling":["true"]}')}`,
+			`/images/prune?filters=${buildImagePruneFilters(true)}`,
 			{ method: 'POST' },
 			envId
 		);
 	}
 
-	// dangling=false: "prune all unused." When the scanner-protection setting
-	// is on, shield grype + trivy with stopped holder containers (Docker's
-	// "in use" check keeps them) then tear them down in a finally (#625).
+	// dangling=false: "prune all unused." The label filter makes Docker skip any
+	// image tagged dockhand.prune=false (#1391). When the scanner-protection
+	// setting is on, ALSO shield grype + trivy + backup helper with stopped
+	// holder containers (Docker's "in use" check keeps them) then tear them down
+	// in a finally (#625). Scanner images are third-party so we can't label them.
 	const protect = (await getSetting('protect_scanner_images')) !== false;
 	if (!protect) {
 		return dockerJsonRequest(
-			`/images/prune?filters=${encodeURIComponent('{"dangling":["false"]}')}`,
+			`/images/prune?filters=${buildImagePruneFilters(false)}`,
 			{ method: 'POST' },
 			envId
 		);
@@ -4673,7 +4655,7 @@ export async function pruneImages(dangling = true, envId?: number | null) {
 
 	try {
 		return await dockerJsonRequest(
-			`/images/prune?filters=${encodeURIComponent('{"dangling":["false"]}')}`,
+			`/images/prune?filters=${buildImagePruneFilters(false)}`,
 			{ method: 'POST' },
 			envId
 		);
@@ -5069,6 +5051,11 @@ export async function runContainerWithStreaming(options: {
 	if (options.dns && options.dns.length > 0) {
 		containerConfig.HostConfig.Dns = options.dns;
 	}
+
+	// A remote daemon may not have the helper image (e.g. alpine:latest on a fresh
+	// direct-remote host), and /containers/create does NOT auto-pull - it 404s with
+	// "No such image". Pull it first so the stager/helper works out of the box (#1442).
+	await ensureImagePresent(options.image, options.envId);
 
 	const createResult = await dockerJsonRequest<{ Id: string }>(
 		`/containers/create?name=${encodeURIComponent(containerName)}`,

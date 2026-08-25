@@ -29,6 +29,7 @@
 		{ value: 'doppler', label: 'Doppler' },
 		{ value: 'bitwarden', label: 'Bitwarden Secrets Manager' },
 		{ value: 'proton', label: 'Proton Pass' },
+		{ value: 'azure-kv', label: 'Azure Key Vault' },
 	];
 
 	// Config fields per provider type, matching the config shapes in
@@ -71,6 +72,12 @@
 		proton: [
 			{ key: 'token', label: 'Personal access token', type: 'password', required: true, placeholder: 'pst_...::...', hint: 'A Proton Pass personal access token (pst_...) used by the operator-installed pass-cli.' },
 		],
+		'azure-kv': [
+			{ key: 'vaultUri', label: 'Vault URI', type: 'text', required: true, placeholder: 'https://my-vault.vault.azure.net', hint: 'The Key Vault URI (from the vault Overview page).' },
+			{ key: 'tenantId', label: 'Tenant ID', type: 'text', required: true, placeholder: 'directory (tenant) ID', hint: 'Azure AD tenant (directory) ID of the app registration.' },
+			{ key: 'clientId', label: 'Client ID', type: 'text', required: true, placeholder: 'application (client) ID', hint: 'The service-principal (app registration) client ID.' },
+			{ key: 'clientSecret', label: 'Client secret', type: 'password', required: true, placeholder: 'app registration client secret', hint: 'A client secret for the app registration, with Get/List secret permission on the vault.' },
+		],
 	};
 
 	export function providerTypeLabel(type: string): string {
@@ -107,6 +114,11 @@
 			label: 'Vault',
 			placeholder: 'Proton Pass vault name',
 			hint: 'Bulk-load every item from this Proton Pass vault. Leave blank to inject only inline pass:// references.'
+		},
+		'azure-kv': {
+			label: 'Key Vault',
+			placeholder: 'any value enables bulk pull',
+			hint: 'Bulk-load every secret in the vault. Set any value to enable it; leave blank to inject only inline azurekv:// references.'
 		}
 	};
 </script>
@@ -121,6 +133,7 @@
 	import { scale } from 'svelte/transition';
 	import { backOut, cubicIn } from 'svelte/easing';
 	import { getProviderIcon } from '$lib/components/provider-icons';
+	import { collectProviderFormConfig } from '$lib/utils/provider-form-config';
 	import { toast } from 'svelte-sonner';
 	import { focusFirstInput } from '$lib/utils';
 
@@ -144,6 +157,11 @@
 	let formType = $state('op-service-account');
 	// One value per config field; blank means 'unset' (on edit: keep existing).
 	let formConfig = $state<Record<string, string>>({});
+	// Non-secret keys that were present in the stored config when the edit form loaded. If
+	// the user clears one, we must send an explicit '' so the server knows it was cleared
+	// (a merely absent key means "unchanged"). This is what lets clearing Infisical's
+	// clientId drop its orphaned clientSecret (#1448).
+	let loadedConfigKeys = $state<Set<string>>(new Set());
 	let formError = $state('');
 	let formSaving = $state(false);
 	let formTesting = $state(false);
@@ -160,6 +178,7 @@
 
 	function resetConfig() {
 		formConfig = {};
+		loadedConfigKeys = new Set();
 	}
 
 	function resetForm() {
@@ -199,20 +218,21 @@
 				if (value != null) next[key] = String(value);
 			}
 			formConfig = next; // secret fields (token) are absent -> stay blank
+			loadedConfigKeys = new Set(Object.keys(next));
 		} catch {
 			// leave fields blank on failure - the user can re-enter them
 		}
 	}
 
-	// A blank secret field on edit means "keep the stored value"; non-secret fields are
-	// pre-filled (loadProviderConfig). Collect only the fields the user actually filled.
+	// See collectProviderFormConfig: a blank secret field means "keep stored"; a cleared
+	// non-secret field that was loaded is sent as an explicit '' so the server can drop it
+	// (and any paired secret, e.g. Infisical clientSecret when clientId is cleared). #1448
 	function collectConfig(): Record<string, string> {
-		const config: Record<string, string> = {};
-		for (const field of fields) {
-			const value = (formConfig[field.key] ?? '').trim();
-			if (value) config[field.key] = value;
-		}
-		return config;
+		return collectProviderFormConfig(
+			fields.map((f) => ({ key: f.key, isSecret: f.type === 'password' })),
+			formConfig,
+			loadedConfigKeys
+		);
 	}
 
 	function fieldRequired(field: ProviderField, config: Record<string, string>): boolean {

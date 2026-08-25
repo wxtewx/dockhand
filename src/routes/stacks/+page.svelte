@@ -23,6 +23,8 @@
 	import { extractCaddyUrls } from '$lib/utils/caddy-urls';
 	import { appSettings } from '$lib/stores/settings';
 	import ConfirmPopover from '$lib/components/ConfirmPopover.svelte';
+	import StackIcon from '$lib/components/StackIcon.svelte';
+	import ContainerIcon from '$lib/components/ContainerIcon.svelte';
 	import BatchOperationModal from '$lib/components/BatchOperationModal.svelte';
 	import type { ComposeStackInfo, ContainerStats, StackContainer } from '$lib/types';
 	import StackModal from './StackModal.svelte';
@@ -51,6 +53,7 @@
 	import { ErrorDialog } from '$lib/components/ui/error-dialog';
 	import { formatHostPortUrl } from '$lib/utils/url';
 	import { formatBytes, formatBytesCompact } from '$lib/utils/format';
+	import { effectiveStackBranch } from '$lib/git-stack-branch';
 
 	type SortField = 'name' | 'containers' | 'status' | 'cpu' | 'memory';
 	type SortDirection = 'asc' | 'desc';
@@ -60,7 +63,7 @@
 	// rate-limited), with the error text for the tooltip — session-only (#1255).
 	let failedUpdateCheckIds = $state<Set<string>>(new Set());
 	let failedUpdateCheckErrors = $state<Map<string, string>>(new Map());
-	let stackSources = $state<Record<string, { sourceType: string; composePath?: string | null; repository?: any; gitStack?: any }>>({});
+	let stackSources = $state<Record<string, { sourceType: string; composePath?: string | null; repository?: any; gitStack?: any; icon?: string | null }>>({});
 	let stackEnvVarCounts = $state<Record<string, number>>({});
 	let gitStacks = $state<any[]>([]);
 	let gitRepositories = $state<any[]>([]);
@@ -362,6 +365,7 @@
 	const stackStatusTypes = [
 		{ value: 'running', label: 'Running', icon: Play, color: 'text-emerald-500' },
 		{ value: 'partial', label: 'Partial', icon: CircleDashed, color: 'text-amber-500' },
+		{ value: 'restarting', label: 'Restarting', icon: RotateCw, color: 'text-orange-500' },
 		{ value: 'stopped', label: 'Stopped', icon: Square, color: 'text-rose-500' },
 		{ value: 'created', label: 'Created', icon: CircleDashed, color: 'text-slate-500' },
 		{ value: 'not deployed', label: 'Not deployed', icon: Rocket, color: 'text-violet-500' }
@@ -937,7 +941,7 @@
 		return stack.status;
 	}
 
-	async function openGitModal(gitStack?: any) {
+	async function openGitModal(gitStack: any = undefined) {
 		editingGitStack = gitStack || null;
 		// Fetch repositories and credentials before opening modal
 		try {
@@ -1114,10 +1118,13 @@
 		editingStackName = name;
 		stackModalReadonly = true;
 		const src = getStackSource(name);
+		// Effective branch: per-stack override wins, else repository default
+		// (shared with the server-side resolver in src/lib/git-stack-branch.ts).
+		const eff = effectiveStackBranch(src?.gitStack ?? null, src?.repository ?? undefined);
 		stackModalGitInfo = {
 			commit: src?.gitStack?.lastCommit || undefined,
 			url: src?.repository?.url || undefined,
-			branch: src?.repository?.branch || undefined
+			branch: eff.branch
 		};
 		showEditModal = true;
 	}
@@ -1131,6 +1138,8 @@
 				return `${base} bg-red-200 dark:bg-red-800 text-red-900 dark:text-red-100`;
 			case 'partial':
 				return `${base} bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100`;
+			case 'restarting':
+				return `${base} bg-orange-200 dark:bg-orange-800 text-orange-900 dark:text-orange-100`;
 			case 'created':
 				return `${base} bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100`;
 			case 'not deployed':
@@ -1680,7 +1689,10 @@
 				{@const source = getStackSource(stack.name)}
 				{#if column.id === 'name'}
 					{@const systemType = getStackSystemType(stack)}
-					<span class="flex items-center gap-1 min-w-0 w-full">
+					<span class="flex items-center gap-1.5 min-w-0 w-full">
+						{#if source.icon}
+							<StackIcon icon={source.icon} stackName={stack.name} envId={$currentEnvironment?.id ?? null} class="w-4 h-4 shrink-0 text-muted-foreground" />
+						{/if}
 						<button
 							type="button"
 							class="font-medium text-xs hover:text-primary hover:underline cursor-pointer text-left truncate min-w-0"
@@ -2171,7 +2183,11 @@
 								{@const isLoading = containerActionLoading === container.id}
 								<div class="p-3 rounded-lg bg-background border text-xs">
 									<div class="flex items-center gap-2 mb-2">
-										<Box class="w-4 h-4 shrink-0 {container.state === 'running' ? 'text-emerald-500' : 'text-muted-foreground'}" />
+										{#if $appSettings.useSelfhstIcons}
+											<ContainerIcon image={container.image} name={container.service || container.name} class="w-4 h-4" />
+										{:else}
+											<Box class="w-4 h-4 shrink-0 {container.state === 'running' ? 'text-emerald-500' : 'text-muted-foreground'}" />
+										{/if}
 										<span class="font-medium truncate" title={container.name}>{container.service}</span>
 										{#if container.updateAvailable && $appSettings.highlightUpdates}
 											<!-- Update arrow + changelog link read as one pair — keep them tight. -->
