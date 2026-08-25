@@ -40,7 +40,7 @@ export interface BuildSpecInput {
 }
 
 function genericParamDescription(kind: 'path' | 'query', name: string): string {
-	return `${kind === 'path' ? 'Path' : 'Query'} parameter "${name}" (auto-detected from the handler's source — no @openapi annotation for this parameter yet)`;
+	return `${kind === 'path' ? '路径' : '查询'} 参数 "${name}" (从处理器源码自动检测 — 该参数暂无 @openapi 注解)`;
 }
 
 export function buildSpec({ routes, fileContents, annotationsByPath, isPublicFn, version }: BuildSpecInput) {
@@ -109,8 +109,8 @@ export function buildSpec({ routes, fileContents, annotationsByPath, isPublicFn,
 				if (annotatedCodes.has(code)) continue; // annotation takes precedence, added below
 				responses[code] = {
 					description: code.startsWith('2')
-						? 'Successful response (auto-detected status code — no @openapi annotation for this response yet)'
-						: 'Error response (auto-detected status code — no @openapi annotation for this response yet)'
+						? '成功响应 (自动检测状态码 — 该响应暂无 @openapi 注解)'
+						: '错误响应 (自动检测状态码 — 该响应暂无 @openapi 注解)'
 				};
 			}
 			if (annotation) {
@@ -128,7 +128,7 @@ export function buildSpec({ routes, fileContents, annotationsByPath, isPublicFn,
 				// Neither static analysis nor annotation found an explicit 2xx —
 				// every SvelteKit handler that doesn't throw returns *some*
 				// success response, so default to 200 rather than omit it.
-				responses['200'] = { description: 'Successful response' };
+				responses['200'] = { description: '成功响应' };
 			}
 			if (Object.keys(responses).length > 1) autoMultiResponseCount++;
 
@@ -177,7 +177,7 @@ export function buildSpec({ routes, fileContents, annotationsByPath, isPublicFn,
 								type: 'object',
 								properties,
 								description:
-									'Fields auto-detected from the handler’s destructuring of the request body — generic string type, no @openapi annotation for this body yet.'
+									'从处理器请求体解构赋值自动检测字段 — 通用字符串类型，该请求体暂无 @openapi 注解。'
 							}
 						}
 					}
@@ -188,7 +188,7 @@ export function buildSpec({ routes, fileContents, annotationsByPath, isPublicFn,
 			const operation: Record<string, unknown> = {
 				operationId,
 				tags: [route.tag],
-				summary: annotation?.summary ?? `${method} ${route.openapiPath} (auto-generated — no @openapi annotation yet)`,
+				summary: annotation?.summary ?? `${method} ${route.openapiPath} (自动生成 — 暂无 @openapi 注解)`,
 				parameters,
 				responses,
 				security
@@ -206,15 +206,8 @@ export function buildSpec({ routes, fileContents, annotationsByPath, isPublicFn,
 			title: 'Dockhand API',
 			version,
 			description:
-				'Auto-generated from src/routes/**/+server.ts by scripts/generate-openapi.ts. ' +
-				'Path, HTTP method, tag, and auth requirement are derived automatically from the ' +
-				'route tree and hooks.server.ts PUBLIC_PATHS. Parameters, response status codes, and ' +
-				'request body fields are additionally auto-detected from each handler’s own source ' +
-				'(query params via url.searchParams, status codes via status:/error(), body fields via ' +
-				'destructuring) — adding a new endpoint therefore requires ZERO manual spec edits to show ' +
-				'up with real params/responses. An optional, additive `@openapi` JSDoc annotation on a ' +
-				'handler replaces the generic auto-descriptions with hand-written summaries, exact types, ' +
-				'and examples.'
+				'A由 scripts/generate-openapi.ts 从 src/routes/**/+server.ts 自动生成。 ' +
+				'路径、HTTP 请求方法、标签与鉴权要求将从路由目录树和 hooks.server.ts 的 PUBLIC_PATHS 自动获取。参数、响应状态码、请求体字段额外从各处理器源码自动检测（查询参数通过 url.searchParams，状态码通过 status:/error()，请求体字段通过解构赋值）——因此新增接口无需手动编辑规范即可展示真实参数与响应。处理器上可选附加 `@openapi` JSDoc 注解，可替换通用自动描述，支持自定义摘要、精确类型与示例。'
 		},
 		servers: [{ url: '/' }],
 		tags: Array.from(new Set(routes.map((r) => r.tag)))
@@ -226,16 +219,14 @@ export function buildSpec({ routes, fileContents, annotationsByPath, isPublicFn,
 					type: 'apiKey',
 					in: 'cookie',
 					name: 'dockhand_session',
-					description: 'Session cookie set on login (src/lib/server/auth.ts validateSession).'
+					description: '登录时设置的会话 Cookie (src/lib/server/auth.ts validateSession)。'
 				},
 				bearerAuth: {
 					type: 'http',
 					scheme: 'bearer',
 					bearerFormat: 'dh_<43-char base64url>',
 					description:
-						'User-scoped API token (src/lib/server/api-tokens.ts). Only evaluated on /api/* and ' +
-						'/metrics when no session cookie is present (src/hooks.server.ts). Rate-limited: ' +
-						'10 failures/IP -> 429 for 5 minutes.'
+						'用户范围 API 令牌（src/lib/server/api-tokens.ts）。仅在 /api/* 和 /metrics 路由下，不存在会话 Cookie 时生效 (src/hooks.server.ts)。频率限制：单个 IP 连续 10 次失败后，5 分钟内返回 429。'
 				}
 			}
 		},

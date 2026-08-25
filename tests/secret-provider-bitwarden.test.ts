@@ -153,7 +153,7 @@ if (args.length === 1 && args[0] === '--version') {
 		).toEqual({
 			ok: false,
 			error:
-				'Bitwarden Secrets Manager: host not allowed (loopback address (127.0.0.1) blocked)'
+				'Bitwarden Secrets Manager：不允许使用该主机地址(回环地址 (127.0.0.1) 已被阻止)'
 		});
 	});
 
@@ -161,20 +161,20 @@ if (args.length === 1 && args[0] === '--version') {
 		process.env.DOCKHAND_BWS_PATH = join(testDir, 'missing-bws');
 		expect(await bitwardenProvider.testConnection({ token: TOKEN })).toEqual({
 			ok: false,
-			error: 'Bitwarden bws executable was not found'
+			error: '未找到 Bitwarden bws 可执行程序'
 		});
 
 		process.env.DOCKHAND_BWS_PATH = 'relative/bws';
 		expect(await bitwardenProvider.testConnection({ token: TOKEN })).toEqual({
 			ok: false,
-			error: 'Bitwarden bws executable path must be absolute'
+			error: 'Bitwarden bws 可执行文件路径必须为绝对路径'
 		});
 
 		for (const version of ['2.0.9', '2.1.0-beta.1', '3.0.0']) {
 			await installFakeBws(`console.log('bws ${version}');`);
 			expect(await bitwardenProvider.testConnection({ token: TOKEN })).toEqual({
 				ok: false,
-				error: 'Bitwarden bws version must be >=2.1.0 and <3.0.0'
+				error: 'Bitwarden bws 版本必须 >=2.1.0 且 <3.0.0'
 			});
 		}
 	});
@@ -183,7 +183,7 @@ if (args.length === 1 && args[0] === '--version') {
 		process.env.DOCKHAND_BWS_PATH = join(testDir, 'missing-bws');
 		expect(await bitwardenProvider.testConnection({ token: '  ' })).toEqual({
 			ok: false,
-			error: 'Bitwarden Machine Account access token is empty'
+			error: 'Bitwarden 机器账户访问令牌为空'
 		});
 	});
 });
@@ -214,7 +214,7 @@ console.log(JSON.stringify([{ key: 'DB_PASSWORD', value: 'hunter2' }, { key: '_P
 	test('validates the Project UUID before execution', async () => {
 		process.env.DOCKHAND_BWS_PATH = join(testDir, 'missing-bws');
 		await expect(bitwardenProvider.resolveBulk({ token: TOKEN }, 'not-a-uuid')).rejects.toThrow(
-			'Bitwarden Project selector must be a valid UUID'
+			'Bitwarden 项目选择器必须为有效的 UUID'
 		);
 	});
 
@@ -225,13 +225,13 @@ console.log(JSON.stringify([{ key: 'DB_PASSWORD', value: 'hunter2' }, { key: '_P
 					{ key: 'DUPLICATE', value: 'one' },
 					{ key: 'DUPLICATE', value: 'two' }
 				],
-				'duplicate secret keys'
+				'Bitwarden bws 返回重复的密钥键名'
 			],
-			[[{ key: 'BAD-NAME', value: 'value' }], 'not a valid environment variable name'],
-			[[{ key: 'constructor', value: 'value' }], 'secret key is not allowed'],
-			[[{ key: 'PORT', value: 5432 }], 'invalid secret list'],
-			[[{ key: 'VALUE', value: 'contains\0nul' }], 'invalid secret list'],
-			[['not-an-object'], 'invalid secret list']
+			[[{ key: 'BAD-NAME', value: 'value' }], 'Bitwarden 密钥键名不是合法的环境变量名称'],
+			[[{ key: 'constructor', value: 'value' }], 'Bitwarden 该密钥键名不被允许使用'],
+			[[{ key: 'PORT', value: 5432 }], 'Bitwarden bws 返回的密钥列表格式非法'],
+			[[{ key: 'VALUE', value: 'contains\0nul' }], 'Bitwarden bws 返回的密钥列表格式非法'],
+			[['not-an-object'], 'Bitwarden bws 返回的密钥列表格式非法']
 		];
 
 		for (const [payload, expected] of cases) {
@@ -245,12 +245,12 @@ console.log(JSON.stringify([{ key: 'DB_PASSWORD', value: 'hunter2' }, { key: '_P
 	test('rejects malformed JSON and a non-array root', async () => {
 		await installSecretResponse(JSON.stringify('{broken'));
 		await expect(bitwardenProvider.resolveBulk({ token: TOKEN }, PROJECT_ID)).rejects.toThrow(
-			'Bitwarden bws returned invalid JSON'
+			'Bitwarden bws 返回无效 JSON 数据'
 		);
 
 		await installSecretResponse(JSON.stringify('{"key":"value"}'));
 		await expect(bitwardenProvider.resolveBulk({ token: TOKEN }, PROJECT_ID)).rejects.toThrow(
-			'Bitwarden bws returned an invalid JSON response'
+			'Bitwarden bws 返回的 JSON 响应格式非法'
 		);
 	});
 
@@ -265,7 +265,7 @@ process.exit(7);
 			throw new Error('expected resolveBulk to fail');
 		} catch (error: unknown) {
 			const message = error instanceof Error ? error.message : String(error);
-			expect(message).toBe('Bitwarden bws command failed');
+			expect(message).toBe('Bitwarden bws 命令执行失败');
 			expect(message).not.toContain(TOKEN);
 			expect(message).not.toContain('secret-output');
 			expect(message).not.toContain('raw stderr');
@@ -279,7 +279,7 @@ process.stdout.write('x'.repeat(11 * 1024 * 1024));
 setTimeout(() => {}, 60_000);
 `);
 		await expect(bitwardenProvider.resolveBulk({ token: TOKEN }, PROJECT_ID)).rejects.toThrow(
-			'Bitwarden bws command exceeded the stdout limit'
+			'Bitwarden bws 命令超出标准输出大小限制'
 		);
 	});
 });

@@ -16,12 +16,12 @@
  */
 export function isSafeWebhookUrl(raw: string): { ok: boolean; reason?: string } {
 	let u: URL;
-	try { u = new URL(raw); } catch { return { ok: false, reason: 'not a valid URL' }; }
+	try { u = new URL(raw); } catch { return { ok: false, reason: '不是有效的 URL' }; }
 	if (u.protocol !== 'http:' && u.protocol !== 'https:') {
-		return { ok: false, reason: `scheme ${u.protocol} not allowed (use http/https)` };
+		return { ok: false, reason: `协议 ${u.protocol} 不被允许，请使用 http/https` };
 	}
 	const host = u.hostname.toLowerCase().replace(/^\[|\]$/g, ''); // strip IPv6 brackets
-	if (host === 'localhost' || host.endsWith('.localhost')) return { ok: false, reason: 'localhost blocked' };
+	if (host === 'localhost' || host.endsWith('.localhost')) return { ok: false, reason: '已阻止 localhost' };
 	const ipReason = privateIpReason(host);
 	if (ipReason) return { ok: false, reason: ipReason };
 	return { ok: true };
@@ -37,12 +37,12 @@ export function isSafeWebhookUrl(raw: string): { ok: boolean; reason?: string } 
  */
 export function isSafeNotificationUrl(raw: string): { ok: boolean; reason?: string } {
 	let u: URL;
-	try { u = new URL(raw); } catch { return { ok: false, reason: 'not a valid URL' }; }
+	try { u = new URL(raw); } catch { return { ok: false, reason: '不是有效的 URL' }; }
 	if (u.protocol !== 'http:' && u.protocol !== 'https:') {
-		return { ok: false, reason: `scheme ${u.protocol} not allowed (use http/https)` };
+		return { ok: false, reason: `协议 ${u.protocol} 不被允许，请使用 http/https` };
 	}
 	const host = u.hostname.toLowerCase().replace(/^\[|\]$/g, '');
-	if (host === 'localhost' || host.endsWith('.localhost')) return { ok: false, reason: 'localhost blocked' };
+	if (host === 'localhost' || host.endsWith('.localhost')) return { ok: false, reason: '已阻止 localhost' };
 	const reason = dangerousHostReason(host);
 	if (reason) return { ok: false, reason };
 	return { ok: true };
@@ -122,7 +122,7 @@ export function ipCategory(host: string): IpCategory | null {
 export function dangerousHostReason(host: string): string | null {
 	const cat = ipCategory(host);
 	if (cat === 'loopback' || cat === 'metadata' || cat === 'reserved') {
-		return `${cat} address (${host}) blocked`;
+		return `${cat} 地址 (${host}) 已被阻止`;
 	}
 	return null;
 }
@@ -136,5 +136,5 @@ export function dangerousHostReason(host: string): string | null {
 export function privateIpReason(host: string): string | null {
 	const cat = ipCategory(host);
 	if (!cat) return null;
-	return `private/loopback IP (${host}) blocked`;
+	return `私有/回环 IP (${host}) 已被阻止`;
 }

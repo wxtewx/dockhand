@@ -43,7 +43,7 @@ function putViaNodeHttp(config: DockerClientConfig, containerId: string, archive
 			res.on('end', () => {
 				const status = res.statusCode ?? 0;
 				if (status >= 200 && status < 300) resolve();
-				else reject(new Error(`put-archive-stream: PUT /archive -> ${status} ${Buffer.concat(chunks).toString().slice(0, 200)}`));
+				else reject(new Error(`put-archive-stream: PUT /archive 返回状态码 ${status}，响应内容：${Buffer.concat(chunks).toString().slice(0, 200)}`));
 			});
 			res.on('error', reject);
 		});
@@ -69,7 +69,7 @@ export async function putContainerArchiveStreaming(
 ): Promise<{ streamed: boolean }> {
 	const config = await getDockerConfig(envId ?? undefined);
 	if (!transportCanStream(config)) {
-		console.log(`[Backup] put-archive-stream: env ${envId} is ${config.connectionType} (cannot stream) — caller should use the buffered path`);
+		console.log(`[备份] put-archive-stream：环境ID ${envId} 连接类型为 ${config.connectionType} (不支持流式传输)，调用方将降级使用缓冲上传模式`);
 		return { streamed: false };
 	}
 
@@ -78,7 +78,7 @@ export async function putContainerArchiveStreaming(
 		extraHeaders['X-Hawser-Token'] = config.hawserToken;
 	}
 
-	console.log(`[Backup] put-archive-stream: streaming tar to container ${containerId.slice(0, 12)} via ${config.type} (${config.connectionType ?? 'local'})`);
+	console.log(`[备份] put-archive-stream：通过 ${config.type} (${config.connectionType ?? '本地'}) 向容器 ${containerId.slice(0, 12)} 流式推送tar压缩包`);
 
 	if (config.type === 'https') {
 		// httpsAgentRequest streams a ReadableStream body (req.write per chunk) and, seeing a
@@ -88,7 +88,7 @@ export async function putContainerArchiveStreaming(
 		const guardedWeb = Readable.toWeb(withIdleWatchdog(Readable.fromWeb(tar as unknown as NodeReadableStream), 'put-archive-stream')) as unknown as ReadableStream<Uint8Array>;
 		const res = await httpsAgentRequest(config, `/containers/${containerId}/archive?path=${encodeURIComponent(sanitizeArchivePath(archivePath))}`,
 			{ method: 'PUT', headers: { 'Content-Type': 'application/x-tar', ...extraHeaders }, body: guardedWeb }, false, extraHeaders);
-		if (!res.ok) throw new Error(`put-archive-stream: PUT /archive -> ${res.status} ${(await res.text()).slice(0, 200)}`);
+		if (!res.ok) throw new Error(`put-archive-stream: PUT /archive 返回状态码 ${res.status}，响应内容：${(await res.text()).slice(0, 200)}`);
 		await res.body?.cancel().catch(() => {});
 		return { streamed: true };
 	}

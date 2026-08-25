@@ -58,7 +58,7 @@ async function sendAppriseNotification(config: AppriseConfig, payload: Notificat
 			}
 		} catch (error) {
 			const errorMsg = error instanceof Error ? error.message : String(error);
-			errors.push(`Failed to send: ${errorMsg}`);
+			errors.push(`发送失败: ${errorMsg}`);
 		}
 	}
 
@@ -76,7 +76,7 @@ async function sendToAppriseUrl(url: string, payload: NotificationPayload): Prom
 		// so we match the prefix directly.
 		const protocolMatch = url.match(/^([a-z]+):\/\//i);
 		if (!protocolMatch) {
-			return { success: false, error: 'Invalid Apprise URL format - missing protocol' };
+			return { success: false, error: '无效的 Apprise 地址，缺少协议头' };
 		}
 		const protocol = protocolMatch[1].toLowerCase();
 
@@ -118,11 +118,11 @@ async function sendToAppriseUrl(url: string, payload: NotificationPayload): Prom
 			case 'zabbixs':
 				return await sendZabbix(url, payload);
 			default:
-				return { success: false, error: `Unsupported Apprise protocol: ${protocol}` };
+				return { success: false, error: `不支持的 Apprise 协议: ${protocol}` };
 		}
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		return { success: false, error: `Failed to parse Apprise URL: ${errorMsg}` };
+		return { success: false, error: `解析 Apprise 地址失败: ${errorMsg}` };
 	}
 }
 
@@ -154,8 +154,8 @@ export async function sendNotification(payload: NotificationPayload): Promise<{ 
 
 export async function testNotification(setting: NotificationSettingData): Promise<NotificationResult> {
 	const payload: NotificationPayload = {
-		title: 'Dockhand Test Notification',
-		message: 'This is a test notification from Dockhand. If you receive this, your notification settings are configured correctly.',
+		title: 'Dockhand 测试通知',
+		message: '这是一条来自 Dockhand 的测试通知。如果您收到该消息，说明您的通知设置已配置正确。',
 		type: 'info',
 		eventType: 'test'
 	};
@@ -166,7 +166,7 @@ export async function testNotification(setting: NotificationSettingData): Promis
 		return await sendAppriseNotification(setting.config as AppriseConfig, payload);
 	}
 
-	return { success: false, error: 'Unknown notification type' };
+	return { success: false, error: '未知通知渠道类型' };
 }
 
 
@@ -232,7 +232,7 @@ export async function sendEnvironmentNotification(
 			else allSuccess = false;
 		} catch (error) {
 			const errorMsg = error instanceof Error ? error.message : String(error);
-			console.error(`[Notifications] Failed to send to channel ${notif.channelName}:`, errorMsg);
+			console.error(`[通知模块] 向渠道 ${notif.channelName} 发送消息失败:`, errorMsg);
 			allSuccess = false;
 		}
 	}
@@ -299,7 +299,7 @@ export async function sendEventNotification(
 			else allSuccess = false;
 		} catch (error) {
 			const errorMsg = error instanceof Error ? error.message : String(error);
-			console.error(`[Notifications] Failed to send to channel ${channel.channel_name}:`, errorMsg);
+			console.error(`[通知模块] 向渠道 ${channel.channel_name} 发送消息失败:`, errorMsg);
 			allSuccess = false;
 		}
 	}

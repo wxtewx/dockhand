@@ -145,7 +145,7 @@ function bindSource(v: unknown): { source: string; readonly: boolean } | null {
 export const RULES: RuleDefinition[] = [
 	{
 		id: 'NO_SERVICES',
-		description: 'The compose file defines no services',
+		description: '该 Compose 文件未定义任何服务',
 		group: 'correctness',
 		defaultSeverity: 'error',
 		check(p) {
@@ -154,8 +154,8 @@ export const RULES: RuleDefinition[] = [
 				return [
 					{
 						ruleId: 'NO_SERVICES',
-						message: 'No services defined - the compose file will deploy nothing',
-						hint: 'Add a `services:` block, or check for a typo in the key.',
+						message: '未定义任何服务 — 该 Compose 文件部署后不会运行任何容器',
+						hint: '添加 `services:` 配置块，或检查配置项是否存在拼写错误。',
 						line: p.lineOf(['services'])
 					}
 				];
@@ -165,7 +165,7 @@ export const RULES: RuleDefinition[] = [
 	},
 	{
 		id: 'DUPLICATE_HOST_PORT',
-		description: 'Two services in this stack publish the same host port',
+		description: '当前堆栈内两个服务发布了相同的主机端口',
 		group: 'correctness',
 		defaultSeverity: 'error',
 		check(p) {
@@ -180,8 +180,8 @@ export const RULES: RuleDefinition[] = [
 						out.push({
 							ruleId: 'DUPLICATE_HOST_PORT',
 							service: name,
-							message: `Host port ${parsed.hostPort} is already published by service "${prev}"`,
-							hint: 'Two services cannot bind the same host port; change one.',
+							message: `主机端口 ${parsed.hostPort} 已被服务 "${prev}" 占用`,
+							hint: '多个服务不能绑定同一个主机端口，请修改其中一个端口。',
 							line: p.lineOf(['services', name, 'ports', i]) ?? p.lineOf(['services', name])
 						});
 					} else if (!prev) {
@@ -194,7 +194,7 @@ export const RULES: RuleDefinition[] = [
 	},
 	{
 		id: 'CROSS_STACK_PORT_COLLISION',
-		description: 'A host port is already used by another container on the environment',
+		description: '该主机端口已被环境内其他容器占用',
 		group: 'correctness',
 		defaultSeverity: 'error',
 		check(p, ctx) {
@@ -209,11 +209,11 @@ export const RULES: RuleDefinition[] = [
 							ruleId: 'CROSS_STACK_PORT_COLLISION',
 							service: name,
 							message: owner
-								? `Host port ${parsed.hostPort} is already in use on this environment by container "${owner}"`
-								: `Host port ${parsed.hostPort} is already in use on this environment by another container`,
+								? `主机端口 ${parsed.hostPort} 已被当前环境内容器 "${owner}" 占用`
+								: `主机端口 ${parsed.hostPort} 已被当前环境内其他容器占用`,
 							hint: owner
-								? `Pick a free host port, or stop "${owner}".`
-								: 'Pick a free host port, or stop the container using it.',
+								? `选择一个未占用的主机端口，或停止容器 "${owner}".`
+								: '选择一个未占用的主机端口，或停止占用该端口的容器。',
 							line: p.lineOf(['services', name, 'ports', i]) ?? p.lineOf(['services', name])
 						});
 					}
@@ -224,7 +224,7 @@ export const RULES: RuleDefinition[] = [
 	},
 	{
 		id: 'DB_PORT_ON_ALL_INTERFACES',
-		description: 'A database/cache service publishes a port on all interfaces',
+		description: '数据库/缓存服务在所有网卡上对外开放端口',
 		group: 'security',
 		defaultSeverity: 'warn',
 		check(p) {
@@ -254,11 +254,11 @@ export const RULES: RuleDefinition[] = [
 						out.push({
 							ruleId: 'DB_PORT_ON_ALL_INTERFACES',
 							service: name,
-							message: `Database/cache service "${name}" publishes port ${parsed.hostPort} on all interfaces`,
-							hint: 'Bind to 127.0.0.1 (e.g. "127.0.0.1:5432:5432") or drop the host mapping and reach it over the compose network.',
+							message: `数据库/缓存服务 "${name}" 在所有网卡上发布端口 ${parsed.hostPort}`,
+							hint: '绑定至 127.0.0.1 (例如 "127.0.0.1:5432:5432") ，或移除主机端口映射，通过 Compose 内网访问。',
 							line: line ?? p.lineOf(['services', name]),
 							fix,
-							fixDescription: 'Bind this port to 127.0.0.1 (localhost only)'
+							fixDescription: '将此端口绑定至 127.0.0.1 (仅本地访问)'
 						});
 					}
 				}
@@ -268,7 +268,7 @@ export const RULES: RuleDefinition[] = [
 	},
 	{
 		id: 'DEPENDS_ON_UNDEFINED',
-		description: 'depends_on references a service not defined in the file',
+		description: 'depends_on 引用了文件中未定义的服务',
 		group: 'correctness',
 		defaultSeverity: 'error',
 		check(p) {
@@ -286,8 +286,8 @@ export const RULES: RuleDefinition[] = [
 						out.push({
 							ruleId: 'DEPENDS_ON_UNDEFINED',
 							service: name,
-							message: `"${name}" depends_on "${d}", which is not a service in this file`,
-							hint: 'Fix the name or define the service.',
+							message: `"${name}" 通过 depends_on 依赖 "${d}"，但该服务未在本文件中定义`,
+							hint: '修正服务名称，或补充定义对应的服务。',
 							line: p.lineOf(['services', name, 'depends_on']) ?? p.lineOf(['services', name])
 						});
 					}
@@ -298,7 +298,7 @@ export const RULES: RuleDefinition[] = [
 	},
 	{
 		id: 'UNDEFINED_NETWORK_REF',
-		description: 'A service uses a network that is not defined at the top level',
+		description: '服务引用了未在顶层定义的网络',
 		group: 'correctness',
 		defaultSeverity: 'error',
 		check(p) {
@@ -318,8 +318,8 @@ export const RULES: RuleDefinition[] = [
 						out.push({
 							ruleId: 'UNDEFINED_NETWORK_REF',
 							service: name,
-							message: `"${name}" uses network "${ref}", which is not defined under the top-level networks:`,
-							hint: `Add "${ref}" to top-level networks: (mark it external: true if it already exists on the host).`,
+							message: `"${name}" 使用网络 "${ref}"，该网络未在顶层 networks 配置中定义:`,
+							hint: `在顶层 networks 下添加 "${ref}" (如果主机上已存在该网络，请标记 external: true)。`,
 							line: p.lineOf(['services', name, 'networks']) ?? p.lineOf(['services', name])
 						});
 					}
@@ -330,7 +330,7 @@ export const RULES: RuleDefinition[] = [
 	},
 	{
 		id: 'UNDEFINED_VOLUME_REF',
-		description: 'A service mounts a named volume that is not defined at the top level',
+		description: '服务挂载了未在顶层定义的命名数据卷',
 		group: 'correctness',
 		defaultSeverity: 'error',
 		check(p) {
@@ -357,8 +357,8 @@ export const RULES: RuleDefinition[] = [
 						out.push({
 							ruleId: 'UNDEFINED_VOLUME_REF',
 							service: name,
-							message: `"${name}" mounts named volume "${src}", which is not defined under the top-level volumes:`,
-							hint: `Add "${src}" to top-level volumes: (mark it external: true if it already exists on the host).`,
+							message: `"${name}" 挂载命名数据卷 "${src}"，该数据卷未在顶层 volumes 配置中定义`,
+							hint: `在顶层 volumes 下添加 "${src}" (如果主机上已存在该数据卷，请标记 external: true)。`,
 							line: p.lineOf(['services', name, 'volumes', i]) ?? p.lineOf(['services', name])
 						});
 					}
@@ -369,7 +369,7 @@ export const RULES: RuleDefinition[] = [
 	},
 	{
 		id: 'CONTAINER_NAME_COLLISION',
-		description: 'container_name is already used by a container on the environment',
+		description: 'container_name 已被环境内现有容器占用',
 		group: 'correctness',
 		defaultSeverity: 'error',
 		check(p, ctx) {
@@ -381,8 +381,8 @@ export const RULES: RuleDefinition[] = [
 					out.push({
 						ruleId: 'CONTAINER_NAME_COLLISION',
 						service: name,
-						message: `container_name "${cn}" is already used by a container on this environment`,
-						hint: 'A fixed container_name prevents clean recreation; remove it or make it unique.',
+						message: `容器名称 "${cn}" 已被当前环境内的容器占用`,
+						hint: '固定 container_name 会导致容器无法正常重建，请移除该配置或使用唯一名称。',
 						line: p.lineOf(['services', name, 'container_name']) ?? p.lineOf(['services', name])
 					});
 				}
@@ -392,7 +392,7 @@ export const RULES: RuleDefinition[] = [
 	},
 	{
 		id: 'MISSING_EXTERNAL_RESOURCE',
-		description: 'An external network/volume does not exist on the environment',
+		description: '外部网络/数据卷在当前环境中不存在',
 		group: 'correctness',
 		defaultSeverity: 'error',
 		check(p, ctx) {
@@ -410,8 +410,8 @@ export const RULES: RuleDefinition[] = [
 						if (!existing.has(actual)) {
 							out.push({
 								ruleId: 'MISSING_EXTERNAL_RESOURCE',
-								message: `External ${kind === 'networks' ? 'network' : 'volume'} "${actual}" does not exist on this environment`,
-								hint: 'Create it first, or drop external: true to let compose create it.',
+								message: `外部${kind === 'networks' ? '网络' : '数据卷'} "${actual}" 在当前环境不存在`,
+								hint: '先创建该资源，或删除 external: true 由 Compose 自动创建。',
 								line: p.lineOf([kind, resName])
 							});
 						}
@@ -425,7 +425,7 @@ export const RULES: RuleDefinition[] = [
 	},
 	{
 		id: 'LATEST_TAG',
-		description: 'An image uses :latest or is untagged',
+		description: '镜像使用 :latest 标签或未指定标签',
 		group: 'reliability',
 		defaultSeverity: 'warn',
 		check(p) {
@@ -439,8 +439,8 @@ export const RULES: RuleDefinition[] = [
 					out.push({
 						ruleId: 'LATEST_TAG',
 						service: name,
-						message: `"${name}" uses ${tag ? '`:latest`' : 'an untagged image'} (${image})`,
-						hint: 'Pin a version tag for reproducible deploys and to enable newer-version detection.',
+						message: `"${name}" 使用了${tag ? '`:latest`' : '无标签镜像'} (${image})`,
+						hint: '锁定具体版本标签，保证部署可复现，同时支持新版本检测。',
 						line: p.lineOf(['services', name, 'image']) ?? p.lineOf(['services', name])
 					});
 				}
@@ -450,7 +450,7 @@ export const RULES: RuleDefinition[] = [
 	},
 	{
 		id: 'PRIVILEGED_CONTAINER',
-		description: 'A service runs privileged (full host access)',
+		description: '服务以特权模式运行 (拥有主机完整访问权限)',
 		group: 'security',
 		defaultSeverity: 'warn',
 		check(p) {
@@ -460,8 +460,8 @@ export const RULES: RuleDefinition[] = [
 					out.push({
 						ruleId: 'PRIVILEGED_CONTAINER',
 						service: name,
-						message: `"${name}" runs privileged (full host access)`,
-						hint: 'Grant specific cap_add instead of privileged where possible.',
+						message: `"${name}" 以特权模式运行 (拥有主机完整访问权限)`,
+						hint: '如非必要，请使用 cap_add 授予最小权限，而非开启特权模式。',
 						line: p.lineOf(['services', name, 'privileged']) ?? p.lineOf(['services', name])
 					});
 				}
@@ -471,7 +471,7 @@ export const RULES: RuleDefinition[] = [
 	},
 	{
 		id: 'DOCKER_SOCKET_MOUNT',
-		description: 'A service mounts the Docker socket',
+		description: '服务挂载了 Docker socket',
 		group: 'security',
 		defaultSeverity: 'warn', // graded: the check upgrades rw to error itself
 		check(p) {
@@ -493,10 +493,10 @@ export const RULES: RuleDefinition[] = [
 							ruleId: 'DOCKER_SOCKET_MOUNT',
 							severity: readonly ? 'warn' : 'error',
 							service: name,
-							message: `"${name}" mounts the Docker socket${readonly ? ' (read-only)' : ' read-write (full daemon control)'}`,
+							message: `"${name}" 挂载 Docker socket${readonly ? ' (只读)' : ' 读写 (拥有完整守护进程控制权限)'}`,
 							hint: readonly
-								? 'Read-only still exposes the daemon; consider a socket proxy.'
-								: 'Read-write docker.sock = root on the host. Use a scoped socket proxy.',
+								? '只读挂载依然会暴露守护进程，建议使用 socket 代理。'
+								: '读写 docker.sock 等价于获取主机 root 权限，请使用范围受限的 socket 代理。',
 							line: p.lineOf(['services', name, 'volumes', i]) ?? p.lineOf(['services', name])
 						});
 					}
@@ -507,7 +507,7 @@ export const RULES: RuleDefinition[] = [
 	},
 	{
 		id: 'OBSOLETE_VERSION_KEY',
-		description: 'The top-level version: key is obsolete',
+		description: '顶层 version: 配置项已废弃',
 		group: 'schema',
 		defaultSeverity: 'info',
 		check(p) {
@@ -516,11 +516,11 @@ export const RULES: RuleDefinition[] = [
 				return [
 					{
 						ruleId: 'OBSOLETE_VERSION_KEY',
-						message: 'The top-level `version:` key is obsolete in the Compose Spec and is ignored',
-						hint: 'Safe to remove.',
+						message: 'Compose 规范中顶层 `version:` 配置项已废弃，将会被忽略',
+						hint: '可以安全删除。',
 						line,
 						fix: line ? { kind: 'delete-line', line } : undefined,
-						fixDescription: 'Remove the obsolete version: line'
+						fixDescription: '移除已废弃的 version: 配置行'
 					}
 				];
 			}
@@ -529,7 +529,7 @@ export const RULES: RuleDefinition[] = [
 	},
 	{
 		id: 'UNKNOWN_SERVICE_KEY',
-		description: 'A service key looks like a typo of a real Compose key',
+		description: '服务配置项疑似合法 Compose 配置的拼写错误',
 		group: 'schema',
 		defaultSeverity: 'warn',
 		check(p) {
@@ -542,11 +542,11 @@ export const RULES: RuleDefinition[] = [
 						out.push({
 							ruleId: 'UNKNOWN_SERVICE_KEY',
 							service: name,
-							message: `"${key}" is not a known service key - did you mean "${suggestion}"?`,
-							hint: 'Docker silently ignores unknown keys, so this setting never applies.',
+							message: `"${key}" 不是合法的服务配置项 — 是否应为 "${suggestion}"？`,
+							hint: 'Docker 会静默忽略未知配置项，该设置不会生效。',
 							line: line ?? p.lineOf(['services', name]),
 							fix: line ? { kind: 'replace-in-line', line, find: key, replace: suggestion } : undefined,
-							fixDescription: `Rename "${key}" to "${suggestion}"`
+							fixDescription: `将 "${key}" 重命名为 "${suggestion}"`
 						});
 					}
 				}
@@ -556,7 +556,7 @@ export const RULES: RuleDefinition[] = [
 	},
 	{
 		id: 'UNKNOWN_TOP_LEVEL_KEY',
-		description: 'A top-level key looks like a typo',
+		description: '顶层配置项疑似拼写错误',
 		group: 'schema',
 		defaultSeverity: 'warn',
 		check(p) {
@@ -569,10 +569,10 @@ export const RULES: RuleDefinition[] = [
 					const line = p.lineOf([key]);
 					out.push({
 						ruleId: 'UNKNOWN_TOP_LEVEL_KEY',
-						message: `Top-level "${key}" is not a known key - did you mean "${suggestion}"?`,
+						message: `顶层配置项 "${key}" 不是合法配置 — 是否应为 "${suggestion}"？`,
 						line,
 						fix: line ? { kind: 'replace-in-line', line, find: key, replace: suggestion } : undefined,
-						fixDescription: `Rename "${key}" to "${suggestion}"`
+						fixDescription: `将 "${key}" 重命名为 "${suggestion}"`
 					});
 				}
 			}
@@ -581,7 +581,7 @@ export const RULES: RuleDefinition[] = [
 	},
 	{
 		id: 'SECRET_IN_ENVIRONMENT',
-		description: 'A secret-looking value is hard-coded in environment: instead of a secret/${VAR}',
+		description: '密钥类明文硬编码在 environment 中，应使用密钥或 ${VAR} 引用',
 		group: 'security',
 		defaultSeverity: 'warn',
 		check(p) {
@@ -600,8 +600,8 @@ export const RULES: RuleDefinition[] = [
 					out.push({
 						ruleId: 'SECRET_IN_ENVIRONMENT',
 						service: name,
-						message: `"${name}" hard-codes a secret value for ${key} in environment:`,
-						hint: 'Store it as a Dockhand secret and reference ${' + key + '}, so it never lands in the compose/.env on disk.',
+						message: `"${name}" 在 environment 中硬编码了密钥类变量 ${key}`,
+						hint: '将密钥存入 Dockhand 密钥管理并使用 ${' + key + '} 引用，避免明文保存在 Compose/.env 文件中。',
 						line: p.lineOf(['services', name, 'environment', at]) ?? p.lineOf(['services', name])
 					});
 				}
@@ -611,7 +611,7 @@ export const RULES: RuleDefinition[] = [
 	},
 	{
 		id: 'HOST_NETWORK_MODE',
-		description: 'A service uses network_mode: host (no network isolation)',
+		description: '服务使用 network_mode: host (无网络隔离)',
 		group: 'security',
 		defaultSeverity: 'warn',
 		check(p) {
@@ -621,8 +621,8 @@ export const RULES: RuleDefinition[] = [
 					out.push({
 						ruleId: 'HOST_NETWORK_MODE',
 						service: name,
-						message: `"${name}" uses network_mode: host - it shares the host network with no isolation`,
-						hint: 'Publish only the ports you need instead, so the container stays on its own network.',
+						message: `"${name}" 使用 network_mode: host — 与主机共享网络，不存在网络隔离`,
+						hint: '按需发布所需端口，让容器运行在独立网络中。',
 						line: p.lineOf(['services', name, 'network_mode']) ?? p.lineOf(['services', name])
 					});
 				}
@@ -632,7 +632,7 @@ export const RULES: RuleDefinition[] = [
 	},
 	{
 		id: 'WRITABLE_ROOT_MOUNT',
-		description: 'A sensitive host path is bind-mounted (writable = full host compromise)',
+		description: '敏感主机路径被绑定挂载 (可写挂载会导致主机完全失陷)',
 		group: 'security',
 		defaultSeverity: 'error', // graded: ro is downgraded to warn by the check
 		check(p) {
@@ -650,10 +650,10 @@ export const RULES: RuleDefinition[] = [
 						ruleId: 'WRITABLE_ROOT_MOUNT',
 						severity: bind.readonly ? 'warn' : 'error',
 						service: name,
-						message: `"${name}" bind-mounts the host path "${bind.source}"${bind.readonly ? ' (read-only)' : ' read-write'}`,
+						message: `"${name}" 绑定挂载主机路径 "${bind.source}"${bind.readonly ? ' (只读)' : ' 读写'}`,
 						hint: bind.readonly
-							? 'Even read-only, this exposes host system files; mount only the subdirectory you need.'
-							: 'A writable mount of a system path lets the container modify the host. Mount a specific subdirectory, read-only.',
+							? '即使只读挂载，依然会暴露主机系统文件；请仅挂载所需子目录。'
+							: '系统路径可写挂载允许容器修改主机文件，请挂载指定子目录并使用只读模式。',
 						line: p.lineOf(['services', name, 'volumes', i]) ?? p.lineOf(['services', name])
 					});
 				}
@@ -663,7 +663,7 @@ export const RULES: RuleDefinition[] = [
 	},
 	{
 		id: 'CAP_ADD_DANGEROUS',
-		description: 'A service adds a near-privileged Linux capability',
+		description: '服务添加了高风险 Linux 能力，近似特权模式',
 		group: 'security',
 		defaultSeverity: 'warn',
 		check(p) {
@@ -676,8 +676,8 @@ export const RULES: RuleDefinition[] = [
 						out.push({
 							ruleId: 'CAP_ADD_DANGEROUS',
 							service: name,
-							message: `"${name}" grants the ${cap} capability (near-privileged)`,
-							hint: 'Grant only the narrow capability the workload actually needs.',
+							message: `"${name}" 授予 ${cap} 权限 (近似特权模式)`,
+							hint: '仅授予业务实际必需的最小权限。',
 							line: p.lineOf(['services', name, 'cap_add', i]) ?? p.lineOf(['services', name])
 						});
 					}
@@ -688,7 +688,7 @@ export const RULES: RuleDefinition[] = [
 	},
 	{
 		id: 'MISSING_RESTART_POLICY',
-		description: 'A service has no restart policy (will not come back after a host reboot)',
+		description: '服务未配置重启策略 (主机重启后不会自动拉起)',
 		group: 'reliability',
 		defaultSeverity: 'info',
 		check(p) {
@@ -719,11 +719,11 @@ export const RULES: RuleDefinition[] = [
 				out.push({
 					ruleId: 'MISSING_RESTART_POLICY',
 					service: name,
-					message: `"${name}" has no restart: policy - it will not restart after a crash or host reboot`,
-					hint: 'Add restart: unless-stopped (or on-failure) unless this is a one-shot task.',
+					message: `"${name}" 未配置 restart 重启策略 — 容器崩溃或主机重启后不会自动拉起`,
+					hint: '添加 restart: unless-stopped (或 on-failure)，一次性任务除外。',
 					line: svcLine,
 					fix,
-					fixDescription: 'Add restart: unless-stopped'
+					fixDescription: '加 restart: unless-stopped 重启策略'
 				});
 			}
 			return out;

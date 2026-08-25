@@ -25,7 +25,7 @@ export async function sendSignal(appriseUrl: string, payload: NotificationPayloa
 
 	const parts = cleanPath.split('/').filter(Boolean);
 	if (parts.length < 3) {
-		return { success: false, error: 'Invalid Signal URL. Expected: signal://host[:port]/+source/+target1[/+target2/...]' };
+		return { success: false, error: '无效的 Signal 地址，标准格式: signal://host[:port]/+source/+target1[/+target2/...]' };
 	}
 	const hostPort = parts[0];
 
@@ -61,11 +61,11 @@ export async function sendSignal(appriseUrl: string, payload: NotificationPayloa
 
 		if (!response.ok) {
 			const text = await response.text().catch(() => '');
-			return { success: false, error: `Signal error ${response.status}: ${text || response.statusText}` };
+			return { success: false, error: `Signal 请求异常 ${response.status}: ${text || response.statusText}` };
 		}
 		await drainResponse(response);
 		return { success: true };
 	} catch (error) {
-		return { success: false, error: `Signal connection failed: ${error instanceof Error ? error.message : String(error)}` };
+		return { success: false, error: `Signal 连接失败: ${error instanceof Error ? error.message : String(error)}` };
 	}
 }

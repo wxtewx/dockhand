@@ -60,7 +60,7 @@ function isServiceToken(token: string | undefined): boolean {
  */
 function multiScopeHint(statusCode: number, config: InfisicalConfig): string {
 	if (statusCode === 400 && isServiceToken(config.token) && !config.projectId?.trim()) {
-		return ' - a multi-scope or glob-path service token still needs a Project ID; set it in the provider config';
+		return ' - 多作用域或通配路径的服务令牌仍需要项目 ID，请在提供商配置中进行设置';
 	}
 	return '';
 }
@@ -144,13 +144,13 @@ async function universalAuthLogin(
 	if (statusCode < 200 || statusCode >= 300) {
 		const detail = await body.text().catch(() => '');
 		throw new Error(
-			`[Infisical] Universal Auth login failed with HTTP ${statusCode}${detail ? `: ${parseProviderError(detail) ?? ''}` : ''}`
+			`[Infisical] Universal Auth 登录失败，HTTP 状态码 ${statusCode}${detail ? `: ${parseProviderError(detail) ?? ''}` : ''}`
 		);
 	}
 
 	const payload = (await body.json()) as UniversalAuthLoginResponse;
 	if (!payload.accessToken) {
-		throw new Error('[Infisical] Universal Auth login response did not include an accessToken');
+		throw new Error('[Infisical] Universal Auth 登录响应未返回 accessToken');
 	}
 
 	const ttlSeconds = payload.expiresIn ?? payload.accessTokenMaxTTL ?? DEFAULT_TOKEN_TTL_SECONDS;
@@ -198,13 +198,13 @@ function authConfigError(config: InfisicalConfig): string | null {
 	const clientSecret = config.clientSecret?.trim();
 
 	if (clientId && !clientSecret) {
-		return 'Client secret is required when a client ID is set';
+		return '设置客户端 ID 时必须填写客户端密钥';
 	}
 	if (clientSecret && !clientId) {
-		return 'Client ID is required when a client secret is set';
+		return '设置客户端密钥时必须填写客户端 ID';
 	}
 	if (!token && !(clientId && clientSecret)) {
-		return 'Provide either an access token or a Universal Auth client ID and client secret';
+		return '请提供访问令牌，或者提供 Universal Auth 的客户端 ID 与客户端密钥';
 	}
 	return null;
 }
@@ -234,7 +234,7 @@ export const infisicalProvider: SecretProvider<InfisicalConfig> = {
 		const environment = config.environment?.trim();
 
 		if (!host) {
-			return { ok: false, error: 'Host is empty' };
+			return { ok: false, error: '主机地址为空' };
 		}
 		const authError = authConfigError(config);
 		if (authError) {
@@ -244,10 +244,10 @@ export const infisicalProvider: SecretProvider<InfisicalConfig> = {
 		// for it; every other auth shape still requires them.
 		const serviceToken = isServiceToken(config.token);
 		if (!projectId && !serviceToken) {
-			return { ok: false, error: 'Project ID is empty' };
+			return { ok: false, error: '项目 ID 为空' };
 		}
 		if (!environment && !serviceToken) {
-			return { ok: false, error: 'Environment is empty' };
+			return { ok: false, error: '环境为空' };
 		}
 
 		try {
@@ -264,22 +264,22 @@ export const infisicalProvider: SecretProvider<InfisicalConfig> = {
 			const rawBody = await body.text().catch(() => '');
 			if (statusCode >= 200 && statusCode < 300) {
 				if (!isJsonResponse(rawBody)) {
-					return { ok: false, error: 'Infisical did not return a JSON response - the host may not be an Infisical server' };
+					return { ok: false, error: 'Infisical 未返回 JSON 响应，该主机可能不是 Infisical 服务端' };
 				}
 				return { ok: true };
 			}
 			if (rawBody) console.warn(`[Infisical] testConnection ${statusCode}: ${rawBody}`);
 			const safe = parseProviderError(rawBody);
-			return { ok: false, error: `Infisical returned HTTP ${statusCode}${safe ? `: ${safe}` : ''}${multiScopeHint(statusCode, config)}` };
+			return { ok: false, error: `Infisical 返回 HTTP ${statusCode}${safe ? `: ${safe}` : ''}${multiScopeHint(statusCode, config)}` };
 		} catch (e: unknown) {
 			const message = e instanceof Error ? e.message : String(e);
-			return { ok: false, error: message || 'Connection failed' };
+			return { ok: false, error: message || '连接失败' };
 		}
 	},
 
 	async resolveSecretReferences(): Promise<Map<string, string>> {
 		throw new UnsupportedOperationError(
-			'Infisical does not support inline references; use bulk pull (project/environment/path).'
+			'Infisical 不支持内联引用，请使用批量拉取(项目/环境/路径)。'
 		);
 	},
 
@@ -290,7 +290,7 @@ export const infisicalProvider: SecretProvider<InfisicalConfig> = {
 		const secretPath = selector?.trim() || config.path?.trim() || '/';
 
 		if (!host) {
-			throw new Error('[Infisical] Host is required for a bulk pull');
+			throw new Error('[Infisical] 批量拉取需要提供主机地址');
 		}
 		const authError = authConfigError(config);
 		if (authError) {
@@ -300,10 +300,10 @@ export const infisicalProvider: SecretProvider<InfisicalConfig> = {
 		// still requires them.
 		const serviceToken = isServiceToken(config.token);
 		if (!projectId && !serviceToken) {
-			throw new Error('[Infisical] Project ID is required for a bulk pull');
+			throw new Error('[Infisical] 批量拉取操作需要提供项目 ID');
 		}
 		if (!environment && !serviceToken) {
-			throw new Error('[Infisical] Environment is required for a bulk pull');
+			throw new Error('[Infisical] 批量拉取操作需要提供环境');
 		}
 
 		const token = await resolveAccessToken(config);
@@ -318,8 +318,8 @@ export const infisicalProvider: SecretProvider<InfisicalConfig> = {
 		if (statusCode < 200 || statusCode >= 300) {
 			// Drain the body, log it server-side, but never reflect it to the client.
 			const detail = await body.text().catch(() => '');
-			if (detail) console.warn(`[Infisical] bulk pull ${statusCode}: ${detail}`);
-			throw new Error(`[Infisical] Bulk pull failed with HTTP ${statusCode}${multiScopeHint(statusCode, config)}`);
+			if (detail) console.warn(`[Infisical] 批量拉取 ${statusCode}: ${detail}`);
+			throw new Error(`[Infisical] 批量拉取失败，HTTP 状态码 ${statusCode}${multiScopeHint(statusCode, config)}`);
 		}
 
 		const payload = (await body.json()) as RawSecretsResponse;

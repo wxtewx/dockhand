@@ -32,7 +32,7 @@ async function searchDockerHub(term: string, limit: number): Promise<SearchResul
 	});
 
 	if (!response.ok) {
-		throw new Error(`Docker Hub search failed: ${response.status}`);
+		throw new Error(`Docker Hub 搜索失败：${response.status}`);
 	}
 
 	const data = await response.json();
@@ -86,7 +86,7 @@ async function searchPrivateRegistry(registry: any, term: string, limit: number)
 		} catch (e: any) {
 			// Catalog not supported but we have direct lookup results — that's fine
 			if (results.length > 0) {
-				console.warn(`[Registry] Catalog search failed (using direct lookup results): ${e.message}`);
+				console.warn(`[镜像仓库] 目录搜索失败 (将使用直接查询结果): ${e.message}`);
 			} else {
 				throw e;
 			}
@@ -181,9 +181,9 @@ async function searchCatalog(registry: any, term: string, limit: number): Promis
 				if (kind === 'not_supported') {
 					throw new CatalogNotSupportedError(CATALOG_NOT_SUPPORTED_MSG);
 				}
-				throw new Error('Authentication failed. Check the registry credentials.');
+				throw new Error('身份验证失败，请核对镜像仓库的登录凭证。');
 			}
-			throw new Error(`Registry returned error: ${response.status}`);
+			throw new Error(`镜像仓库返回错误：${response.status}`);
 		}
 
 		const data = await response.json();
@@ -240,7 +240,7 @@ export const GET: RequestHandler = async ({ url }) => {
 	const registryId = url.searchParams.get('registry');
 
 	if (!term) {
-		return json({ error: 'Search term is required' }, { status: 400 });
+		return json({ error: '搜索关键词不能为空' }, { status: 400 });
 	}
 
 	try {
@@ -252,7 +252,7 @@ export const GET: RequestHandler = async ({ url }) => {
 		} else {
 			const registry = await getRegistry(parseInt(registryId));
 			if (!registry) {
-				return json({ error: 'Registry not found' }, { status: 404 });
+				return json({ error: '未找到镜像仓库' }, { status: 404 });
 			}
 
 			if (isDockerHub(registry.url)) {
@@ -270,15 +270,15 @@ export const GET: RequestHandler = async ({ url }) => {
 			return json({ results: [], notSupported: true, message: CATALOG_NOT_SUPPORTED_MSG });
 		}
 
-		console.error('Failed to search images:', error);
+		console.error('镜像搜索失败:', error);
 
 		if (error.code === 'ECONNREFUSED') {
-			return json({ error: 'Could not connect to registry' }, { status: 503 });
+			return json({ error: '无法连接到镜像仓库' }, { status: 503 });
 		}
 		if (error.code === 'ENOTFOUND') {
-			return json({ error: 'Registry host not found' }, { status: 503 });
+			return json({ error: '未找到镜像仓库主机' }, { status: 503 });
 		}
 
-		return json({ error: error.message || 'Failed to search images' }, { status: 500 });
+		return json({ error: error.message || '搜索镜像失败' }, { status: 500 });
 	}
 };

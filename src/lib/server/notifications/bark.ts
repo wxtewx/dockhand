@@ -31,7 +31,7 @@ export async function sendBark(appriseUrl: string, payload: NotificationPayload)
 	}
 
 	if (!cleanPath) {
-		return { success: false, error: 'Invalid Bark URL format. Expected: bark://device_key, bark://host/device_key, or barks://host/device_key' };
+		return { success: false, error: '无效的 Bark 地址格式，合法格式: bark://device_key, bark://host/device_key, or barks://host/device_key' };
 	}
 
 	let baseUrl: string;
@@ -43,7 +43,7 @@ export async function sendBark(appriseUrl: string, payload: NotificationPayload)
 	} else {
 		const parts = cleanPath.split('/').filter(Boolean);
 		if (parts.length < 2) {
-			return { success: false, error: 'Invalid Bark URL format. Expected: bark://device_key, bark://host/device_key, or barks://host/device_key' };
+			return { success: false, error: '无效的 Bark 地址格式，合法格式: bark://device_key, bark://host/device_key, or barks://host/device_key' };
 		}
 		const hostPort = parts[0];
 		deviceKeys = parts.slice(1);
@@ -102,18 +102,18 @@ export async function sendBark(appriseUrl: string, payload: NotificationPayload)
 
 		if (!response.ok) {
 			const text = await response.text().catch(() => '');
-			return { success: false, error: `Bark error ${response.status}: ${text || response.statusText}` };
+			return { success: false, error: `Bark 请求异常 ${response.status}: ${text || response.statusText}` };
 		}
 		// Bark returns HTTP 200 with { code, message, timestamp } — `code !== 200`
 		// signals a logical failure (e.g. invalid device key) that we'd otherwise
 		// swallow as a success.
 		const json: any = await response.json().catch(() => null);
 		if (json && typeof json.code === 'number' && json.code !== 200) {
-			return { success: false, error: `Bark error: ${json.message || `code ${json.code}`}` };
+			return { success: false, error: `Bark 发送失败: ${json.message || `错误码 ${json.code}`}` };
 		}
 		return { success: true };
 	} catch (error) {
-		return { success: false, error: `Bark connection failed: ${error instanceof Error ? error.message : String(error)}` };
+		return { success: false, error: `Bark 连接失败: ${error instanceof Error ? error.message : String(error)}` };
 	}
 }
 

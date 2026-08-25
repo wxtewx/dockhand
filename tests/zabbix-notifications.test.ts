@@ -23,8 +23,8 @@ const fetchSpy = spyOn(shared, 'notificationFetch')
 const result = await sendZabbix(
 'zabbixs://zabbix.example.com?token=secret-token&host=Dockhand&key=dockhand.event',
 {
-title: 'Container unhealthy',
-message: 'Container test is unhealthy',
+title: '容器运行异常',
+message: '容器 test 运行异常',
 type: 'error',
 environmentName: 'Docker Test',
 eventType: 'container_unhealthy'
@@ -54,7 +54,7 @@ expect(body.params[0].key).toBe('dockhand.event');
 const event = JSON.parse(body.params[0].value);
 
 expect(event.event_type).toBe('container_unhealthy');
-expect(event.title).toBe('Container unhealthy');
+expect(event.title).toBe('容器运行异常');
 expect(event.environment).toBe('Docker Test');
 expect(event.type).toBe('error');
 
@@ -68,8 +68,8 @@ const fetchSpy = spyOn(shared, 'notificationFetch')
 const result = await sendZabbix(
 'zabbix://10.112.8.22/zabbix/api_jsonrpc.php?token=test&host=Dockhand&key=dockhand.event',
 {
-title: 'Test',
-message: 'Test',
+title: '测试',
+message: '测试',
 type: 'info',
 eventType: 'test'
 }
@@ -106,8 +106,8 @@ id: 1
 const result = await sendZabbix(
 'zabbixs://zabbix.example.com?token=test&host=Dockhand&key=dockhand.event',
 {
-title: 'Test',
-message: 'Test'
+title: '测试',
+message: '测试'
 }
 );
 
@@ -141,8 +141,8 @@ id: 1
 const result = await sendZabbix(
 'zabbixs://zabbix.example.com?token=test&host=Dockhand&key=dockhand.event',
 {
-title: 'Test',
-message: 'Test'
+title: '测试',
+message: '测试'
 }
 );
 
@@ -158,8 +158,8 @@ const fetchSpy = spyOn(shared, 'notificationFetch');
 const result = await sendZabbix(
 'zabbixs://zabbix.example.com?host=Dockhand&key=dockhand.event',
 {
-title: 'Test',
-message: 'Test'
+title: '测试',
+message: '测试'
 }
 );
 

@@ -54,9 +54,9 @@ async function fetchManifest(
 	});
 
 	if (!res.ok) {
-		if (res.status === 401 || res.status === 403) return { ok: false, reason: 'Authentication required' };
-		if (res.status === 404) return { ok: false, reason: 'Manifest not found' };
-		return { ok: false, reason: `Registry error ${res.status}` };
+		if (res.status === 401 || res.status === 403) return { ok: false, reason: '需要身份验证' };
+		if (res.status === 404) return { ok: false, reason: '未找到清单文件' };
+		return { ok: false, reason: `仓库错误 ${res.status}` };
 	}
 
 	const contentType = res.headers.get('content-type') || '';
@@ -89,7 +89,7 @@ async function resolveTagInfo(registry: any, image: string, tag: string): Promis
 	// Multi-arch index: follow the first child manifest to compute a representative size.
 	if (INDEX_MEDIA_TYPES.has(first.body?.mediaType) || Array.isArray(first.body?.manifests)) {
 		const child = (first.body?.manifests || [])[0];
-		if (!child?.digest) return { size: null, lastUpdated: null, reason: 'Multi-arch (no child manifest)' };
+		if (!child?.digest) return { size: null, lastUpdated: null, reason: '多架构镜像 (无子级清单)' };
 		const childRes = await fetchManifest(baseUrl, image, child.digest, authHeader);
 		if (!childRes.ok) return { size: null, lastUpdated: null, reason: childRes.reason };
 		return {
@@ -102,7 +102,7 @@ async function resolveTagInfo(registry: any, image: string, tag: string): Promis
 	const size = sizeFromManifest(first.body);
 	const lastUpdated = createdFromManifest(first.body);
 	const result: TagInfoResult = { size, lastUpdated };
-	if (size === null && lastUpdated === null) result.reason = 'No size/date in manifest';
+	if (size === null && lastUpdated === null) result.reason = '清单中未包含大小/日期信息';
 	return result;
 }
 
@@ -123,28 +123,28 @@ export const GET: RequestHandler = async ({ url }) => {
 	const tag = url.searchParams.get('tag');
 
 	if (!image || !tag) {
-		return json({ error: 'image and tag are required' }, { status: 400 });
+		return json({ error: '必须提供镜像名称和标签' }, { status: 400 });
 	}
 
 	// Docker Hub tags already carry size/date from the hub API (see registry/tags),
 	// so this per-manifest path is only for self-hosted V2 registries.
 	if (!registryId) {
-		return json({ size: null, lastUpdated: null, reason: 'Not supported without a registry' } satisfies TagInfoResult);
+		return json({ size: null, lastUpdated: null, reason: '未指定仓库时不支持该查询' } satisfies TagInfoResult);
 	}
 
 	const registry = await getRegistry(parseInt(registryId));
 	if (!registry) {
-		return json({ error: 'Registry not found' }, { status: 404 });
+		return json({ error: '未找到对应仓库' }, { status: 404 });
 	}
 	if (isDockerHub(registry.url)) {
-		return json({ size: null, lastUpdated: null, reason: 'Docker Hub tags carry size/date already' } satisfies TagInfoResult);
+		return json({ size: null, lastUpdated: null, reason: 'Docker Hub 标签已自带大小与更新时间' } satisfies TagInfoResult);
 	}
 
 	try {
 		return json(await resolveTagInfo(registry, image, tag) satisfies TagInfoResult);
 	} catch (error: any) {
 		// Never fail the row: fold any error into a graceful "unavailable" result.
-		const reason = error?.name === 'TimeoutError' ? 'Timed out' : (error?.message || 'Unavailable');
+		const reason = error?.name === 'TimeoutError' ? '请求超时' : (error?.message || '暂无法获取');
 		return json({ size: null, lastUpdated: null, reason } satisfies TagInfoResult);
 	}
 };
