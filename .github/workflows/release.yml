@@ -22,7 +22,7 @@ jobs:
 
       - name: Generate package-lock.json
         run: |
-          npm ci
+          npm instal
 
       - name: Extract changelog
         id: changelog
