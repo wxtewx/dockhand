@@ -67,7 +67,7 @@ jobs:
           context: .
           push: true
           tags: |
-            wxtewx/dockhand:${{ GITHUB_REF_NAME }}
+            wxtewx/dockhand:${{ github.ref_name }}
             wxtewx/dockhand:latest
 
       - name: Create release
