@@ -337,6 +337,8 @@ bump: {
     audit_logs: "审计日志",
     activity: "操作记录",
     schedules: "计划任务",
+    secrets: "密钥",
+    backups: "备份",
   },
   action: {
     view: "查看",
@@ -714,6 +716,12 @@ export function getLabelText(
 ): string {
   if (!value) return value ?? "";
   let text = value;
+
+  const roleMap = LabelMaps.role;
+  const lowerText = text.trim().toLowerCase();
+  if (roleMap[lowerText as keyof typeof roleMap]) {
+    return roleMap[lowerText as keyof typeof roleMap];
+  }
 
   for (const [reg, template] of precompiledPullRules) {
     text = text.replace(reg, template);
