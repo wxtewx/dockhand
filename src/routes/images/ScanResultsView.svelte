@@ -2,6 +2,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { CheckCircle2, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-svelte';
 	import { getSeverityColor, SEVERITY_ORDER } from '$lib/utils/vulnerability';
+	import { getLabelText } from '$lib/types';
 
 	interface ScanResult {
 		scanner: 'grype' | 'trivy';
@@ -86,7 +87,7 @@
 </script>
 
 {#if results.length === 0}
-	<div class="text-sm text-muted-foreground">No scan results available</div>
+	<div class="text-sm text-muted-foreground">暂无扫描结果</div>
 {:else}
 	<div class="flex flex-col gap-2 h-full">
 		<!-- Scanner tabs (only if multiple results) -->
@@ -117,42 +118,42 @@
 			<div class="flex flex-wrap items-center gap-1.5 shrink-0">
 				{#if activeResult.summary.critical > 0}
 					<Badge variant="outline" class="bg-red-500/10 text-red-500 border-red-500/30 text-xs py-0">
-						{activeResult.summary.critical} Critical
+						{activeResult.summary.critical} 严重
 					</Badge>
 				{/if}
 				{#if activeResult.summary.high > 0}
 					<Badge variant="outline" class="bg-orange-500/10 text-orange-500 border-orange-500/30 text-xs py-0">
-						{activeResult.summary.high} High
+						{activeResult.summary.high} 高危
 					</Badge>
 				{/if}
 				{#if activeResult.summary.medium > 0}
 					<Badge variant="outline" class="bg-yellow-500/10 text-yellow-600 border-yellow-500/30 text-xs py-0">
-						{activeResult.summary.medium} Medium
+						{activeResult.summary.medium} 中危
 					</Badge>
 				{/if}
 				{#if activeResult.summary.low > 0}
 					<Badge variant="outline" class="bg-blue-500/10 text-blue-500 border-blue-500/30 text-xs py-0">
-						{activeResult.summary.low} Low
+						{activeResult.summary.low} 低危
 					</Badge>
 				{/if}
 				{#if activeResult.summary.negligible > 0}
 					<Badge variant="outline" class="bg-gray-500/10 text-gray-500 border-gray-500/30 text-xs py-0">
-						{activeResult.summary.negligible} Negligible
+						{activeResult.summary.negligible} 轻微
 					</Badge>
 				{/if}
 				{#if activeResult.summary.unknown > 0}
 					<Badge variant="outline" class="bg-gray-500/10 text-gray-500 border-gray-500/30 text-xs py-0">
-						{activeResult.summary.unknown} Unknown
+						{activeResult.summary.unknown} 未知
 					</Badge>
 				{/if}
 				{#if activeResult.vulnerabilities.length === 0}
 					<Badge variant="outline" class="bg-green-500/10 text-green-500 border-green-500/30 text-xs py-0">
 						<CheckCircle2 class="w-3 h-3 mr-1" />
-						No vulnerabilities
+						未发现漏洞
 					</Badge>
 				{/if}
 				<span class="text-xs text-muted-foreground ml-2">
-					{activeResult.scanner === 'grype' ? 'Grype' : 'Trivy'} • {activeResult.vulnerabilities.length} total
+					{activeResult.scanner === 'grype' ? 'Grype' : 'Trivy'} • {activeResult.vulnerabilities.length} 个漏洞
 					{#if activeResult.scanDuration}• {formatDuration(activeResult.scanDuration)}{/if}
 				</span>
 			</div>
@@ -165,7 +166,7 @@
 							<tr>
 								<th class="text-left py-1.5 px-2 font-medium w-[22%]">
 									<button type="button" class="flex items-center gap-1 hover:text-foreground transition-colors" onclick={() => toggleSort('id')}>
-										CVE ID
+										CVE 编号
 										{#if sortBy === 'id'}
 											{#if sortDir === 'asc'}<ArrowUp class="w-3 h-3" />{:else}<ArrowDown class="w-3 h-3" />{/if}
 										{:else}
@@ -175,7 +176,7 @@
 								</th>
 								<th class="text-left py-1.5 px-2 font-medium w-[12%]">
 									<button type="button" class="flex items-center gap-1 hover:text-foreground transition-colors" onclick={() => toggleSort('severity')}>
-										Severity
+										风险等级
 										{#if sortBy === 'severity'}
 											{#if sortDir === 'asc'}<ArrowUp class="w-3 h-3" />{:else}<ArrowDown class="w-3 h-3" />{/if}
 										{:else}
@@ -185,7 +186,7 @@
 								</th>
 								<th class="text-left py-1.5 px-2 font-medium w-[28%]">
 									<button type="button" class="flex items-center gap-1 hover:text-foreground transition-colors" onclick={() => toggleSort('package')}>
-										Package
+										组件
 										{#if sortBy === 'package'}
 											{#if sortDir === 'asc'}<ArrowUp class="w-3 h-3" />{:else}<ArrowDown class="w-3 h-3" />{/if}
 										{:else}
@@ -193,8 +194,8 @@
 										{/if}
 									</button>
 								</th>
-								<th class="text-left py-1.5 px-2 font-medium w-[18%]">Installed</th>
-								<th class="text-left py-1.5 px-2 font-medium w-[20%]">Fixed in</th>
+								<th class="text-left py-1.5 px-2 font-medium w-[18%]">已安装版本</th>
+								<th class="text-left py-1.5 px-2 font-medium w-[20%]">修复版本</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -221,7 +222,7 @@
 									</td>
 									<td class="py-1 px-2">
 										<Badge variant="outline" class="{getSeverityColor(vuln.severity)} text-xs py-0 px-1.5">
-											{vuln.severity}
+											{getLabelText(vuln.severity)}
 										</Badge>
 									</td>
 									<td class="py-1 px-2 max-w-[300px]">

@@ -84,11 +84,11 @@ async function getAccessToken(config: AzureKvConfig): Promise<string> {
 			// non-JSON body; leave detail empty
 		}
 		throw new Error(
-			`Azure Key Vault: authentication failed (HTTP ${statusCode}${detail ? `: ${detail}` : ''})`
+			`Azure Key Vault: 身份验证失败 (HTTP ${statusCode}${detail ? `: ${detail}` : ''})`
 		);
 	}
 	const data = JSON.parse(text) as { access_token?: string; expires_in?: number };
-	if (!data.access_token) throw new Error('Azure Key Vault: no access token returned');
+	if (!data.access_token) throw new Error('Azure Key Vault: 未返回访问令牌');
 
 	const ttlMs = (typeof data.expires_in === 'number' ? data.expires_in : 3600) * 1000;
 	tokenCache.set(key, { token: data.access_token, expiresAt: now + ttlMs - TOKEN_REFRESH_MARGIN_MS });
@@ -104,7 +104,7 @@ async function readSecret(config: AzureKvConfig, token: string, name: string): P
 	const text = await body.text();
 	if (statusCode === 404) return null;
 	if (statusCode < 200 || statusCode >= 300 || !isJsonResponse(text)) {
-		throw new Error(`Azure Key Vault: failed to read secret "${name}" (HTTP ${statusCode})`);
+		throw new Error(`Azure Key Vault: 读取密钥 "${name}" 失败 (HTTP ${statusCode})`);
 	}
 	const data = JSON.parse(text) as { value?: string };
 	return data.value ?? null;
@@ -121,7 +121,7 @@ async function listSecretNames(config: AzureKvConfig, token: string): Promise<st
 		});
 		const text = await body.text();
 		if (statusCode < 200 || statusCode >= 300 || !isJsonResponse(text)) {
-			throw new Error(`Azure Key Vault: cannot list secrets (HTTP ${statusCode})`);
+			throw new Error(`Azure Key Vault: 无法列出密钥 (HTTP ${statusCode})`);
 		}
 		const data = JSON.parse(text) as { value?: { id: string }[]; nextLink?: string | null };
 		for (const item of data.value ?? []) {
@@ -172,9 +172,9 @@ export const azureKvProvider: SecretProvider<AzureKvConfig> = {
 				try {
 					const v = await readSecret(config, token, name);
 					if (v !== null) values.set(name, v);
-					else console.warn(`${logPrefix} Skipping azurekv://${name}: secret not found`);
+					else console.warn(`${logPrefix} 跳过 azurekv://${name}: 未找到该密钥`);
 				} catch (e) {
-					console.warn(`${logPrefix} Skipping azurekv://${name}: ${e instanceof Error ? e.message : e}`);
+					console.warn(`${logPrefix} 跳过 azurekv://${name}: ${e instanceof Error ? e.message : e}`);
 				}
 			})
 		);

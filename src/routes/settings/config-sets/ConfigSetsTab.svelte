@@ -10,6 +10,7 @@
 	import { canAccess } from '$lib/stores/auth';
 	import ConfigSetModal from './ConfigSetModal.svelte';
 	import { EmptyState } from '$lib/components/ui/empty-state';
+	import { getLabelText } from '$lib/types';
 
 	// Config set types
 	interface ConfigSet {
@@ -39,8 +40,8 @@
 			const response = await fetch('/api/config-sets');
 			configSets = await response.json();
 		} catch (error) {
-			console.error('Failed to fetch config sets:', error);
-			toast.error('Failed to fetch config sets');
+			console.error('获取配置集失败:', error);
+			toast.error('获取配置集失败');
 		} finally {
 			cfgLoading = false;
 		}
@@ -59,13 +60,13 @@
 
 			if (response.ok) {
 				await fetchConfigSets();
-				toast.success('Config set deleted');
+				toast.success('配置集已删除');
 			} else {
 				const data = await response.json();
-				toast.error(data.error || 'Failed to delete config set');
+				toast.error(data.error || '删除配置集失败');
 			}
 		} catch (error) {
-			toast.error('Failed to delete config set');
+			toast.error('删除配置集失败');
 		}
 	}
 
@@ -80,9 +81,9 @@
 			<div class="flex items-start gap-3">
 				<Layers class="w-5 h-5 text-muted-foreground mt-0.5" />
 				<div>
-					<p class="text-sm font-medium">What are config sets?</p>
+					<p class="text-sm font-medium">什么是配置集？</p>
 					<p class="text-xs text-muted-foreground mt-1">
-						Config sets are reusable templates for container configuration. Define common environment variables, labels, ports, and volumes once, then apply them when creating or editing containers. Values from config sets can be overwritten during container creation.
+						配置集是可复用的容器配置模板。您可以一次性定义通用的环境变量、标签、端口和数据卷，然后在创建或编辑容器时应用它们。在容器创建过程中，配置集中的值可以被覆盖。
 					</p>
 				</div>
 			</div>
@@ -91,26 +92,26 @@
 
 	<div class="flex justify-between items-center">
 		<div class="flex items-center gap-3">
-			<Badge variant="secondary" class="text-xs">{configSets.length} total</Badge>
+			<Badge variant="secondary" class="text-xs">总计 {configSets.length} 个</Badge>
 		</div>
 		<div class="flex gap-2">
 			{#if $canAccess('configsets', 'create')}
 				<Button size="sm" onclick={() => openCfgModal()}>
 					<Plus class="w-4 h-4" />
-					Add config set
+					添加配置集
 				</Button>
 			{/if}
-			<Button size="sm" variant="outline" onclick={fetchConfigSets}>Refresh</Button>
+			<Button size="sm" variant="outline" onclick={fetchConfigSets}>刷新</Button>
 		</div>
 	</div>
 
 	{#if cfgLoading && configSets.length === 0}
-		<p class="text-muted-foreground text-sm">Loading config sets...</p>
+		<p class="text-muted-foreground text-sm">正在加载配置集...</p>
 	{:else if configSets.length === 0}
 		<EmptyState
 			icon={Layers}
-			title="No config sets found"
-			description="Create a reusable config set to get started"
+			title="未找到任何配置集"
+			description="创建一个可复用的配置集开始使用"
 		/>
 	{:else}
 		<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -132,23 +133,23 @@
 
 						<div class="flex flex-wrap gap-1.5">
 							{#if cfg.envVars && cfg.envVars.length > 0}
-								<Badge variant="outline" class="text-xs">{cfg.envVars.length} env vars</Badge>
+								<Badge variant="outline" class="text-xs">{cfg.envVars.length} 个环境变量</Badge>
 							{/if}
 							{#if cfg.labels && cfg.labels.length > 0}
-								<Badge variant="outline" class="text-xs">{cfg.labels.length} labels</Badge>
+								<Badge variant="outline" class="text-xs">{cfg.labels.length} 个标签</Badge>
 							{/if}
 							{#if cfg.ports && cfg.ports.length > 0}
-								<Badge variant="outline" class="text-xs">{cfg.ports.length} ports</Badge>
+								<Badge variant="outline" class="text-xs">{cfg.ports.length} 个端口</Badge>
 							{/if}
 							{#if cfg.volumes && cfg.volumes.length > 0}
-								<Badge variant="outline" class="text-xs">{cfg.volumes.length} volumes</Badge>
+								<Badge variant="outline" class="text-xs">{cfg.volumes.length} 个数据卷</Badge>
 							{/if}
 						</div>
 
 						<div class="text-xs text-muted-foreground">
-							<span>Network: {cfg.networkMode}</span>
+							<span>网络: {getLabelText(cfg.networkMode)}</span>
 							<span class="mx-1">|</span>
-							<span>Restart: {cfg.restartPolicy}</span>
+							<span>重启策略: {getLabelText(cfg.restartPolicy)}</span>
 						</div>
 
 						<div class="flex gap-2 pt-2">
@@ -159,16 +160,16 @@
 									onclick={() => openCfgModal(cfg)}
 								>
 									<Pencil class="w-3 h-3" />
-									Edit
+									编辑
 								</Button>
 							{/if}
 							{#if $canAccess('configsets', 'delete')}
 								<ConfirmPopover
 									open={confirmDeleteConfigSetId === cfg.id}
-									action="Delete"
-									itemType="config set"
+									action="删除"
+									itemType="配置集"
 									itemName={cfg.name}
-									title="Remove"
+									title="移除"
 									position="left"
 									onConfirm={() => deleteConfigSet(cfg.id)}
 									onOpenChange={(open) => confirmDeleteConfigSetId = open ? cfg.id : null}

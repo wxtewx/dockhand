@@ -76,7 +76,7 @@ export function tlsCertPreamble(): string {
  */
 export function localRepoGuard(repository: string): string {
 	if (!isLocalRepo(repository)) return '';
-	const msg = `restic repository not found at $RESTIC_REPOSITORY on this environment's Docker host. A local-path repository only works when the environment's Docker daemon runs on the same host as Dockhand (e.g. a co-located socket-proxy). For a remote host, use an S3 or REST destination.`;
+	const msg = `未在当前环境的 Docker 主机 $RESTIC_REPOSITORY 路径下找到 restic 仓库。本地路径仓库仅在 Docker 守护进程与 Dockhand 部署于同一台主机时可用 (例如：同机 socket 代理部署)。远程主机请使用 S3 或 REST 类型存储目标。`;
 	return `test -f "$RESTIC_REPOSITORY/config" || { echo ${shellQuote(msg)} >&2; exit 1; }; `;
 }
 
@@ -128,7 +128,7 @@ export function classifyProcClose(
 	stderr: string
 ): { exitCode: number | undefined; stderr: string } {
 	const exitCode = code === null ? undefined : code;
-	const stderrOut = signal ? `${stderr}\n(process killed by ${signal})` : stderr;
+	const stderrOut = signal ? `${stderr}\n(进程被 ${signal} 信号终止)` : stderr;
 	return { exitCode, stderr: stderrOut };
 }
 

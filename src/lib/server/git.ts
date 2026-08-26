@@ -47,12 +47,12 @@ let mergedCaBundleReady = false;
  */
 function getMergedCaBundlePath(): string {
 	if (mergedCaBundleReady && existsSync(MERGED_CA_BUNDLE_PATH)) {
-		console.log(`[Git] Using cached merged CA bundle: ${MERGED_CA_BUNDLE_PATH}`);
+		console.log(`[Git] 使用缓存的合并 CA 证书包: ${MERGED_CA_BUNDLE_PATH}`);
 		return MERGED_CA_BUNDLE_PATH;
 	}
 
 	const customCertPath = process.env.NODE_EXTRA_CA_CERTS!;
-	console.log(`[Git] NODE_EXTRA_CA_CERTS set to: ${customCertPath}`);
+	console.log(`[Git] NODE_EXTRA_CA_CERTS 已设置为: ${customCertPath}`);
 
 	const systemCaPaths = [
 		process.env.SSL_CERT_FILE,
@@ -68,22 +68,22 @@ function getMergedCaBundlePath(): string {
 			try {
 				systemCaContent = readFileSync(caPath, 'utf-8');
 				systemCaSource = caPath;
-				console.log(`[Git] Found system CA bundle: ${caPath} (${systemCaContent.split('-----BEGIN CERTIFICATE-----').length - 1} certs)`);
+				console.log(`[Git] 找到系统 CA 证书包：${caPath} (${systemCaContent.split('-----BEGIN CERTIFICATE-----').length - 1} 个证书)`);
 				break;
 			} catch (err) {
-				console.log(`[Git] Failed to read system CA bundle ${caPath}: ${err}`);
+				console.log(`[Git] 无法读取系统 CA 证书包 ${caPath}: ${err}`);
 			}
 		}
 	}
 
 	if (!systemCaSource) {
-		console.log(`[Git] No system CA bundle found, using custom cert only: ${customCertPath}`);
+		console.log(`[Git] 未找到系统 CA 证书包，仅使用自定义证书：${customCertPath}`);
 	}
 
 	try {
 		const customCaContent = readFileSync(customCertPath, 'utf-8');
 		const customCertCount = customCaContent.split('-----BEGIN CERTIFICATE-----').length - 1;
-		console.log(`[Git] Custom CA file contains ${customCertCount} cert(s)`);
+		console.log(`[Git] 自定义CA文件包含 ${customCertCount} 个证书`);
 
 		const merged = systemCaContent
 			? systemCaContent.trimEnd() + '\n' + customCaContent.trimEnd() + '\n'
@@ -92,9 +92,9 @@ function getMergedCaBundlePath(): string {
 		mergedCaBundleReady = true;
 
 		const totalCerts = merged.split('-----BEGIN CERTIFICATE-----').length - 1;
-		console.log(`[Git] Created merged CA bundle: ${MERGED_CA_BUNDLE_PATH} (${totalCerts} total certs — system from ${systemCaSource || 'none'} + custom from ${customCertPath})`);
+		console.log(`[Git] 已创建合并的CA证书包：${MERGED_CA_BUNDLE_PATH} (共 ${totalCerts} 个证书 — 系统来自 ${systemCaSource || '无'} + 自定义来自 ${customCertPath})`);
 	} catch (err) {
-		console.warn(`[Git] Failed to create merged CA bundle, falling back to custom cert only: ${customCertPath}`, err);
+		console.warn(`[Git] 创建合并的CA证书包失败，回退至仅使用自定义证书：${customCertPath}`, err);
 		return customCertPath;
 	}
 
@@ -197,7 +197,7 @@ async function ensurePasswdEntry(env: GitEnv): Promise<void> {
 
 	// UID not found — check if libnss_wrapper is available
 	if (!existsSync(NSS_WRAPPER_LIB)) {
-		console.warn(`[git] UID ${uid} not in /etc/passwd and libnss_wrapper not found — SSH may fail`);
+		console.warn(`[git] UID ${uid} 不在 /etc/passwd 中，且未找到 libnss_wrapper — SSH 可能失败`);
 		return;
 	}
 
@@ -221,9 +221,9 @@ async function ensurePasswdEntry(env: GitEnv): Promise<void> {
 		env.LD_PRELOAD = env.LD_PRELOAD ? `${env.LD_PRELOAD}:${NSS_WRAPPER_LIB}` : NSS_WRAPPER_LIB;
 		env.NSS_WRAPPER_PASSWD = TMP_PASSWD;
 		env.NSS_WRAPPER_GROUP = TMP_GROUP;
-		console.log(`[git] Created temp passwd for UID ${uid} with libnss_wrapper`);
+		console.log(`[git] 已使用 libnss_wrapper 为 UID ${uid} 创建临时密码文件`);
 	} catch (err) {
-		console.warn(`[git] Failed to create temp passwd:`, err);
+		console.warn(`[git] 创建临时密码文件失败：`, err);
 	}
 }
 
@@ -286,7 +286,7 @@ async function buildGitEnv(credential: GitCredential | null): Promise<GitEnv> {
 			);
 			if (result.status !== 0) {
 				const stderr = result.stderr.toString().trim();
-				console.warn(`[git] Failed to decrypt SSH key: ${stderr}`);
+				console.warn(`[git] 解密 SSH 密钥失败：${stderr}`);
 			}
 		}
 
@@ -425,7 +425,7 @@ async function getChangedFilesInDir(
 ): Promise<{ changed: boolean; files: string[]; error?: string }> {
 	if (!previousCommit) {
 		// No previous commit means this is a new clone - always deploy
-		return { changed: true, files: ['(new clone - all files)'] };
+		return { changed: true, files: ['(全新克隆 - 所有文件)'] };
 	}
 
 	// Use git diff --name-only to get all changed files in the directory
@@ -440,7 +440,7 @@ async function getChangedFilesInDir(
 	// If the command fails (e.g., previousCommit no longer exists after force push),
 	// assume files changed to be safe
 	if (result.code !== 0) {
-		return { changed: true, files: ['(diff failed - assuming changed)'], error: result.stderr };
+		return { changed: true, files: ['(差异对比失败 - 假定已变更)'], error: result.stderr };
 	}
 
 	// Parse changed files
@@ -470,7 +470,7 @@ async function computeSyncDeletionPlan(options: {
 	const newFiles = hashDirFiles(composeDir);
 
 	const manifestSize = Object.keys(previousManifest.files).length;
-	console.log(`${logPrefix} Deletion sync: manifest has ${manifestSize} file(s)${manifestSize === 0 ? ' (first sync — nothing will be deleted)' : ''}`);
+	console.log(`${logPrefix} 删除同步: 清单包含 ${manifestSize} 个文件${manifestSize === 0 ? ' (首次同步，不会删除任何文件)' : ''}`);
 
 	// First sync / legacy manifest: nothing was recorded, so nothing can be deleted
 	if (manifestSize === 0) {
@@ -479,17 +479,17 @@ async function computeSyncDeletionPlan(options: {
 
 	const blocked = deletionSafetyCheck(previousManifest.files, newFiles, composeFileName);
 	if (blocked) {
-		console.warn(`${logPrefix} Deletion sync: ${blocked}`);
+		console.warn(`${logPrefix} 删除同步: ${blocked}`);
 		return { plan: { toDelete: [], skipped: [] }, newFiles, previousManifest };
 	}
 
 	const plan = computeDeletions(previousManifest.files, newFiles);
 
 	for (const file of plan.toDelete) {
-		console.log(`${logPrefix} Deletion sync: will remove "${file.path}" — deleted from the repository`);
+		console.log(`${logPrefix} 删除同步: 将移除 "${file.path}" — 该文件已从仓库中移除`);
 	}
 	for (const skip of plan.skipped) {
-		console.warn(`${logPrefix} Deletion sync: keeping "${skip.path}" — ${skipReasonMessage(skip.reason)}`);
+		console.warn(`${logPrefix} 删除同步: 保留 "${skip.path}" — ${skipReasonMessage(skip.reason)}`);
 	}
 
 	return { plan, newFiles, previousManifest };
@@ -526,14 +526,14 @@ async function finalizeDeletionSync(options: {
 	const summary = buildSyncChangeSummary(previousManifest.files, newFiles, effectiveApply, plan.skipped);
 	const tableLines = formatChangeTable(summary);
 
-	console.log(`${logPrefix} Sync file changes: ${tableLines[0]}`);
+	console.log(`${logPrefix} 同步文件变更: ${tableLines[0]}`);
 	for (const line of tableLines.slice(1)) {
 		console.log(`${logPrefix}   ${line}`);
 	}
 
 	const nextManifest = buildNextManifest(newCommitFull, newFiles);
 	await updateGitStack(stackId, { syncedFiles: serializeManifest(nextManifest) });
-	console.log(`${logPrefix} Manifest persisted: ${Object.keys(nextManifest.files).length} file(s) at commit ${nextManifest.commit?.substring(0, 7)}`);
+	console.log(`${logPrefix} 清单已持久化: 共 ${Object.keys(nextManifest.files).length} 个文件，提交哈希 ${nextManifest.commit?.substring(0, 7)}`);
 }
 
 export interface SyncResult {
@@ -571,27 +571,27 @@ function cleanGitError(stderr: string): string {
 	const lines = stderr.split('\n').filter(line => {
 		const l = line.trim().toLowerCase();
 		// Skip SSH warnings
-		if (l.startsWith('warning:')) return false;
-		if (l.includes('added') && l.includes('to the list of known hosts')) return false;
+		if (l.startsWith('警告：')) return false;
+		if (l.includes('已添加') && l.includes('到已知主机列表')) return false;
 		// Skip empty lines
 		if (!l) return false;
 		return true;
 	});
 
 	// Find the most relevant error
-	const fatalLine = lines.find(l => l.toLowerCase().includes('fatal:'));
-	const permissionLine = lines.find(l => l.toLowerCase().includes('permission denied'));
-	const errorLine = lines.find(l => l.toLowerCase().includes('error:'));
+	const fatalLine = lines.find(l => l.toLowerCase().includes('致命错误：'));
+	const permissionLine = lines.find(l => l.toLowerCase().includes('权限被拒绝'));
+	const errorLine = lines.find(l => l.toLowerCase().includes('错误：'));
 
 	// Return cleaner message
 	if (permissionLine) {
-		return 'Permission denied. Check your SSH credentials.';
+		return '权限被拒绝。请检查你的 SSH 凭据。';
 	}
 	if (fatalLine) {
 		// Clean up common fatal messages
 		const msg = fatalLine.replace(/^fatal:\s*/i, '').trim();
 		if (msg.includes('Could not read from remote repository')) {
-			return 'Could not access repository. Check URL and credentials.';
+			return '无法访问仓库。请检查 URL 和凭据。';
 		}
 		return msg;
 	}
@@ -600,7 +600,7 @@ function cleanGitError(stderr: string): string {
 	}
 
 	// Fallback to original (joined and trimmed)
-	return lines.join(' ').trim() || 'Failed to connect to repository';
+	return lines.join(' ').trim() || '连接仓库失败';
 }
 
 /**
@@ -627,7 +627,7 @@ async function testRepositoryConnection(options: {
 		);
 
 		if (result.code !== 0) {
-			console.error('[Git] Connection test failed:', result.stderr);
+			console.error('[Git] 连接测试失败：', result.stderr);
 			return { success: false, error: cleanGitError(result.stderr) };
 		}
 
@@ -654,12 +654,12 @@ async function testRepositoryConnection(options: {
 				.filter(Boolean);
 
 			if (allBranches.length === 0) {
-				return { success: true, branch: '(empty repository)' };
+				return { success: true, branch: '(空仓库)' };
 			}
 
 			return {
 				success: false,
-				error: `Branch '${branch}' not found. Available branches: ${allBranches.slice(0, 5).join(', ')}${allBranches.length > 5 ? '...' : ''}`
+				error: `未找到分支 '${branch}'。可用分支：${allBranches.slice(0, 5).join(', ')}${allBranches.length > 5 ? '...' : ''}`
 			};
 		}
 
@@ -685,7 +685,7 @@ async function testRepositoryConnection(options: {
 export async function testRepository(repoId: number): Promise<TestResult> {
 	const repo = await getGitRepository(repoId);
 	if (!repo) {
-		return { success: false, error: 'Repository not found' };
+		return { success: false, error: '仓库不存在' };
 	}
 
 	const credential = repo.credentialId ? await getGitCredential(repo.credentialId) : null;
@@ -709,7 +709,7 @@ export async function testRepositoryConfig(options: {
 	const { url, branch, credentialId } = options;
 
 	if (!url) {
-		return { success: false, error: 'Repository URL is required' };
+		return { success: false, error: '仓库 URL 为必填项' };
 	}
 
 	// Transport denylist (ext::/fd::/file::/local paths) — applied here so the
@@ -720,7 +720,7 @@ export async function testRepositoryConfig(options: {
 	// Fetch credential from database if credentialId is provided
 	const credential = credentialId ? await getGitCredential(credentialId) : null;
 	if (credentialId && !credential) {
-		return { success: false, error: 'Credential not found' };
+		return { success: false, error: '凭据不存在' };
 	}
 
 	return testRepositoryConnection({
@@ -781,7 +781,7 @@ export async function listRemoteBranches(options: {
 		);
 
 		if (result.timedOut) {
-			return { branches: [], error: `git ls-remote timed out after ${Math.round(effectiveTimeoutMs / 1000)}s` };
+			return { branches: [], error: `git ls-remote 在 ${Math.round(effectiveTimeoutMs / 1000)} 秒后超时` };
 		}
 
 		if (result.code !== 0) {
@@ -808,12 +808,12 @@ export async function listRemoteBranches(options: {
 export async function syncRepository(repoId: number): Promise<SyncResult> {
 	const repo = await getGitRepository(repoId);
 	if (!repo) {
-		return { success: false, error: 'Repository not found' };
+		return { success: false, error: '仓库不存在' };
 	}
 
 	// Check if sync is already in progress
 	if (repo.syncStatus === 'syncing') {
-		return { success: false, error: 'Sync already in progress' };
+		return { success: false, error: '同步已在进行中' };
 	}
 
 	const credential = repo.credentialId ? await getGitCredential(repo.credentialId) : null;
@@ -842,7 +842,7 @@ export async function syncRepository(repoId: number): Promise<SyncResult> {
 				if (existsSync(repoPath)) {
 					rmSync(repoPath, { recursive: true, force: true });
 				}
-				throw new Error(`Git clone failed: ${result.stderr}`);
+				throw new Error(`Git 拉取失败：${result.stderr}`);
 			}
 
 			updated = true;
@@ -854,7 +854,7 @@ export async function syncRepository(repoId: number): Promise<SyncResult> {
 			// Pull latest changes
 			const result = await execGit(['pull', 'origin', repo.branch], repoPath, env);
 			if (result.code !== 0) {
-				throw new Error(`Git pull failed: ${result.stderr}`);
+				throw new Error(`Git 克隆失败：${result.stderr}`);
 			}
 
 			// Get commit after pull
@@ -871,7 +871,7 @@ export async function syncRepository(repoId: number): Promise<SyncResult> {
 		// Read the compose file
 		const composePath = repoFilePath(repoPath, repo.composePath, "Compose path");
 		if (!existsSync(composePath)) {
-			throw new Error(`Compose file not found: ${repo.composePath}`);
+			throw new Error(`未找到 Compose 文件：${repo.composePath}`);
 		}
 
 		const composeContent = readFileSync(composePath, 'utf-8');
@@ -905,7 +905,7 @@ export async function syncRepository(repoId: number): Promise<SyncResult> {
 export async function deployFromRepository(repoId: number): Promise<{ success: boolean; output?: string; error?: string }> {
 	const repo = await getGitRepository(repoId);
 	if (!repo) {
-		return { success: false, error: 'Repository not found' };
+		return { success: false, error: '仓库不存在' };
 	}
 
 	// Sync first
@@ -939,7 +939,7 @@ export async function deployFromRepository(repoId: number): Promise<{ success: b
 export async function checkForUpdates(repoId: number): Promise<{ hasUpdates: boolean; currentCommit?: string; latestCommit?: string; error?: string }> {
 	const repo = await getGitRepository(repoId);
 	if (!repo) {
-		return { hasUpdates: false, error: 'Repository not found' };
+		return { hasUpdates: false, error: '仓库不存在' };
 	}
 
 	const credential = repo.credentialId ? await getGitCredential(repo.credentialId) : null;
@@ -948,7 +948,7 @@ export async function checkForUpdates(repoId: number): Promise<{ hasUpdates: boo
 
 	try {
 		if (!existsSync(repoPath)) {
-			return { hasUpdates: true, currentCommit: 'none', latestCommit: 'unknown' };
+			return { hasUpdates: true, currentCommit: '无', latestCommit: '未知' };
 		}
 
 		// Get current commit
@@ -983,7 +983,7 @@ export function deleteRepositoryFiles(repoId: number): void {
 		}
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		console.error('[Git] Failed to delete repository files:', errorMsg);
+		console.error('[Git] 删除仓库文件失败：', errorMsg);
 	}
 }
 
@@ -1033,47 +1033,47 @@ async function getPreviousCommit(repoPath: string, env: GitEnv): Promise<string 
 export async function syncGitStack(stackId: number): Promise<SyncResult> {
 	const gitStack = await getGitStack(stackId);
 	if (!gitStack) {
-		return { success: false, error: 'Git stack not found' };
+		return { success: false, error: 'Git 堆栈不存在' };
 	}
 
-	const logPrefix = `[Stack:${gitStack.stackName}]`;
+	const logPrefix = `[堆栈:${gitStack.stackName}]`;
 	console.log(`${logPrefix} ========================================`);
-	console.log(`${logPrefix} SYNC GIT STACK START`);
+	console.log(`${logPrefix} 开始同步 Git 堆栈`);
 	console.log(`${logPrefix} ========================================`);
-	console.log(`${logPrefix} Stack ID:`, stackId);
-	console.log(`${logPrefix} Stack name:`, gitStack.stackName);
-	console.log(`${logPrefix} Repository ID:`, gitStack.repositoryId);
-	console.log(`${logPrefix} Compose path:`, gitStack.composePath);
-	console.log(`${logPrefix} Env file path:`, gitStack.envFilePath || '(none)');
-	console.log(`${logPrefix} Environment ID:`, gitStack.environmentId);
+	console.log(`${logPrefix} 堆栈 ID：`, stackId);
+	console.log(`${logPrefix} 堆栈名称：`, gitStack.stackName);
+	console.log(`${logPrefix} 仓库 ID：`, gitStack.repositoryId);
+	console.log(`${logPrefix} Compose 路径：`, gitStack.composePath);
+	console.log(`${logPrefix} 环境变量文件路径：`, gitStack.envFilePath || '(无)');
+	console.log(`${logPrefix} 环境 ID：`, gitStack.environmentId);
 
 	// Check if sync is already in progress
 	if (gitStack.syncStatus === 'syncing') {
-		console.log(`${logPrefix} ERROR: Sync already in progress`);
-		return { success: false, error: 'Sync already in progress' };
+		console.log(`${logPrefix} 错误：同步已在进行中`);
+		return { success: false, error: '同步已在进行中' };
 	}
 
 	const repo = await getGitRepository(gitStack.repositoryId);
 	if (!repo) {
-		console.log(`${logPrefix} ERROR: Repository not found`);
-		return { success: false, error: 'Repository not found' };
+		console.log(`${logPrefix} 错误：仓库不存在`);
+		return { success: false, error: '仓库不存在' };
 	}
 
 	// Per-stack branch override wins; unset means the repository default
 	const effectiveBranch = resolveStackBranch(gitStack, repo);
 
-	console.log(`${logPrefix} Repository URL:`, repo.url);
-	console.log(`${logPrefix} Repository branch:`, repo.branch);
+	console.log(`${logPrefix} 仓库 URL:`, repo.url);
+	console.log(`${logPrefix} 仓库分支:`, repo.branch);
 	if (effectiveBranch !== repo.branch) {
-		console.log(`${logPrefix} Stack branch override:`, effectiveBranch);
+		console.log(`${logPrefix} 堆栈分支覆盖配置:`, effectiveBranch);
 	}
 
 	const credential = repo.credentialId ? await getGitCredential(repo.credentialId) : null;
 	const repoPath = await getStackRepoPath(stackId, gitStack.stackName, gitStack.environmentId);
 	const env = await buildGitEnv(credential);
 
-	console.log(`${logPrefix} Local repo path:`, repoPath);
-	console.log(`${logPrefix} Has credential:`, !!credential);
+	console.log(`${logPrefix} 本地仓库路径：`, repoPath);
+	console.log(`${logPrefix} 是否包含凭据：`, !!credential);
 
 	try {
 		// Update sync status
@@ -1087,11 +1087,11 @@ export async function syncGitStack(stackId: number): Promise<SyncResult> {
 		// Fall back to DB lastCommit when repo dir was deleted by a previous failed sync (#693)
 		const previousCommit = await getPreviousCommit(repoPath, env) ?? gitStack.lastCommit ?? null;
 		if (existsSync(repoPath)) {
-			console.log(`${logPrefix} Removing existing clone for fresh sync...`);
+			console.log(`${logPrefix} 正在删除现有克隆以进行全新同步...`);
 			rmSync(repoPath, { recursive: true, force: true });
 		}
 
-		console.log(`${logPrefix} Cloning repository...`);
+		console.log(`${logPrefix} 正在克隆仓库...`);
 		assertSafeGitRef(effectiveBranch);
 		const repoUrl = buildRepoUrl(repo.url, credential);
 
@@ -1100,16 +1100,16 @@ export async function syncGitStack(stackId: number): Promise<SyncResult> {
 			process.cwd(),
 			env
 		);
-		console.log(`${logPrefix} Clone exit code:`, result.code);
-		if (result.stdout) console.log(`${logPrefix} Clone stdout:`, result.stdout);
-		if (result.stderr) console.log(`${logPrefix} Clone stderr:`, result.stderr);
+		console.log(`${logPrefix} 克隆退出码：`, result.code);
+		if (result.stdout) console.log(`${logPrefix} 克隆标准输出：`, result.stdout);
+		if (result.stderr) console.log(`${logPrefix} 克隆标准错误：`, result.stderr);
 
 		if (result.code !== 0) {
 			// Clean up partial clone directory on failure
 			if (existsSync(repoPath)) {
 				rmSync(repoPath, { recursive: true, force: true });
 			}
-			throw new Error(`Git clone failed: ${result.stderr}`);
+			throw new Error(`Git 克隆失败：${result.stderr}`);
 		}
 
 		// Check if commit changed
@@ -1117,7 +1117,7 @@ export async function syncGitStack(stackId: number): Promise<SyncResult> {
 		const newCommit = newCommitResult.stdout.trim();
 		// Normalize to 7-char short hash for comparison (DB stores 7-char, git returns 40-char)
 		const commitChanged = previousCommit?.substring(0, 7) !== newCommit.substring(0, 7);
-		console.log(`${logPrefix} Previous commit: ${previousCommit || '(none)'}, new commit: ${newCommit.substring(0, 7)}, commit changed: ${commitChanged}`);
+		console.log(`${logPrefix} 上一次提交：${previousCommit || '(无)'}，新提交：${newCommit.substring(0, 7)}，提交已变更：${commitChanged}`);
 
 		// Check if any files in the compose file's directory have changed
 		// This catches changes to the compose file, env files, and any other referenced files
@@ -1126,7 +1126,7 @@ export async function syncGitStack(stackId: number): Promise<SyncResult> {
 		if (commitChanged) {
 			// Use contextDir if set, otherwise fall back to compose file's directory
 			const diffDirRelative = gitStack.contextDir || dirname(gitStack.composePath);
-			console.log(`${logPrefix} Checking for changes in directory: ${diffDirRelative || '(root)'}`);
+			console.log(`${logPrefix} 正在检查目录中的变更: ${diffDirRelative || '(root)'}`);
 
 			const diffResult = await getChangedFilesInDir(
 				repoPath,
@@ -1140,38 +1140,38 @@ export async function syncGitStack(stackId: number): Promise<SyncResult> {
 			changedFiles = diffResult.files;
 
 			if (diffResult.error) {
-				console.log(`${logPrefix} Diff error: ${diffResult.error}`);
+				console.log(`${logPrefix} 差异对比错误：${diffResult.error}`);
 			}
 
 			if (changedFiles.length > 0) {
-				console.log(`${logPrefix} Changed files (${changedFiles.length}):`);
+				console.log(`${logPrefix} 已变更文件 (${changedFiles.length} 个):`);
 				for (const file of changedFiles) {
 					console.log(`${logPrefix}   - ${file}`);
 				}
 			} else {
-				console.log(`${logPrefix} No files changed in stack directory`);
+				console.log(`${logPrefix} 堆栈目录中无文件变更`);
 			}
 		} else {
 			updated = false;
-			console.log(`${logPrefix} No commit change, skipping file diff`);
+			console.log(`${logPrefix} 提交无变化，跳过文件差异对比`);
 		}
 
 		// Get current commit hash
 		const commitResult = await execGit(['rev-parse', 'HEAD'], repoPath, env);
 		currentCommit = commitResult.stdout.substring(0, 7);
-		console.log(`${logPrefix} Current commit:`, currentCommit);
+		console.log(`${logPrefix} 当前提交：`, currentCommit);
 
 		// Read the compose file
 		const composePath = repoFilePath(repoPath, gitStack.composePath, "Compose path");
-		console.log(`${logPrefix} Reading compose file from:`, composePath);
+		console.log(`${logPrefix} 正在读取 Compose 文件:`, composePath);
 		if (!existsSync(composePath)) {
-			console.log(`${logPrefix} ERROR: Compose file not found at:`, composePath);
-			throw new Error(`Compose file not found: ${gitStack.composePath}`);
+			console.log(`${logPrefix} 错误：未找到 Compose 文件：`, composePath);
+			throw new Error(`未找到 Compose 文件：${gitStack.composePath}`);
 		}
 
 		const composeContent = readFileSync(composePath, 'utf-8');
-		console.log(`${logPrefix} Compose content length:`, composeContent.length, 'chars');
-		console.log(`${logPrefix} Compose content:`);
+		console.log(`${logPrefix} Compose 内容长度：`, composeContent.length, '字符');
+		console.log(`${logPrefix} Compose 内容：`);
 		console.log(composeContent);
 
 		// Determine the source directory and compose filename
@@ -1183,12 +1183,12 @@ export async function syncGitStack(stackId: number): Promise<SyncResult> {
 			const contextDirAbsolute = resolve(repoPath, gitStack.contextDir);
 			// Validate: context dir must be within repo
 			if (!contextDirAbsolute.startsWith(repoPath)) {
-				throw new Error('Context directory must be within the repository');
+				throw new Error('上下文目录必须位于仓库内');
 			}
 			// Validate: compose file must be within context directory
 			const relCompose = relative(contextDirAbsolute, composePath);
 			if (relCompose.startsWith('..')) {
-				throw new Error('Compose file must be within the context directory');
+				throw new Error('Compose 文件必须位于上下文目录内');
 			}
 			composeDir = contextDirAbsolute;
 			composeFileName = relCompose; // e.g., "apps/myapp/compose.yaml"
@@ -1196,8 +1196,8 @@ export async function syncGitStack(stackId: number): Promise<SyncResult> {
 			composeDir = dirname(composePath);
 			composeFileName = basename(gitStack.composePath); // e.g., "docker-compose.yaml"
 		}
-		console.log(`${logPrefix} Source directory (composeDir):`, composeDir);
-		console.log(`${logPrefix} Compose filename:`, composeFileName);
+		console.log(`${logPrefix} 源目录 (composeDir):`, composeDir);
+		console.log(`${logPrefix} Compose 文件名:`, composeFileName);
 
 		// Read env file if configured (optional - don't fail if missing)
 		let envFileVars: Record<string, string> | undefined;
@@ -1205,27 +1205,27 @@ export async function syncGitStack(stackId: number): Promise<SyncResult> {
 		let envFileName: string | undefined;
 		if (gitStack.envFilePath) {
 			const envFilePath = repoFilePath(repoPath, gitStack.envFilePath, "Env file path");
-			console.log(`${logPrefix} Looking for env file at:`, envFilePath);
+			console.log(`${logPrefix} 正在查找环境变量文件:`, envFilePath);
 			if (existsSync(envFilePath)) {
 				try {
-					console.log(`${logPrefix} Reading env file...`);
+					console.log(`${logPrefix} 正在读取环境变量文件...`);
 					envFileContent = readFileSync(envFilePath, 'utf-8');
 					envFileVars = parseEnvFileContent(envFileContent, gitStack.stackName);
-					console.log(`${logPrefix} Env file parsed, vars count:`, Object.keys(envFileVars).length);
+					console.log(`${logPrefix} 环境变量文件解析完成，变量数量：`, Object.keys(envFileVars).length);
 
 					// Compute env file path relative to compose directory
 					// This is needed for --env-file flag after files are copied to stack directory
 					envFileName = relative(composeDir, envFilePath);
-					console.log(`${logPrefix} Env filename relative to compose dir:`, envFileName);
+					console.log(`${logPrefix} 相对于 Compose 目录的环境变量文件名：`, envFileName);
 				} catch (err) {
 					// Log but don't fail - env file is optional
-					console.warn(`${logPrefix} Failed to read env file ${gitStack.envFilePath}:`, err);
+					console.warn(`${logPrefix} 读取环境变量文件 ${gitStack.envFilePath} 失败：`, err);
 				}
 			} else {
-				console.warn(`${logPrefix} Configured env file not found:`, gitStack.envFilePath);
+				console.warn(`${logPrefix} 未找到配置的环境变量文件：`, gitStack.envFilePath);
 			}
 		} else {
-			console.log(`${logPrefix} No env file path configured`);
+			console.log(`${logPrefix} 未配置环境变量文件路径`);
 		}
 
 		// Deletion sync (#966): manifest-vs-clone deletion plan
@@ -1247,13 +1247,13 @@ export async function syncGitStack(stackId: number): Promise<SyncResult> {
 		cleanupSshKey(credential, env);
 
 		console.log(`${logPrefix} ----------------------------------------`);
-		console.log(`${logPrefix} SYNC GIT STACK COMPLETE`);
+		console.log(`${logPrefix} Git 堆栈同步完成`);
 		console.log(`${logPrefix} ----------------------------------------`);
-		console.log(`${logPrefix} Success: true`);
-		console.log(`${logPrefix} Updated:`, updated);
-		console.log(`${logPrefix} Changed files:`, changedFiles.length > 0 ? changedFiles.join(', ') : '(none)');
-		console.log(`${logPrefix} Commit:`, currentCommit);
-		console.log(`${logPrefix} Env file vars count:`, envFileVars ? Object.keys(envFileVars).length : 0);
+		console.log(`${logPrefix} 成功：true`);
+		console.log(`${logPrefix} 已更新：`, updated);
+		console.log(`${logPrefix} 已变更文件：`, changedFiles.length > 0 ? changedFiles.join(', ') : '(无)');
+		console.log(`${logPrefix} 提交：`, currentCommit);
+		console.log(`${logPrefix} 环境变量文件变量数：`, envFileVars ? Object.keys(envFileVars).length : 0);
 
 		return {
 			success: true,
@@ -1276,7 +1276,7 @@ export async function syncGitStack(stackId: number): Promise<SyncResult> {
 			syncStatus: 'error',
 			syncError: error.message
 		});
-		console.log(`${logPrefix} SYNC ERROR:`, error.message);
+		console.log(`${logPrefix} 同步错误：`, error.message);
 		return { success: false, error: error.message };
 	}
 }
@@ -1292,20 +1292,20 @@ async function notifyGitSync(stackName: string, envId: number | null | undefined
 	try {
 		if (result.success && result.skipped) {
 			await sendEventNotification('git_sync_skipped', {
-				title: 'Git sync skipped',
-				message: `Stack "${stackName}" sync skipped: no changes detected`,
+				title: 'Git 同步已跳过',
+				message: `堆栈 "${stackName}" 同步已跳过：未检测到变更`,
 				type: 'info'
 			}, envId ?? undefined);
 		} else if (result.success) {
 			await sendEventNotification('git_sync_success', {
-				title: 'Git stack deployed',
-				message: `Stack "${stackName}" was synced and deployed successfully`,
+				title: 'Git 堆栈已部署',
+				message: `堆栈 "${stackName}" 同步并部署成功`,
 				type: 'success'
 			}, envId ?? undefined);
 		} else {
 			await sendEventNotification('git_sync_failed', {
-				title: 'Git sync failed',
-				message: `Stack "${stackName}" sync failed: ${result.error || 'unknown error'}`,
+				title: 'Git 同步失败',
+				message: `堆栈 "${stackName}" 同步失败：${result.error || '未知错误'}`,
 				type: 'error'
 			}, envId ?? undefined);
 		}
@@ -1317,33 +1317,33 @@ export async function deployGitStack(stackId: number, options?: { force?: boolea
 
 	const gitStack = await getGitStack(stackId);
 	if (!gitStack) {
-		return { success: false, error: 'Git stack not found' };
+		return { success: false, error: 'Git 堆栈不存在' };
 	}
 
-	const logPrefix = `[Stack:${gitStack.stackName}]`;
+	const logPrefix = `[堆栈:${gitStack.stackName}]`;
 	console.log(`${logPrefix} ========================================`);
-	console.log(`${logPrefix} DEPLOY GIT STACK START`);
+	console.log(`${logPrefix} 开始部署 Git 堆栈`);
 	console.log(`${logPrefix} ========================================`);
-	console.log(`${logPrefix} Stack ID:`, stackId);
-	console.log(`${logPrefix} Force deploy:`, force);
+	console.log(`${logPrefix} 堆栈 ID：`, stackId);
+	console.log(`${logPrefix} 强制部署：`, force);
 
 	// Sync first
-	console.log(`${logPrefix} Syncing git repository...`);
+	console.log(`${logPrefix} 正在同步 Git 仓库...`);
 	const syncResult = await syncGitStack(stackId);
 	if (!syncResult.success) {
-		console.log(`${logPrefix} Sync failed:`, syncResult.error);
+		console.log(`${logPrefix} 同步失败:`, syncResult.error);
 		const failResult = { success: false, error: syncResult.error };
 		await notifyGitSync(gitStack.stackName, gitStack.environmentId, failResult);
 		return failResult;
 	}
 
-	console.log(`${logPrefix} Sync successful`);
-	console.log(`${logPrefix} Sync result - updated:`, syncResult.updated);
-	console.log(`${logPrefix} Sync result - commit:`, syncResult.commit);
-	console.log(`${logPrefix} Sync result - env file vars:`, syncResult.envFileVars ? Object.keys(syncResult.envFileVars).length : 0);
+	console.log(`${logPrefix} 同步成功`);
+	console.log(`${logPrefix} 同步结果 - 已更新：`, syncResult.updated);
+	console.log(`${logPrefix} 同步结果 - 提交：`, syncResult.commit);
+	console.log(`${logPrefix} 同步结果 - 环境变量文件变量：`, syncResult.envFileVars ? Object.keys(syncResult.envFileVars).length : 0);
 	if (syncResult.envFileVars && Object.keys(syncResult.envFileVars).length > 0) {
-		console.log(`${logPrefix} Env file var keys:`, Object.keys(syncResult.envFileVars).join(', '));
-		console.log(`${logPrefix} Env file vars (masked):`, JSON.stringify(redactEnvVarsForLog(syncResult.envFileVars), null, 2));
+		console.log(`${logPrefix} 环境文件变量键:`, Object.keys(syncResult.envFileVars).join(', '));
+		console.log(`${logPrefix} 环境文件变量 (已脱敏):`, JSON.stringify(redactEnvVarsForLog(syncResult.envFileVars), null, 2));
 	}
 
 	// Check if there are changes - skip redeploy if no changes and not forced
@@ -1351,10 +1351,10 @@ export async function deployGitStack(stackId: number, options?: { force?: boolea
 	// forceRedeploy setting overrides the skip logic for webhooks/scheduled syncs
 	const shouldDeploy = force || gitStack.forceRedeploy || syncResult.updated;
 	if (!shouldDeploy) {
-		console.log(`${logPrefix} No changes detected and force=false, forceRedeploy=false, skipping redeploy`);
+		console.log(`${logPrefix} 未检测到变更，且 force=false、forceRedeploy=false，跳过重新部署`);
 		const skippedResult = {
 			success: true,
-			output: 'No changes detected, skipping redeploy',
+			output: '未检测到变更，跳过重新部署',
 			skipped: true
 		};
 		await notifyGitSync(gitStack.stackName, gitStack.environmentId, skippedResult);
@@ -1362,19 +1362,19 @@ export async function deployGitStack(stackId: number, options?: { force?: boolea
 	}
 
 	const forceRecreate = syncResult.updated;
-	console.log(`${logPrefix} Will force recreate:`, forceRecreate, `(updated=${syncResult.updated})`);
-	console.log(`${logPrefix} Build on deploy:`, gitStack.buildOnDeploy);
-	console.log(`${logPrefix} Re-pull images:`, gitStack.repullImages);
-	console.log(`${logPrefix} Force redeploy setting:`, gitStack.forceRedeploy);
+	console.log(`${logPrefix} 将强制重新创建：`, forceRecreate, `(updated=${syncResult.updated})`);
+	console.log(`${logPrefix} 部署时构建：`, gitStack.buildOnDeploy);
+	console.log(`${logPrefix} 重新拉取镜像：`, gitStack.repullImages);
+	console.log(`${logPrefix} 强制重新部署设置：`, gitStack.forceRedeploy);
 
 	// Deploy using unified function - handles both new and existing stacks
 	// Uses `docker compose up -d --remove-orphans` which only recreates changed services
 	// Force recreate whenever git detected changes to ensure containers pick up
 	// new env var values even if compose file itself didn't change
-	console.log(`${logPrefix} Calling deployStack...`);
-	console.log(`${logPrefix} Source directory (composeDir):`, syncResult.composeDir);
-	console.log(`${logPrefix} Compose filename:`, syncResult.composeFileName);
-	console.log(`${logPrefix} Env filename:`, syncResult.envFileName ?? '(none)');
+	console.log(`${logPrefix} 正在调用 deployStack...`);
+	console.log(`${logPrefix} 源目录 (composeDir):`, syncResult.composeDir);
+	console.log(`${logPrefix} Compose 文件名：`, syncResult.composeFileName);
+	console.log(`${logPrefix} 环境变量文件名：`, syncResult.envFileName ?? '(无)');
 
 	const result = await deployStack({
 		name: gitStack.stackName,
@@ -1392,11 +1392,11 @@ export async function deployGitStack(stackId: number, options?: { force?: boolea
 	});
 
 	console.log(`${logPrefix} ----------------------------------------`);
-	console.log(`${logPrefix} DEPLOY GIT STACK RESULT`);
+	console.log(`${logPrefix} Git 堆栈部署结果`);
 	console.log(`${logPrefix} ----------------------------------------`);
-	console.log(`${logPrefix} Success:`, result.success);
-	if (result.output) console.log(`${logPrefix} Output:`, result.output);
-	if (result.error) console.log(`${logPrefix} Error:`, result.error);
+	console.log(`${logPrefix} 成功：`, result.success);
+	if (result.output) console.log(`${logPrefix} 输出：`, result.output);
+	if (result.error) console.log(`${logPrefix} 错误：`, result.error);
 
 	if (result.success) {
 		// Deletion sync: persist manifest + log per-file change summary
@@ -1418,7 +1418,7 @@ export async function deployGitStack(stackId: number, options?: { force?: boolea
 			? join(stackDir, syncResult.composeFileName)
 			: undefined;
 
-		console.log(`${logPrefix} Resolved compose path for stack_sources:`, resolvedComposePath);
+		console.log(`${logPrefix} 堆栈源解析后的 Compose 路径：`, resolvedComposePath);
 
 		await upsertStackSource({
 			stackName: gitStack.stackName,
@@ -1439,12 +1439,12 @@ export async function deployGitStack(stackId: number, options?: { force?: boolea
 export async function testGitStack(stackId: number): Promise<TestResult> {
 	const gitStack = await getGitStack(stackId);
 	if (!gitStack) {
-		return { success: false, error: 'Git stack not found' };
+		return { success: false, error: 'Git 堆栈不存在' };
 	}
 
 	const repo = await getGitRepository(gitStack.repositoryId);
 	if (!repo) {
-		return { success: false, error: 'Repository not found' };
+		return { success: false, error: '仓库不存在' };
 	}
 
 	// Per-stack branch override wins; unset means the repository default
@@ -1466,13 +1466,13 @@ export async function testGitStack(stackId: number): Promise<TestResult> {
 		cleanupSshKey(credential, env);
 
 		if (result.code !== 0) {
-			return { success: false, error: result.stderr || 'Failed to connect to repository' };
+			return { success: false, error: result.stderr || '连接仓库失败' };
 		}
 
 		// Parse the output to get commit hash
 		const lines = result.stdout.split('\n').filter(l => l.trim());
 		if (lines.length === 0) {
-			return { success: false, error: `Branch '${effectiveBranch}' not found in repository` };
+			return { success: false, error: `仓库中未找到分支 '${effectiveBranch}'` };
 		}
 
 		const match = lines[0].match(/^([a-f0-9]+)\s+refs\/heads\/(.+)$/);
@@ -1500,7 +1500,7 @@ export async function deleteGitStackFiles(stackId: number, stackName?: string, e
 		}
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		console.error('[Git] Failed to delete git stack files:', errorMsg);
+		console.error('[Git]  删除 Git 堆栈文件失败：', errorMsg);
 	}
 }
 
@@ -1519,20 +1519,20 @@ export async function deployGitStackWithProgress(
 ): Promise<{ success: boolean; output?: string; error?: string }> {
 	const gitStack = await getGitStack(stackId);
 	if (!gitStack) {
-		onProgress({ status: 'error', error: 'Git stack not found' });
-		return { success: false, error: 'Git stack not found' };
+		onProgress({ status: 'error', error: 'Git 堆栈不存在' });
+		return { success: false, error: 'Git 堆栈不存在' };
 	}
 
 	// Check if sync is already in progress
 	if (gitStack.syncStatus === 'syncing') {
-		onProgress({ status: 'error', error: 'Sync already in progress' });
-		return { success: false, error: 'Sync already in progress' };
+		onProgress({ status: 'error', error: '同步已在进行中' });
+		return { success: false, error: '同步已在进行中' };
 	}
 
 	const repo = await getGitRepository(gitStack.repositoryId);
 	if (!repo) {
-		onProgress({ status: 'error', error: 'Repository not found' });
-		return { success: false, error: 'Repository not found' };
+		onProgress({ status: 'error', error: '仓库不存在' });
+		return { success: false, error: '仓库不存在' };
 	}
 
 	// Per-stack branch override wins; unset means the repository default
@@ -1546,7 +1546,7 @@ export async function deployGitStackWithProgress(
 
 	try {
 		// Step 1: Connecting
-		onProgress({ status: 'connecting', message: 'Connecting to repository...', step: 1, totalSteps });
+		onProgress({ status: 'connecting', message: '正在连接仓库...', step: 1, totalSteps });
 		await updateGitStack(stackId, { syncStatus: 'syncing', syncError: null });
 
 		let updated = false;
@@ -1558,7 +1558,7 @@ export async function deployGitStackWithProgress(
 		const previousCommit = await getPreviousCommit(repoPath, env) ?? gitStack.lastCommit ?? null;
 
 		// Step 2: Cloning
-		onProgress({ status: 'cloning', message: 'Cloning repository...', step: 2, totalSteps });
+		onProgress({ status: 'cloning', message: '正在克隆仓库...', step: 2, totalSteps });
 
 		if (existsSync(repoPath)) {
 			rmSync(repoPath, { recursive: true, force: true });
@@ -1568,7 +1568,7 @@ export async function deployGitStackWithProgress(
 		const repoUrl = buildRepoUrl(repo.url, credential);
 
 		// Step 3: Fetching (blobless clone - fetches all commits but blobs on-demand)
-		onProgress({ status: 'fetching', message: `Fetching branch ${effectiveBranch}...`, step: 3, totalSteps });
+		onProgress({ status: 'fetching', message: `正在获取分支 ${effectiveBranch}...`, step: 3, totalSteps });
 		const cloneResult = await execGit(
 			['clone', '--filter=blob:none', '--branch', effectiveBranch, repoUrl, repoPath],
 			process.cwd(),
@@ -1579,7 +1579,7 @@ export async function deployGitStackWithProgress(
 			if (existsSync(repoPath)) {
 				rmSync(repoPath, { recursive: true, force: true });
 			}
-			throw new Error(`Git clone failed: ${cloneResult.stderr}`);
+			throw new Error(`Git 克隆失败：${cloneResult.stderr}`);
 		}
 
 		// Check if commit changed
@@ -1609,10 +1609,10 @@ export async function deployGitStackWithProgress(
 		currentCommit = commitResult.stdout.substring(0, 7);
 
 		// Step 4: Reading compose file
-		onProgress({ status: 'reading', message: `Reading ${gitStack.composePath}...`, step: 4, totalSteps });
+		onProgress({ status: 'reading', message: `正在读取 ${gitStack.composePath}...`, step: 4, totalSteps });
 		const composePath = repoFilePath(repoPath, gitStack.composePath, "Compose path");
 		if (!existsSync(composePath)) {
-			throw new Error(`Compose file not found: ${gitStack.composePath}`);
+			throw new Error(`未找到 Compose 文件：${gitStack.composePath}`);
 		}
 
 		const composeContent = readFileSync(composePath, 'utf-8');
@@ -1623,11 +1623,11 @@ export async function deployGitStackWithProgress(
 		if (gitStack.contextDir) {
 			const contextDirAbsolute = resolve(repoPath, gitStack.contextDir);
 			if (!contextDirAbsolute.startsWith(repoPath)) {
-				throw new Error('Context directory must be within the repository');
+				throw new Error('上下文目录必须位于仓库内');
 			}
 			const relCompose = relative(contextDirAbsolute, composePath);
 			if (relCompose.startsWith('..')) {
-				throw new Error('Compose file must be within the context directory');
+				throw new Error('编排文件必须位于上下文目录内');
 			}
 			composeDir = contextDirAbsolute;
 			progressComposeFileName = relCompose;
@@ -1646,10 +1646,10 @@ export async function deployGitStackWithProgress(
 					envFileVars = parseEnvFileContent(envContent, gitStack.stackName);
 				} catch (err) {
 					// Log but don't fail - env file is optional
-					console.warn(`Failed to read env file ${gitStack.envFilePath}:`, err);
+					console.warn(`读取环境变量文件 ${gitStack.envFilePath} 失败：`, err);
 				}
 			} else {
-				console.warn(`Configured env file not found: ${gitStack.envFilePath}`);
+				console.warn(`未找到配置的环境变量文件：${gitStack.envFilePath}`);
 			}
 		}
 
@@ -1691,11 +1691,11 @@ export async function deployGitStackWithProgress(
 
 		// Step 5: Deploying stack
 		// Uses `docker compose up -d --remove-orphans` which only recreates changed services
-		onProgress({ status: 'deploying', message: `Deploying ${gitStack.stackName}...`, step: 5, totalSteps });
+		onProgress({ status: 'deploying', message: `正在部署 ${gitStack.stackName}...`, step: 5, totalSteps });
 		if (deletionData.plan.toDelete.length > 0) {
 			onProgress({
 				status: 'deploying',
-				message: `Removing ${deletionData.plan.toDelete.length} file(s) deleted from the repository...`,
+				message: `正在移除仓库中已删除的 ${deletionData.plan.toDelete.length} 个文件...`,
 				step: 5,
 				totalSteps
 			});
@@ -1760,9 +1760,9 @@ export async function deployGitStackWithProgress(
 				composePath: resolvedComposePath
 			});
 
-			onProgress({ status: 'complete', message: `Successfully deployed ${gitStack.stackName}` });
+			onProgress({ status: 'complete', message: `成功部署 ${gitStack.stackName}` });
 		} else {
-			throw new Error(result.error || 'Failed to deploy stack');
+			throw new Error(result.error || '部署堆栈失败');
 		}
 
 		return result;
@@ -1788,12 +1788,12 @@ export async function deployGitStackWithProgress(
 export async function listGitStackEnvFiles(stackId: number): Promise<{ files: string[]; error?: string }> {
 	const gitStack = await getGitStack(stackId);
 	if (!gitStack) {
-		return { files: [], error: 'Git stack not found' };
+		return { files: [], error: 'Git 堆栈不存在' };
 	}
 
 	const repoPath = await getStackRepoPath(stackId, gitStack.stackName, gitStack.environmentId);
 	if (!existsSync(repoPath)) {
-		return { files: [], error: 'Repository not synced - deploy the stack first' };
+		return { files: [], error: '仓库未同步 - 请先部署堆栈' };
 	}
 
 	try {
@@ -1830,34 +1830,34 @@ export async function listGitStackEnvFiles(stackId: number): Promise<{ files: st
  * Handles comments, empty lines, and quoted values.
  */
 export function parseEnvFileContent(content: string, stackName?: string): Record<string, string> {
-	const logPrefix = stackName ? `[Stack:${stackName}]` : '[Git]';
+	const logPrefix = stackName ? `[堆栈:${stackName}]` : '[Git]';
 	const result: Record<string, string> = {};
 	const skippedLines: string[] = [];
 	const invalidKeys: string[] = [];
 
 	console.log(`${logPrefix} ----------------------------------------`);
-	console.log(`${logPrefix} PARSE ENV FILE CONTENT`);
+	console.log(`${logPrefix} 解析环境变量文件内容`);
 	console.log(`${logPrefix} ----------------------------------------`);
-	console.log(`${logPrefix} Raw content length:`, content.length, 'chars');
-	console.log(`${logPrefix} Raw content:`);
+	console.log(`${logPrefix} 原始内容长度：`, content.length, '字符');
+	console.log(`${logPrefix} 原始内容：`);
 	console.log(content);
 
 	const lines = content.split('\n');
-	console.log(`${logPrefix} Total lines:`, lines.length);
+	console.log(`${logPrefix} 总行数：`, lines.length);
 
 	for (let i = 0; i < lines.length; i++) {
 		const line = lines[i];
 		const trimmed = line.trim();
 		// Skip empty lines and comments
 		if (!trimmed || trimmed.startsWith('#')) {
-			if (trimmed) skippedLines.push(`Line ${i + 1}: ${trimmed.substring(0, 50)}...`);
+			if (trimmed) skippedLines.push(`第 ${i + 1} 行：${trimmed.substring(0, 50)}...`);
 			continue;
 		}
 
 		// Find the first = sign
 		const eqIndex = trimmed.indexOf('=');
 		if (eqIndex === -1) {
-			skippedLines.push(`Line ${i + 1} (no =): ${trimmed.substring(0, 50)}`);
+			skippedLines.push(`第 ${i + 1} 行 (无 =): ${trimmed.substring(0, 50)}`);
 			continue;
 		}
 
@@ -1868,18 +1868,18 @@ export function parseEnvFileContent(content: string, stackName?: string): Record
 		if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) {
 			result[key] = value;
 		} else {
-			invalidKeys.push(`Line ${i + 1}: "${key}" (invalid key format)`);
+			invalidKeys.push(`第 ${i + 1} 行："${key}" (键名格式无效)`);
 		}
 	}
 
-	console.log(`${logPrefix} Parsed env vars count:`, Object.keys(result).length);
-	console.log(`${logPrefix} Parsed env var keys:`, Object.keys(result).join(', '));
-	console.log(`${logPrefix} Parsed env vars (masked):`, JSON.stringify(redactEnvVarsForLog(result), null, 2));
+	console.log(`${logPrefix} 已解析环境变量数量:`, Object.keys(result).length);
+	console.log(`${logPrefix} 已解析环境变量键:`, Object.keys(result).join(', '));
+	console.log(`${logPrefix} 已解析环境变量 (已脱敏):`, JSON.stringify(redactEnvVarsForLog(result), null, 2));
 	if (skippedLines.length > 0) {
-		console.log(`${logPrefix} Skipped lines (${skippedLines.length}):`, skippedLines.slice(0, 10).join('; '));
+		console.log(`${logPrefix} 已跳过行 (${skippedLines.length} 行)：`, skippedLines.slice(0, 10).join('; '));
 	}
 	if (invalidKeys.length > 0) {
-		console.log(`${logPrefix} Invalid keys (${invalidKeys.length}):`, invalidKeys.join('; '));
+		console.log(`${logPrefix} 无效键名 (${invalidKeys.length} 个)：`, invalidKeys.join('; '));
 	}
 
 	return result;
@@ -1894,12 +1894,12 @@ export async function readGitStackEnvFile(
 ): Promise<{ vars: Record<string, string>; error?: string }> {
 	const gitStack = await getGitStack(stackId);
 	if (!gitStack) {
-		return { vars: {}, error: 'Git stack not found' };
+		return { vars: {}, error: 'Git 堆栈不存在' };
 	}
 
 	const repoPath = await getStackRepoPath(stackId, gitStack.stackName, gitStack.environmentId);
 	if (!existsSync(repoPath)) {
-		return { vars: {}, error: 'Repository not synced - deploy the stack first' };
+		return { vars: {}, error: '仓库未同步 - 请先部署堆栈' };
 	}
 
 	// Security check: ensure the path doesn't escape the repo
@@ -1907,11 +1907,11 @@ export async function readGitStackEnvFile(
 	const fullPath = join(repoPath, normalizedPath);
 
 	if (!fullPath.startsWith(repoPath)) {
-		return { vars: {}, error: 'Invalid file path' };
+		return { vars: {}, error: '文件路径无效' };
 	}
 
 	if (!existsSync(fullPath)) {
-		return { vars: {}, error: `File not found: ${envFilePath}` };
+		return { vars: {}, error: `未找到文件：${envFilePath}` };
 	}
 
 	try {
@@ -1950,14 +1950,14 @@ interface PreviewEnvResult {
  */
 export async function previewRepoEnvFiles(options: PreviewEnvOptions): Promise<PreviewEnvResult> {
 	const { repoUrl, branch, credential, composePath, envFilePath } = options;
-	const logPrefix = '[Git:Preview]';
+	const logPrefix = '[Git:预览]';
 
 	// Create a unique temp directory
 	const tempId = `preview-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 	const tempDir = join(GIT_REPOS_DIR, tempId);
 
-	console.log(`${logPrefix} Starting preview for ${repoUrl}`);
-	console.log(`${logPrefix} Temp directory: ${tempDir}`);
+	console.log(`${logPrefix} 开始预览 ${repoUrl}`);
+	console.log(`${logPrefix} 临时目录：${tempDir}`);
 
 	// Declared outside the try so the finally can pass it to cleanupSshKey (#1413):
 	// a block-scoped `const env` inside the try is out of scope in finally, which
@@ -2003,11 +2003,11 @@ export async function previewRepoEnvFiles(options: PreviewEnvOptions): Promise<P
 		const cloneExitCode = cloneResult.exitCode;
 
 		if (cloneExitCode !== 0) {
-			console.error(`${logPrefix} Clone failed:`, cloneStderr);
-			return { vars: {}, sources: {}, error: `Failed to clone repository: ${cloneStderr.trim()}` };
+			console.error(`${logPrefix} 克隆失败：`, cloneStderr);
+			return { vars: {}, sources: {}, error: `克隆仓库失败：${cloneStderr.trim()}` };
 		}
 
-		console.log(`${logPrefix} Clone successful`);
+		console.log(`${logPrefix} 克隆成功`);
 
 		// Determine the compose directory (where .env file should be) — uses the
 		// VALIDATED path (already checked to be inside the temp dir).
@@ -2019,16 +2019,16 @@ export async function previewRepoEnvFiles(options: PreviewEnvOptions): Promise<P
 
 		// Read base .env file if it exists
 		if (existsSync(baseEnvPath)) {
-			console.log(`${logPrefix} Reading .env from: ${baseEnvPath}`);
+			console.log(`${logPrefix} 正在从 ${baseEnvPath} 读取 .env`);
 			const content = readFileSync(baseEnvPath, 'utf-8');
 			const baseVars = parseEnvFileContent(content, 'preview');
 			for (const [key, value] of Object.entries(baseVars)) {
 				vars[key] = value;
 				sources[key] = '.env';
 			}
-			console.log(`${logPrefix} Found ${Object.keys(baseVars).length} vars in .env`);
+			console.log(`${logPrefix} 在 .env 中找到 ${Object.keys(baseVars).length} 个变量`);
 		} else {
-			console.log(`${logPrefix} No .env file at ${baseEnvPath}`);
+			console.log(`${logPrefix} ${baseEnvPath} 无 .env 文件`);
 		}
 
 		// Read additional env file if specified — uses the VALIDATED path
@@ -2036,24 +2036,24 @@ export async function previewRepoEnvFiles(options: PreviewEnvOptions): Promise<P
 		if (safeEnvFilePath) {
 			const additionalEnvPath = safeEnvFilePath;
 			if (existsSync(additionalEnvPath)) {
-				console.log(`${logPrefix} Reading additional env file: ${additionalEnvPath}`);
+				console.log(`${logPrefix} 正在读取额外环境变量文件：${additionalEnvPath}`);
 				const content = readFileSync(additionalEnvPath, 'utf-8');
 				const additionalVars = parseEnvFileContent(content, 'preview');
 				for (const [key, value] of Object.entries(additionalVars)) {
 					vars[key] = value;
 					sources[key] = 'envFile';
 				}
-				console.log(`${logPrefix} Found ${Object.keys(additionalVars).length} vars in ${envFilePath}`);
+				console.log(`${logPrefix} 在 ${envFilePath} 中找到 ${Object.keys(additionalVars).length} 个变量`);
 			} else {
-				console.log(`${logPrefix} Additional env file not found: ${additionalEnvPath}`);
+				console.log(`${logPrefix} 未找到额外环境变量文件：${additionalEnvPath}`);
 			}
 		}
 
-		console.log(`${logPrefix} Total variables: ${Object.keys(vars).length}`);
+		console.log(`${logPrefix} 总变量数：${Object.keys(vars).length}`);
 
 		return { vars, sources };
 	} catch (error: any) {
-		console.error(`${logPrefix} Error:`, error);
+		console.error(`${logPrefix} 错误：`, error);
 		return { vars: {}, sources: {}, error: error.message };
 	} finally {
 		// Always clean up temp directory
@@ -2061,10 +2061,10 @@ export async function previewRepoEnvFiles(options: PreviewEnvOptions): Promise<P
 		try {
 			if (existsSync(tempDir)) {
 				rmSync(tempDir, { recursive: true, force: true });
-				console.log(`${logPrefix} Cleaned up temp directory`);
+				console.log(`${logPrefix} 已清理临时目录`);
 			}
 		} catch (cleanupError) {
-			console.error(`${logPrefix} Failed to cleanup temp directory:`, cleanupError);
+			console.error(`${logPrefix} 清理临时目录失败：`, cleanupError);
 		}
 	}
 }

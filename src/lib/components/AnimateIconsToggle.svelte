@@ -24,14 +24,14 @@
 	function onToggle(value: boolean) {
 		checked = value;
 		themeStore.setPreference('animateIcons', value, userId, skipApply);
-		toast.success(value ? 'Icon animation enabled' : 'Icon animation disabled');
+		toast.success(value ? '图标动画已开启' : '图标动画已关闭');
 	}
 </script>
 
 <div class="space-y-1">
 	<div class="flex items-center gap-3">
-		<Label>Animate icons</Label>
+		<Label>图标动画</Label>
 		<TogglePill {checked} onchange={onToggle} />
 	</div>
-	<p class="text-xs text-muted-foreground">Spinners during pulls, scans and updates.</p>
+	<p class="text-xs text-muted-foreground">拉取镜像、扫描漏洞、更新时显示加载旋转图标。</p>
 </div>

@@ -23,10 +23,10 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 	const auth = await authorize(cookies);
 	const envId = parseEnv(url.searchParams.get('env'));
 	if (auth.authEnabled && !(await auth.can('stacks', 'view', envId ?? undefined))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 	const buffer = getStackIconBuffer(params.name, envId);
-	if (!buffer) return json({ error: 'No custom icon' }, { status: 404 });
+	if (!buffer) return json({ error: '未设置自定义图标' }, { status: 404 });
 	return new Response(new Uint8Array(buffer), {
 		headers: {
 			'Content-Type': 'image/webp',
@@ -52,18 +52,18 @@ export const POST: RequestHandler = async ({ params, url, request, cookies }) =>
 	const auth = await authorize(cookies);
 	const envId = parseEnv(url.searchParams.get('env'));
 	if (auth.authEnabled && !(await auth.can('stacks', 'edit', envId ?? undefined))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 	const data = await request.json();
 
 	let iconValue: string;
 	if (typeof data.image === 'string' && data.image) {
 		if (data.image.length > 400_000) {
-			return json({ error: 'Image too large' }, { status: 400 });
+			return json({ error: '图片过大' }, { status: 400 });
 		}
 		const raw = Buffer.from(data.image.replace(/^data:image\/\w+;base64,/, ''), 'base64');
 		if (!looksLikeImage(raw)) {
-			return json({ error: 'Uploaded file is not a recognised image' }, { status: 400 });
+			return json({ error: '上传文件不是可识别的图片' }, { status: 400 });
 		}
 		saveStackIcon(params.name, envId, data.image);
 		iconValue = 'custom:stack';
@@ -72,7 +72,7 @@ export const POST: RequestHandler = async ({ params, url, request, cookies }) =>
 		deleteStackIcon(params.name, envId);
 		iconValue = data.icon;
 	} else {
-		return json({ error: 'Missing icon or image' }, { status: 400 });
+		return json({ error: '缺少图标或图片' }, { status: 400 });
 	}
 
 	// Ensure a stack_sources row exists, then set the icon.
@@ -97,7 +97,7 @@ export const DELETE: RequestHandler = async ({ params, url, cookies }) => {
 	const auth = await authorize(cookies);
 	const envId = parseEnv(url.searchParams.get('env'));
 	if (auth.authEnabled && !(await auth.can('stacks', 'edit', envId ?? undefined))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 	deleteStackIcon(params.name, envId);
 	await updateStackSource(params.name, envId, { icon: null });

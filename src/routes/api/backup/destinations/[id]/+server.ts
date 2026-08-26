@@ -61,10 +61,10 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 	if (denied) return denied;
 
 	const id = parseInt(params.id);
-	if (isNaN(id)) return json({ error: 'Invalid ID' }, { status: 400 });
+	if (isNaN(id)) return json({ error: 'ID 格式非法' }, { status: 400 });
 
 	const destination = await getBackupDestination(id);
-	if (!destination) return json({ error: 'Destination not found' }, { status: 404 });
+	if (!destination) return json({ error: '未找到该存储位置' }, { status: 404 });
 
 	// Only surface decrypted cloud credentials to users who can edit the
 	// destination; Viewers get the row without secrets.
@@ -94,17 +94,17 @@ export const PUT: RequestHandler = async (event) => {
 	if (denied) return denied;
 
 	const id = parseInt(params.id);
-	if (isNaN(id)) return json({ error: 'Invalid ID' }, { status: 400 });
+	if (isNaN(id)) return json({ error: 'ID 格式非法' }, { status: 400 });
 
 	const existing = await getBackupDestination(id);
-	if (!existing) return json({ error: 'Destination not found' }, { status: 404 });
+	if (!existing) return json({ error: '未找到该存储位置' }, { status: 404 });
 
 	const body = await request.json();
 
 	// Changing the repo target or password while a backup is writing to this
 	// destination would break the in-flight run. A policy/name-only edit is safe.
 	if ((body.repository !== undefined || body.password !== undefined) && await destinationHasRunningBackup(id)) {
-		return json({ error: 'A backup using this destination is currently running. Try again once it finishes.' }, { status: 409 });
+		return json({ error: '正在有任务使用该存储位置进行备份，请等待任务结束后重试。' }, { status: 409 });
 	}
 
 	// Validate any cron schedules in the supplied policies (audit #7)
@@ -124,10 +124,10 @@ export const PUT: RequestHandler = async (event) => {
 	let flagsColumn: string | null | undefined = undefined;
 	if (body.backupFlags !== undefined || body.restoreFlags !== undefined) {
 		try { flagsColumn = validateAndSerializeFlags(body.backupFlags, body.restoreFlags); }
-		catch (e) { return json({ error: e instanceof Error ? e.message : 'Invalid restic flags' }, { status: 400 }); }
+		catch (e) { return json({ error: e instanceof Error ? e.message : '无效的 restic 参数' }, { status: 400 }); }
 	} else if (body.flags !== undefined) {
 		try { flagsColumn = validateAndSerializeFlags(body.flags, ''); }
-		catch (e) { return json({ error: e instanceof Error ? e.message : 'Invalid restic flags' }, { status: 400 }); }
+		catch (e) { return json({ error: e instanceof Error ? e.message : '无效的 restic 参数' }, { status: 400 }); }
 	}
 
 	// A local-path repo is allowed on any env; a wrong-host mount fails loud via
@@ -145,7 +145,7 @@ export const PUT: RequestHandler = async (event) => {
 			tlsClientCert: body.tlsClientCert,
 			policies: body.policies
 		});
-		if (!updated) return json({ error: 'Update failed' }, { status: 500 });
+		if (!updated) return json({ error: '更新操作失败' }, { status: 500 });
 
 		// Re-register maintenance schedules only when the policies actually changed
 		// (audit #22) — a metadata-only edit (rename, flags, etc.) shouldn't churn
@@ -169,7 +169,7 @@ export const PUT: RequestHandler = async (event) => {
 		return json(prepareDestination(updated, true));
 	} catch (error: any) {
 		if (error.message?.includes('UNIQUE constraint')) {
-			return json({ error: 'A destination with this name already exists' }, { status: 409 });
+			return json({ error: '已存在同名的存储位置' }, { status: 409 });
 		}
 		return json({ error: error.message }, { status: 500 });
 	}
@@ -195,14 +195,14 @@ export const DELETE: RequestHandler = async (event) => {
 	if (denied) return denied;
 
 	const id = parseInt(params.id);
-	if (isNaN(id)) return json({ error: 'Invalid ID' }, { status: 400 });
+	if (isNaN(id)) return json({ error: 'ID 格式非法' }, { status: 400 });
 
 	const existing = await getBackupDestination(id);
-	if (!existing) return json({ error: 'Destination not found' }, { status: 404 });
+	if (!existing) return json({ error: '未找到该存储位置' }, { status: 404 });
 
 	// Don't delete a destination out from under a backup that's writing to its repo.
 	if (await destinationHasRunningBackup(id)) {
-		return json({ error: 'A backup using this destination is currently running. Try again once it finishes.' }, { status: 409 });
+		return json({ error: '正在有任务使用该存储位置进行备份，请等待任务结束后重试。' }, { status: 409 });
 	}
 
 	// Unregister all maintenance schedules for this destination
@@ -221,7 +221,7 @@ export const DELETE: RequestHandler = async (event) => {
 			}
 		}
 	} catch (err) {
-		console.error(`Failed to unregister backup schedules for destination "${existing.name}":`, err);
+		console.error(`无法注销关联备份配置的定时任务，存储位置名称 "${existing.name}":`, err);
 	}
 
 	await deleteBackupDestination(id);

@@ -26,7 +26,7 @@ export const POST: RequestHandler = async (event) => {
 	if (denied) return denied;
 
 	const destinationId = parseInt(params.id);
-	if (isNaN(destinationId)) return json({ error: 'Invalid destination ID' }, { status: 400 });
+	if (isNaN(destinationId)) return json({ error: '无效的存储目标 ID' }, { status: 400 });
 
 	const body = await request.json().catch(() => ({}));
 	const dataSubset = body.dataSubset || '5%';
@@ -37,7 +37,7 @@ export const POST: RequestHandler = async (event) => {
 	}
 
 	return createJobResponse(async (send) => {
-		send('progress', { message: `Verifying backup integrity (reading ${dataSubset} of data)...` });
+		send('progress', { message: `正在校验备份完整性 (读取 ${dataSubset} 的数据)...` });
 
 		const result = await verifyBackup(destinationId, {
 			dataSubset,
@@ -49,7 +49,7 @@ export const POST: RequestHandler = async (event) => {
 		send('result', result);
 
 		if (!result.success) {
-			throw new Error(result.error || 'Verification failed');
+			throw new Error(result.error || '校验失败');
 		}
 	}, request);
 };

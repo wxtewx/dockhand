@@ -18,7 +18,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('stacks', 'view', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -47,7 +47,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 		return json(sourceMap);
 	} catch (error) {
-		console.error('Failed to get stack sources:', error);
-		return json({ error: 'Failed to get stack sources' }, { status: 500 });
+		console.error('获取堆栈源信息失败：', error);
+		return json({ error: '获取堆栈源信息失败' }, { status: 500 });
 	}
 };

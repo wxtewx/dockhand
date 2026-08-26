@@ -14,11 +14,11 @@ import { getSelfhstIcon, isValidSelfhstRef } from '$lib/server/selfhst-icons';
 export const GET: RequestHandler = async ({ params }) => {
 	const ref = params.ref;
 	if (!isValidSelfhstRef(ref)) {
-		return json({ error: 'Invalid icon reference' }, { status: 400 });
+		return json({ error: '无效的图标引用' }, { status: 400 });
 	}
 	const buf = await getSelfhstIcon(ref);
 	if (!buf) {
-		return json({ error: 'Icon not found' }, { status: 404 });
+		return json({ error: '未找到图标' }, { status: 404 });
 	}
 	return new Response(new Uint8Array(buf), {
 		headers: {

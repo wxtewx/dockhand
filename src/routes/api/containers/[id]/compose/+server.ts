@@ -29,7 +29,7 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 	const envIdNum = envId ? parseInt(envId) : undefined;
 
 	if (auth.authEnabled && !(await auth.can('containers', 'view', envIdNum))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -92,6 +92,6 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 
 		return json({ compose, composeFullEnv, serviceName, stackProject });
 	} catch (error: any) {
-		return json({ error: error.message || 'Failed to generate compose' }, { status: 500 });
+		return json({ error: error.message || '生成 compose 配置失败' }, { status: 500 });
 	}
 };

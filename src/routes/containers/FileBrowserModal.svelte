@@ -26,9 +26,9 @@
 <Dialog.Root bind:open onOpenChange={handleOpenChange}>
 	<Dialog.Content class="max-w-4xl h-[90vh] sm:h-[80vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
 		<Dialog.Header>
-			<ModalHeader icon={FolderOpen} title="Browse files" name={containerName} iconImage={containerImage} iconName={containerName} />
+			<ModalHeader icon={FolderOpen} title="浏览文件" name={containerName} iconImage={containerImage} iconName={containerName} />
 			<Dialog.Description>
-				Browse, upload, and download files from the container filesystem.
+				浏览、上传和下载容器文件系统中的文件。
 			</Dialog.Description>
 		</Dialog.Header>
 		<div class="flex-1 overflow-hidden border rounded-lg">

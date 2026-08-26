@@ -22,12 +22,12 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !(await auth.can('stacks', 'view', envIdNum))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Environment access check (enterprise only)
 	if (envIdNum && auth.isEnterprise && !(await auth.canAccessEnvironment(envIdNum))) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问该环境' }, { status: 403 });
 	}
 
 	// Early return if no environment specified
@@ -70,13 +70,13 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 		return json(stacks);
 	} catch (error) {
 		if (error instanceof EnvironmentNotFoundError) {
-			return json({ error: 'Environment not found' }, { status: 404 });
+			return json({ error: '环境不存在' }, { status: 404 });
 		}
 		// Silently return empty for connection errors (offline environments)
 		if (error instanceof DockerConnectionError) {
 			return json([]);
 		}
-		console.error('Error listing compose stacks:', error);
+		console.error('列出 Compose 堆栈时出错：', error);
 		return json([]);
 	}
 };
@@ -100,12 +100,12 @@ export const POST: RequestHandler = async (event) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !(await auth.can('stacks', 'create', envIdNum))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Environment access check (enterprise only)
 	if (envIdNum && auth.isEnterprise && !(await auth.canAccessEnvironment(envIdNum))) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问该环境' }, { status: 403 });
 	}
 
 	try {
@@ -113,11 +113,11 @@ export const POST: RequestHandler = async (event) => {
 		const { name, compose, start, envVars, rawEnvContent, composePath, envPath, secretProviderId } = body;
 
 		if (!name || typeof name !== 'string') {
-			return json({ error: 'Stack name is required' }, { status: 400 });
+			return json({ error: '堆栈名称为必填项' }, { status: 400 });
 		}
 
 		if (!compose || typeof compose !== 'string') {
-			return json({ error: 'Compose file content is required' }, { status: 400 });
+			return json({ error: 'Compose 文件内容为必填项' }, { status: 400 });
 		}
 
 		if (
@@ -125,7 +125,7 @@ export const POST: RequestHandler = async (event) => {
 			secretProviderId !== null &&
 			typeof secretProviderId !== 'number'
 		) {
-			return json({ error: 'secretProviderId must be a number or null' }, { status: 400 });
+			return json({ error: 'secretProviderId 必须为数字或 null' }, { status: 400 });
 		}
 
 		// Binding a secret provider resolves its secrets into the container at deploy;
@@ -136,7 +136,7 @@ export const POST: RequestHandler = async (event) => {
 			auth.authEnabled &&
 			!(await auth.can('secrets', 'view', envIdNum))
 		) {
-			return json({ error: 'Permission denied: binding a secret provider requires the secrets permission' }, { status: 403 });
+			return json({ error: '权限拒绝：绑定密钥提供程序需要 secrets 权限' }, { status: 403 });
 		}
 
 		// If start is false, only create the compose file without deploying
@@ -239,12 +239,12 @@ export const POST: RequestHandler = async (event) => {
 
 				send('result', { success: true, started: true, output: result.output });
 			} catch (error: any) {
-				console.error('Error deploying compose stack:', error);
-				send('result', { success: false, error: error.message || 'Failed to deploy stack' });
+				console.error('部署 Compose 堆栈时出错：', error);
+				send('result', { success: false, error: error.message || '部署堆栈失败' });
 			}
 		}, request);
 	} catch (error: any) {
-		console.error('Error creating compose stack:', error);
-		return json({ error: error.message || 'Failed to create stack' }, { status: 500 });
+		console.error('创建 Compose 堆栈时出错：', error);
+		return json({ error: error.message || '创建堆栈失败' }, { status: 500 });
 	}
 };

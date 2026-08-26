@@ -5,79 +5,79 @@
     "changes": [
       {
         "type": "feature",
-        "text": "generate a compose file from any container - save as new or append to existing stack (#489)"
+        "text": "从任意容器生成 Compose 文件 - 新建保存或追加至已有堆栈 (#489)"
       },
       {
         "type": "feature",
-        "text": "MQTT notification channel - publish events to a broker (#280)"
+        "text": "MQTT 通知通道 - 将事件发布至消息代理 (#280)"
       },
       {
         "type": "feature",
-        "text": "TLS backup repositories with a private CA and optional mutual TLS (#1451)"
+        "text": "支持使用私有 CA 及可选双向 TLS 的 TLS 备份仓库 (#1451)"
       },
       {
         "type": "feature",
-        "text": "custom stack and container icons, plus automatic container icons (#31)"
+        "text": "自定义堆栈与容器图标，同时支持自动容器图标 (#31)"
       },
       {
         "type": "feature",
-        "text": "Azure Key Vault as a secret provider (bulk pull or inline azurekv:// references)"
+        "text": "新增 Azure Key Vault 密钥提供者 (批量拉取或内联 azurekv:// 引用)"
       },
       {
         "type": "feature",
-        "text": "Proton Pass inline references accept vault and item names, not just ids (pass://vault/item/field) (#1449)"
+        "text": "Proton Pass 内联引用支持密码库与条目名称，不再仅支持 ID (pass://vault/item/field) (#1449)"
       },
       {
         "type": "feature",
-        "text": "branch selector on git stack, with per-stack branch override (#649, PR#1343, @brx19)"
+        "text": "Git 堆栈增加分支选择器，支持单堆栈独立覆盖分支 (#649, PR#1343, @brx19)"
       },
       {
         "type": "feature",
-        "text": "click the update icon in the image column to update a container (#1435)"
+        "text": "可点击镜像列中的更新图标升级容器 (#1435)"
       },
       {
         "type": "feature",
-        "text": "Pushover notifications can target specific devices (#1411)"
+        "text": "Pushover 通知可指定目标设备 (#1411)"
       },
       {
         "type": "feature",
-        "text": "keep specific images from being pruned with a dockhand.prune=false label (#1391)"
+        "text": "通过 dockhand.prune=false 标签保护指定镜像不被清理 (#1391)"
       },
       {
         "type": "fix",
-        "text": "Infisical secret references now resolve to their value instead of the raw reference (#1447)"
+        "text": "Infisical 密钥引用现在会解析为实际值而非原始引用文本 (#1447)"
       },
       {
         "type": "fix",
-        "text": "the version-update dialog no longer duplicates the old tag when the running image is digest-pinned (#1437)"
+        "text": "当运行镜像为摘要锁定时，版本更新弹窗不再重复展示旧标签 (#1437)"
       },
       {
         "type": "fix",
-        "text": "a compose stack with a restarting container now shows a Stop action instead of Start (#1438)"
+        "text": "包含正在重启容器的 Compose 堆栈现在显示停止操作而非启动 (#1438)"
       },
       {
         "type": "fix",
-        "text": "optimize 1Password API calls on deploy (#1436)"
+        "text": "优化部署时 1Password API 请求频次 (#1436)"
       },
       {
         "type": "fix",
-        "text": "direct-remote staging pulls the alpine helper image instead of failing when it's missing (#1442)"
+        "text": "直连远程预部署环境会自动拉取 Alpine 辅助镜像，不再因缺失而失败 (#1442)"
       },
       {
         "type": "fix",
-        "text": "Proton Pass secrets now resolve on headless hosts with no system keyring (#1440)"
+        "text": "Proton Pass 密钥可在无系统密钥环的无界面主机上正常解析 (#1440)"
       },
       {
         "type": "fix",
-        "text": "fix switching an Infisical provider back to a static token (#1448)"
+        "text": "修复 Infisical 提供者切回静态令牌的异常 (#1448)"
       },
       {
         "type": "fix",
-        "text": "fix backpressure in Docker streaming responses (PR#1445, @StefanSa)"
+        "text": "修复 Docker 流式响应的背压问题 (PR#1445, @StefanSa)"
       },
       {
         "type": "fix",
-        "text": "sort IPv6 subnets and addresses numerically instead of randomly (#1453)"
+        "text": "IPv6 子网与地址按数值排序，不再随机排序 (#1453)"
       }
     ],
     "imageTag": "fnsys/dockhand:v1.0.44"

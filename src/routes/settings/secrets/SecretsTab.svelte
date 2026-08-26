@@ -41,8 +41,8 @@
 			const response = await fetch('/api/secret-providers');
 			providers = await response.json();
 		} catch (e) {
-			console.error('Failed to fetch secret providers:', e);
-			toast.error('Failed to fetch secret providers');
+			console.error('获取密钥提供程序失败:', e);
+			toast.error('获取密钥提供程序失败');
 		} finally {
 			loading = false;
 		}
@@ -60,13 +60,13 @@
 			});
 			if (response.ok) {
 				await fetchProviders();
-				toast.success('Secret provider deleted');
+				toast.success('密钥提供程序已删除');
 			} else {
 				const data = await response.json();
-				toast.error(data.error || 'Failed to delete secret provider');
+				toast.error(data.error || '删除密钥提供程序失败');
 			}
 		} catch {
-			toast.error('Failed to delete secret provider');
+			toast.error('删除密钥提供程序失败');
 		}
 	}
 
@@ -79,17 +79,17 @@
 			);
 			const data = await response.json();
 			if (data.ok) {
-				toast.success(`${provider.name}: connection works`);
+				toast.success(`${provider.name}: 连接正常`);
 				clearTimeout(testOkTimer);
 				testOkId = provider.id;
 				testOkTimer = setTimeout(() => (testOkId = null), 2000);
 			} else {
 				toast.error(
-					`${provider.name}: ${data.error || 'connection failed'}`,
+					`${provider.name}: ${data.error || '连接失败'}`,
 				);
 			}
 		} catch {
-			toast.error('Connection test failed');
+			toast.error('连接测试失败');
 		} finally {
 			testingId = null;
 		}
@@ -104,29 +104,29 @@
 	<div class="flex justify-between items-center">
 		<div class="flex items-center gap-3">
 			<Badge variant="secondary" class="text-xs"
-				>{providers.length} total</Badge
+				>{providers.length} 个总计</Badge
 			>
 		</div>
 		<div class="flex gap-2">
 			{#if $canAccess("secrets", "create")}
 				<Button size="sm" onclick={() => openModal()}>
 					<Plus class="w-4 h-4" />
-					Add secret provider
+					添加密钥提供程序
 				</Button>
 			{/if}
 			<Button size="sm" variant="outline" onclick={fetchProviders}
-				>Refresh</Button
+				>刷新</Button
 			>
 		</div>
 	</div>
 
 	{#if loading && providers.length === 0}
-		<p class="text-muted-foreground text-sm">Loading secret providers...</p>
+		<p class="text-muted-foreground text-sm">正在加载密钥提供程序...</p>
 	{:else if providers.length === 0}
 		<EmptyState
 			icon={KeyRound}
-			title="No secret providers"
-			description="Add a provider (1Password, Infisical, HashiCorp Vault, ...) to load secrets at deploy time"
+			title="暂无密钥提供程序"
+			description="添加提供程序 (1Password、Infisical、HashiCorp Vault、...)，用于在部署时加载密钥"
 		/>
 	{:else}
 		<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -149,7 +149,7 @@
 						</Card.Header>
 						<Card.Content class="space-y-3">
 							<div class="text-xs text-muted-foreground">
-								Added {new Date(
+								添加于 {new Date(
 									provider.createdAt,
 								).toLocaleDateString()}
 							</div>
@@ -173,7 +173,7 @@
 												<PlugZap class="w-3 h-3" />
 											{/if}
 										</span>
-										Test
+										测试
 									</Button>
 								{/if}
 								{#if $canAccess("secrets", "edit")}
@@ -188,10 +188,10 @@
 								{#if $canAccess("secrets", "delete")}
 									<ConfirmPopover
 										open={confirmDeleteId === provider.id}
-										action="Delete"
-										itemType="secret provider"
+										action="删除"
+										itemType="密钥提供程序"
 										itemName={provider.name}
-										title="Remove"
+										title="移除"
 										position="left"
 										onConfirm={() =>
 											deleteProvider(provider.id)}

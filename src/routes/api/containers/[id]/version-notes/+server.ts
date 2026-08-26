@@ -30,7 +30,7 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 	const envIdNum = envId ? parseInt(envId) : undefined;
 
 	if (auth.authEnabled && !(await auth.can('containers', 'view', envIdNum))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限拒绝' }, { status: 403 });
 	}
 
 	const versions = (url.searchParams.get('versions') ?? '')
@@ -56,7 +56,7 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 
 		return json({ changelogUrl, source: src?.slug ?? null, notes: result.notes, rateLimited: result.rateLimited });
 	} catch (error) {
-		console.error('Failed to resolve version notes:', error);
-		return json({ error: 'Failed to resolve release notes' }, { status: 500 });
+		console.error('获取版本更新日志失败:', error);
+		return json({ error: '获取版本更新日志失败' }, { status: 500 });
 	}
 };

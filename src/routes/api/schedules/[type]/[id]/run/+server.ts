@@ -39,12 +39,12 @@ export const POST: RequestHandler = async ({ params, cookies }) => {
 		const scheduleId = parseInt(id, 10);
 
 		if (isNaN(scheduleId)) {
-			return json({ error: 'Invalid schedule ID' }, { status: 400 });
+			return json({ error: '无效的定时任务 ID' }, { status: 400 });
 		}
 
 		// BETA GATE: backup-type schedules are unreachable unless FEAT_BACKUPS_ENABLED (see features.ts).
 		if (!BACKUPS_ENABLED && (type === 'backup' || type === 'repo_prune' || type === 'repo_check' || type === 'repo_verify')) {
-			return new Response('Not found', { status: 404 });
+			return new Response('未找到', { status: 404 });
 		}
 
 		// The schedules stream emits synthetic IDs for the three repo-maintenance
@@ -63,13 +63,13 @@ export const POST: RequestHandler = async ({ params, cookies }) => {
 		switch (type) {
 			case 'container_update': {
 				const setting = await getAutoUpdateSettingById(scheduleId);
-				if (!setting) return json({ error: 'Schedule not found' }, { status: 404 });
+				if (!setting) return json({ error: '未找到该计划任务' }, { status: 404 });
 				scheduleEnvId = setting.environmentId;
 				break;
 			}
 			case 'git_stack_sync': {
 				const stack = await getGitStack(scheduleId);
-				if (!stack) return json({ error: 'Schedule not found' }, { status: 404 });
+				if (!stack) return json({ error: '未找到该计划任务' }, { status: 404 });
 				scheduleEnvId = stack.environmentId;
 				break;
 			}
@@ -84,7 +84,7 @@ export const POST: RequestHandler = async ({ params, cookies }) => {
 				// Backup schedules ARE env-scoped (audit #6: these were missing here
 				// and 400'd before ever reaching the dispatch switch below).
 				const config = await getBackupConfig(scheduleId);
-				if (!config) return json({ error: 'Backup config not found' }, { status: 404 });
+				if (!config) return json({ error: '未找到备份配置' }, { status: 404 });
 				scheduleEnvId = config.environmentId;
 				break;
 			}
@@ -94,12 +94,12 @@ export const POST: RequestHandler = async ({ params, cookies }) => {
 				// Repo maintenance is destination-scoped, not env-scoped. Validate the
 				// (decoded) destination exists; access is gated by schedules:run only.
 				const dest = await getBackupDestination(destId);
-				if (!dest) return json({ error: 'Destination not found' }, { status: 404 });
+				if (!dest) return json({ error: '未找到目标存储位置' }, { status: 404 });
 				scheduleEnvId = null;
 				break;
 			}
 			default:
-				return json({ error: 'Invalid schedule type' }, { status: 400 });
+				return json({ error: '无效的计划任务类型' }, { status: 400 });
 		}
 
 		const envDenied = await auth.requireEnvAccess(scheduleEnvId);
@@ -126,7 +126,7 @@ export const POST: RequestHandler = async ({ params, cookies }) => {
 			case 'backup': {
 				const config = await getBackupConfig(scheduleId);
 				if (!config) {
-					return json({ error: 'Backup config not found' }, { status: 404 });
+					return json({ error: '未找到备份配置' }, { status: 404 });
 				}
 				await runScheduledBackup(scheduleId, config.targetName, config.environmentId, 'manual');
 				result = { success: true };
@@ -134,21 +134,21 @@ export const POST: RequestHandler = async ({ params, cookies }) => {
 			}
 			case 'repo_prune': {
 				const dest = await getBackupDestination(destId);
-				if (!dest) return json({ error: 'Destination not found' }, { status: 404 });
+				if (!dest) return json({ error: '未找到目标存储位置' }, { status: 404 });
 				await runRepoPrune(destId, dest.name, 'manual');
 				result = { success: true };
 				break;
 			}
 			case 'repo_check': {
 				const dest = await getBackupDestination(destId);
-				if (!dest) return json({ error: 'Destination not found' }, { status: 404 });
+				if (!dest) return json({ error: '未找到目标存储位置' }, { status: 404 });
 				await runRepoCheck(destId, dest.name, 'manual');
 				result = { success: true };
 				break;
 			}
 			case 'repo_verify': {
 				const dest = await getBackupDestination(destId);
-				if (!dest) return json({ error: 'Destination not found' }, { status: 404 });
+				if (!dest) return json({ error: '未找到目标存储位置' }, { status: 404 });
 				const pol = dest.policies ? (() => { try { return JSON.parse(dest.policies); } catch { return {}; } })() : {};
 				await runRepoVerify(destId, dest.name, pol.verifyDataSubset || '5%', 'manual');
 				result = { success: true };
@@ -156,16 +156,16 @@ export const POST: RequestHandler = async ({ params, cookies }) => {
 			}
 			default:
 				// Unreachable — validated in the resolution switch above.
-				return json({ error: 'Invalid schedule type' }, { status: 400 });
+				return json({ error: '无效的计划任务类型' }, { status: 400 });
 		}
 
 		if (!result.success) {
 			return json({ error: result.error }, { status: 400 });
 		}
 
-		return json({ success: true, message: 'Schedule triggered successfully' });
+		return json({ success: true, message: '计划任务触发成功' });
 	} catch (error: any) {
-		console.error('Failed to trigger schedule:', error);
+		console.error('触发计划任务失败:', error);
 		return json({ error: error.message }, { status: 500 });
 	}
 };

@@ -34,7 +34,7 @@ export async function requireBackups(
 	action: 'view' | 'manage'
 ): Promise<Response | null> {
 	if (auth.authEnabled && !(await auth.can('backups', action))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 	return null;
 }
@@ -55,13 +55,13 @@ export async function loadConfigGateEnv(
 	auth: AuthorizationContext
 ): Promise<{ config: BackupConfig } | { response: Response }> {
 	const id = parseInt(idParam);
-	if (isNaN(id)) return { response: json({ error: 'Invalid ID' }, { status: 400 }) };
+	if (isNaN(id)) return { response: json({ error: '无效 ID' }, { status: 400 }) };
 
 	const config = await getBackupConfig(id);
-	if (!config) return { response: json({ error: 'Config not found' }, { status: 404 }) };
+	if (!config) return { response: json({ error: '备份配置不存在' }, { status: 404 }) };
 
 	if (config.environmentId && auth.isEnterprise && !(await auth.canAccessEnvironment(config.environmentId))) {
-		return { response: json({ error: 'Access denied to this environment' }, { status: 403 }) };
+		return { response: json({ error: '无权访问该环境' }, { status: 403 }) };
 	}
 	return { config };
 }
@@ -85,18 +85,18 @@ export async function guardSnapshotEnvAccess(
 		resolution = await resolveSnapshotEnvId(destinationId, snapshotId);
 	} catch {
 		// Any failure resolving the snapshot's env → deny (fail closed).
-		return json({ error: 'Could not verify snapshot environment access' }, { status: 403 });
+		return json({ error: '无法校验快照所属环境访问权限' }, { status: 403 });
 	}
 
 	if (!resolution.resolved) {
 		// Unknown / unresolvable environment → deny.
-		return json({ error: 'Snapshot environment could not be resolved' }, { status: 403 });
+		return json({ error: '无法解析快照所属环境' }, { status: 403 });
 	}
 	// envId === null means an unscoped ('local') snapshot — no env gate to apply.
 	if (resolution.envId == null) return null;
 
 	if (!(await auth.canAccessEnvironment(resolution.envId))) {
-		return json({ error: 'Environment access denied' }, { status: 403 });
+		return json({ error: '无权访问该环境' }, { status: 403 });
 	}
 	return null;
 }

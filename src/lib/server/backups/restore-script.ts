@@ -71,7 +71,7 @@ export function buildInPlaceRestore(
 			// already rolled back any real (marker-bearing) interrupted swap; a marker-less staging
 			// dir is always disposable partial junk. restic restore has no --delete, so without this
 			// wipe a retry would keep files that aren't in this snapshot and commit them as "restored".
-			`  ${say(`Restoring ${include} into staging dir ${SWAP_NEW}`)};`,
+			`  ${say(`正在将 ${include} 恢复至临时目录 ${SWAP_NEW}`)};`,
 			`  rm -rf ${stagingQ};`,
 			`  ${dirRestic};`,
 			`  ${dirFlatten};`,
@@ -82,14 +82,14 @@ export function buildInPlaceRestore(
 			// (`mv` over it -> "Device or resource busy"). So restore into a sibling temp
 			// dir, then overwrite the live file's CONTENT in place via `cat` (writes through
 			// the mount). Not atomic like a rename, but the only option for a file mount.
-			`  ${say(`Restoring file ${include} (overwriting through the mount)`)};`,
+			`  ${say(`正在恢复文件 ${include} (通过挂载覆盖写入)`)};`,
 			`  rm -rf ${fileStaging};`,
 			`  ${fileRestic};`,
 			// GUARD before the redirect: `cat X > live` truncates `live` BEFORE cat runs, so a
 			// missing/empty restored file (restic exit 0 but nothing extracted) would zero the
 			// live user file and then fail - destroying data. Only overwrite once the restored
 			// file is confirmed present; otherwise abort with the live file untouched.
-			`  if [ -f ${fileNested} ]; then cat ${fileNested} > ${liveQ}; else echo "restore: extracted file ${fileNested} missing - refusing to truncate live file" >&2; rm -rf ${fileStaging}; exit 1; fi;`,
+			`  if [ -f ${fileNested} ]; then cat ${fileNested} > ${liveQ}; else echo "恢复操作: 提取文件 ${fileNested} 缺失，拒绝清空运行中文件" >&2; rm -rf ${fileStaging}; exit 1; fi;`,
 			`  rm -rf ${fileStaging};`,
 			`fi`,
 		].join(' ');
@@ -160,12 +160,12 @@ export function buildCloneRestore(
 		// Remove ONLY our staging dir (recursive is safe — it's ours, and the payload
 		// was copied out). Never touches any user directory at the mount.
 		return [
-			`${say(`Cloning into ${root} (staging dir ${staging_name})`)}`,
+			`${say(`正在克隆恢复至 ${root} (临时目录 ${staging_name})`)}`,
 			`rm -rf ${stagingQ}`,
 			restic,
-			`${say(`Moving restored files into ${root}`)}`,
+			`${say(`正在将恢复文件迁移至 ${root}`)}`,
 			move,
-			`${say(`Cleaning up staging dir at ${root}`)}`,
+			`${say(`清理挂载目录下的临时目录 ${root}`)}`,
 			`rm -rf ${stagingQ}`,
 		].join('; ');
 	}).join('; ');

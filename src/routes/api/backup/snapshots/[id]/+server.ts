@@ -34,17 +34,17 @@ export const DELETE: RequestHandler = async (event) => {
 	if (invalidSnap) return invalidSnap;
 
 	const destIdParam = url.searchParams.get('destinationId');
-	if (!destIdParam) return json({ error: 'destinationId parameter is required' }, { status: 400 });
+	if (!destIdParam) return json({ error: '必须提供 destinationId 参数' }, { status: 400 });
 
 	const destinationId = parseInt(destIdParam);
-	if (isNaN(destinationId)) return json({ error: 'Invalid destinationId' }, { status: 400 });
+	if (isNaN(destinationId)) return json({ error: '无效的 destinationId' }, { status: 400 });
 
 	const envParam = url.searchParams.get('env');
 	const envId = envParam ? parseInt(envParam) : undefined;
 
 	// Environment access check (enterprise RBAC) — only when an env is specified.
 	if (envId !== undefined && Number.isInteger(envId) && envId > 0 && auth.isEnterprise && !await auth.canAccessEnvironment(envId)) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问该环境' }, { status: 403 });
 	}
 
 	// (re-audit H2) Server-authoritative env gate, matching the read-content routes
@@ -75,9 +75,9 @@ export const DELETE: RequestHandler = async (event) => {
 			snapshotId, destinationId, kind: 'snapshot', failed: true, reason: result.reason
 		});
 		if (result.reason === 'not-owned') {
-			return json({ error: 'Snapshot not found for this installation' }, { status: 404 });
+			return json({ error: '未在此实例中找到该快照' }, { status: 404 });
 		}
-		return json({ error: result.error ?? 'Failed to forget snapshot' }, { status: 500 });
+		return json({ error: result.error ?? '移除快照失败' }, { status: 500 });
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
 		return json({ error: errorMsg }, { status: 500 });

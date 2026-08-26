@@ -17,7 +17,7 @@
 		title?: string;
 	}
 
-	let { open = $bindable(false), value = null, onselect, title = 'Choose an icon' }: Props = $props();
+	let { open = $bindable(false), value = null, onselect, title = '选择图标' }: Props = $props();
 
 	// --- Lucide tab ---
 	const lucideNames = Object.keys(stackIconMap);
@@ -51,7 +51,7 @@
 			// Only SVG-capable entries (that's what our proxy serves).
 			manifest = all.filter((e) => e.SVG === 'Yes' && e.Reference);
 		} catch (e) {
-			manifestError = 'Could not load the selfh.st icon list. Check the server has internet access.';
+			manifestError = '无法加载 selfh.st 图标列表，请检查服务器是否可访问互联网。';
 		} finally {
 			manifestLoading = false;
 		}
@@ -112,16 +112,16 @@
 
 		<Tabs.Root value="icons" onValueChange={onTabChange} class="flex-1 flex flex-col min-h-0">
 			<Tabs.List class="grid grid-cols-3 shrink-0">
-				<Tabs.Trigger value="icons">Icons</Tabs.Trigger>
-				<Tabs.Trigger value="selfhst">App logos</Tabs.Trigger>
-				<Tabs.Trigger value="upload">Upload</Tabs.Trigger>
+				<Tabs.Trigger value="icons">图标</Tabs.Trigger>
+				<Tabs.Trigger value="selfhst">应用标识</Tabs.Trigger>
+				<Tabs.Trigger value="upload">上传</Tabs.Trigger>
 			</Tabs.List>
 
 			<!-- Lucide icons -->
 			<Tabs.Content value="icons" class="mt-3 flex-1 min-h-0 data-[state=active]:flex flex-col">
 				<div class="relative mb-3 shrink-0">
 					<Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-					<Input bind:value={lucideQuery} placeholder="Search icons..." class="pl-8" />
+					<Input bind:value={lucideQuery} placeholder="搜索图标..." class="pl-8" />
 				</div>
 				<div class="grid grid-cols-12 gap-1 flex-1 overflow-y-auto pr-1 content-start">
 					{#each filteredLucide as name (name)}
@@ -142,12 +142,12 @@
 			<Tabs.Content value="selfhst" class="mt-3 flex-1 min-h-0 data-[state=active]:flex flex-col">
 				<div class="relative mb-3 shrink-0">
 					<Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-					<Input bind:value={selfhstQuery} placeholder="Search app logos (plex, jellyfin, grafana...)" class="pl-8" />
+					<Input bind:value={selfhstQuery} placeholder="搜索应用标识 (plex, jellyfin, grafana...)" class="pl-8" />
 				</div>
 				<div class="flex-1 min-h-0 overflow-y-auto pr-1">
 					{#if manifestLoading}
 						<div class="flex items-center justify-center gap-2 py-12 text-muted-foreground text-sm">
-							<Loader2 class="w-4 h-4 animate-spin" /> Loading icon list...
+							<Loader2 class="w-4 h-4 animate-spin" /> 正在加载图标列表...
 						</div>
 					{:else if manifestError}
 						<div class="flex flex-col items-center gap-2 py-10 text-muted-foreground text-sm">
@@ -168,17 +168,17 @@
 							{/each}
 						</div>
 						{#if selfhstResults.length === 0 && selfhstQuery.trim()}
-							<p class="py-8 text-center text-sm text-muted-foreground">No app logos match "{selfhstQuery}".</p>
+							<p class="py-8 text-center text-sm text-muted-foreground">没有匹配 "{selfhstQuery}" 的应用标识。</p>
 						{/if}
 					{/if}
 				</div>
 				<p class="mt-3 shrink-0 text-[11px] text-muted-foreground leading-relaxed">
-					<svg viewBox="0 0 64 64" class="inline-block w-3.5 h-3.5 align-text-bottom mr-1 fill-current" aria-hidden="true"><path d="M31.957,0.311c-8.682,0-16.322,3.213-22.226,9.203C3.653,15.678,0.354,23.666,0.354,32c0,8.422,3.212,16.236,9.29,22.313c6.078,6.078,13.978,9.377,22.313,9.377c8.334,0,16.409-3.299,22.66-9.463c5.904-5.817,9.029-13.544,9.029-22.227c0-8.595-3.125-16.408-9.116-22.399C48.453,3.523,40.639,0.311,31.957,0.311z M32.043,6.041c7.12,0,13.458,2.691,18.406,7.641c4.862,4.861,7.466,11.286,7.466,18.318c0,7.119-2.518,13.371-7.379,18.146c-5.123,5.035-11.721,7.727-18.493,7.727c-6.858,0-13.283-2.691-18.232-7.641C8.862,45.283,6.084,38.772,6.084,32c0-6.858,2.778-13.369,7.727-18.406C18.673,8.646,24.924,6.041,32.043,6.041z"/><path id="cc-c" d="M31.635,26.734c-1.79-3.264-4.844-4.563-8.389-4.563c-5.16,0-9.267,3.65-9.267,9.828c0,6.283,3.861,9.829,9.442,9.829c3.581,0,6.635-1.966,8.319-4.949l-3.931-2.001c-0.878,2.105-2.212,2.738-3.896,2.738c-2.914,0-4.248-2.422-4.248-5.617c0-3.193,1.124-5.616,4.248-5.616c0.842,0,2.527,0.456,3.51,2.563L31.635,26.734z"/><use href="#cc-c" transform="translate(18.281)"/></svg>App logos by
-					<a href="https://selfh.st" target="_blank" rel="noopener" class="inline-flex items-center gap-0.5 underline hover:text-foreground">selfh.st<ExternalLink class="w-3 h-3" /></a>,
-					licensed CC BY 4.0. Fetched once and cached locally.
+					<svg viewBox="0 0 64 64" class="inline-block w-3.5 h-3.5 align-text-bottom mr-1 fill-current" aria-hidden="true"><path d="M31.957,0.311c-8.682,0-16.322,3.213-22.226,9.203C3.653,15.678,0.354,23.666,0.354,32c0,8.422,3.212,16.236,9.29,22.313c6.078,6.078,13.978,9.377,22.313,9.377c8.334,0,16.409-3.299,22.66-9.463c5.904-5.817,9.029-13.544,9.029-22.227c0-8.595-3.125-16.408-9.116-22.399C48.453,3.523,40.639,0.311,31.957,0.311z M32.043,6.041c7.12,0,13.458,2.691,18.406,7.641c4.862,4.861,7.466,11.286,7.466,18.318c0,7.119-2.518,13.371-7.379,18.146c-5.123,5.035-11.721,7.727-18.493,7.727c-6.858,0-13.283-2.691-18.232-7.641C8.862,45.283,6.084,38.772,6.084,32c0-6.858,2.778-13.369,7.727-18.406C18.673,8.646,24.924,6.041,32.043,6.041z"/><path id="cc-c" d="M31.635,26.734c-1.79-3.264-4.844-4.563-8.389-4.563c-5.16,0-9.267,3.65-9.267,9.828c0,6.283,3.861,9.829,9.442,9.829c3.581,0,6.635-1.966,8.319-4.949l-3.931-2.001c-0.878,2.105-2.212,2.738-3.896,2.738c-2.914,0-4.248-2.422-4.248-5.617c0-3.193,1.124-5.616,4.248-5.616c0.842,0,2.527,0.456,3.51,2.563L31.635,26.734z"/><use href="#cc-c" transform="translate(18.281)"/></svg>应用标识由
+					<a href="https://selfh.st" target="_blank" rel="noopener" class="inline-flex items-center gap-0.5 underline hover:text-foreground">selfh.st<ExternalLink class="w-3 h-3" /></a>提供，
+					遵循 CC BY 4.0 协议。仅拉取一次并本地缓存。
 				</p>
 				<p class="mt-1 text-[11px] text-muted-foreground leading-relaxed">
-					Product names, logos and trademarks are the property of their respective owners and are shown for identification only; their use does not imply endorsement.
+					产品名称、标识及商标归各自所有者所有，仅用于识别展示；其使用不代表任何背书。
 				</p>
 			</Tabs.Content>
 
@@ -186,8 +186,8 @@
 			<Tabs.Content value="upload" class="mt-3 flex-1 min-h-0 data-[state=active]:flex flex-col justify-center gap-3">
 				<label class="flex flex-col items-center justify-center gap-2 py-12 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary transition-colors">
 					<Upload class="w-6 h-6 text-muted-foreground" />
-					<span class="text-sm text-muted-foreground">Click to upload an image, then crop it</span>
-					<span class="text-xs text-muted-foreground">PNG, SVG or WebP</span>
+					<span class="text-sm text-muted-foreground">点击上传图片，随后进行裁剪</span>
+					<span class="text-xs text-muted-foreground">PNG、SVG 或 WebP</span>
 					<input type="file" accept="image/*" class="hidden" onchange={onFileSelect} />
 				</label>
 			</Tabs.Content>
@@ -195,7 +195,7 @@
 
 		<Dialog.Footer>
 			{#if value}
-				<Button variant="ghost" onclick={() => { onselect(''); open = false; }}>Clear icon</Button>
+				<Button variant="ghost" onclick={() => { onselect(''); open = false; }}>清除图标</Button>
 			{/if}
 		</Dialog.Footer>
 
@@ -206,8 +206,8 @@
 			outputSize={128}
 			outputFormat="image/webp"
 			outputQuality={0.85}
-			title="Crop icon"
-			saveLabel="Save icon"
+			title="裁剪图标"
+			saveLabel="保存图标"
 			onCancel={() => (showIconCropper = false)}
 			onSave={handleIconCropSave}
 		/>

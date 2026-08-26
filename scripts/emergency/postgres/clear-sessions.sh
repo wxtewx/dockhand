@@ -12,18 +12,18 @@
 set -e
 
 echo "========================================"
-echo "  Dockhand - Clear All Sessions (PostgreSQL)"
+echo "  Dockhand - 清空所有会话 (PostgreSQL)"
 echo "========================================"
 echo ""
-echo "This script will clear all user sessions,"
-echo "forcing all users to log in again."
+echo "本脚本将清空所有用户会话，"
+echo "强制所有用户重新登录。"
 echo ""
 
 # Check DATABASE_URL
 if [ -z "$DATABASE_URL" ]; then
-    echo "Error: DATABASE_URL environment variable not set"
+    echo "错误：未设置 DATABASE_URL 环境变量"
     echo ""
-    echo "Example: DATABASE_URL=postgres://user:pass@host:5432/dockhand"
+    echo "示例：DATABASE_URL=postgres://user:pass@host:5432/dockhand"
     exit 1
 fi
 
@@ -46,30 +46,30 @@ export PGPASSWORD="$DB_PASS"
 
 COUNT=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT COUNT(*) FROM sessions;" 2>/dev/null | tr -d ' ')
 
-echo "Database: $DB_HOST:$DB_PORT/$DB_NAME"
-echo "Active sessions: $COUNT"
+echo "数据库：$DB_HOST:$DB_PORT/$DB_NAME"
+echo "当前活跃会话数：$COUNT"
 echo ""
-printf "Continue? [y/N]: "
+printf "是否继续？[y/N]："
 read CONFIRM
 
 case "$CONFIRM" in
     [yY]|[yY][eE][sS])
         ;;
     *)
-        echo "Aborted."
+        echo "已取消。"
         exit 0
         ;;
 esac
 
 echo ""
-echo "Clearing all user sessions..."
+echo "正在清空所有用户会话..."
 psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "DELETE FROM sessions;"
 
 if [ $? -eq 0 ]; then
     echo ""
-    echo "Cleared $COUNT session(s) successfully."
-    echo "All users will need to log in again."
+    echo "成功清空 $COUNT 个会话。"
+    echo "所有用户需要重新登录。"
 else
-    echo "Error: Failed to clear sessions"
+    echo "错误：清空会话失败"
     exit 1
 fi
