@@ -61,16 +61,16 @@ function executablePath(): string {
 	if (!isAbsolute(override)) {
 		// Operational: we can't even locate the executable, same class as ENOENT - it must
 		// fail the deploy, not be swallowed as an empty group.
-		throw new KeePassCliError('KeePassXC keepassxc-cli executable path must be absolute', true);
+		throw new KeePassCliError('KeePassXC keepassxc-cli 可执行文件路径必须为绝对路径', true);
 	}
 	return override;
 }
 
 function spawnFailure(error: unknown): KeePassCliError {
 	const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : '';
-	if (code === 'ENOENT') return new KeePassCliError('KeePassXC keepassxc-cli executable was not found', true);
-	if (code === 'EACCES') return new KeePassCliError('KeePassXC keepassxc-cli executable is not executable', true);
-	return new KeePassCliError('KeePassXC keepassxc-cli executable could not be started', true);
+	if (code === 'ENOENT') return new KeePassCliError('未找到 KeePassXC keepassxc-cli 可执行文件', true);
+	if (code === 'EACCES') return new KeePassCliError('KeePassXC keepassxc-cli 可执行文件无执行权限', true);
+	return new KeePassCliError('无法启动 KeePassXC keepassxc-cli 可执行文件', true);
 }
 
 /**
@@ -82,22 +82,22 @@ function spawnFailure(error: unknown): KeePassCliError {
 function nonZeroExitMessage(command: string | undefined): string {
 	switch (command) {
 		case 'db-info':
-			return 'KeePassXC could not open the database (wrong password or key file, or the .kdbx path is unreadable)';
+			return 'KeePassXC 无法打开数据库 (密码或密钥文件错误，或 .kdbx 路径不可读';
 		case 'ls':
-			return 'KeePassXC could not list the group (the group name may not exist, or the database could not be opened)';
+			return 'KeePassXC 无法列出分组 (分组可能不存在，或数据库无法打开)';
 		case 'show':
-			return 'KeePassXC could not read the entry (the entry path may not exist)';
+			return 'KeePassXC 无法读取条目 (条目路径可能不存在)';
 		default:
-			return 'KeePassXC keepassxc-cli command failed';
+			return 'KeePassXC keepassxc-cli 命令执行失败';
 	}
 }
 
 /** Path arguments (database, key file) must be absolute and free of NUL / control chars. */
 function safePath(value: string, label: string): string {
 	const p = typeof value === 'string' ? value.trim() : '';
-	if (!p) throw new KeePassCliError(`KeePassXC ${label} is empty`);
+	if (!p) throw new KeePassCliError(`KeePassXC ${label} 不能为空`);
 	if (!isAbsolute(p) || p.includes('\0') || /[\n\r\t]/.test(p) || p.startsWith('-')) {
-		throw new KeePassCliError(`KeePassXC ${label} is invalid`);
+		throw new KeePassCliError(`KeePassXC ${label} 无效`);
 	}
 	return p;
 }
@@ -112,7 +112,7 @@ function dbArgs(config: KeePassConfig): { path: string; keyFile?: string; hasPas
 	const hasPassword = typeof config.password === 'string' && config.password.length > 0;
 	const keyFile = config.keyFilePath ? safePath(config.keyFilePath, 'key file path') : undefined;
 	if (!hasPassword && !keyFile) {
-		throw new KeePassCliError('KeePassXC needs a password or a key file');
+		throw new KeePassCliError('KeePassXC 需要提供密码或密钥文件');
 	}
 	const flags: string[] = ['-q'];
 	if (keyFile) flags.push('-k', keyFile);
@@ -159,7 +159,7 @@ async function executeKeepass(args: string[], password: string | undefined, stdo
 			};
 
 			const timeout = setTimeout(
-				() => terminate(new KeePassCliError('KeePassXC keepassxc-cli command timed out', true)),
+				() => terminate(new KeePassCliError('KeePassXC keepassxc-cli 命令超时', true)),
 				COMMAND_TIMEOUT_MS
 			);
 
@@ -180,7 +180,7 @@ async function executeKeepass(args: string[], password: string | undefined, stdo
 				const data = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
 				stdoutBytes += data.length;
 				if (stdoutBytes > stdoutLimit) {
-					terminate(new KeePassCliError('KeePassXC keepassxc-cli command exceeded the stdout limit', true));
+					terminate(new KeePassCliError('KeePassXC keepassxc-cli 命令输出超出 stdout 上限', true));
 					return;
 				}
 				stdoutChunks.push(Buffer.from(data));
@@ -191,7 +191,7 @@ async function executeKeepass(args: string[], password: string | undefined, stdo
 				if (failure) return;
 				stderrBytes += Buffer.byteLength(chunk);
 				if (stderrBytes > STDERR_OUTPUT_LIMIT) {
-					terminate(new KeePassCliError('KeePassXC keepassxc-cli command exceeded the stderr limit', true));
+					terminate(new KeePassCliError('KeePassXC keepassxc-cli 命令输出超出 stderr 上限', true));
 				}
 			});
 
@@ -228,15 +228,15 @@ async function executeKeepass(args: string[], password: string | undefined, stdo
 function parseReference(value: string): ParsedRef {
 	const ref = value.trim();
 	if (!ref.startsWith(KEEPASS_PREFIX)) {
-		throw new KeePassCliError('KeePassXC reference must start with keepass://');
+		throw new KeePassCliError('KeePassXC 引用必须以 keepass:// 开头');
 	}
 	const rest = ref.slice(KEEPASS_PREFIX.length);
 	if (rest.includes('\0') || /[\n\r\t]/.test(rest)) {
-		throw new KeePassCliError('KeePassXC reference contains invalid characters');
+		throw new KeePassCliError('KeePassXC 引用包含非法字符');
 	}
 	const segments = rest.split('/');
 	if (segments.length < 2 || segments.some((s) => s.length === 0)) {
-		throw new KeePassCliError('KeePassXC reference must be keepass://GROUP/ENTRY/FIELD (a field is required)');
+		throw new KeePassCliError('KeePassXC 引用格式必须为 keepass://GROUP/ENTRY/FIELD (必须指定字段)');
 	}
 	const field = segments.pop() as string;
 	const entry = segments.join('/');
@@ -244,13 +244,13 @@ function parseReference(value: string): ParsedRef {
 	// operator-controlled entry/field beginning with "-" would inject a flag. Reject it
 	// (a real KeePass title/attribute never starts with "-" in practice).
 	if (entry.startsWith('-') || field.startsWith('-')) {
-		throw new KeePassCliError('KeePassXC reference entry and field must not start with "-"');
+		throw new KeePassCliError('KeePassXC 引用的条目和字段不能以 "-" 开头');
 	}
 	return { entry, field };
 }
 
 function sanitizedError(error: unknown): string {
-	return error instanceof KeePassCliError ? error.message : 'KeePassXC keepassxc-cli operation failed';
+	return error instanceof KeePassCliError ? error.message : 'KeePassXC keepassxc-cli 操作失败';
 }
 
 export const keepassProvider: SecretProvider<KeePassConfig> = {
@@ -300,10 +300,10 @@ export const keepassProvider: SecretProvider<KeePassConfig> = {
 					SHOW_OUTPUT_LIMIT
 				);
 				const value = output.toString('utf8').replace(/\r?\n$/, '');
-				if (value.includes('\0')) throw new KeePassCliError('field value is not valid text');
+				if (value.includes('\0')) throw new KeePassCliError('字段值不是有效文本');
 				resolved.set(raw, value);
 			} catch (error: unknown) {
-				console.warn(`${logPrefix}KeePassXC reference did not resolve: ${sanitizedError(error)}`);
+				console.warn(`${logPrefix}KeePassXC 引用解析失败: ${sanitizedError(error)}`);
 			} finally {
 				output?.fill(0);
 			}
@@ -316,7 +316,7 @@ export const keepassProvider: SecretProvider<KeePassConfig> = {
 			const { path, flags } = dbArgs(config);
 			const group = typeof selector === 'string' ? selector.trim() : '';
 			if (group.includes('\0') || /[\n\r\t]/.test(group) || group.startsWith('-')) {
-				throw new KeePassCliError('KeePassXC group selector is invalid');
+				throw new KeePassCliError('KeePassXC 分组选择器无效');
 			}
 			// `ls -R -f` prints every entry as a full path (groups end with "/", entries do not).
 			// An empty selector lists from the root group. `-f` gives flat, full paths.
@@ -348,7 +348,7 @@ export const keepassProvider: SecretProvider<KeePassConfig> = {
 				// keepassxc-cli reads a leading "-" as a flag; skip a path whose first
 				// segment starts with "-" so it can never inject one into `show`.
 				if (entryPath.startsWith('-')) {
-					console.warn(`KeePassXC bulk skipped entry "${entryPath}" (path starts with "-")`);
+					console.warn(`KeePassXC 批量加载已跳过条目 "${entryPath}" (路径以 "-" 开头)`);
 					continue;
 				}
 				// Key the env var by the entry's leaf title; skip titles that are not valid
@@ -356,14 +356,14 @@ export const keepassProvider: SecretProvider<KeePassConfig> = {
 				// dash/space (e.g. "test-test") isn't silently dropped - a common surprise.
 				const title = entryPath.split('/').pop() ?? '';
 				if (!ENV_NAME_RE.test(title) || DANGEROUS_KEYS.has(title)) {
-					console.warn(`KeePassXC bulk skipped entry "${entryPath}": title "${title}" is not a valid environment variable name`);
+					console.warn(`KeePassXC 批量加载已跳过条目 "${entryPath}": 标题 "${title}" 不是合法的环境变量名称`);
 					continue;
 				}
 				// The same title in different subgroups is common in KeePass and can't map to
 				// two env vars. Keep the FIRST resolved one and skip later duplicates with a
 				// warning, rather than failing the whole deploy.
 				if (seen.has(title)) {
-					console.warn(`KeePassXC bulk skipped a duplicate entry title "${title}" (${entryPath}); the first match is used`);
+					console.warn(`KeePassXC 批量加载跳过重复条目标题 "${title}" (${entryPath})；将使用首个匹配项`);
 					continue;
 				}
 				let showOut: Buffer | undefined;
@@ -381,7 +381,7 @@ export const keepassProvider: SecretProvider<KeePassConfig> = {
 					// One unreadable entry (e.g. a title the flat ls path can't re-address) is
 					// skipped, not fatal - mirrors resolveSecretReferences. The db-open failure
 					// already surfaced on the ls above, so this is genuinely per-entry.
-					console.warn(`KeePassXC bulk entry did not resolve: ${sanitizedError(error)}`);
+					console.warn(`KeePassXC 批量条目解析失败: ${sanitizedError(error)}`);
 				} finally {
 					showOut?.fill(0);
 				}

@@ -45,17 +45,17 @@
 		<div class="space-y-1.5">
 			<p class="font-medium text-sm flex items-center gap-1.5">
 				<Tag class="w-4 h-4 text-amber-500 shrink-0" />
-				Newer version available
+				发现可用新版本
 			</p>
 			<p class="text-xs">
-				<span class="text-muted-foreground">Move to</span>
+				<span class="text-muted-foreground">升级至</span>
 				<code class="mx-0.5 rounded bg-muted px-1 py-0.5 font-mono">{newerVersion.tag}</code>
 				<span class="font-semibold uppercase {bumpColor}">{newerVersion.bump}</span>
 			</p>
 			{#if behind > 1}
-				<p class="text-xs text-muted-foreground">{behind} versions ahead of the tag you run.</p>
+				<p class="text-xs text-muted-foreground">领先当前运行标签 {behind} 个版本。</p>
 			{/if}
-			<p class="text-xs text-muted-foreground">Click for release notes. Never auto-applied.</p>
+			<p class="text-xs text-muted-foreground">点击查看更新日志。不会自动执行更新。</p>
 		</div>
 	</Tooltip.Content>
 </Tooltip.Root>

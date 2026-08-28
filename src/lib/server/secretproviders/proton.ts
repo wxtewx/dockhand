@@ -80,7 +80,7 @@ function executablePath(): string {
 	const override = process.env.DOCKHAND_PASS_CLI_PATH?.trim();
 	if (!override) return DEFAULT_PASS_CLI_PATH;
 	if (!isAbsolute(override)) {
-		throw new PassCliError('Proton Pass pass-cli executable path must be absolute');
+		throw new PassCliError('Proton Pass pass-cli 可执行文件路径必须为绝对路径');
 	}
 	return override;
 }
@@ -107,10 +107,10 @@ function childEnvironment(sessionDir: string, accessToken?: string): NodeJS.Proc
 
 function spawnFailure(error: unknown): PassCliError {
 	const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : '';
-	if (code === 'ENOENT') return new PassCliError('Proton Pass pass-cli executable was not found');
+	if (code === 'ENOENT') return new PassCliError('未找到 Proton Pass pass-cli 可执行程序');
 	if (code === 'EACCES')
-		return new PassCliError('Proton Pass pass-cli executable is not executable');
-	return new PassCliError('Proton Pass pass-cli executable could not be started');
+		return new PassCliError('Proton Pass pass-cli 可执行程序没有执行权限');
+	return new PassCliError('无法启动 Proton Pass pass-cli 可执行程序');
 }
 
 /** Execute one pass-cli process without a shell while bounding lifetime and output. */
@@ -154,7 +154,7 @@ async function executePassCli(
 			};
 
 			const timeout = setTimeout(
-				() => terminate(new PassCliError('Proton Pass pass-cli command timed out')),
+				() => terminate(new PassCliError('Proton Pass pass-cli 命令执行超时')),
 				limits.timeoutMs
 			);
 
@@ -163,7 +163,7 @@ async function executePassCli(
 				const data = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
 				stdoutBytes += data.length;
 				if (stdoutBytes > limits.stdoutBytes) {
-					terminate(new PassCliError('Proton Pass pass-cli command exceeded the stdout limit'));
+					terminate(new PassCliError('Proton Pass pass-cli 命令超出标准输出大小限制'));
 					return;
 				}
 				stdoutChunks.push(Buffer.from(data));
@@ -174,7 +174,7 @@ async function executePassCli(
 				if (failure) return;
 				stderrBytes += Buffer.byteLength(chunk);
 				if (stderrBytes > limits.stderrBytes) {
-					terminate(new PassCliError('Proton Pass pass-cli command exceeded the stderr limit'));
+					terminate(new PassCliError('Proton Pass pass-cli 命令超出标准输出大小限制'));
 				}
 			});
 
@@ -196,7 +196,7 @@ async function executePassCli(
 					return;
 				}
 				if (code !== 0) {
-					reject(new PassCliError('Proton Pass pass-cli command failed'));
+					reject(new PassCliError('Proton Pass pass-cli 命令执行失败'));
 					return;
 				}
 				resolve(Buffer.concat(stdoutChunks, stdoutBytes));
@@ -222,7 +222,7 @@ async function withSession<T>(
 		await chmod(sessionDir, 0o700);
 	} catch {
 		if (sessionDir) await rm(sessionDir, { recursive: true, force: true }).catch(() => undefined);
-		throw new PassCliError('Proton Pass pass-cli session state could not be created');
+		throw new PassCliError('无法创建 Proton Pass pass-cli 会话状态目录');
 	}
 
 	try {
@@ -251,18 +251,18 @@ async function withSession<T>(
 
 function accessToken(config: ProtonConfig): string {
 	const token = typeof config?.token === 'string' ? config.token.trim() : '';
-	if (!token) throw new PassCliError('Proton Pass access token is empty');
+	if (!token) throw new PassCliError('Proton Pass 访问令牌为空');
 	if (token.includes('\0') || /\s/.test(token)) {
-		throw new PassCliError('Proton Pass access token is malformed');
+		throw new PassCliError('Proton Pass 访问令牌格式非法');
 	}
 	return token;
 }
 
 function vaultName(selector: string): string {
 	const name = typeof selector === 'string' ? selector.trim() : '';
-	if (!name) throw new PassCliError('Proton Pass vault selector is empty');
+	if (!name) throw new PassCliError('Proton Pass 密码库选择器为空');
 	if (name.includes('\0') || name.startsWith('-')) {
-		throw new PassCliError('Proton Pass vault selector is invalid');
+		throw new PassCliError('Proton Pass 密码库选择器无效');
 	}
 	return name;
 }
@@ -270,20 +270,20 @@ function vaultName(selector: string): string {
 function passReference(value: string): string {
 	const ref = value.trim();
 	if (!PASS_REF_RE.test(ref)) {
-		throw new PassCliError('Proton Pass reference must be pass://VAULT/ITEM/FIELD (id or name)');
+		throw new PassCliError('Proton Pass 引用格式必须为 pass://VAULT/ITEM/FIELD (id 或名称)');
 	}
 	return ref;
 }
 
 function sanitizedError(error: unknown): string {
-	return error instanceof PassCliError ? error.message : 'Proton Pass pass-cli operation failed';
+	return error instanceof PassCliError ? error.message : 'Proton Pass pass-cli 操作失败';
 }
 
 function parseJson(output: Buffer): unknown {
 	try {
 		return JSON.parse(output.toString('utf8'));
 	} catch {
-		throw new PassCliError('Proton Pass pass-cli returned invalid JSON');
+		throw new PassCliError('Proton Pass pass-cli 返回无效 JSON 数据');
 	}
 }
 
@@ -334,14 +334,14 @@ function primarySecret(item: Record<string, unknown>): string | null {
 function bulkRecord(payload: unknown): Record<string, string> {
 	const wrapper = asObject(payload);
 	const items = wrapper && Array.isArray(wrapper.items) ? wrapper.items : null;
-	if (!items) throw new PassCliError('Proton Pass pass-cli returned an invalid item list');
+	if (!items) throw new PassCliError('Proton Pass pass-cli 返回无效的条目列表');
 
 	const result = Object.create(null) as Record<string, string>;
 	const seen = new Set<string>();
 
 	for (const entry of items) {
 		const item = asObject(entry);
-		if (!item) throw new PassCliError('Proton Pass pass-cli returned an invalid item');
+		if (!item) throw new PassCliError('Proton Pass pass-cli 返回无效条目');
 		const data = asObject(item.content);
 		const title = data && typeof data.title === 'string' ? data.title.trim() : '';
 		if (!ENV_NAME_RE.test(title) || DANGEROUS_KEYS.has(title)) {
@@ -352,7 +352,7 @@ function bulkRecord(payload: unknown): Record<string, string> {
 		const value = primarySecret(item);
 		if (value === null) continue; // no injectable secret on this item
 		if (seen.has(title)) {
-			throw new PassCliError('Proton Pass vault has duplicate item titles');
+			throw new PassCliError('Proton Pass 密码库内存在重复的条目名称');
 		}
 		seen.add(title);
 		result[title] = value;
@@ -414,12 +414,12 @@ export const protonProvider: SecretProvider<ProtonConfig> = {
 						stderrBytes: STDERR_OUTPUT_LIMIT
 					});
 					const value = output.toString('utf8').replace(/\r?\n$/, '');
-					if (value.includes('\0')) throw new PassCliError('field value is not valid text');
+					if (value.includes('\0')) throw new PassCliError('字段值不是合法文本');
 					resolved.set(raw, value);
 				} catch (error: unknown) {
 					// A single lookup failure is logged and skipped; the caller keeps
 					// the literal. Transport-level failures still propagate below.
-					console.warn(`${logPrefix}Proton Pass reference did not resolve: ${sanitizedError(error)}`);
+					console.warn(`${logPrefix}Proton Pass 引用解析失败: ${sanitizedError(error)}`);
 				} finally {
 					output?.fill(0);
 				}

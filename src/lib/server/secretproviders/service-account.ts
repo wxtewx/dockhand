@@ -55,14 +55,14 @@ export const serviceAccountProvider: SecretProvider<ServiceAccountConfig> = {
 	async testConnection({ token }: ServiceAccountConfig): Promise<TestConnectionResult> {
 		const trimmed = token?.trim();
 		if (!trimmed) {
-			return { ok: false, error: 'Token is empty' };
+			return { ok: false, error: '令牌为空' };
 		}
 		try {
 			await makeClient(trimmed);
 			return { ok: true };
 		} catch (e: unknown) {
 			const message = e instanceof Error ? e.message : String(e);
-			return { ok: false, error: message || 'Authentication failed' };
+			return { ok: false, error: message || '身份验证失败' };
 		}
 	},
 
@@ -92,8 +92,8 @@ export const serviceAccountProvider: SecretProvider<ServiceAccountConfig> = {
 		if (skipped.length > 0) {
 			const total = Object.keys(response.individualResponses).length;
 			console.warn(
-				`${logPrefix} Skipped ${skipped.length} of ${total} op:// reference(s) - ` +
-					`malformed or not found (need op://<vault>/<item>/<field>): ${skipped.join(', ')}`
+				`${logPrefix} 已跳过 ${skipped.length}/${total} 个 op:// 引用 - ` +
+					`格式错误或未找到 (格式要求 op://<vault>/<item>/<field>): ${skipped.join(', ')}`
 			);
 		}
 		return result;

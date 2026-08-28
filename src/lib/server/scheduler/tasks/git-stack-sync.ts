@@ -38,12 +38,12 @@ export async function runGitStackSync(
 	});
 
 	const log = (message: string) => {
-		console.log(`[Git-sync] ${message}`);
+		console.log(`[Git 同步] ${message}`);
 		appendScheduleExecutionLog(execution.id, `[${new Date().toISOString()}] ${message}`);
 	};
 
 	try {
-		log(`Starting sync for stack: ${stackName}`);
+		log(`开始同步堆栈：${stackName}`);
 
 		// Deploy the git stack (only if there are changes). deployGitStack now emits the
 		// git_sync_success/failed/skipped notification itself, so EVERY caller (webhook,
@@ -52,9 +52,9 @@ export async function runGitStackSync(
 
 		if (result.success) {
 			if (result.skipped) {
-				log(`No changes detected for stack: ${stackName}, skipping redeploy`);
+				log(`未检测到堆栈变更：${stackName}，跳过重新部署`);
 			} else {
-				log(`Successfully deployed stack: ${stackName}`);
+				log(`堆栈部署成功: ${stackName}`);
 			}
 			if (result.output) log(result.output);
 
@@ -65,10 +65,10 @@ export async function runGitStackSync(
 				details: { output: result.output }
 			});
 		} else {
-			throw new Error(result.error || 'Deployment failed');
+			throw new Error(result.error || '部署失败');
 		}
 	} catch (error: any) {
-		log(`Error: ${error.message}`);
+		log(`错误：${error.message}`);
 		await updateScheduleExecution(execution.id, {
 			status: 'failed',
 			completedAt: new Date().toISOString(),

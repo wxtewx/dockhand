@@ -99,7 +99,7 @@ function copyScalarAssets() {
 	const srcDir = join(ROOT_DIR, 'node_modules', '@scalar', 'api-reference', 'dist', 'browser');
 	const destDir = join(ROOT_DIR, 'static', 'scalar');
 	if (!existsSync(srcDir)) {
-		console.warn('@scalar/api-reference not found in node_modules — skipping asset copy (run `npm install` first)');
+		console.warn('未在 node_modules 中找到 @scalar/api-reference — 跳过资源复制 (请先执行 `npm install`)');
 		return false;
 	}
 	mkdirSync(destDir, { recursive: true });
@@ -132,21 +132,21 @@ function runGenerate() {
 	const totalOperations = Object.values(spec.paths).reduce((sum, item: any) => sum + Object.keys(item).length, 0);
 	const annotatedHandlerCount = Object.values(annotationsByPath).reduce((sum, m) => sum + Object.keys(m).length, 0);
 
-	console.log(`\n=== OpenAPI Generator ===`);
-	console.log(`Route files walked:        ${routes.length + skipped.length}`);
-	console.log(`Routes with methods found: ${routes.length}`);
-	console.log(`Unique OpenAPI paths:      ${Object.keys(spec.paths).length}`);
-	console.log(`Total operations:          ${totalOperations}`);
-	console.log(`Tags discovered:           ${spec.tags.length}`);
-	console.log(`Public (no-auth) paths:    ${routes.filter((r) => isPublicFn(r.openapiPath)).length}`);
-	console.log(`Annotated handlers:        ${annotatedHandlerCount} of ${totalOperations} (${((annotatedHandlerCount / totalOperations) * 100).toFixed(1)}%)`);
-	console.log(`Operations with parameters (auto+annotated): ${stats.autoParamsCount} of ${totalOperations}`);
-	console.log(`Operations with >1 response (auto+annotated): ${stats.autoMultiResponseCount} of ${totalOperations}`);
-	console.log(`Operations with a requestBody (auto+annotated): ${stats.autoBodyCount} of ${totalOperations}`);
-	console.log(`Skipped files (no method): ${skipped.length}`);
-	for (const s of skipped) console.log(`  - ${relative(ROOT_DIR, s.filePath)}: ${s.reason}`);
-	console.log(`Scalar assets copied:      ${scalarAssetsCopied ? 'yes (static/scalar/)' : 'SKIPPED (see warning above)'}`);
-	console.log(`\nOutput written to: ${relative(ROOT_DIR, LIB_OUT_FILE)} (served by /api/docs) and ${relative(ROOT_DIR, STATIC_OUT_FILE)} (static asset copy)`);
+	console.log(`\n=== OpenAPI 生成器 ===`);
+	console.log(`已遍历路由文件：        ${routes.length + skipped.length}`);
+	console.log(`找到包含请求方法的路由： ${routes.length}`);
+	console.log(`唯一 OpenAPI 路径：      ${Object.keys(spec.paths).length}`);
+	console.log(`接口操作总数：          ${totalOperations}`);
+	console.log(`发现标签数量：           ${spec.tags.length}`);
+	console.log(`公开（无需认证）路径：    ${routes.filter((r) => isPublicFn(r.openapiPath)).length}`);
+	console.log(`已添加注解的处理器：        ${annotatedHandlerCount} / ${totalOperations} (${((annotatedHandlerCount / totalOperations) * 100).toFixed(1)}%)`);
+	console.log(`包含参数的接口（自动识别+注解）： ${stats.autoParamsCount} / ${totalOperations}`);
+	console.log(`包含多个响应状态码的接口（自动识别+注解）： ${stats.autoMultiResponseCount} / ${totalOperations}`);
+	console.log(`包含请求体的接口（自动识别+注解）： ${stats.autoBodyCount} / ${totalOperations}`);
+	console.log(`跳过的文件（无请求方法）： ${skipped.length}`);
+	for (const s of skipped) console.log(`  - ${relative(ROOT_DIR, s.filePath)}：${s.reason}`);
+	console.log(`Scalar 资源复制：      ${scalarAssetsCopied ? '已完成（static/scalar/）' : '已跳过（详见上方警告）'}`);
+	console.log(`\n输出文件： ${relative(ROOT_DIR, LIB_OUT_FILE)}（由 /api/docs 提供服务）以及 ${relative(ROOT_DIR, STATIC_OUT_FILE)}（静态副本）`);
 }
 
 // ---------------------------------------------------------------------------
@@ -164,12 +164,12 @@ function runCheck(): number {
 
 	// Gate 1: coverage (soft by default)
 	const coveragePct = (annotatedHandlerCount / totalOperations) * 100;
-	report.push(`[Gate 1] Coverage: ${annotatedHandlerCount}/${totalOperations} handlers annotated (${coveragePct.toFixed(1)}%)`);
+	report.push(`[校验项 1] 注解覆盖率：${annotatedHandlerCount}/${totalOperations} 处理器已添加注解 (${coveragePct.toFixed(1)}%)`);
 	if (strictCoverage && coveragePct < 100) {
-		report.push(`  HARD FAIL (--strict-coverage): coverage below 100%`);
+		report.push(`  严重失败 (--strict-coverage)：覆盖率未达到 100%`);
 		hardFailures++;
 	} else if (coveragePct < 100) {
-		report.push(`  (warning only — pass --strict-coverage to make this a hard gate)`);
+		report.push(`  (仅警告 — 使用 --strict-coverage 可改为强制校验)`);
 	}
 
 	// Gate 2: path-param consistency (annotation path: name must exist in route.pathParams)
@@ -180,13 +180,13 @@ function runCheck(): number {
 		for (const [method, ann] of Object.entries(perMethod)) {
 			for (const name of Object.keys(ann.path)) {
 				if (!route.pathParams.includes(name)) {
-					report.push(`  [Gate 2] ${relative(ROOT_DIR, route.filePath)} ${method} ${route.openapiPath}: annotation "path: ${name}" does not match any {${name}} in the route path`);
+					report.push(`  [校验项 2] ${relative(ROOT_DIR, route.filePath)} ${method} ${route.openapiPath}：注解中的路径参数 "${name}" 在路由 {${name}} 中不存在`);
 					pathParamIssues++;
 				}
 			}
 		}
 	}
-	report.splice(report.length - pathParamIssues, 0, `[Gate 2] Path-param consistency: ${pathParamIssues} issue(s)`);
+	report.splice(report.length - pathParamIssues, 0, `[校验项 2] 路径参数一致性：共 ${pathParamIssues} 处问题`);
 	if (pathParamIssues > 0) hardFailures++;
 
 	// Gates 3+4: query-param drift, status-code drift (only for annotated handlers)
@@ -207,13 +207,13 @@ function runCheck(): number {
 			const codeQuery = new Set(analysis.queryParams.map((q) => q.name));
 			for (const q of codeQuery) {
 				if (!docQuery.has(q)) {
-					driftLines.push(`  [Gate 3] ${relative(ROOT_DIR, route.filePath)} ${method} ${route.openapiPath}: query param "${q}" used in code but not documented`);
+					driftLines.push(`  [校验项 3] ${relative(ROOT_DIR, route.filePath)} ${method} ${route.openapiPath}：代码使用查询参数 "${q}"，但文档未登记`);
 					queryDrift++;
 				}
 			}
 			for (const q of docQuery) {
 				if (!codeQuery.has(q)) {
-					driftLines.push(`  [Gate 3] ${relative(ROOT_DIR, route.filePath)} ${method} ${route.openapiPath}: query param "${q}" documented but not found in code (stale?)`);
+					driftLines.push(`  [校验项 3] ${relative(ROOT_DIR, route.filePath)} ${method} ${route.openapiPath}：文档登记查询参数 "${q}"，代码未找到 (是否已废弃？)`);
 					queryDrift++;
 				}
 			}
@@ -222,28 +222,28 @@ function runCheck(): number {
 			const codeCodes = new Set(analysis.statusCodes.filter((c) => c !== '200'));
 			for (const c of codeCodes) {
 				if (!docCodes.has(c)) {
-					driftLines.push(`  [Gate 4] ${relative(ROOT_DIR, route.filePath)} ${method} ${route.openapiPath}: status ${c} used in code but not documented`);
+					driftLines.push(`  [校验项 4] ${relative(ROOT_DIR, route.filePath)} ${method} ${route.openapiPath}：代码使用状态码 ${c}，但文档未登记`);
 					statusDrift++;
 				}
 			}
 			for (const c of docCodes) {
 				if (c !== '200' && !codeCodes.has(c)) {
-					driftLines.push(`  [Gate 4] ${relative(ROOT_DIR, route.filePath)} ${method} ${route.openapiPath}: response ${c} documented but no matching status(${c})/error(${c}) found in code (stale?)`);
+					driftLines.push(`  [校验项 4] ${relative(ROOT_DIR, route.filePath)} ${method} ${route.openapiPath}：文档登记响应码 ${c}，代码无对应 status(${c})/error(${c}) (是否已废弃？)`);
 					statusDrift++;
 				}
 			}
 		}
 	}
-	report.push(`[Gate 3] Query-param drift: ${queryDrift} issue(s)`);
-	report.push(`[Gate 4] Status-code drift: ${statusDrift} issue(s)`);
+	report.push(`[校验项 3] 查询参数不一致：共 ${queryDrift} 处问题`);
+	report.push(`[校验项 4] 状态码不一致：共 ${statusDrift} 处问题`);
 	report.push(...driftLines);
 	if (queryDrift > 0) hardFailures++;
 	if (statusDrift > 0) hardFailures++;
 
 	// Gate 5: orphan JSDoc (a @openapi marker that didn't attach to an export)
-	report.push(`[Gate 5] Orphan @openapi blocks: ${orphanMarkers.length} file(s)`);
+	report.push(`[校验项 5] 孤立的 @openapi 注释块：共 ${orphanMarkers.length} 个文件`);
 	for (const o of orphanMarkers) {
-		report.push(`  ${relative(ROOT_DIR, o.filePath)}: ${o.rawCount} @openapi marker(s) found, only ${o.matchedCount} attached to an export`);
+		report.push(`  ${relative(ROOT_DIR, o.filePath)}：找到 ${o.rawCount} 个 @openapi 标记，仅 ${o.matchedCount} 绑定到导出函数`);
 	}
 	if (orphanMarkers.length > 0) hardFailures++;
 
@@ -255,7 +255,7 @@ function runCheck(): number {
 	writeSpecOutputs(spec);
 	const redoclyBin = join(ROOT_DIR, 'node_modules', '.bin', 'redocly');
 	if (!existsSync(redoclyBin)) {
-		report.push(`[Gate 6] Spec validity: SKIPPED (@redocly/cli not installed - run npm i)`);
+		report.push(`[校验项 6] 规范有效性：已跳过 (未安装 @redocly/cli — 执行 npm i)`);
 	} else {
 		try {
 			execFileSync(redoclyBin, ['lint', STATIC_OUT_FILE, '--format=summary'], {
@@ -264,23 +264,23 @@ function runCheck(): number {
 				timeout: 120_000, // belt-and-suspenders: never hang the gate
 				env: { ...process.env, REDOCLY_TELEMETRY: 'off', REDOCLY_SUPPRESS_UPDATE_NOTICE: '1' }
 			});
-			report.push(`[Gate 6] Spec validity (@redocly/cli lint): OK`);
+			report.push(`[校验项 6] 规范有效性 (@redocly/cli 校验): 通过`);
 		} catch (err: any) {
 			// A spawn/timeout failure (ENOENT/ETIMEDOUT) is infra -> skip; a non-zero exit
 			// from a lint that actually ran is a real spec problem -> hard fail.
 			if (err.code === 'ETIMEDOUT' || err.code === 'ENOENT') {
-				report.push(`[Gate 6] Spec validity: SKIPPED (validator did not run: ${err.code})`);
+				report.push(`[校验项 6] 规范有效性: 已跳过 (校验器无法执行: ${err.code})`);
 			} else {
 				const out = (err.stdout?.toString() ?? '') + (err.stderr?.toString() ?? '');
-				report.push(`[Gate 6] @redocly/cli lint FAILED:\n${out.slice(-1000)}`);
+				report.push(`[校验项 6] @redocly/cli 校验失败:\n${out.slice(-1000)}`);
 				hardFailures++;
 			}
 		}
 	}
 
-	console.log(`\n=== OpenAPI --check Report ===`);
+	console.log(`\n=== OpenAPI --check 校验报告 ===`);
 	for (const line of report) console.log(line);
-	console.log(`\nHard failures: ${hardFailures}`);
+	console.log(`\n严重失败项数量: ${hardFailures}`);
 	return hardFailures > 0 ? 1 : 0;
 }
 
@@ -292,13 +292,13 @@ function runScaffold() {
 	const idx = args.indexOf('--scaffold');
 	const target = args[idx + 1];
 	if (!target) {
-		console.error('Usage: generate-openapi.ts --scaffold <path/to/+server.ts>');
+		console.error('用法: generate-openapi.ts --scaffold <path/to/+server.ts>');
 		process.exitCode = 1;
 		return;
 	}
 	const filePath = target.startsWith('/') ? target : join(ROOT_DIR, target);
 	if (!existsSync(filePath)) {
-		console.error(`File not found: ${filePath}`);
+		console.error(`找不到文件: ${filePath}`);
 		process.exitCode = 1;
 		return;
 	}
@@ -309,28 +309,28 @@ function runScaffold() {
 	const { routes } = discoverRoutes([ROUTES_ROOT], ROUTES_ROOT);
 	const route = routes.find((r) => r.filePath === filePath);
 
-	console.log(`# Scaffold draft for ${relative(ROOT_DIR, filePath)}`);
-	console.log(`# (code-grounded from static analysis — review and refine before committing)\n`);
+	console.log(`# 为 ${relative(ROOT_DIR, filePath)} 生成注解草稿`);
+	console.log(`# (基于代码静态分析生成 — 提交前请审阅并完善)\n`);
 
 	for (const [method, body] of Object.entries(bodies)) {
 		if (existing[method as HttpMethod]) {
-			console.log(`## ${method}: already has an @openapi annotation, skipped\n`);
+			console.log(`## ${method}: 已存在 @openapi 注解，已跳过\n`);
 			continue;
 		}
 		const analysis = analyzeHandlerBody(body, route?.pathParams ?? []);
-		console.log(`## ${method} ${route?.openapiPath ?? '(path unknown)'}\n`);
+		console.log(`## ${method} ${route?.openapiPath ?? '(路径未知)'}\n`);
 		console.log('/**');
 		console.log(' * @openapi');
-		console.log(' * summary: TODO — one-line description');
+		console.log(' * summary: 待填写 — 单行接口描述');
 		for (const q of analysis.queryParams) {
-			console.log(` * query: ${q.name}:${q.type} TODO — description (verify required/type)`);
+			console.log(` * query: ${q.name}:${q.type} 待填写 — 参数描述 (确认是否必填、类型)`);
 		}
 		if (analysis.bodyFields.length > 0) {
-			console.log(` * body: {${analysis.bodyFields.map((f) => `${f}:string`).join(', ')}} # TODO: verify types + required (!) markers`);
+			console.log(` * body: {${analysis.bodyFields.map((f) => `${f}:string`).join(', ')}} # 待填写：确认类型 + 必填标记 (!)`);
 		}
 		const codes = analysis.statusCodes.length > 0 ? analysis.statusCodes : ['200'];
 		for (const c of codes) {
-			console.log(` * resp-${c}: TODO — description${c === '200' ? ' (or a {field:type} schema)' : ''}`);
+			console.log(` * resp-${c}: 待填写 — 响应描述${c === '200' ? ' (或填写 {字段:类型} 结构)' : ''}`);
 		}
 		console.log(' */');
 		console.log(`export const ${method}: RequestHandler = ...\n`);

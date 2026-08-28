@@ -12,7 +12,7 @@ import { getSelfhstManifest } from '$lib/server/selfhst-icons';
 export const GET: RequestHandler = async () => {
 	const manifest = await getSelfhstManifest();
 	if (!manifest) {
-		return json({ error: 'Icon manifest unavailable' }, { status: 503 });
+		return json({ error: '图标清单不可用' }, { status: 503 });
 	}
 	return new Response(manifest, {
 		headers: {

@@ -373,7 +373,7 @@
 	// One-char badge for the active I/O sub-metric next to a sortCycle column's label.
 	// Char + colour mirror the cell glyphs (Disk r=green/w=yellow, Net d=blue/u=orange).
 	const IO_METRIC_LABELS: Record<string, string> = {
-		diskRead: 'r', diskWrite: 'w', netRx: 'd', netTx: 'u'
+		diskRead: '读', diskWrite: '写', netRx: '收', netTx: '发'
 	};
 	const IO_METRIC_COLORS: Record<string, string> = {
 		diskRead: 'text-green-400', diskWrite: 'text-yellow-400',
@@ -712,7 +712,7 @@
 					<th class="text-right py-2 px-2 font-medium actions-col" style="width: {getDisplayWidth(colId)}px">
 						{#if colId === 'actions'}
 							<div class="flex items-center justify-end gap-1">
-								<span>Actions</span>
+								<span>操作</span>
 								<ColumnSettingsPopover {gridId} />
 							</div>
 						{/if}
@@ -765,7 +765,7 @@
 							type="button"
 							onclick={toggleSelectAll}
 							class="flex items-center justify-center transition-colors opacity-40 hover:opacity-100 cursor-pointer"
-							title={allSelected ? 'Deselect all' : 'Select all'}
+							title={allSelected ? '取消全选' : '全选'}
 						>
 							{#if allSelected}
 								<CheckSquare class="w-3.5 h-3.5 text-muted-foreground" />
@@ -850,7 +850,7 @@
 				<th class="text-right py-2 px-2 font-medium actions-col" style="width: {getDisplayWidth(colId)}px">
 					{#if colId === 'actions'}
 						<div class="flex items-center justify-end gap-1">
-							<span>Actions</span>
+							<span>操作</span>
 							<ColumnSettingsPopover {gridId} />
 						</div>
 					{:else if headerCell}
@@ -916,7 +916,7 @@
 							toggleExpand(item[keyField]);
 						}}
 						class="flex items-center justify-center transition-colors cursor-pointer opacity-50 hover:opacity-100"
-						title={rowState.isExpanded ? 'Collapse' : 'Expand'}
+						title={rowState.isExpanded ? '收起' : '展开'}
 					>
 						{#if rowState.isExpanded}
 							<ChevronDown class="w-4 h-4 text-muted-foreground" />

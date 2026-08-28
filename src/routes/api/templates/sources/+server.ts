@@ -16,7 +16,7 @@ import { getTemplateSources, updateTemplateSource, addTemplateSource, deleteTemp
 export const GET: RequestHandler = async ({ cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('templates', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const sources = await getTemplateSources();
@@ -39,18 +39,18 @@ export const GET: RequestHandler = async ({ cookies }) => {
 export const PUT: RequestHandler = async ({ request, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('templates', 'manage')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const { id, enabled, name, url } = await request.json();
-	if (!id) return json({ error: 'Missing id' }, { status: 400 });
+	if (!id) return json({ error: '缺少 ID 参数' }, { status: 400 });
 
 	const updates: any = {};
 	if (enabled !== undefined) updates.enabled = enabled;
 	if (name !== undefined) updates.name = name;
 	if (url !== undefined) {
 		const safety = isSafeWebhookUrl(url);
-		if (!safety.ok) return json({ error: `Invalid source URL: ${safety.reason}` }, { status: 400 });
+		if (!safety.ok) return json({ error: `无效的源地址 URL: ${safety.reason}` }, { status: 400 });
 		updates.url = url;
 	}
 
@@ -74,15 +74,15 @@ export const PUT: RequestHandler = async ({ request, cookies }) => {
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('templates', 'manage')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const { name, url } = await request.json();
 	if (!name?.trim() || !url?.trim()) {
-		return json({ error: 'Name and URL are required' }, { status: 400 });
+		return json({ error: '名称与 URL 均为必填项' }, { status: 400 });
 	}
 	const safety = isSafeWebhookUrl(url.trim());
-	if (!safety.ok) return json({ error: `Invalid source URL: ${safety.reason}` }, { status: 400 });
+	if (!safety.ok) return json({ error: `无效的源地址 URL: ${safety.reason}` }, { status: 400 });
 
 	const source = await addTemplateSource({ name: name.trim(), url: url.trim() });
 	return json(source);
@@ -103,11 +103,11 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 export const DELETE: RequestHandler = async ({ url, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('templates', 'manage')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const id = url.searchParams.get('id');
-	if (!id) return json({ error: 'Missing id' }, { status: 400 });
+	if (!id) return json({ error: '缺少 ID 参数' }, { status: 400 });
 
 	await deleteTemplateSource(parseInt(id));
 	return json({ ok: true });

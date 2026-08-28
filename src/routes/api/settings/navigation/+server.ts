@@ -45,13 +45,13 @@ export const PUT: RequestHandler = async ({ request, url, cookies }) => {
 	try {
 		patch = parseNavPatch(await request.json());
 	} catch (e) {
-		return json({ error: e instanceof Error ? e.message : 'Invalid request' }, { status: 400 });
+		return json({ error: e instanceof Error ? e.message : '请求数据无效' }, { status: 400 });
 	}
 
 	if (scope === 'user') {
-		if (!(await isAuthEnabled())) return json({ error: 'Authentication is not enabled' }, { status: 400 });
+		if (!(await isAuthEnabled())) return json({ error: '未启用身份验证功能' }, { status: 400 });
 		const user = await validateSession(cookies);
-		if (!user) return json({ error: 'Not authenticated' }, { status: 401 });
+		if (!user) return json({ error: '未完成登录认证' }, { status: 401 });
 		await setUserNavPreferences(user.id, patch);
 		return json({ success: true, user: await getUserNavPreferences(user.id) });
 	}
@@ -59,7 +59,7 @@ export const PUT: RequestHandler = async ({ request, url, cookies }) => {
 	// global scope — needs settings-edit permission (mirrors /api/settings/general POST)
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !(await auth.can('settings', 'edit'))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 	await setGlobalNavPreferences(patch);
 	return json({ success: true, global: await getGlobalNavPreferences() });

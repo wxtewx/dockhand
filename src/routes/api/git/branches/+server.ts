@@ -43,7 +43,7 @@ import { assertSafeRepoTarget } from '$lib/server/git-branch-lookup';
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('git', 'edit')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -60,7 +60,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		if (repositoryId) {
 			const repo = await getGitRepository(repositoryId);
 			if (!repo) {
-				return json({ error: 'Repository not found' }, { status: 404 });
+				return json({ error: '仓库不存在' }, { status: 404 });
 			}
 			repoUrl = repo.url;
 			credId = repo.credentialId ?? undefined;
@@ -68,7 +68,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			repoUrl = url;
 			credId = credentialId ?? undefined;
 		} else {
-			return json({ error: 'repositoryId or url is required' }, { status: 400 });
+			return json({ error: '必须传入 repositoryId 或 url' }, { status: 400 });
 		}
 
 		// Guard 1 (SSRF): the shared SSRF policy rejects loopback /
@@ -79,18 +79,18 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		try {
 			assertSafeRepoTarget(repoUrl);
 		} catch (e: any) {
-			return json({ error: e.message || 'Invalid repository URL' }, { status: 400 });
+			return json({ error: e.message || '仓库地址无效' }, { status: 400 });
 		}
 
 		const result = await listRemoteBranches({ url: repoUrl, credentialId: credId });
 
 		if (result.error) {
-			return json({ error: 'Failed to fetch branches: ' + result.error }, { status: 500 });
+			return json({ error: '获取分支失败: ' + result.error }, { status: 500 });
 		}
 
 		return json({ branches: result.branches });
 	} catch (error: any) {
-		console.error('Failed to fetch branches:', error);
-		return json({ error: 'Failed to fetch branches' }, { status: 500 });
+		console.error('获取分支失败:', error);
+		return json({ error: '获取分支失败' }, { status: 500 });
 	}
 };
