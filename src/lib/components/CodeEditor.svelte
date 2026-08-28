@@ -855,7 +855,27 @@
 			})
 			: autocompletion({ activateOnTyping: false });
 
+		const baseDict = {
+  			"Find": "查找",
+  			"Next": "下一个",
+  			"Previous": "上一个",
+  			"All": "全部",
+  			"Match case": "区分大小写",
+  			"Regex": "正则表达式",
+  			"Whole word": "全词匹配",
+  			"Replace": "替换",
+  			"Replace all": "全部替换",
+			"regexp": "正则表达式",
+  			"by word": "全词匹配"
+		};
+
+		const cmZhPhrases = EditorState.phrases.of({
+  			...baseDict,
+  			...Object.fromEntries(Object.entries(baseDict).map(([k, v]) => [k.toLowerCase(), v]))
+		});
+
 		const extensions = [
+			cmZhPhrases,
 			lineNumbers(),
 			highlightActiveLineGutter(),
 			highlightActiveLine(),
