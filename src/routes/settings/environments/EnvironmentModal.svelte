@@ -1967,7 +1967,7 @@
 								<div class="flex items-center gap-1.5">
 									<Label for="edit-env-remote-stacks-dir">
 										远程堆栈路径 (用于备份)
-										<span class="text-muted-foreground font-normal">(optional)</span>
+										<span class="text-muted-foreground font-normal">(可选)</span>
 									</Label>
 									<Tooltip.Root>
 										<Tooltip.Trigger type="button" class="text-muted-foreground hover:text-foreground">
