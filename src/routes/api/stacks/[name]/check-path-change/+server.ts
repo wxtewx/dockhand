@@ -26,7 +26,7 @@ export const POST: RequestHandler = async ({ params, request, url, cookies }) =>
 	const envId = url.searchParams.get('env');
 	const envIdNum = envId ? parseInt(envId) : undefined;
 	if (auth.authEnabled && !(await auth.can('stacks', 'edit', envIdNum))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 	const envAccessDenied = await auth.requireEnvAccess(envIdNum ?? null);
 	if (envAccessDenied) return envAccessDenied;
@@ -86,7 +86,7 @@ export const POST: RequestHandler = async ({ params, request, url, cookies }) =>
 			currentComposePath
 		});
 	} catch (error: any) {
-		console.error(`Error checking path change for stack ${name}:`, error);
-		return json({ error: error.message || 'Failed to check path changes' }, { status: 500 });
+		console.error(`检查堆栈 ${name} 路径变更时出错：`, error);
+		return json({ error: error.message || '检查路径变更失败' }, { status: 500 });
 	}
 };

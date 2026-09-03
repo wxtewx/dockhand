@@ -10,18 +10,18 @@
  * "SSH credentials" then is actively misleading. Point at the real cause instead.
  */
 export function permissionDeniedMessage(
-	authType?: string | null,
-	url?: string | null
+    authType?: string | null,
+    url?: string | null
 ): string {
-	const isSshUrl = !!url && url.startsWith('git@');
-	if (authType === 'password') {
-		if (isSshUrl) {
-			return 'Permission denied. This credential uses a token, but the repository URL is an SSH URL (git@...). Use an https:// URL for token authentication.';
-		}
-		return 'Permission denied. Check your access token and that it has repository access.';
-	}
-	if (authType === 'ssh') {
-		return 'Permission denied. Check your SSH key and that it is authorized for this repository.';
-	}
-	return 'Permission denied. Check your credentials.';
+    const isSshUrl = !!url && url.startsWith('git@');
+    if (authType === 'password') {
+        if (isSshUrl) {
+            return '权限被拒绝。当前凭据使用访问令牌，但仓库地址为 SSH 地址 (git@...)。令牌认证请改用 https:// 地址。';
+        }
+        return '权限被拒绝。请检查访问令牌，确认该令牌拥有仓库访问权限。';
+    }
+    if (authType === 'ssh') {
+        return '权限被拒绝。请检查你的 SSH 密钥，确认该密钥已授权访问此仓库。';
+    }
+    return '权限被拒绝。请检查你的凭据。';
 }

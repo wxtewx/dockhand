@@ -47,7 +47,7 @@ export async function watchJob(
 	while (true) {
 		const res = await fetch(`/api/jobs/${jobId}`);
 		if (!res.ok) {
-			throw new Error(`Job poll failed: HTTP ${res.status}`);
+			throw new Error(`任务轮询失败： HTTP ${res.status}`);
 		}
 
 		const job = await res.json() as {

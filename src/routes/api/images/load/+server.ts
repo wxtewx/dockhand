@@ -40,14 +40,14 @@ export const POST: RequestHandler = async (event) => {
 	// registry (no scan-on-pull, arbitrary user-supplied image), so it has its own
 	// permission rather than reusing images:pull.
 	if (auth.authEnabled && !(await auth.can('images', 'load', envId))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限拒绝' }, { status: 403 });
 	}
 	if (envId && auth.isEnterprise && !(await auth.canAccessEnvironment(envId))) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问该环境' }, { status: 403 });
 	}
 
 	if (!request.body) {
-		return json({ error: 'Request body (an image tar) is required' }, { status: 400 });
+		return json({ error: '需要请求主体 (镜像 tar 包)' }, { status: 400 });
 	}
 	const tar = request.body as ReadableStream<Uint8Array>;
 

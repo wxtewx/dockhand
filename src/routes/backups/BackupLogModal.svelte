@@ -42,11 +42,11 @@
 				<TitleIcon class="w-5 h-5 shrink-0" />
 				{title}
 				{#if status === 'running'}
-					<Badge variant="secondary" class="text-xs gap-1"><Loader2 class="w-3 h-3 animate-spin" />Running</Badge>
+					<Badge variant="secondary" class="text-xs gap-1"><Loader2 class="w-3 h-3 animate-spin" />运行中</Badge>
 				{:else if status === 'success'}
-					<Badge variant="secondary" class="text-xs gap-1 text-green-500"><CheckCircle class="w-3 h-3" />Completed</Badge>
+					<Badge variant="secondary" class="text-xs gap-1 text-green-500"><CheckCircle class="w-3 h-3" />已完成</Badge>
 				{:else}
-					<Badge variant="destructive" class="text-xs gap-1"><XCircle class="w-3 h-3" />Failed</Badge>
+					<Badge variant="destructive" class="text-xs gap-1"><XCircle class="w-3 h-3" />失败</Badge>
 				{/if}
 			</Dialog.Title>
 		</Dialog.Header>
@@ -63,7 +63,7 @@
 			<LogConsole lines={logs} class="flex-1 min-h-0" />
 			{#if status === 'running' && logs.length === 0}
 				<div class="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-					<Loader2 class="h-3 w-3 animate-spin" /><span>Waiting for output…</span>
+					<Loader2 class="h-3 w-3 animate-spin" /><span>等待输出信息…</span>
 				</div>
 			{/if}
 			{#if error}<div class="mt-1 text-xs text-red-400">{error}</div>{/if}
@@ -73,7 +73,7 @@
 					type="button"
 					class="absolute top-8 right-3 rounded border bg-background/80 p-1.5 text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
 					onclick={copyLogs}
-					title="Copy log content"
+					title="复制日志内容"
 				>
 					{#if copied}<Check class="w-3.5 h-3.5 text-green-500" />{:else}<Copy class="w-3.5 h-3.5" />{/if}
 				</button>
@@ -84,11 +84,11 @@
 			{#if status === 'running' && onStop}
 				<Button variant="destructive" onclick={onStop}>
 					<Square class="w-3.5 h-3.5 mr-1" />
-					Stop
+					停止
 				</Button>
 			{/if}
 			<Button variant="outline" onclick={() => (open = false)}>
-				{status === 'running' ? 'Run in background' : 'Close'}
+				{status === 'running' ? '后台运行' : '关闭'}
 			</Button>
 		</Dialog.Footer>
 	</Dialog.Content>

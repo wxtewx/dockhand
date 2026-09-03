@@ -76,8 +76,8 @@ export function tlsCertPreamble(): string {
  */
 export function localRepoGuard(repository: string): string {
 	if (!isLocalRepo(repository)) return '';
-	const msg = `restic repository not found at $RESTIC_REPOSITORY on this environment's Docker host. The repo directory is empty or missing there. Two common causes: (1) the destination Path is the host path instead of the path Dockhand sees inside its container - enter the container-side path of your backup volume mount, then re-init; (2) the environment's Docker daemon is on a different host than Dockhand - a local path can't reach it, so use an S3 or REST destination instead.`;
-	return `test -f "$RESTIC_REPOSITORY/config" || { echo ${shellQuote(msg)} >&2; exit 1; }; `;
+	const msg = `在此环境的 Docker 主机上，$RESTIC_REPOSITORY 位置未找到 restic 仓库。该仓库目录为空或不存在。两种常见原因：(1)目标路径填写的是主机路径，而非 Dockhand 在容器内识别的路径 — 请填写备份卷挂载的容器侧路径，之后重新初始化；(2)该环境的 Docker 守护进程运行在与 Dockhand 不同的主机上 — 本地路径无法访问，请改用 S3 或 REST 类型的目标存储。`;
+    return `test -f "$RESTIC_REPOSITORY/config" || { echo ${shellQuote(msg)} >&2; exit 1; }; `;
 }
 
 /**
@@ -128,7 +128,7 @@ export function classifyProcClose(
 	stderr: string
 ): { exitCode: number | undefined; stderr: string } {
 	const exitCode = code === null ? undefined : code;
-	const stderrOut = signal ? `${stderr}\n(process killed by ${signal})` : stderr;
+	const stderrOut = signal ? `${stderr}\n(进程被 ${signal} 信号终止)` : stderr;
 	return { exitCode, stderr: stderrOut };
 }
 

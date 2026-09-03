@@ -54,16 +54,16 @@ export async function sendVulnerabilityNotifications(
 	// Note: Users can subscribe to specific severity levels, so we send all applicable
 	if (summary.critical > 0) {
 		await sendEventNotification('vulnerability_critical', {
-			title: 'Critical vulnerabilities found',
-			message: `Image "${imageName}" has ${summary.critical} critical vulnerabilities (${totalVulns} total)`,
+			title: '发现严重漏洞',
+			message: `镜像 "${imageName}" 存在 ${summary.critical} 个严重漏洞 (总计 ${totalVulns} 个)`,
 			type: 'error'
 		}, envId);
 	}
 
 	if (summary.high > 0) {
 		await sendEventNotification('vulnerability_high', {
-			title: 'High severity vulnerabilities found',
-			message: `Image "${imageName}" has ${summary.high} high severity vulnerabilities (${totalVulns} total)`,
+			title: '发现高危漏洞',
+			message: `镜像 "${imageName}" 存在 ${summary.high} 个高危漏洞 (总计 ${totalVulns} 个)`,
 			type: 'warning'
 		}, envId);
 	}
@@ -72,8 +72,8 @@ export async function sendVulnerabilityNotifications(
 	// This prevents notification spam for users who only want to know about lesser severities
 	if (summary.critical === 0 && summary.high === 0 && totalVulns > 0) {
 		await sendEventNotification('vulnerability_any', {
-			title: 'Vulnerabilities found',
-			message: `Image "${imageName}" has ${totalVulns} vulnerabilities (medium: ${summary.medium}, low: ${summary.low})`,
+			title: '发现漏洞',
+			message: `镜像 "${imageName}" 存在 ${totalVulns} 个漏洞 (中危：${summary.medium}，低危：${summary.low})`,
 			type: 'info'
 		}, envId);
 	}
@@ -96,8 +96,8 @@ const scannerLocks = new Map<string, Promise<void>>(); // key: "grype" or "trivy
 async function withScannerLock<T>(scannerType: string, fn: () => Promise<T>): Promise<T> {
 	const existing = scannerLocks.get(scannerType);
 	if (existing) {
-		console.log(`[Scanner] Waiting for previous ${scannerType} scan to complete...`);
-		await existing.catch(() => {}); // Don't fail if previous scan errored
+		console.log(`[扫描器] 等待上一次 ${scannerType} 扫描完成...`);
+		await existing.catch(() => { }); // Don't fail if previous scan errored
 	}
 
 	let resolve: () => void;
@@ -347,7 +347,7 @@ async function ensureScannerImage(
 
 	onProgress?.({
 		stage: 'pulling-scanner',
-		message: `Pulling scanner image ${scannerImage}...`
+		message: `正在拉取扫描器镜像 ${scannerImage}...`
 	});
 
 	try {
@@ -355,7 +355,7 @@ async function ensureScannerImage(
 		return true;
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		console.error(`[Scanner] Failed to pull image ${scannerImage}:`, errorMsg);
+		console.error(`[扫描器] 拉取镜像 ${scannerImage} 失败：`, errorMsg);
 		return false;
 	}
 }
@@ -366,7 +366,7 @@ export function extractJson(output: string): string {
 	const firstBrace = output.indexOf('{');
 	const lastBrace = output.lastIndexOf('}');
 	if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) {
-		throw new Error('No JSON object found in scanner output');
+		throw new Error('在扫描器输出中未找到 JSON 对象');
 	}
 	return output.slice(firstBrace, lastBrace + 1);
 }
@@ -437,7 +437,7 @@ export function sanitizeJsonString(json: string): string {
 	}
 
 	if (sanitized > 0) {
-		console.warn(`[Scanner] Sanitized ${sanitized} control/escape characters in JSON output`);
+		console.warn(`[扫描器] 已清理 JSON 输出中的 ${sanitized} 个控制/转义字符`);
 	}
 
 	return result;
@@ -486,16 +486,16 @@ function parseGrypeOutput(output: string): { vulnerabilities: Vulnerability[]; s
 		}
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		console.error('[Grype] Failed to parse output:', errorMsg);
-		console.error('[Grype] Output length:', output.length);
-		console.error('[Grype] First 200 chars:', output.slice(0, 200));
-		console.error('[Grype] Last 200 chars:', output.slice(-200));
+		console.error('[Grype] 解析输出失败：', errorMsg);
+		console.error('[Grype] 输出长度：', output.length);
+		console.error('[Grype] 前 200 字符：', output.slice(0, 200));
+		console.error('[Grype] 后 200 字符：', output.slice(-200));
 		// Check if output looks like an error message from grype
 		const firstLine = output.split('\n')[0].trim();
 		if (firstLine && !firstLine.startsWith('{')) {
-			throw new Error(`Scanner output error: ${firstLine}`);
+			throw new Error(`扫描器输出错误：${firstLine}`);
 		}
-		throw new Error('Failed to parse scanner output - ensure CLI args include "-o json"');
+		throw new Error('解析扫描器输出失败 - 请确保 CLI 参数包含 "-o json"');
 	}
 
 	return { vulnerabilities, summary };
@@ -544,22 +544,22 @@ function parseTrivyOutput(output: string): { vulnerabilities: Vulnerability[]; s
 		}
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		console.error('[Trivy] Failed to parse output:', errorMsg);
-		console.error('[Trivy] Output length:', output.length);
-		console.error('[Trivy] First 32 bytes (hex):', Buffer.from(output.slice(0, 32)).toString('hex'));
+		console.error('[Trivy] 解析输出失败:', errorMsg);
+		console.error('[Trivy] 输出长度:', output.length);
+		console.error('[Trivy] 前 32 字节 (十六进制):', Buffer.from(output.slice(0, 32)).toString('hex'));
 		// Never dump the whole report: a large truncated report is ~13 MB and this ran
 		// on every failed scan (#1496). Log only a bounded head + tail for diagnosis.
-		console.error('[Trivy] Output (head/tail):', truncateForLog(output));
+		console.error('[Trivy] 输出 (头部/尾部):', truncateForLog(output));
 
 		const kind = classifyUnparseableOutput(output);
 		if (kind === 'truncated') {
 			// The head of the JSON was lost to container-log rotation the helper now disables (#1496).
-			throw new Error('Scanner output truncated (container log rotation?) - the JSON report was too large to read back in full');
+			throw new Error('扫描器输出被截断 (容器日志轮转？) — JSON 报告体积过大，无法完整读取');
 		}
 		if (kind === 'cli-error') {
-			throw new Error(`Scanner output error: ${output.trimStart().split('\n', 1)[0].trim()}`);
+			throw new Error(`扫描器输出错误: ${output.trimStart().split('\n', 1)[0].trim()}`);
 		}
-		throw new Error('Failed to parse scanner output - ensure CLI args include "--format json"');
+		throw new Error('解析扫描器输出失败 - 请确保 CLI 参数包含 "--format json"');
 	}
 
 	return { vulnerabilities, summary };
@@ -582,10 +582,10 @@ async function ensureVolume(volumeName: string, envId?: number): Promise<void> {
 	const volumes = await listVolumes(envId);
 	const exists = volumes.some(v => v.name === volumeName);
 	if (!exists) {
-		console.log(`[Scanner] Creating database volume: ${volumeName}`);
+		console.log(`[扫描器] 正在创建数据库数据卷：${volumeName}`);
 		await createVolume({ name: volumeName }, envId);
 	} else {
-		console.log(`[Scanner] Using existing database volume: ${volumeName}`);
+		console.log(`[扫描器] 使用已存在的数据库数据卷：${volumeName}`);
 	}
 }
 
@@ -614,7 +614,7 @@ async function ensureScannerCacheDir(
 	// Chown to the target UID so scanner can write
 	const uidNum = parseInt(uid, 10);
 	await chown(containerPath, uidNum, uidNum);
-	console.log(`[Scanner] Set ownership of ${containerPath} to ${uid}:${uid}`);
+	console.log(`[扫描器] 已将 ${containerPath} 所有权设置为 ${uid}:${uid}`);
 
 	// Return the HOST path for bind mounting
 	const hostDataDir = getHostDataDir();
@@ -640,7 +640,7 @@ async function runScannerContainer(
 	const scanKey = `${scannerType}:${imageName}:${envId ?? 'local'}`;
 	const existingScan = inProgressScans.get(scanKey);
 	if (existingScan) {
-		console.log(`[Scanner] Reusing in-progress ${scannerType} scan for: ${imageName}`);
+		console.log(`[扫描器] 复用正在进行的 ${scannerType} 扫描：${imageName}`);
 		return existingScan;
 	}
 
@@ -681,7 +681,7 @@ async function runScannerContainerCore(
 	envId?: number,
 	onOutput?: (line: string) => void
 ): Promise<string> {
-	console.log(`[Scanner] Starting ${scannerType} scan for image: ${imageName}, envId: ${envId ?? 'local'}`);
+	console.log(`[扫描器] 开始对镜像进行 ${scannerType} 扫描：${imageName}，环境ID：${envId ?? '本地'}`);
 
 	// Always use the base cache path — serial lock prevents concurrent conflicts
 	const basePath = scannerType === 'grype' ? '/cache/grype' : '/cache/trivy';
@@ -717,14 +717,14 @@ async function runScannerContainerCore(
 			// visible so users with split-network setups can colocate
 			// socket-proxy with Dockhand on the primary network (#1011).
 			console.warn(
-				`[Scanner] Dockhand is on multiple networks (${allNets.join(', ')}); scanner will only join "${scannerNetworkMode}". If DOCKER_HOST=${scannerDockerHost} fails to resolve, put socket-proxy on this network.`
+				`[扫描器] Dockhand 接入了多个网络 (${allNets.join(', ')}); 扫描器仅会加入 "${scannerNetworkMode}"。若 DOCKER_HOST=${scannerDockerHost} 域名解析失败，请将 socket-proxy 部署至该网络。`
 			);
 		}
 		console.log(
-			`[Scanner] TCP mode (from container inspect) - DOCKER_HOST=${scannerDockerHost}, network=${scannerNetworkMode ?? 'default'}`
+			`[扫描器] TCP 模式 (取自容器详情) - DOCKER_HOST=${scannerDockerHost}, 网络=${scannerNetworkMode ?? '默认'}`
 		);
 		if (scannerExtraHosts?.length) {
-			console.log(`[Scanner] Reusing ExtraHosts from Dockhand: ${scannerExtraHosts.join(', ')}`);
+			console.log(`[扫描器] 复用 Dockhand 的 ExtraHosts: ${scannerExtraHosts.join(', ')}`);
 		}
 	} else if (isHawser) {
 		// Hawser: scanner runs on remote host. Detect the actual socket path
@@ -732,23 +732,19 @@ async function runScannerContainerCore(
 		// /var/run/docker.sock (#1076). Falls back to the standard path on
 		// detection failure — no regression for stock Docker hosts.
 		hostSocketPath = await detectRemoteSocketPath(envId);
-		console.log(`[Scanner] Remote scan via Hawser (${connectionType}) - detected socket path: ${hostSocketPath}`);
+		console.log(`[扫描器] 通过 Hawser 远程扫描 (${connectionType}) - 检测到 socket 路径: ${hostSocketPath}`);
 	} else {
 		// Local socket — handles rootless Docker and direct-TCP envs
 		// (the latter via the same socket bind; see #1195, #1076).
 		hostSocketPath = getHostDockerSocket();
-		console.log(`[Scanner] Local socket scan (${connectionType || 'default'}) - detected host Docker socket: ${hostSocketPath}`);
+		console.log(`[扫描器] 本地 socket 扫描 (${connectionType || '默认'}) - 检测到主机 Docker socket：${hostSocketPath}`);
 
 		// For user-specific Docker sockets (rootless Docker), detect UID for cache ownership
 		const uid = extractUidFromSocketPath(hostSocketPath);
 		if (uid) {
 			rootlessUid = uid;
-			console.log(`[Scanner] Rootless Docker detected (UID ${rootlessUid})`);
-			console.log(`[Scanner] Scanner will run as root inside container (maps to UID ${rootlessUid} on host via user namespace)`);
-		}
-
-		if (scannerExtraHosts?.length) {
-			console.log(`[Scanner] Reusing ExtraHosts from Dockhand: ${scannerExtraHosts.join(', ')}`);
+			console.log(`[扫描器] 检测到无 root Docker (UID ${rootlessUid})`);
+			console.log(`[扫描器] 扫描器将在容器内以 root 运行 (通过用户命名空间映射到主机 UID ${rootlessUid})`);
 		}
 	}
 
@@ -762,12 +758,12 @@ async function runScannerContainerCore(
 		// Rootless Docker: use bind mount from data directory with correct ownership
 		const hostCachePath = await ensureScannerCacheDir(scannerType, rootlessUid);
 		cacheBind = `${hostCachePath}:${basePath}`;
-		console.log(`[Scanner] Rootless mode - using bind mount: ${cacheBind}`);
+		console.log(`[扫描器] 无 root 模式 - 使用绑定挂载：${cacheBind}`);
 	} else {
 		// Standard Docker: use named volume (root-owned is fine when running as root)
 		await ensureVolume(volumeName, envId);
 		cacheBind = `${volumeName}:${basePath}`;
-		console.log(`[Scanner] Standard mode - using volume: ${volumeName}`);
+		console.log(`[扫描器] 标准模式 - 使用数据卷：${volumeName}`);
 	}
 
 	// Build binds — only include socket mount when using socket mode
@@ -777,7 +773,7 @@ async function runScannerContainerCore(
 	}
 	binds.push(cacheBind);
 
-	console.log(`[Scanner] Container bind mounts: ${JSON.stringify(binds)}`);
+	console.log(`[扫描器] 容器绑定挂载：${JSON.stringify(binds)}`);
 
 	// Environment variables to ensure scanners use the correct cache path
 	const envVars = scannerType === 'grype'
@@ -790,7 +786,7 @@ async function runScannerContainerCore(
 	const apiVersion = await getNegotiatedApiVersion(envId);
 	if (apiVersion) {
 		envVars.push(`DOCKER_API_VERSION=${apiVersion}`);
-		console.log(`[Scanner] Using negotiated Docker API version: ${apiVersion}`);
+		console.log(`[扫描器] 使用协商后的 Docker API 版本：${apiVersion}`);
 	}
 
 	// Propagate proxy env vars so scanners can reach the internet in proxied environments
@@ -820,12 +816,12 @@ async function runScannerContainerCore(
 	);
 	if (userScannerSettings.networkMode || userScannerSettings.dns.length > 0) {
 		console.log(
-			`[Scanner] User overrides applied — network=${overrides.networkMode ?? 'default'}, dns=${overrides.dns?.join(',') ?? 'default'}`
+			`[扫描器] 已应用用户自定义配置 — 网络模式=${overrides.networkMode ?? '默认'}, dns=${overrides.dns?.join(',') ?? '默认'}`
 		);
 	}
 
-	console.log(`[Scanner] Running ${scannerType} with cache mounted at ${basePath}`);
-	console.log(`[Scanner] Container command: ${cmd.join(' ')}`);
+	console.log(`[扫描器] 正在运行 ${scannerType}，缓存挂载路径 ${basePath}`);
+	console.log(`[扫描器] 容器执行命令: ${cmd.join(' ')}`);
 	// Run the scanner container with a 10-minute timeout to prevent indefinite hangs
 	const output = await runContainerWithStreaming({
 		image: scannerImage,
@@ -849,9 +845,9 @@ async function runScannerContainerCore(
 		}
 	});
 
-	console.log(`[Scanner] ${scannerType} container completed, output length: ${output.length}`);
+	console.log(`[扫描器] ${scannerType} 容器执行完成，输出长度：${output.length}`);
 	if (output.length < 100) {
-		console.log(`[Scanner] ${scannerType} output preview: ${output}`);
+		console.log(`[扫描器] ${scannerType} 输出预览：${output}`);
 	}
 
 	return output;
@@ -868,19 +864,19 @@ export async function scanWithGrype(
 
 	onProgress?.({
 		stage: 'checking',
-		message: 'Checking Grype scanner availability...',
+		message: '正在检查 Grype 扫描器可用性...',
 		scanner: 'grype'
 	});
 
 	// Ensure scanner image is available
 	const available = await ensureScannerImage(scannerImage, envId, onProgress);
 	if (!available) {
-		throw new Error('Failed to get Grype scanner image. Please ensure Docker can pull images.');
+		throw new Error('获取 Grype 扫描器镜像失败。请确保 Docker 可以拉取镜像。');
 	}
 
 	onProgress?.({
 		stage: 'scanning',
-		message: `Scanning ${imageName} with Grype...`,
+		message: `正在使用 Grype 扫描 ${imageName}...`,
 		scanner: 'grype',
 		progress: 30
 	});
@@ -897,7 +893,7 @@ export async function scanWithGrype(
 			(line) => {
 				onProgress?.({
 					stage: 'scanning',
-					message: `Scanning ${imageName} with Grype...`,
+					message: `正在使用 Grype 扫描 ${imageName}...`,
 					scanner: 'grype',
 					progress: 50,
 					output: line
@@ -906,14 +902,14 @@ export async function scanWithGrype(
 		);
 
 		// Defensive logging for empty output
-		console.log(`[Grype] Scanner container output received, length: ${output.length}`);
+		console.log(`[Grype] 已接收扫描器容器输出，长度：${output.length}`);
 		if (output.length === 0) {
-			console.error('[Grype] WARNING: Empty output from scanner container - possible race condition');
+			console.error('[Grype] 警告：扫描器容器输出为空 - 可能存在竞争条件');
 		}
 
 		onProgress?.({
 			stage: 'parsing',
-			message: 'Parsing scan results...',
+			message: '正在解析扫描结果...',
 			scanner: 'grype',
 			progress: 80
 		});
@@ -935,7 +931,7 @@ export async function scanWithGrype(
 
 		onProgress?.({
 			stage: 'complete',
-			message: `Grype scan complete: ${summary.critical} critical, ${summary.high} high, ${summary.medium} medium, ${summary.low} low`,
+			message: `Grype 扫描完成：严重 ${summary.critical}，高危 ${summary.high}，中危 ${summary.medium}，低危 ${summary.low}`,
 			scanner: 'grype',
 			progress: 100,
 			result
@@ -946,7 +942,7 @@ export async function scanWithGrype(
 		const errorMsg = error instanceof Error ? error.message : String(error);
 		onProgress?.({
 			stage: 'error',
-			message: `Grype scan failed: ${errorMsg}`,
+			message: `Grype 扫描失败：${errorMsg}`,
 			scanner: 'grype',
 			error: errorMsg
 		});
@@ -965,19 +961,19 @@ export async function scanWithTrivy(
 
 	onProgress?.({
 		stage: 'checking',
-		message: 'Checking Trivy scanner availability...',
+		message: '正在检查 Trivy 扫描器可用性...',
 		scanner: 'trivy'
 	});
 
 	// Ensure scanner image is available
 	const available = await ensureScannerImage(scannerImage, envId, onProgress);
 	if (!available) {
-		throw new Error('Failed to get Trivy scanner image. Please ensure Docker can pull images.');
+		throw new Error('获取 Trivy 扫描器镜像失败。请确保 Docker 可以拉取镜像。');
 	}
 
 	onProgress?.({
 		stage: 'scanning',
-		message: `Scanning ${imageName} with Trivy...`,
+		message: `正在使用 Trivy 扫描 ${imageName}...`,
 		scanner: 'trivy',
 		progress: 30
 	});
@@ -994,7 +990,7 @@ export async function scanWithTrivy(
 			(line) => {
 				onProgress?.({
 					stage: 'scanning',
-					message: `Scanning ${imageName} with Trivy...`,
+					message: `正在使用 Trivy 扫描 ${imageName}...`,
 					scanner: 'trivy',
 					progress: 50,
 					output: line
@@ -1003,14 +999,14 @@ export async function scanWithTrivy(
 		);
 
 		// Defensive logging for empty output
-		console.log(`[Trivy] Scanner container output received, length: ${output.length}`);
+		console.log(`[Trivy] 已接收扫描器容器输出，长度：${output.length}`);
 		if (output.length === 0) {
-			console.error('[Trivy] WARNING: Empty output from scanner container - possible race condition');
+			console.error('[Trivy] 警告：扫描器容器输出为空 - 可能存在竞争条件');
 		}
 
 		onProgress?.({
 			stage: 'parsing',
-			message: 'Parsing scan results...',
+			message: '正在解析扫描结果...',
 			scanner: 'trivy',
 			progress: 80
 		});
@@ -1032,7 +1028,7 @@ export async function scanWithTrivy(
 
 		onProgress?.({
 			stage: 'complete',
-			message: `Trivy scan complete: ${summary.critical} critical, ${summary.high} high, ${summary.medium} medium, ${summary.low} low`,
+			message: `Trivy 扫描完成：严重 ${summary.critical}，高危 ${summary.high}，中危 ${summary.medium}，低危 ${summary.low}`,
 			scanner: 'trivy',
 			progress: 100,
 			result
@@ -1043,7 +1039,7 @@ export async function scanWithTrivy(
 		const errorMsg = error instanceof Error ? error.message : String(error);
 		onProgress?.({
 			stage: 'error',
-			message: `Trivy scan failed: ${errorMsg}`,
+			message: `rivy 扫描失败：${errorMsg}`,
 			scanner: 'trivy',
 			error: errorMsg
 		});
@@ -1075,7 +1071,7 @@ export async function scanImage(
 			results.push(result);
 		} catch (error) {
 			const errorMsg = error instanceof Error ? error.message : String(error);
-			console.error('[Grype] Scan failed:', errorMsg);
+			console.error('[Grype] 扫描失败：', errorMsg);
 			errors.push(error instanceof Error ? error : new Error(String(error)));
 			if (scannerType === 'grype') throw error;
 		}
@@ -1087,7 +1083,7 @@ export async function scanImage(
 			results.push(result);
 		} catch (error) {
 			const errorMsg = error instanceof Error ? error.message : String(error);
-			console.error('[Trivy] Scan failed:', errorMsg);
+			console.error('[Trivy] 扫描失败：', errorMsg);
 			errors.push(error instanceof Error ? error : new Error(String(error)));
 			if (scannerType === 'trivy') throw error;
 		}
@@ -1095,7 +1091,7 @@ export async function scanImage(
 
 	// If using 'both' and all scanners failed, throw an error
 	if (scannerType === 'both' && results.length === 0 && errors.length > 0) {
-		throw new Error(`All scanners failed: ${errors.map(e => e.message).join('; ')}`);
+		throw new Error(`所有扫描器均失败：${errors.map(e => e.message).join('; ')}`);
 	}
 
 	// Send vulnerability notifications based on combined results
@@ -1113,7 +1109,7 @@ export async function scanImage(
 		// Send notifications (async, don't block return)
 		sendVulnerabilityNotifications(imageName, combinedSummary, envId).catch(err => {
 			const errorMsg = err instanceof Error ? err.message : String(err);
-			console.error('[Scanner] Failed to send vulnerability notifications:', errorMsg);
+			console.error('[扫描器] 发送漏洞通知失败：', errorMsg);
 		});
 	}
 
@@ -1162,7 +1158,7 @@ async function getScannerVersion(
 			{},
 			{ networkMode: defaults.networkMode, dns: defaults.dns }
 		);
-		console.log(`[Scanner] Getting ${scannerType} version with cmd:`, versionCmd);
+		console.log(`[扫描器] 使用命令获取 ${scannerType} 版本:`, versionCmd);
 		const { stdout, stderr } = await runContainer({
 			image: scannerImage,
 			cmd: versionCmd,
@@ -1172,7 +1168,7 @@ async function getScannerVersion(
 			dns: overrides.dns
 		});
 
-		console.log(`[Scanner] ${scannerType} version check result: stdout="${stdout.substring(0, 100)}", stderr="${stderr.substring(0, 100)}"`);
+		console.log(`[扫描器] ${scannerType} 版本检查结果：stdout="${stdout.substring(0, 100)}", stderr="${stderr.substring(0, 100)}"`);
 		const output = stdout || stderr;
 
 		// Parse version from output
@@ -1182,13 +1178,13 @@ async function getScannerVersion(
 		const version = versionMatch ? versionMatch[1] : null;
 
 		if (!version) {
-			console.error(`Could not parse ${scannerType} version from output:`, output.substring(0, 200));
+			console.error(`无法从输出解析 ${scannerType} 版本：`, output.substring(0, 200));
 		}
 
 		return version;
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		console.error(`[Scanner] Failed to get ${scannerType} version:`, errorMsg);
+		console.error(`[扫描器] 获取 ${scannerType} 版本失败：`, errorMsg);
 		return null;
 	}
 }
@@ -1239,12 +1235,12 @@ export async function checkScannerUpdates(envId?: number): Promise<{
 				}
 			} catch (error) {
 				const errorMsg = error instanceof Error ? error.message : String(error);
-				console.error(`[Scanner] Failed to check updates for ${scanner}:`, errorMsg);
+				console.error(`[扫描器] 检查 ${scanner} 更新失败：`, errorMsg);
 			}
 		}
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		console.error('[Scanner] Failed to check scanner updates:', errorMsg);
+		console.error('[扫描器] 检查扫描器更新失败：', errorMsg);
 	}
 
 	return result;
@@ -1257,14 +1253,14 @@ export async function cleanupScannerVolumes(envId?: number): Promise<void> {
 		for (const volumeName of [GRYPE_VOLUME_NAME, TRIVY_VOLUME_NAME]) {
 			try {
 				await removeVolume(volumeName, true, envId);
-				console.log(`[Scanner] Removed volume: ${volumeName}`);
+				console.log(`[扫描器] 已删除数据卷：${volumeName}`);
 			} catch {
 				// Volume might not exist, ignore
 			}
 		}
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		console.error('[Scanner] Failed to cleanup scanner volumes:', errorMsg);
+		console.error('[扫描器] 清理扫描器数据卷失败：', errorMsg);
 	}
 }
 
@@ -1282,8 +1278,8 @@ export async function cleanupScannerCache(envId?: number): Promise<{ volumes: st
 		try {
 			await removeVolume(volumeName, true, envId);
 			removedVolumes.push(volumeName);
-			const envSuffix = envId ? ` (env ${envId})` : '';
-			console.log(`[Scanner] Removed volume: ${volumeName}${envSuffix}`);
+			const envSuffix = envId ? ` (环境 ${envId})` : '';
+			console.log(`[扫描器] 已移除数据卷：${volumeName}${envSuffix}`);
 		} catch {
 			// Volume might not exist, ignore
 		}
@@ -1296,7 +1292,7 @@ export async function cleanupScannerCache(envId?: number): Promise<{ volumes: st
 			try {
 				await rm(cachePath, { recursive: true, force: true });
 				removedDirs.push(cachePath);
-				console.log(`[Scanner] Removed cache directory: ${cachePath}`);
+				console.log(`[扫描器] 已移除缓存目录：${cachePath}`);
 			} catch {
 				// Directory might not exist, ignore
 			}
@@ -1304,7 +1300,7 @@ export async function cleanupScannerCache(envId?: number): Promise<{ volumes: st
 	}
 
 	if (removedVolumes.length > 0 || removedDirs.length > 0) {
-		console.log(`[Scanner] Cache cleanup complete: ${removedVolumes.length} volumes, ${removedDirs.length} directories removed`);
+		console.log(`[扫描器] 缓存清理完成：已移除 ${removedVolumes.length} 个数据卷，${removedDirs.length} 个目录`);
 	}
 
 	return { volumes: removedVolumes, dirs: removedDirs };

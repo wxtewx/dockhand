@@ -67,7 +67,7 @@
 		<Card.Content class="px-3 pb-2 pt-0" onclick={(e: MouseEvent) => { if ((e.target as HTMLElement).closest('a')) e.stopPropagation(); }}>
 			<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 			<p class="text-xs text-muted-foreground line-clamp-2">
-				{@html renderDescription(template.description) || 'No description available'}
+				{@html renderDescription(template.description) || '暂无描述信息'}
 			</p>
 		</Card.Content>
 		<!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -90,7 +90,7 @@
 						target="_blank"
 						rel="noopener"
 						class="flex items-center gap-0.5 hover:text-primary hover:underline"
-						title={`Open project page: ${template.projectUrl}`}
+						title={`打开项目页面: ${template.projectUrl}`}
 						onclick={(e: MouseEvent) => {
 							e.stopPropagation();
 							e.preventDefault();
@@ -98,7 +98,7 @@
 						}}
 					>
 						<ExternalLink class="w-3 h-3" />
-						Project
+						项目
 					</a>
 				{/if}
 				{#if template.detailsUrl}
@@ -107,7 +107,7 @@
 						target="_blank"
 						rel="noopener"
 						class="flex items-center gap-0.5 hover:text-primary hover:underline"
-						title="Open the detailed guide on portainer-templates.as93.net"
+						title="在 portainer-templates.as93.net 打开详细指南"
 						onclick={(e: MouseEvent) => {
 							e.stopPropagation();
 							e.preventDefault();
@@ -115,7 +115,7 @@
 						}}
 					>
 						<BookOpen class="w-3 h-3" />
-						Details
+						详情
 					</a>
 				{/if}
 				{#if template.stars}

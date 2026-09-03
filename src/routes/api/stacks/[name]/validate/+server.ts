@@ -50,7 +50,7 @@ export const POST: RequestHandler = async ({ cookies, url, params, request }) =>
 	const envIdNum = envId ? parseInt(envId, 10) : undefined;
 
 	if (auth.authEnabled && !(await auth.can('stacks', 'view', envIdNum))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 	const envAccessDenied = await auth.requireEnvAccess(envIdNum ?? null);
 	if (envAccessDenied) return envAccessDenied;
@@ -63,7 +63,7 @@ export const POST: RequestHandler = async ({ cookies, url, params, request }) =>
 	};
 	const compose = typeof body.compose === 'string' ? body.compose : '';
 	if (!compose.trim()) {
-		return json({ error: 'compose content is required' }, { status: 400 });
+		return json({ error: '需要提供 compose 内容' }, { status: 400 });
 	}
 
 	// The editor's current env vars (incl. secrets) so `docker compose config` resolves

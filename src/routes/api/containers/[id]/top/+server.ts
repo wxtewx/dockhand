@@ -51,7 +51,7 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 
 	// Baseline: seeing the process list needs at least inspect.
 	if (auth.authEnabled && !await auth.can('containers', 'inspect', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// The richer `ps` path runs a real exec inside the container, so only attempt it for a
@@ -89,7 +89,7 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 		const top = await getContainerTop(params.id, envIdNum);
 		return json({ ...top, source: 'top' });
 	} catch (error: any) {
-		console.error('Failed to get container processes:', error);
-		return json({ error: error.message || 'Failed to get processes' }, { status: 500 });
+		console.error('获取容器进程失败:', error);
+		return json({ error: error.message || '获取进程失败' }, { status: 500 });
 	}
 };

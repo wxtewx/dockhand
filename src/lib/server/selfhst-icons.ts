@@ -52,7 +52,7 @@ function cacheDir(): string {
 
 /** Absolute cache path for a ref's svg. Throws on an invalid ref (never builds a path from junk). */
 export function selfhstCachePath(ref: string): string {
-	if (!isValidSelfhstRef(ref)) throw new Error('Invalid selfh.st icon reference');
+	if (!isValidSelfhstRef(ref)) throw new Error('无效的 selfh.st 图标引用');
 	return join(cacheDir(), `${ref}.svg`);
 }
 

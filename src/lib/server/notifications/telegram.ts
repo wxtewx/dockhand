@@ -5,7 +5,7 @@ import { notificationFetch, drainResponse, type NotificationPayload, type Notifi
 export async function sendTelegram(appriseUrl: string, payload: NotificationPayload): Promise<NotificationResult> {
 	const parsed = parseTelegramUrl(appriseUrl);
 	if (!parsed) {
-		return { success: false, error: 'Invalid Telegram URL format. Expected: tgram://bot_token/chat_id or tgram://bot_token/chat_id:topic_id' };
+		return { success: false, error: '无效的 Telegram 地址格式，标准格式: tgram://bot_token/chat_id or tgram://bot_token/chat_id:topic_id' };
 	}
 
 	const { botToken, chatId, topicId } = parsed;
@@ -33,11 +33,11 @@ export async function sendTelegram(appriseUrl: string, payload: NotificationPayl
 		if (!response.ok) {
 			const errorData = await response.json().catch(() => ({})) as { description?: string };
 			const errorMsg = errorData.description || response.statusText;
-			return { success: false, error: `Telegram error ${response.status}: ${errorMsg}` };
+			return { success: false, error: `Telegram 请求异常 ${response.status}: ${errorMsg}` };
 		}
 		await drainResponse(response);
 		return { success: true };
 	} catch (error) {
-		return { success: false, error: `Telegram connection failed: ${error instanceof Error ? error.message : String(error)}` };
+		return { success: false, error: `Telegram 连接失败: ${error instanceof Error ? error.message : String(error)}` };
 	}
 }

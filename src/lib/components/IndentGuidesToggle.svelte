@@ -24,14 +24,14 @@
 	function onToggle(value: boolean) {
 		checked = value;
 		themeStore.setPreference('editorIndentGuides', value, userId, skipApply);
-		toast.success(value ? 'Indentation guides enabled' : 'Indentation guides disabled');
+		toast.success(value ? '已启用缩进参考线' : '已关闭缩进参考线');
 	}
 </script>
 
 <div class="space-y-1">
 	<div class="flex items-center gap-3">
-		<Label>Indentation guides</Label>
+		<Label>缩进参考线</Label>
 		<TogglePill {checked} onchange={onToggle} />
 	</div>
-	<p class="text-xs text-muted-foreground">Vertical guides showing nesting depth in the code editor.</p>
+	<p class="text-xs text-muted-foreground">在代码编辑器中显示代表嵌套层级的垂直参考线。</p>
 </div>

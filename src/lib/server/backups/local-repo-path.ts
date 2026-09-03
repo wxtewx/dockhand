@@ -83,12 +83,12 @@ export function localRepoIssueFor(
 /** Human-readable error for a rejected local repo path (surfaced at init/test). */
 export function localRepoPathError(repoPath: string, mountHints: string[]): string {
 	const hints = mountHints.length
-		? ` Use a path under one of Dockhand's bind mounts instead: ${mountHints.join(', ')}.`
-		: '';
-	return (
-		`Local path "${repoPath}" is not inside any of Dockhand's bind mounts, so the ` +
-		`repository would be written to the container's own filesystem and lost on restart, ` +
-		`and the backup helper on the host would not find it.${hints} ` +
-		`Enter the path as Dockhand sees it (the container side of your volume mount), not the host path.`
+		? ` 请使用 Dockhand 绑定挂载点下的路径: ${mountHints.join(', ')}.`
+        : '';
+    return (
+        `本地路径 "${repoPath}" 不在 Dockhand 的任何绑定挂载范围内，` +
+        `仓库将会写入容器临时文件系统，重启后数据会丢失，` +
+        `主机侧备份助手也无法读取该仓库。${hints} ` +
+        `请填写 Dockhand 容器内识别的路径 (卷挂载的容器侧路径)，不要填写主机路径。`
 	);
 }

@@ -3,7 +3,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Calendar, CalendarDays, Clock } from 'lucide-svelte';
 	import { appSettings } from '$lib/stores/settings';
-	import cronstrue from 'cronstrue';
+	import cronstrue from 'cronstrue/i18n';
 
 	// Reactive time format from settings
 	let is12Hour = $derived($appSettings.timeFormat === '12h');
@@ -167,7 +167,7 @@
 
 		// Validate first
 		if (!isValidCron(value)) {
-			return 'Invalid';
+			return '无效';
 		}
 
 		try {
@@ -176,11 +176,11 @@
 			const description = cronstrue.toString(value, {
 				use24HourTimeFormat: !is12Hour,
 				throwExceptionOnParseError: true,
-				locale: 'en' // You can add user locale preference here if needed
+				locale: 'zh_CN' // You can add user locale preference here if needed
 			});
 			return description;
 		} catch (error) {
-			return 'Invalid';
+			return '无效';
 		}
 	});
 
@@ -191,7 +191,7 @@
 		Array.from({ length: 24 }, (_, i) => ({
 			value: String(i),
 			label: is12Hour
-				? i === 0 ? '12 AM' : i < 12 ? `${i} AM` : i === 12 ? '12 PM' : `${i - 12} PM`
+				? i === 0 ? '12 上午' : i < 12 ? `${i} 上午` : i === 12 ? '12 下午' : `${i - 12} 下午`
 				: i.toString().padStart(2, '0')
 		}))
 	);
@@ -204,13 +204,13 @@
 	}));
 
 	const daysOfWeek = [
-		{ value: '1', label: 'Monday' },
-		{ value: '2', label: 'Tuesday' },
-		{ value: '3', label: 'Wednesday' },
-		{ value: '4', label: 'Thursday' },
-		{ value: '5', label: 'Friday' },
-		{ value: '6', label: 'Saturday' },
-		{ value: '0', label: 'Sunday' }
+		{ value: '1', label: '星期一' },
+		{ value: '2', label: '星期二' },
+		{ value: '3', label: '星期三' },
+		{ value: '4', label: '星期四' },
+		{ value: '5', label: '星期五' },
+		{ value: '6', label: '星期六' },
+		{ value: '0', label: '星期日' }
 	];
 </script>
 
@@ -237,13 +237,13 @@
 			<div class="flex items-center gap-2">
 				{#if scheduleType === 'daily'}
 					<Calendar class="w-4 h-4" />
-					<span>Daily</span>
+					<span>每天</span>
 				{:else if scheduleType === 'weekly'}
 					<CalendarDays class="w-4 h-4" />
-					<span>Weekly</span>
+					<span>每周</span>
 				{:else}
 					<Clock class="w-4 h-4" />
-					<span>Custom</span>
+					<span>自定义</span>
 				{/if}
 			</div>
 		</Select.Trigger>
@@ -251,19 +251,19 @@
 			<Select.Item value="daily">
 				<div class="flex items-center gap-2">
 					<Calendar class="w-4 h-4" />
-					<span>Daily</span>
+					<span>每天</span>
 				</div>
 			</Select.Item>
 			<Select.Item value="weekly">
 				<div class="flex items-center gap-2">
 					<CalendarDays class="w-4 h-4" />
-					<span>Weekly</span>
+					<span>每周</span>
 				</div>
 			</Select.Item>
 			<Select.Item value="custom">
 				<div class="flex items-center gap-2">
 					<Clock class="w-4 h-4" />
-					<span>Custom</span>
+					<span>自定义</span>
 				</div>
 			</Select.Item>
 		</Select.Content>
@@ -271,7 +271,7 @@
 
 	{#if scheduleType === 'daily' || scheduleType === 'weekly'}
 		<!-- Time Selectors -->
-		<span class="text-sm text-muted-foreground">at</span>
+		<span class="text-sm text-muted-foreground">时间</span>
 		<Select.Root type="single" value={hour} onValueChange={handleHourChange} {disabled}>
 			<Select.Trigger class="w-[85px] h-9 flex-shrink-0">
 				<span>{hours.find((h: { value: string; label: string }) => h.value === hour)?.label || hour}</span>
@@ -294,7 +294,7 @@
 		</Select.Root>
 
 		{#if scheduleType === 'weekly'}
-			<span class="text-sm text-muted-foreground">on</span>
+			<span class="text-sm text-muted-foreground">星期</span>
 			<Select.Root type="single" value={dayOfWeek} onValueChange={handleDayOfWeekChange} {disabled}>
 				<Select.Trigger class="w-[100px] h-9 flex-shrink-0">
 					<span>{daysOfWeek.find(d => d.value === dayOfWeek)?.label || dayOfWeek}</span>
@@ -310,7 +310,7 @@
 	{:else}
 		<!-- Custom cron input -->
 		{@const readable = humanReadable()}
-		{@const isInvalid = readable === 'Invalid'}
+		{@const isInvalid = readable === '无效'}
 		<Input
 			value={value}
 			oninput={handleCustomCronInput}
@@ -324,7 +324,7 @@
 <!-- Description -->
 {#if value}
 	{@const readable = humanReadable()}
-	{@const isInvalid = readable === 'Invalid'}
+	{@const isInvalid = readable === '无效'}
 	<p class="text-[10px] mt-0.5 {isInvalid ? 'text-destructive' : 'text-muted-foreground/60'}">
 		{readable}
 	</p>

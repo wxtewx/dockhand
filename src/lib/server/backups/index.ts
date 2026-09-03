@@ -104,7 +104,7 @@ async function collectStackContainerHostInfo(
 		if (containers.length > 0) break;
 		if (i < ATTEMPTS - 1) await new Promise((r) => setTimeout(r, 2500));
 	}
-	if (containers.length === 0 && ATTEMPTS > 1) console.warn(`[Backup] collectStackContainerHostInfo "${targetName}": no containers listed after ${ATTEMPTS} tries (~${(ATTEMPTS - 1) * 2.5}s) - a bind-less stack will resolve to UNKNOWN`);
+	if (containers.length === 0 && ATTEMPTS > 1) console.warn(`[备份] collectStackContainerHostInfo "${targetName}": 经过 ${ATTEMPTS} 次重试 (约${(ATTEMPTS - 1) * 2.5}秒) 仍未获取到容器列表，无绑定挂载的堆栈将判定为未知状态`);
 
 	const bindSources: string[] = [];
 	let workingDirLabel: string | null = null;
@@ -258,12 +258,12 @@ async function planStackDirVolume(
 		// rather than silently capturing a possibly-stale local copy.
 		// Report every candidate we tried so an UNKNOWN is diagnosable without SSH: which
 		// inputs were null tells us WHY (e.g. workingDir null = 0 containers listed).
-		console.log(`[Backup] stackdir plan for "${targetName}": UNKNOWN reason="${resolution.reason}" dockhandStackDir=${dockhandStackDir ?? 'none'} | connType=${envConnType} localDaemon=${localDaemon} remoteStacksDir=${remoteStacksDir ?? 'null'} containers=${stackContainers.length} bindDerived=${bindDerivedHostPath ?? 'null'} dataDir=${dataDirHostPath ?? 'null'} mount=${mountHostPath ?? 'null'} workingDirLabel=${workingDirLabel ?? 'null'}`);
+		console.log(`[备份] 堆栈目录执行方案 "${targetName}"：判定为未知状态 原因="${resolution.reason}" Dockhand堆栈目录=${dockhandStackDir ?? '无'} | 连接类型=${envConnType} 本地守护进程=${localDaemon} 远程堆栈目录=${remoteStacksDir ?? 'null'} 容器数量=${stackContainers.length} 绑定推导路径=${bindDerivedHostPath ?? 'null'} 数据目录=${dataDirHostPath ?? 'null'} 挂载路径=${mountHostPath ?? 'null'} 工作目录标签=${workingDirLabel ?? 'null'}`);
 		return { kind: 'unknown', reason: resolution.reason };
 	}
 	const hostPath = resolution.hostPath;
 	const composeFileName = resolution.composeFile;
-	console.log(`[Backup] stackdir plan for "${targetName}": host bind hostPath=${hostPath} composeFile=${composeFileName} source="${resolution.source}"`);
+	console.log(`[备份] 堆栈目录执行方案 "${targetName}"：宿主机绑定挂载 宿主机路径=${hostPath} 编排文件名=${composeFileName} 来源="${resolution.source}"`);
 
 	// Compose bind DIRECTORIES inside the stack dir are captured separately as their own
 	// /volumes/<key>, so exclude them from the whole-dir stackdir capture. We derive the dirs
@@ -277,7 +277,7 @@ async function planStackDirVolume(
 	const bindDirs = compose.content ? relativeBindDirsFromCompose(compose.content, dockhandStackDir ?? '', isDirRel) : [];
 	const excludePaths = bindDirs.map((rel) => `/volumes/${STACKDIR_VOLUME_KEY}/${rel}`);
 	if (excludePaths.length > 0) {
-		console.log(`[Backup] stackdir "${targetName}": excluding ${excludePaths.length} compose bind dir(s) from the stackdir volume (captured separately as their own volumes): [${bindDirs.join(', ')}]`);
+		console.log(`[备份] 堆栈目录 "${targetName}"：从堆栈目录数据卷中排除${excludePaths.length}个编排绑定目录 (这些目录会作为独立数据卷单独采集)：[${bindDirs.join(', ')}]`);
 	}
 
 	// User deselections from the "Stack files on the host" picker: exclude each named top-level
@@ -294,7 +294,7 @@ async function planStackDirVolume(
 			if (!excludePaths.includes(p)) { excludePaths.push(p); dropped.push(name); }
 		}
 		if (dropped.length > 0) {
-			console.log(`[Backup] stackdir "${targetName}": user deselected ${dropped.length} stack file(s) from the capture: [${dropped.join(', ')}]`);
+			console.log(`[备份] 堆栈目录 "${targetName}"：用户取消勾选${dropped.length}个堆栈文件，本次采集将忽略：[${dropped.join(', ')}]`);
 		}
 	}
 
@@ -378,7 +378,7 @@ export async function probeStackDir(
 	// path (/app/data/...) and does not exist on the host (the resolver translates it).
 	const hostPath = plan.syntheticVolume.source;
 	if (!hostPath) {
-		return { kind: 'unknown', reason: 'No stack folder could be located on the host. Set the environment\'s stack path and re-configure.' };
+		return { kind: 'unknown', reason: '无法在宿主机定位堆栈文件夹，请配置环境的堆栈路径后重新设置备份。' };
 	}
 	const bindSources = plan.bindSources;
 
@@ -411,7 +411,7 @@ export async function probeStackDir(
 		});
 		const entries = parseProbeListing(stdout);
 		if (entries.length === 0) {
-			return { kind: 'unknown', reason: `The stack folder at ${hostPath} is empty or does not exist on the Docker host. Set the environment's stack path and re-configure.` };
+			return { kind: 'unknown', reason: `Docker宿主机路径 ${hostPath} 下的堆栈文件夹为空或不存在，请配置环境堆栈路径后重新设置备份。` };
 		}
 		// Tag entries that are ALSO a bind mount so the picker shows them as non-deselectable
 		// (captured via the Volumes section, not here). Two sources: daemon bind sources (runtime,
@@ -422,7 +422,7 @@ export async function probeStackDir(
 			.filter(Boolean);
 		return { kind: 'listed', hostPath, entries: tagCapturedEntries(entries, hostPath, bindSources, bindDirNames) };
 	} catch (e) {
-		return { kind: 'unknown', reason: `Could not read the stack folder at ${hostPath} on the host: ${e instanceof Error ? e.message : String(e)}` };
+		return { kind: 'unknown', reason: `无法读取宿主机上路径 ${hostPath} 的堆栈文件夹：${e instanceof Error ? e.message : String(e)}` };
 	}
 }
 
@@ -617,9 +617,9 @@ async function collectMetadata(
 					listed.sort((a, b) => a.path.localeCompare(b.path));
 					if (stackInfo) { stackInfo.fileList = listed; stackInfo.excludedBindDirs = excludeRelDirs; }
 
-					console.log(`[Backup] stackfiles "${targetName}": captured via HOST bind mount at /volumes/${STACKDIR_VOLUME_KEY} - listed ${listed.length} file(s), ${excludeRelDirs.length} bind dir(s) excluded`);
+					console.log(`[备份] 堆栈文件 "${targetName}"：通过主机绑定挂载在 /volumes/${STACKDIR_VOLUME_KEY} 获取，已列出 ${listed.length} 个文件，排除 ${excludeRelDirs.length} 个绑定目录`);
 				} catch (e) {
-					console.warn(`[Backup] stackfiles "${targetName}": listing failed (files still captured via bind):`, e instanceof Error ? e.message : e);
+					console.warn(`[备份] 堆栈文件 "${targetName}": 文件列表扫描失败 (文件仍会通过绑定挂载进行捕获):`, e instanceof Error ? e.message : e);
 				}
 			}
 			// Carry the stack's secret env vars IN the snapshot so a restore reproduces a
@@ -714,18 +714,18 @@ async function materialiseStackFiles(destination: any, snapId: string, stackName
 	try { recordedComposeName = (await getSnapshotMetadata(destination.id, snapId))?.stack?.composeFileName ?? null; }
 	catch { /* fall back to regex if metadata is unreadable */ }
 	const tmp = mkdtempSync(join(tmpdir(), 'dh-stackfiles-'));
-	console.log(`[Backup] materialiseStackFiles: "${stackName}" snapshot=${snapId} include=${include} compose=${recordedComposeName ?? '(regex fallback)'} -> extract to ${tmp}, then swap into ${targetPath} (overwrite=${overwrite})`);
+	console.log(`[备份] 实例化堆栈文件: "${stackName}" 快照=${snapId} 是否包含=${include} Compose 文件=${recordedComposeName ?? '(正则回退)'} -> 解压至 ${tmp}，然后替换到 ${targetPath} (覆盖=${overwrite})`);
 	try {
 		const run = await restic.runLocal(destination, ['restore', snapId, '--target', tmp, '--include', include], 'data');
 		if (run.exitCode !== 0) {
-			console.log(`[Backup] materialiseStackFiles: restic restore failed for "${stackName}": ${run.stderr.trim() || `exit ${run.exitCode}`}`);
+			console.log(`[备份] 实例化堆栈文件: "${stackName}" restic 恢复失败：${run.stderr.trim() || `退出码 ${run.exitCode}`}`);
 			return false;
 		}
 		const extractedDir = join(tmp, ...extractSub.split('/'));
 		// DATA-LOSS guard: only proceed if extraction actually produced files.
 		const extracted = existsSync(extractedDir) ? readdirSync(extractedDir) : [];
 		if (extracted.length === 0) {
-			console.log(`[Backup] materialiseStackFiles: no stackfiles extracted for "${stackName}" (snapshot may predate full-dir capture) — leaving ${targetPath} untouched`);
+			console.log(`[备份] 实例化堆栈文件: 未提取到 "${stackName}" 的堆栈文件 (快照可能早于完整目录采集) ——保持 ${targetPath} 现有内容不变`);
 			return false;
 		}
 
@@ -739,7 +739,7 @@ async function materialiseStackFiles(destination: any, snapId: string, stackName
 			(root) => resolvedTarget === root || resolvedTarget.startsWith(root + sep)
 		);
 		if (!underAllowedRoot) {
-			console.log(`[Backup] materialiseStackFiles: refusing target "${resolvedTarget}" outside allowed stacks roots (${allowedRoots.join(', ')})`);
+			console.log(`[备份] materialiseStackFiles: 拒绝目标路径 "${resolvedTarget}"，该路径不在允许的堆栈根目录范围内 (${allowedRoots.join(', ')})`);
 			return false;
 		}
 
@@ -781,8 +781,8 @@ async function materialiseStackFiles(destination: any, snapId: string, stackName
 							cpSync(liveBind, join(staging, rel), { recursive: true, force: true });
 						}
 					}
-					if (bindDirs.length > 0) console.log(`[Backup] materialiseStackFiles: preserved ${bindDirs.length} bind dir(s) across the stackdir swap: [${bindDirs.join(', ')}]`);
-				} catch (e) { console.warn(`[Backup] materialiseStackFiles: bind-dir preservation skipped:`, e instanceof Error ? e.message : e); }
+					if (bindDirs.length > 0) console.log(`[备份] 实例化堆栈文件：在堆栈目录替换过程中保留了 ${bindDirs.length} 个绑定目录：[${bindDirs.join(', ')}]`);
+				} catch (e) { console.warn(`[备份] 实例化堆栈文件：已跳过绑定目录保留操作:`, e instanceof Error ? e.message : e); }
 			}
 			for (const entry of extracted) {
 				cpSync(join(extractedDir, entry), join(staging, entry), { recursive: true, force: true });
@@ -795,7 +795,7 @@ async function materialiseStackFiles(destination: any, snapId: string, stackName
 				throw swapErr;
 			}
 			rmSync(oldAside, { recursive: true, force: true });
-			console.log(`[Backup] materialiseStackFiles: wrote ${extracted.length} entries to ${resolvedTarget} (${overwrite ? 'replaced' : 'merged'})`);
+			console.log(`[备份] 实例化堆栈文件: 向 ${resolvedTarget} 写入 ${extracted.length} 项内容 (${overwrite ? '已覆盖' : '已合并'})`);
 			return true;
 		} catch (copyErr) {
 			try { rmSync(staging, { recursive: true, force: true }); } catch { /* best effort */ }
@@ -831,7 +831,7 @@ function restorePorts(destination: any, access: { isEnterprise: boolean; canAcce
 			// stack back via native compose start.
 			const { stopStack, startStack } = await import('../stacks');
 			const r = await stopStack(stackName, envId ?? undefined);
-			if (r && (r as any).success === false) throw new Error((r as any).error || `failed to stop stack ${stackName}`);
+			if (r && (r as any).success === false) throw new Error((r as any).error || `停止堆栈 ${stackName} 失败`);
 			return { restart: async () => { await startStack(stackName, envId ?? undefined).catch(() => {}); } };
 		},
 		runInHelper: (spec) => run.runInHelper(spec),
@@ -875,7 +875,7 @@ function restorePorts(destination: any, access: { isEnterprise: boolean; canAcce
 		},
 		startContainer: async (name, envId) => {
 			const { containers } = await resolveTargets('container', name, envId);
-			if (containers.length === 0) throw new Error(`container "${name}" not found`);
+			if (containers.length === 0) throw new Error(`容器 "${name}" 未找到`);
 			const { startContainer } = await import('../docker');
 			for (const c of containers) await startContainer(c.id, envId ?? undefined);
 		},
@@ -886,7 +886,7 @@ function restorePorts(destination: any, access: { isEnterprise: boolean; canAcce
 			const inspect = snapshotMetaContainer as any;
 			const image = inspect?.Config?.Image;
 			if (!inspect?.Config || !inspect?.HostConfig || typeof image !== 'string' || !image) {
-				throw new Error('stored container metadata is missing Config/HostConfig/Image; cannot recreate');
+				throw new Error('保存的容器元数据缺失 Config/HostConfig/镜像信息，无法重建 Config/HostConfig/Image 信息，无法重建');
 			}
 			const { createContainerFromMetadata } = await import('../docker');
 			await createContainerFromMetadata(
@@ -914,13 +914,13 @@ function restorePorts(destination: any, access: { isEnterprise: boolean; canAcce
 			const { upsertStackSource } = await import('../db');
 			const { runRedeployStack } = await import('./redeploy-stack-core');
 
-			const log = (msg: string) => console.log(`[Restore:redeploy ${name}] ${msg}`);
-			log(`start: env=${envId ?? 'local'} destination=${destId} snapshot=${snapId}`);
+			const log = (msg: string) => console.log(`[恢复:重新部署 ${name}] ${msg}`);
+			log(`开始执行: 环境=${envId ?? '本地'} 备份目标=${destId} 快照=${snapId}`);
 
 			const meta = await getSnapshotMetadata(destId, snapId);
 			const composeFileName = meta?.stack?.composeFileName ?? '';
 			if (!composeFileName) {
-				throw new Error('snapshot has no recorded compose filename; cannot redeploy this stack');
+				throw new Error('快照未记录 compose 文件名，无法重新部署该堆栈');
 			}
 
 			const stackDir = await getStackDir(name, envId ?? undefined);
@@ -944,7 +944,7 @@ function restorePorts(destination: any, access: { isEnterprise: boolean; canAcce
 						const { setStackEnvVars } = await import('../db');
 						const secrets = snapSecrets.map((s) => ({ key: s.key, value: s.value, isSecret: true }));
 						await setStackEnvVars(name, envId ?? null, secrets);
-						log(`restored ${secrets.length} secret(s) from snapshot → env ${envId ?? 'local'}`);
+						log(`从快照恢复了 ${secrets.length} 个密钥 → 环境 ${envId ?? 'local'}`);
 					}
 				},
 				// Materialise into the CANONICAL stack dir (stacks/<envName>/<stackName>/) so the
@@ -952,18 +952,18 @@ function restorePorts(destination: any, access: { isEnterprise: boolean; canAcce
 				// (#1329). Carries the path-traversal + data-loss + atomic-swap guards;
 				// overwrite=true because an in-place restore is destructive by design.
 				materialise: async () => {
-					log(`materialising snapshot stackfiles → canonical dir: ${stackDir} (compose: ${composeFileName})`);
+					log(`还原快照堆栈文件 → 标准目录: ${stackDir} (Compose 文件: ${composeFileName})`);
 					const wrote = await materialiseStackFiles(destination, snapId, name, stackDir, true);
 					return wrote && existsSync(composePath);
 				},
 				register: async () => {
 					const envPath = existsSync(join(stackDir, '.env')) ? join(stackDir, '.env') : null;
 					await upsertStackSource({ stackName: name, environmentId: envId ?? null, sourceType: 'internal', composePath, envPath });
-					log(`registered: composePath=${composePath} envPath=${envPath ?? '(none)'}`);
+					log(`已完成注册: composePath=${composePath} envPath=${envPath ?? '(无)'}`);
 				},
 				deploy: async () => {
 					const r = await redeployStackFromDir(name, stackDir, composeFileName, envId ?? undefined);
-					if (!r.success) throw new Error(r.error || 'docker compose up failed');
+					if (!r.success) throw new Error(r.error || '执行 docker compose up 操作失败');
 				}
 			});
 		},
@@ -990,7 +990,7 @@ function restorePorts(destination: any, access: { isEnterprise: boolean; canAcce
 						await upsertStackSource({ stackName, environmentId: envId ?? null, sourceType: 'internal', composePath: join(targetPath, composeFileName), envPath });
 					}
 				} catch (e) {
-					console.log(`[Restore] register-managed failed for "${stackName}": ${e instanceof Error ? e.message : String(e)}`);
+					console.log(`[恢复] 托管堆栈注册失败 "${stackName}": ${e instanceof Error ? e.message : String(e)}`);
 				}
 			}
 			return wrote;
@@ -1031,7 +1031,7 @@ async function listSnapshotVolumes(destination: any, snapshotId: string): Promis
 	// volumes" - returning [] there makes restore report a MISLEADING "not found in snapshot,
 	// Available: none" for a snapshot that actually holds data. Fail loud with the real reason.
 	if (run.exitCode !== 0) {
-		throw new BackupError('RESTIC', `could not list the snapshot's volumes: ${run.stderr.trim() || 'restic ls failed'}`, { exitCode: run.exitCode });
+		throw new BackupError('RESTIC', `无法列出快照内的数据卷: ${run.stderr.trim() || 'restic ls 执行失败'}`, { exitCode: run.exitCode });
 	}
 	const names = new Set<string>();
 	for (const line of run.stdout.split('\n')) {
@@ -1068,7 +1068,7 @@ export async function previewSnapshot(
 	access: { isEnterprise: boolean; canAccessEnvironment: (id: number) => Promise<boolean> } = { isEnterprise: false, canAccessEnvironment: async () => true },
 ): Promise<{ snapshotId: string; volumes: string[]; volumeTypes: Record<string, 'volume' | 'bind'>; volumeSources: Record<string, string>; backupTime: string | null; sourceEnvironmentId: number | null; hasMetadata: boolean; hasStackFiles: boolean; sourceSecretKeys: string[] }> {
 	const destination = await getBackupDestination(destinationId);
-	if (!destination) throw new Error('backup destination not found');
+	if (!destination) throw new Error('备份目标不存在');
 	const instanceId = await getInstanceId();
 	await guardSnapshotAccess(reader(), destination, instanceId, snapshotId, access);
 	const volumes = await listSnapshotVolumes(destination, snapshotId);
@@ -1143,7 +1143,7 @@ export async function previewRestoreTargets(
 ): Promise<RestoreTargetPreview> {
 	const { resolveRestoreTargets } = await import('./restore-targets');
 	const destination = await getBackupDestination(destinationId);
-	if (!destination) throw new Error('backup destination not found');
+	if (!destination) throw new Error('未找到备份目标仓库');
 	const instanceId = await getInstanceId();
 	await guardSnapshotAccess(reader(), destination, instanceId, snapshotId, access);
 
@@ -1192,7 +1192,7 @@ export async function previewRestoreTargets(
 
 async function loadDest(destinationId: number): Promise<any> {
 	const d = await getBackupDestination(destinationId);
-	if (!d) throw new Error('backup destination not found');
+	if (!d) throw new Error('未找到备份目标仓库');
 	return d;
 }
 
@@ -1226,7 +1226,7 @@ export async function browseSnapshot(destinationId: number, snapshotId: string, 
 	const instanceId = await getInstanceId();
 	await guardSnapshotAccess(reader(), destination, instanceId, snapshotId, { isEnterprise: false, canAccessEnvironment: async () => true });
 	const run = await restic.runLocal(destination, ['ls', '--json', '--no-lock', snapshotId, path]);
-	if (run.exitCode !== 0) throw new Error(run.stderr.trim() || 'could not browse snapshot');
+	if (run.exitCode !== 0) throw new Error(run.stderr.trim() || '无法浏览快照');
 	return parseSnapshotLsEntries(run.stdout, path);
 }
 
@@ -1243,7 +1243,7 @@ export async function dumpSnapshotFileBytes(destinationId: number, snapshotId: s
 	const instanceId = await getInstanceId();
 	await guardSnapshotAccess(reader(), destination, instanceId, snapshotId, { isEnterprise: false, canAccessEnvironment: async () => true });
 	const run = await restic.runLocalBinary(destination, ['dump', '--no-lock', snapshotId, filePath]);
-	if (run.exitCode !== 0) throw new Error(run.stderr.trim() || 'could not dump file');
+	if (run.exitCode !== 0) throw new Error(run.stderr.trim() || '无法导出文件');
 	return run.stdout;
 }
 
@@ -1254,7 +1254,7 @@ export async function dumpSnapshotArchive(destinationId: number, snapshotId: str
 	const instanceId = await getInstanceId();
 	await guardSnapshotAccess(reader(), destination, instanceId, snapshotId, { isEnterprise: false, canAccessEnvironment: async () => true });
 	const run = await restic.runLocalBinary(destination, ['dump', '--no-lock', '--archive', 'tar', snapshotId, dirPath], 'data');
-	if (run.exitCode !== 0) throw new Error(run.stderr.trim() || 'could not dump archive');
+	if (run.exitCode !== 0) throw new Error(run.stderr.trim() || '无法导出归档');
 	return run.stdout;
 }
 
@@ -1268,7 +1268,7 @@ export async function getSnapshotMetadata(destinationId: number, snapshotId: str
 	// parseSnapshotLayout returns null on bad JSON / wrong version / bad shape - an explicit
 	// "unreadable metadata" outcome, not a cascade of undefineds. Callers read TYPED fields.
 	const layout = parseSnapshotLayout(run.stdout);
-	if (!layout) console.warn(`[Backup] snapshot ${snapshotId.slice(0, 8)}: metadata.json present but unreadable (bad shape/version)`);
+	if (!layout) console.warn(`[备份] 快照 ${snapshotId.slice(0, 8)}: 已找到 metadata.json 但无法解析 (结构异常/版本不匹配)`);
 	return layout;
 }
 
@@ -1279,7 +1279,7 @@ export async function diffSnapshots(destinationId: number, snapshotA: string, sn
 	await guardSnapshotAccess(reader(), destination, instanceId, snapshotA, { isEnterprise: false, canAccessEnvironment: async () => true });
 	await guardSnapshotAccess(reader(), destination, instanceId, snapshotB, { isEnterprise: false, canAccessEnvironment: async () => true });
 	const run = await restic.runLocal(destination, ['diff', '--json', '--no-lock', snapshotA, snapshotB], 'data');
-	if (run.exitCode !== 0) throw new Error(run.stderr.trim() || 'could not diff snapshots');
+	if (run.exitCode !== 0) throw new Error(run.stderr.trim() || '无法对比快照');
 	return { ...parseResticDiff(run.stdout), raw: run.stdout };
 }
 
@@ -1294,12 +1294,12 @@ export type ForgetSnapshotResult = { ok: true } | { ok: false; reason: 'not-owne
  * logging never alters the operation result.
  */
 function logRepoOp(destName: string, op: string, ok: boolean, detail?: { output?: string; error?: string }): void {
-	const tag = `[BackupRepo:${destName}]`;
-	console.log(`${tag} ${op} — ${ok ? 'ok' : 'FAILED'}`);
+	const tag = `[备份仓库:${destName}]`;
+	console.log(`${tag} ${op} — ${ok ? '成功' : '失败'}`);
 	const out = (detail?.output ?? '').trim();
 	const err = (detail?.error ?? '').trim();
 	if (out) for (const line of out.split('\n')) console.log(`${tag} [restic] ${line}`);
-	if (err) for (const line of err.split('\n')) console.log(`${tag} [restic:err] ${line}`);
+	if (err) for (const line of err.split('\n')) console.log(`${tag} [restic:错误] ${line}`);
 }
 
 export async function forgetSnapshot(destinationId: number, snapshotId: string): Promise<ForgetSnapshotResult> {
@@ -1315,8 +1315,8 @@ export async function forgetSnapshot(destinationId: number, snapshotId: string):
 	const run = await serializeByRepo(destinationId, () =>
 		restic.runLocal(destination, ['forget', snapshotId, '--prune', '--retry-lock', '5m'], 'data'),
 	);
-	logRepoOp(destination.name, `forget ${snapshotId.slice(0, 8)}`, run.exitCode === 0, { output: run.stdout, error: run.stderr });
-	if (run.exitCode !== 0) return { ok: false, reason: 'error', error: run.stderr.trim() || 'forget failed' };
+	logRepoOp(destination.name, `删除快照 ${snapshotId.slice(0, 8)}`, run.exitCode === 0, { output: run.stdout, error: run.stderr });
+	if (run.exitCode !== 0) return { ok: false, reason: 'error', error: run.stderr.trim() || '快照删除失败' };
 	return { ok: true };
 }
 
@@ -1342,7 +1342,7 @@ export async function initRepository(destinationId: number): Promise<void> {
 		throw new Error(pathIssue);
 	}
 	const r = await initRepoCore(reader(), destination);
-	logRepoOp(destination.name, 'init', r.ok, r.ok ? { output: r.output } : { error: r.error });
+	logRepoOp(destination.name, '初始化仓库', r.ok, r.ok ? { output: r.output } : { error: r.error });
 	if (!r.ok) throw new Error(r.error);
 }
 
@@ -1354,7 +1354,7 @@ export async function testRepository(destinationId: number): Promise<{ ok: boole
 		return { ok: false, error: pathIssue };
 	}
 	const r = await testRepoCore(reader(), destination);
-	logRepoOp(destination.name, 'test', r.ok, r.ok ? undefined : { error: r.error });
+	logRepoOp(destination.name, '检测仓库', r.ok, r.ok ? undefined : { error: r.error });
 	if (r.ok) return { ok: true };
 	return { ok: false, needsInit: r.code === 'REPO_NOT_INITIALIZED', error: r.error };
 }
@@ -1365,7 +1365,7 @@ export async function verifyBackup(
 ): Promise<{ success: boolean; output?: string; error?: string }> {
 	const destination = await loadDest(destinationId);
 	const r = await checkRepository(reader(), destination, opts?.dataSubset ?? '5%', opts?.onProgress);
-	logRepoOp(destination.name, `verify (${opts?.dataSubset ?? '5%'})`, r.ok, r.ok ? { output: r.output } : { error: r.error });
+	logRepoOp(destination.name, `校验仓库 (${opts?.dataSubset ?? '5%'})`, r.ok, r.ok ? { output: r.output } : { error: r.error });
 	return r.ok ? { success: true, output: r.output } : { success: false, error: r.error };
 }
 
@@ -1389,8 +1389,8 @@ export async function runRepoTask(destinationId: number, task: RepoTask, opts?: 
 			onStderr: (c: string) => { for (const l of formatResticLines(c)) onProgress(l); }
 		};
 		const run = await serializeByRepo(destinationId, () => restic.runLocal(destination, ['repair', sub, '--retry-lock', '5m'], 'data', stream || undefined));
-		logRepoOp(destination.name, `repair ${sub}`, run.exitCode === 0, { output: run.stdout, error: run.stderr });
-		return run.exitCode === 0 ? { success: true, output: run.stdout.trim() } : { success: false, error: run.stderr.trim() || 'repair failed' };
+		logRepoOp(destination.name, `修复 ${sub}`, run.exitCode === 0, { output: run.stdout, error: run.stderr });
+		return run.exitCode === 0 ? { success: true, output: run.stdout.trim() } : { success: false, error: run.stderr.trim() || '修复失败' };
 	}
 	// prune/check hold the repo lock; run them serialized on the destination so a
 	// scheduled maintenance pass can't collide with a backup writing to the same repo.
@@ -1589,9 +1589,9 @@ export async function runBackup(configId: number, triggeredBy: 'cron' | 'manual'
 
 async function runBackupRegistered(configId: number, triggeredBy: 'cron' | 'manual' | 'webhook', onProgress?: (status: string, message: string) => void): Promise<BackupResult> {
 	const config = await getBackupConfig(configId);
-	if (!config) return { status: 'error', code: 'VALIDATION', error: 'backup config not found' };
+	if (!config) return { status: 'error', code: 'VALIDATION', error: '备份配置未找到' };
 	const destination = await getBackupDestination(config.destinationId);
-	if (!destination) return { status: 'error', code: 'VALIDATION', error: 'backup destination not found' };
+	if (!destination) return { status: 'error', code: 'VALIDATION', error: '备份目标未找到' };
 
 	const opts = parseOptionsJson((config as any).options);
 	const job: BackupJob = {
@@ -1619,7 +1619,7 @@ export async function runRestore(
 	onProgress?: (status: string, message: string) => void,
 ): Promise<RestoreResult> {
 	const destination = await getBackupDestination(job.destinationId);
-	if (!destination) return { status: 'error', code: 'VALIDATION', error: 'backup destination not found' };
+	if (!destination) return { status: 'error', code: 'VALIDATION', error: '备份目标未找到' };
 
 	// Thread the destination's RESTORE flags (parsed from the split flags column, validated
 	// against the restore allowlist) into the restore command. This reaches ALL restore

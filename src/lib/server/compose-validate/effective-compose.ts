@@ -134,7 +134,7 @@ export function parseConfigErrors(stderr: string): Finding[] {
 			ruleId: 'COMPOSE_SCHEMA_ERROR',
 			severity: 'error',
 			message: msg.slice(0, 400),
-			hint: 'Reported by `docker compose config` - the file will not deploy as-is.',
+			hint: '由 `docker compose config` 报告 — 该文件无法直接部署。',
 			line: lineMatch ? Number(lineMatch[1]) : undefined
 		});
 	}
@@ -143,8 +143,8 @@ export function parseConfigErrors(stderr: string): Finding[] {
 		findings.push({
 			ruleId: 'COMPOSE_SCHEMA_ERROR',
 			severity: 'error',
-			message: 'docker compose config rejected the file (no detail provided)',
-			hint: 'Run `docker compose config` locally to see the full error.'
+			message: 'docker compose config 拒绝该文件 (未提供详细信息)',
+			hint: '在本地执行 `docker compose config` 查看完整报错。'
 		});
 	}
 	return findings;

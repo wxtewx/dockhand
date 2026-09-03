@@ -90,18 +90,18 @@ async function scanPath(basePath: string): Promise<{ stacks: DiscoveredStack[]; 
 
 	// Verify path exists and is a directory
 	if (!existsSync(absolutePath)) {
-		errors.push({ path: basePath, error: 'Path does not exist' });
+		errors.push({ path: basePath, error: '路径不存在' });
 		return { stacks: discovered, errors };
 	}
 
 	try {
 		const stat = statSync(absolutePath);
 		if (!stat.isDirectory()) {
-			errors.push({ path: basePath, error: 'Path is not a directory' });
+			errors.push({ path: basePath, error: '路径不是目录' });
 			return { stacks: discovered, errors };
 		}
 	} catch (err) {
-		errors.push({ path: basePath, error: 'Cannot access path' });
+		errors.push({ path: basePath, error: '无法访问路径' });
 		return { stacks: discovered, errors };
 	}
 
@@ -225,7 +225,7 @@ export async function adoptStack(
 	);
 
 	if (alreadyAdopted) {
-		return { success: false, error: 'Already adopted' };
+		return { success: false, error: '已采纳' };
 	}
 
 	// The compose file must live on Dockhand's own filesystem - it is the source of truth
@@ -235,7 +235,7 @@ export async function adoptStack(
 	if (stack.composePath && !existsSync(stack.composePath)) {
 		return {
 			success: false,
-			error: `Compose file not found on Dockhand's filesystem: ${stack.composePath}. Adopt a path local to Dockhand, not a remote agent path.`
+			error: `在 Dockhand 文件系统中未找到 Compose 文件：${stack.composePath}。请使用 Dockhand 本地路径，而非远程代理路径。`
 		};
 	}
 
@@ -280,7 +280,7 @@ export async function adoptStack(
 		return { success: true, adoptedName: finalName };
 	} catch (err) {
 		const errorMsg = err instanceof Error ? err.message : String(err);
-		console.error(`[Stack Scanner] Failed to adopt ${stack.name}:`, errorMsg);
+		console.error(`[堆栈扫描器] 采纳 ${stack.name} 失败：`, errorMsg);
 		return { success: false, error: errorMsg };
 	}
 }
@@ -300,7 +300,7 @@ export async function adoptSelectedStacks(
 		if (result.success && result.adoptedName) {
 			adopted.push(result.adoptedName);
 		} else {
-			failed.push({ name: stack.name, error: result.error || 'Unknown error' });
+			failed.push({ name: stack.name, error: result.error || '未知错误' });
 		}
 	}
 
@@ -315,7 +315,7 @@ export async function scanPaths(paths: string[]): Promise<ScanResult> {
 		return { discovered: [], adopted: [], skipped: [], errors: [] };
 	}
 
-	console.log(`[Stack Scanner] Scanning ${paths.length} path(s)...`);
+	console.log(`[堆栈扫描器] 正在扫描 ${paths.length} 个路径...`);
 
 	const allDiscovered: DiscoveredStack[] = [];
 	const allErrors: { path: string; error: string }[] = [];
@@ -327,7 +327,7 @@ export async function scanPaths(paths: string[]): Promise<ScanResult> {
 		allErrors.push(...errors);
 	}
 
-	console.log(`[Stack Scanner] Found ${allDiscovered.length} compose file(s)`);
+	console.log(`[堆栈扫描器] 找到 ${allDiscovered.length} 个 Compose 文件`);
 
 	// Check which stacks are already adopted
 	const existingSources = await getStackSources();
@@ -361,7 +361,7 @@ export async function scanExternalPaths(): Promise<ScanResult> {
 		return { discovered: [], adopted: [], skipped: [], errors: [] };
 	}
 
-	console.log(`[Stack Scanner] Scanning ${paths.length} external path(s)...`);
+	console.log(`[堆栈扫描器] 正在扫描 ${paths.length} 个外部路径...`);
 
 	const allDiscovered: DiscoveredStack[] = [];
 	const allErrors: { path: string; error: string }[] = [];
@@ -373,7 +373,7 @@ export async function scanExternalPaths(): Promise<ScanResult> {
 		allErrors.push(...errors);
 	}
 
-	console.log(`[Stack Scanner] Found ${allDiscovered.length} compose file(s)`);
+	console.log(`[堆栈扫描器] 找到 ${allDiscovered.length} 个 Compose 文件`);
 
 	// Check which stacks are already adopted
 	const existingSources = await getStackSources();
@@ -390,13 +390,13 @@ export async function scanExternalPaths(): Promise<ScanResult> {
 	}
 
 	if (alreadyAdopted.length > 0) {
-		console.log(`[Stack Scanner] ${alreadyAdopted.length} stack(s) already adopted`);
+		console.log(`[堆栈扫描器] ${alreadyAdopted.length} 个堆栈已被采纳`);
 	}
 	if (newStacks.length > 0) {
-		console.log(`[Stack Scanner] ${newStacks.length} new stack(s) available for adoption`);
+		console.log(`[堆栈扫描器] ${newStacks.length} 个新堆栈可供采纳`);
 	}
 	if (allErrors.length > 0) {
-		console.warn(`[Stack Scanner] ${allErrors.length} error(s) during scanning`);
+		console.warn(`[堆栈扫描器] 扫描期间出现 ${allErrors.length} 个错误`);
 	}
 
 	return {
@@ -443,35 +443,35 @@ export function validatePath(
 	existingPaths: string[] = []
 ): { valid: boolean; error?: string; resolvedPath?: string } {
 	if (!path || typeof path !== 'string') {
-		return { valid: false, error: 'Path is required' };
+		return { valid: false, error: '路径为必填项' };
 	}
 
 	const resolvedPath = resolve(path.trim());
 
 	if (!existsSync(resolvedPath)) {
-		return { valid: false, error: 'Path does not exist' };
+		return { valid: false, error: '路径不存在' };
 	}
 
 	try {
 		const stat = statSync(resolvedPath);
 		if (!stat.isDirectory()) {
-			return { valid: false, error: 'Path is not a directory' };
+			return { valid: false, error: '路径不是目录' };
 		}
 	} catch {
-		return { valid: false, error: 'Cannot access path' };
+		return { valid: false, error: '无法访问路径' };
 	}
 
 	// Check for overlapping paths
 	for (const existingPath of existingPaths) {
 		const overlap = pathsOverlap(resolvedPath, existingPath);
 		if (overlap === 'same') {
-			return { valid: false, error: 'This location is already added' };
+			return { valid: false, error: '此位置已添加' };
 		}
 		if (overlap === 'parent') {
-			return { valid: false, error: `This path contains an existing location: ${existingPath}` };
+			return { valid: false, error: `此路径包含现有位置：${existingPath}` };
 		}
 		if (overlap === 'child') {
-			return { valid: false, error: `This path is inside an existing location: ${existingPath}` };
+			return { valid: false, error: `此路径位于现有位置内：${existingPath}` };
 		}
 	}
 
@@ -525,9 +525,9 @@ export async function detectRunningStacks(
 				}
 			} catch (error) {
 				if (error instanceof DockerConnectionError) {
-					console.warn(`[Stack Scanner] Skipping offline environment ${env.name}: ${error.message}`);
+					console.warn(`[堆栈扫描器] 跳过离线环境 ${env.name}: ${error.message}`);
 				} else {
-					console.warn(`[Stack Scanner] Failed to query environment ${env.name}:`, error);
+					console.warn(`[堆栈扫描器] 查询环境 ${env.name} 失败：`, error);
 				}
 			}
 		})
