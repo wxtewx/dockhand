@@ -1,7 +1,7 @@
 {
 	"name": "dockhand",
 	"private": true,
-	"version": "1.0.45",
+	"version": "1.0.46",
 	"type": "module",
 	"scripts": {
 		"dev": "npx vite dev",
@@ -93,11 +93,12 @@
 		"d3-scale": "^4.0.2",
 		"d3-shape": "^3.2.0",
 		"drizzle-kit": "0.31.8",
+		"esm-env": "1.2.2",
 		"layerchart": "^1.0.13",
 		"lucide-svelte": "0.562.0",
 		"mode-watcher": "^1.1.0",
 		"postcss": "^8.5.6",
-		"svelte": "5.55.7",
+		"svelte": "5.56.10",
 		"svelte-check": "^4.3.5",
 		"svelte-easy-crop": "^5.0.0",
 		"tailwind-merge": "^3.4.0",

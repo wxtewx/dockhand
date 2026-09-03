@@ -36,6 +36,8 @@ export const MessageType = {
 export interface EdgeConnection {
 	ws: WebSocket;
 	environmentId: number;
+	/** The hawser token id this connection authenticated with; revoking that token closes it. */
+	tokenId?: number;
 	agentId: string;
 	agentName: string;
 	agentVersion: string;
@@ -391,6 +393,17 @@ export async function generateHawserToken(
  */
 export async function revokeHawserToken(tokenId: number): Promise<void> {
 	await db.update(hawserTokens).set({ isActive: false }).where(eq(hawserTokens.id, tokenId));
+
+	// A revoke is an incident-response action: cut the agent off NOW. isActive is only
+	// checked at the hello handshake, so an already-open edge connection would otherwise
+	// keep serving. Close the connection this token authenticated (matched by tokenId, so
+	// revoking a DIFFERENT token for the same env doesn't disconnect a still-valid agent).
+	for (const connection of edgeConnections.values()) {
+		if (connection.tokenId === tokenId) {
+			console.log(`[Hawser] Closing edge connection for env ${connection.environmentId} - its token (${tokenId}) was revoked`);
+			closeEdgeConnection(connection.environmentId);
+		}
+	}
 }
 
 /**
@@ -448,7 +461,8 @@ export function closeEdgeConnection(environmentId: number): void {
 export function handleEdgeConnection(
 	ws: WebSocket,
 	environmentId: number,
-	hello: HelloMessage
+	hello: HelloMessage,
+	tokenId?: number
 ): EdgeConnection {
 	// Check if there's already a connection for this environment
 	const existing = edgeConnections.get(environmentId);
@@ -490,6 +504,7 @@ export function handleEdgeConnection(
 	const connection: EdgeConnection = {
 		ws,
 		environmentId,
+		tokenId,
 		agentId: hello.agentId,
 		agentName: hello.agentName,
 		agentVersion: hello.version,
@@ -1201,7 +1216,7 @@ async function handleHawserWsMessage(ws: any, msg: any, connId: string, remoteIp
 			}
 
 			// Authenticated — register the connection
-			const connection = handleEdgeConnection(ws, result.environmentId, msg);
+			const connection = handleEdgeConnection(ws, result.environmentId, msg, result.tokenId);
 			wsToEnvId.set(ws, result.environmentId);
 
 			// Send welcome
