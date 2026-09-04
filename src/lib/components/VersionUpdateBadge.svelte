@@ -2,6 +2,7 @@
 	import { Tag } from 'lucide-svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import type { NewerVersion } from '$lib/types';
+	import { getLabelText } from '$lib/types';
 
 	interface Props {
 		/** The newer-version suggestion for this container (target tag + how many were skipped). */
@@ -50,7 +51,7 @@
 			<p class="text-xs">
 				<span class="text-muted-foreground">升级至</span>
 				<code class="mx-0.5 rounded bg-muted px-1 py-0.5 font-mono">{newerVersion.tag}</code>
-				<span class="font-semibold uppercase {bumpColor}">{newerVersion.bump}</span>
+				<span class="font-semibold {bumpColor}">{getLabelText(newerVersion.bump)}</span>
 			</p>
 			{#if behind > 1}
 				<p class="text-xs text-muted-foreground">领先当前运行标签 {behind} 个版本。</p>

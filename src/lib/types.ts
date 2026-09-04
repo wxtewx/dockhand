@@ -721,6 +721,11 @@ export function getLabelText(
   if (!value) return value ?? "";
   let text = value;
 
+  const bumpMap = LabelMaps.bump;
+  if (Object.keys(bumpMap).includes(text)) {
+    return bumpMap[text as keyof typeof bumpMap];
+  }
+
   const roleMap = LabelMaps.role;
   const lowerText = text.trim().toLowerCase();
   if (roleMap[lowerText as keyof typeof roleMap]) {

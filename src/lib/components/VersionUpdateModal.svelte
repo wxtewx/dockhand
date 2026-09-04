@@ -9,6 +9,7 @@
 	import { formatDate } from '$lib/stores/settings';
 	import { repoBaseOf } from '$lib/utils/pinned-ref';
 	import type { NewerVersion } from '$lib/types';
+	import { getLabelText } from '$lib/types';
 
 	// Minimal shape shared by ContainerInfo and StackContainer - all the modal needs.
 	type ModalContainer = { id: string; name: string; image: string };
@@ -170,8 +171,8 @@
 						</button>
 					</span>
 					<span class="ml-auto flex items-center gap-2">
-						<span class="rounded-full border px-2 py-0.5 text-2xs font-semibold uppercase {bumpColor}">
-							{newerVersion.bump}
+						<span class="rounded-full border px-2 py-0.5 text-2xs font-semibold {bumpColor}">
+							{getLabelText(newerVersion.bump)}
 						</span>
 						{#if versionPath.length > 1}
 							<span class="text-xs font-normal text-muted-foreground">领先 {versionPath.length} 个版本</span>
