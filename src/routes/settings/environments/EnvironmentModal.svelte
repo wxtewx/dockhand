@@ -86,6 +86,7 @@
 	import { licenseStore } from '$lib/stores/license';
 	import { formatDateTime, formatDate } from '$lib/stores/settings';
 	import { getLabelColor, getLabelBgColor, parseLabels, MAX_LABELS } from '$lib/utils/label-colors';
+	import { MEMORY_SUPPORT_DOC_URL } from '$lib/utils/memory-support';
 	import { labelColorOverrides } from '$lib/stores/label-colors';
 	import EventTypesEditor from './EventTypesEditor.svelte';
 	import UpdatesTab from './tabs/UpdatesTab.svelte';
@@ -494,6 +495,9 @@
 	// Test connection state
 	let testingConnection = $state(false);
 	let testResult = $state<{ success: boolean; info?: any; error?: string; isEdgeMode?: boolean } | null>(null);
+	// Shown when a successful Test connection reveals the daemon's kernel has cgroup
+	// memory accounting disabled (per-container memory shows 0 - common on Raspberry Pi).
+	let memWarnOpen = $state(false);
 
 	// Socket detection state
 	let detectingSockets = $state(false);
@@ -758,6 +762,9 @@
 					toast.info('Edge mode - connection will be tested when agent connects');
 				} else {
 					toast.success(`Connected! Docker ${result.info.serverVersion} - ${result.info.containers} containers`);
+					// Docker reports the kernel's cgroup memory controller is off -> container
+					// memory will show 0. Surface it now so the user isn't left guessing.
+					if (result.info.memoryLimitSupported === false) memWarnOpen = true;
 				}
 			} else {
 				toast.error(result.error || 'Connection failed');
@@ -2005,10 +2012,11 @@
 														A direct daemon shares no filesystem with Dockhand. When set, Dockhand copies each
 														stack's folder to
 														<code class="bg-muted px-1 rounded">&lt;this path&gt;/&lt;stack&gt;</code>
-														<span class="font-medium text-foreground">on the remote host</span> so the backup
+														<span class="font-medium text-foreground">on the remote host</span>
+														<span class="font-medium text-foreground">on each deploy</span> so the backup
 														helper can read the compose and config, and rewrites relative binds
 														(<code class="bg-muted px-1 rounded">./data</code>) to that host path so they resolve
-														on the remote daemon.
+														on the remote daemon. After setting this, redeploy a stack once so its files are staged there.
 													</p>
 													<p class="text-muted-foreground">
 														Leave empty to skip this: the stack won't be backupable and a relative bind resolves
@@ -2034,6 +2042,8 @@
 										Absolute path on the remote host where Dockhand keeps this stack's files, so its compose
 										and config are backupable and relative binds resolve on the remote daemon. Leave empty to
 										use only absolute paths or named volumes.
+										<span class="text-foreground font-medium">Takes effect on the next deploy</span> - after
+										setting this, redeploy each stack so Dockhand stages its files there.
 									{/if}
 								</p>
 							</div>
@@ -3143,6 +3153,36 @@
 			onCancel={() => showIconCropper = false}
 			onSave={handleIconCropSave}
 		/>
+	</Dialog.Content>
+</Dialog.Root>
+
+<!-- Kernel cgroup memory accounting is disabled on this daemon (container memory shows 0). -->
+<Dialog.Root bind:open={memWarnOpen}>
+	<Dialog.Content class="max-w-md">
+		<Dialog.Header>
+			<Dialog.Title class="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+				<AlertTriangle class="w-5 h-5" />
+				Container memory won't be shown
+			</Dialog.Title>
+		</Dialog.Header>
+		<div class="text-sm text-muted-foreground space-y-3">
+			<p>
+				This host's kernel has cgroup memory accounting disabled, so Docker can't report
+				per-container memory - it will show <span class="font-medium text-foreground whitespace-nowrap">0&nbsp;B</span>
+				for every container. This is common on Raspberry Pi and some ARM boards.
+			</p>
+			<p>
+				It's fixed in the kernel boot config, not in Dockhand. See the guide:
+				<a href={MEMORY_SUPPORT_DOC_URL} target="_blank" rel="noopener noreferrer"
+					class="text-primary hover:underline inline-flex items-center gap-1">
+					enabling container memory accounting
+					<ExternalLink class="w-3 h-3" />
+				</a>
+			</p>
+		</div>
+		<Dialog.Footer>
+			<Button onclick={() => (memWarnOpen = false)}>OK</Button>
+		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
 

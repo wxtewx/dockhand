@@ -12,15 +12,21 @@ import {
 	updateGitStack,
 	upsertStackSource,
 	getEnvironment,
+	getSecretEnvVarsAsRecord,
+	getNonSecretEnvVarsAsRecord,
 	type GitRepository,
 	type GitCredential,
-	type GitStackWithRepo
+	type GitStackWithRepo,
+	type ScheduleTrigger
 } from './db';
 import { deployStack, getStackDir } from './stacks';
+import { createRunRecorder } from './deploy-run-record';
+import { hashComposeContent, hashEnvFingerprint } from './deploy-run-record-core';
 import { sendEventNotification } from './notifications';
 import { buildBasicAuthHeader } from './git-auth';
 import { assertSafeRepoUrl, assertSafeGitRef, repoFilePath, repoBaseEnvPath } from './git-url-safety';
 import { assertSafeRepoTarget } from './git-branch-lookup';
+import { shouldDeployGitStack, shouldForceRecreateGitStack } from './git-deploy-policy';
 import { resolveStackBranch } from '../git-stack-branch';
 import {
 	parseManifest,
@@ -1314,8 +1320,45 @@ async function notifyGitSync(stackName: string, envId: number | null | undefined
 	} catch { /* never changes the deploy outcome */ }
 }
 
-export async function deployGitStack(stackId: number, options?: { force?: boolean }): Promise<{ success: boolean; output?: string; error?: string; skipped?: boolean }> {
+/**
+ * The function every git-stack deploy trigger funnels through EXCEPT ONE: a
+ * config-update-then-redeploy, both webhook methods, create-and-deploy, and (via
+ * runGitStackSync) the cron scheduler and the schedules page's "run now" all reach
+ * this function. That is why the stack_deploy run recorder is wired in HERE and not
+ * at each of those call sites: wiring it at the route level only (the way
+ * compose/+server.ts does it) would leave every OTHER caller -- crucially the cron-
+ * and webhook-triggered ones, the truly unattended runs the design doc's Meilenstein 5
+ * is about -- unrecorded. Duplicating the composeHash/envHash/secrets setup at
+ * six-plus call sites would also drift out of sync with each other over time; one
+ * implementation, reached from everywhere but one, cannot.
+ *
+ * The one exception is the UI's own "Deploy" button (deploy-stream/+server.ts),
+ * which streams live per-step progress via deployGitStackWithProgress() below --
+ * a separate pipeline (it re-clones and re-reads the compose file itself rather than
+ * calling this function) that carries its OWN, separately-wired copy of the same
+ * recorder setup, right at its own deployStack() call. See that function's doc
+ * comment for why it is a second call site instead of routing through here.
+ */
+export async function deployGitStack(
+	stackId: number,
+	options?: {
+		force?: boolean;
+		/** Who/what triggered this deploy, for the stack_deploy run record. Defaults to
+		 *  'manual' for backward compatibility with existing callers/tests that predate
+		 *  this parameter -- every REAL call site below passes its own explicit value. */
+		triggeredBy?: ScheduleTrigger;
+		/** Best-effort only, like every other stack_deploy record (design doc §10.5):
+		 *  webhook/cron callers have no user and simply omit this. */
+		userId?: number;
+		/** Forwarded to deployStack() alongside the recorder's own line() call, so an
+		 *  HTTP caller (the manual deploy route, the deployNow routes) can still stream
+		 *  progress over SSE exactly as before -- recording never depends on whether
+		 *  anyone is listening. */
+		onLine?: (line: string) => void;
+	}
+): Promise<{ success: boolean; output?: string; error?: string; skipped?: boolean }> {
 	const force = options?.force ?? true; // Default to force for backward compatibility
+	const triggeredBy: ScheduleTrigger = options?.triggeredBy ?? 'manual';
 
 	const gitStack = await getGitStack(stackId);
 	if (!gitStack) {
@@ -1335,6 +1378,29 @@ export async function deployGitStack(stackId: number, options?: { force?: boolea
 	if (!syncResult.success) {
 		console.log(`${logPrefix} Sync failed:`, syncResult.error);
 		const failResult = { success: false, error: syncResult.error };
+		// Record the sync failure as a failed stack_deploy run so it shows in the Deploys
+		// tab (webhook/scheduled/manual all reach here). Best-effort and fully isolated:
+		// a recorder error must never change the notify/return workflow below. Skip the
+		// benign "Sync already in progress" overlap -- it's a concurrency skip, not a
+		// deploy failure, and recording it would clutter history with false failures.
+		if (!(syncResult.error ?? '').includes('Sync already in progress')) {
+			try {
+				const failRecorder = await createRunRecorder({
+					stackName: gitStack.stackName,
+					envId: gitStack.environmentId ?? null,
+					userId: options?.userId,
+					triggeredBy,
+					options: { pull: !!gitStack.repullImages, build: !!gitStack.buildOnDeploy, forceRecreate: !!(options?.force ?? true) },
+					composeHash: '',
+					envHash: '',
+					secrets: []
+				});
+				failRecorder.line(`fatal: ${syncResult.error ?? 'git sync failed'}`);
+				await failRecorder.end(false, undefined, syncResult.error ?? 'git sync failed');
+			} catch (e) {
+				console.error(`${logPrefix} Failed to record git sync failure:`, e);
+			}
+		}
 		await notifyGitSync(gitStack.stackName, gitStack.environmentId, failResult);
 		return failResult;
 	}
@@ -1348,10 +1414,14 @@ export async function deployGitStack(stackId: number, options?: { force?: boolea
 		console.log(`${logPrefix} Env file vars (masked):`, JSON.stringify(redactEnvVarsForLog(syncResult.envFileVars), null, 2));
 	}
 
-	// Check if there are changes - skip redeploy if no changes and not forced
-	// Note: For new stacks (first deploy), syncResult.updated will be true
-	// forceRedeploy setting overrides the skip logic for webhooks/scheduled syncs
-	const shouldDeploy = force || gitStack.forceRedeploy || syncResult.updated;
+	// Check if there are changes - skip redeploy if no changes and not forced.
+	// For new stacks (first deploy), syncResult.updated is true. The forceRedeploy
+	// setting overrides the skip logic for webhooks/scheduled syncs.
+	const shouldDeploy = shouldDeployGitStack({
+		force,
+		forceRedeploy: gitStack.forceRedeploy === true,
+		gitUpdated: syncResult.updated === true
+	});
 	if (!shouldDeploy) {
 		console.log(`${logPrefix} No changes detected and force=false, forceRedeploy=false, skipping redeploy`);
 		const skippedResult = {
@@ -1363,8 +1433,11 @@ export async function deployGitStack(stackId: number, options?: { force?: boolea
 		return skippedResult;
 	}
 
-	const forceRecreate = syncResult.updated;
-	console.log(`${logPrefix} Will force recreate:`, forceRecreate, `(updated=${syncResult.updated})`);
+	const forceRecreate = shouldForceRecreateGitStack({
+		forceRedeploy: gitStack.forceRedeploy === true,
+		gitUpdated: syncResult.updated === true
+	});
+	console.log(`${logPrefix} Will force recreate:`, forceRecreate, `(updated=${syncResult.updated}, forceRedeploy=${gitStack.forceRedeploy})`);
 	console.log(`${logPrefix} Build on deploy:`, gitStack.buildOnDeploy);
 	console.log(`${logPrefix} Re-pull images:`, gitStack.repullImages);
 	console.log(`${logPrefix} Force redeploy setting:`, gitStack.forceRedeploy);
@@ -1378,20 +1451,108 @@ export async function deployGitStack(stackId: number, options?: { force?: boolea
 	console.log(`${logPrefix} Compose filename:`, syncResult.composeFileName);
 	console.log(`${logPrefix} Env filename:`, syncResult.envFileName ?? '(none)');
 
-	const result = await deployStack({
-		name: gitStack.stackName,
-		compose: syncResult.composeContent!,
-		envId: gitStack.environmentId,
-		sourceDir: syncResult.composeDir, // Copy entire directory from git repo
-		composeFileName: syncResult.composeFileName, // Use original compose filename from repo
-		envFileName: syncResult.envFileName, // Env file relative to compose dir (for --env-file flag, optional)
-		forceRecreate,
-		build: gitStack.buildOnDeploy,
-		noBuildCache: gitStack.noBuildCache,
-		pullPolicy: gitStack.repullImages ? 'always' : undefined,
-		filesToDelete: syncResult.deletionPlan?.toDelete,
-		isGitDeploy: true // suppress stack_* notification; we emit git_sync_* below
+	// Same stack_deploy run record shape the non-git routes build (compose PUT,
+	// dedicated deploy endpoint) -- see deploy-run-record.ts. composeHash is taken
+	// from syncResult.composeContent, the EXACT string handed to deployStack right
+	// below, not a redundant re-read off disk.
+	//
+	// envHash/secrets mirror the same resolution the non-git routes use
+	// (getNonSecretEnvVarsAsRecord/getSecretEnvVarsAsRecord keyed by stackName+envId,
+	// the DB-sourced values deployStack resolves again at deploy time in stacks.ts),
+	// PLUS the repo's own .env values below so the redaction set is complete for what
+	// end() stores. Secret-provider-injected vars are still only in deployStack's own
+	// makeLineForwarder set (stacks.ts), which redacts the streamed lines; end()'s
+	// stored errorMessage is the one that also needs the .env values folded in here.
+	// The repo's own .env values are passed to compose via --env-file and never
+	// flow through the DB-sourced var records above, so without this they'd be in
+	// NEITHER redaction set -- a repo-.env-only secret echoed to stderr would land
+	// unredacted in the stored errorMessage (which the executions API returns). Fold
+	// them into the recorder's secrets so recorder.end()'s redactLine catches them.
+	// Best-effort: these reads exist only to seed the recorder, so a decrypt/DB failure
+	// must not abort the deploy -- fall back to whatever we could read.
+	let effectiveEnvVars: Record<string, string> = { ...(syncResult.envFileVars ?? {}) };
+	try {
+		const nonSecretVars = await getNonSecretEnvVarsAsRecord(gitStack.stackName, gitStack.environmentId);
+		const secretVars = await getSecretEnvVarsAsRecord(gitStack.stackName, gitStack.environmentId);
+		effectiveEnvVars = { ...nonSecretVars, ...secretVars, ...(syncResult.envFileVars ?? {}) };
+	} catch (e) {
+		console.error(`${logPrefix} Failed to read env vars for run-record redaction (deploy continues):`, e);
+	}
+
+	// The recorder is a BEST-EFFORT side channel: its DB/FS I/O must never abort the
+	// deploy nor flip its outcome. Swallow a createRunRecorder failure so a record-store
+	// hiccup degrades to "no run record", never a failed or aborted deploy.
+	const recorder = await createRunRecorder({
+		stackName: gitStack.stackName,
+		envId: gitStack.environmentId ?? null,
+		userId: options?.userId,
+		triggeredBy,
+		options: { pull: !!gitStack.repullImages, build: !!gitStack.buildOnDeploy, forceRecreate: !!forceRecreate },
+		composeHash: hashComposeContent(syncResult.composeContent!),
+		envHash: hashEnvFingerprint(effectiveEnvVars),
+		secrets: Object.values(effectiveEnvVars)
+	}).catch((e) => {
+		console.error(`${logPrefix} Failed to create deploy run recorder (continuing without one):`, e);
+		return null;
 	});
+
+	// Mirrors every redacted output line into the run record's log file, in addition
+	// to (not instead of) forwarding it to the caller's own onLine (SSE progress) --
+	// see the recorder doc comment above for why this can't be "record OR stream".
+	const onLine = (line: string) => {
+		recorder?.line(line);
+		options?.onLine?.(line);
+	};
+
+	let result: Awaited<ReturnType<typeof deployStack>>;
+	try {
+		result = await deployStack({
+			name: gitStack.stackName,
+			compose: syncResult.composeContent!,
+			envId: gitStack.environmentId,
+			sourceDir: syncResult.composeDir, // Copy entire directory from git repo
+			composeFileName: syncResult.composeFileName, // Use original compose filename from repo
+			envFileName: syncResult.envFileName, // Env file relative to compose dir (for --env-file flag, optional)
+			forceRecreate,
+			build: gitStack.buildOnDeploy,
+			noBuildCache: gitStack.noBuildCache,
+			pullPolicy: gitStack.repullImages ? 'always' : undefined,
+			filesToDelete: syncResult.deletionPlan?.toDelete,
+			isGitDeploy: true, // suppress stack_* notification; we emit git_sync_* below
+			onLine
+		});
+	} catch (error) {
+		// deployStack has never been observed to throw here (every existing caller of
+		// deployGitStack calls it without a try/catch around this point), but the
+		// record must not be left "running" forever on the day that changes. Best-effort:
+		// a recorder-close failure must not mask the original deploy error we re-throw.
+		try {
+			await recorder?.end(false, undefined, error instanceof Error ? error.message : String(error));
+		} catch (e) {
+			console.error(`${logPrefix} Failed to close run recorder on deploy error (original error preserved):`, e);
+		}
+		throw error;
+	}
+
+	// F4 fix: deployStack() resolves the bound secret provider's values internally,
+	// AFTER `recorder` above was already built from the DB-only nonSecretVars/
+	// secretVars this function read before calling it. Feed the provider-resolved
+	// values in now, before recorder.end() below -- otherwise a provider secret
+	// leaking into result.error (a real possibility: cron/webhook-triggered git
+	// deploys are exactly the unattended runs most likely to use a bound provider)
+	// would bypass end()'s redaction entirely. See deploy-run-record.ts.
+	recorder?.addSecrets(result.resolvedSecrets ?? []);
+
+	// Closed right after the result is known, before the post-success bookkeeping
+	// below (deletion sync, upsertStackSource) -- those never fail the deploy itself,
+	// so the recorded duration reflects the deploy, not the bookkeeping around it.
+	// Best-effort: a close failure (log FS / DB write) must NOT invert the already-known
+	// deploy result -- the deploy succeeded regardless of whether we could record it.
+	try {
+		await recorder?.end(result.success, undefined, result.success ? undefined : result.error);
+	} catch (e) {
+		console.error(`${logPrefix} Failed to close run recorder (deploy outcome unaffected):`, e);
+	}
 
 	console.log(`${logPrefix} ----------------------------------------`);
 	console.log(`${logPrefix} DEPLOY GIT STACK RESULT`);
@@ -1513,8 +1674,23 @@ type ProgressCallback = (data: {
 	step?: number;
 	totalSteps?: number;
 	error?: string;
+	// A raw (already secret-redacted) compose output line, forwarded alongside the
+	// discrete stages so the UI can show the full log under the step list. Carried on
+	// its own field, not `message`, so a log line is never rendered as a stage.
+	logLine?: string;
 }) => void;
 
+/**
+ * The UI's own "Deploy" button (deploy-stream/+server.ts): runs its own clone/read/
+ * deploy pipeline, reporting 5 discrete stages via onProgress, rather than calling
+ * deployGitStack() -- that function's onLine streams raw compose output lines, a
+ * different contract than the stage messages this one sends. Because of that split,
+ * this is a SECOND call site that reaches deployStack() directly, and it carries its
+ * own copy of the same stack_deploy run-record wiring deployGitStack() has (built
+ * right before its own deployStack() call below) rather than inheriting it -- see
+ * deployGitStack's doc comment for the full picture of which callers go through
+ * which path.
+ */
 export async function deployGitStackWithProgress(
 	stackId: number,
 	onProgress: ProgressCallback
@@ -1546,9 +1722,53 @@ export async function deployGitStackWithProgress(
 
 	const totalSteps = 5;
 
+	// Create the run recorder up front (not at the deploy step) so a failure at ANY
+	// stage -- clone/fetch/read or the deploy -- produces a Deploys-tab record with the
+	// git-stage log lines, instead of leaving no trace. Compose/env hashes start empty
+	// and are irrelevant for a failed pre-compose run; a successful run's real summary is
+	// still derived from the compose output streamed into the recorder below.
+	//
+	// The recorder is a BEST-EFFORT side channel: its DB/FS I/O must never abort the
+	// deploy nor flip its outcome. createRunRecorder does DB writes that can throw --
+	// swallow that here so a record-store hiccup degrades to "no run record", never a
+	// failed or aborted deploy.
+	const recorder = await createRunRecorder({
+		stackName: gitStack.stackName,
+		envId: gitStack.environmentId ?? null,
+		triggeredBy: 'manual',
+		options: { pull: !!gitStack.repullImages, build: !!gitStack.buildOnDeploy, forceRecreate: false },
+		composeHash: '',
+		envHash: '',
+		secrets: []
+	}).catch((e) => {
+		console.error('Failed to create git deploy run recorder (continuing without one):', e);
+		return null;
+	});
+
+	// Mirror every git-stage message into the run log so the record reads like the live
+	// dialog (Connecting / Cloning / Fetching / ...), and forward progress to the caller.
+	const onProgressAndRecord: ProgressCallback = (data) => {
+		if (typeof data.message === 'string') recorder?.line(data.message);
+		onProgress(data);
+	};
+
+	// end() writes the DB row and is not idempotent; guard so the deploy-throw path and
+	// the outer catch don't both close the same record. Best-effort: a close failure is
+	// logged, never propagated -- it must not invert a successful deploy's result.
+	let recorderEnded = false;
+	const endRecorder = async (ok: boolean, error?: string) => {
+		if (recorderEnded || !recorder) return;
+		recorderEnded = true;
+		try {
+			await recorder.end(ok, undefined, error);
+		} catch (e) {
+			console.error('Failed to close git deploy run recorder (deploy outcome unaffected):', e);
+		}
+	};
+
 	try {
 		// Step 1: Connecting
-		onProgress({ status: 'connecting', message: 'Connecting to repository...', step: 1, totalSteps });
+		onProgressAndRecord({ status: 'connecting', message: 'Connecting to repository...', step: 1, totalSteps });
 		await updateGitStack(stackId, { syncStatus: 'syncing', syncError: null });
 
 		let updated = false;
@@ -1560,7 +1780,7 @@ export async function deployGitStackWithProgress(
 		const previousCommit = await getPreviousCommit(repoPath, env) ?? gitStack.lastCommit ?? null;
 
 		// Step 2: Cloning
-		onProgress({ status: 'cloning', message: 'Cloning repository...', step: 2, totalSteps });
+		onProgressAndRecord({ status: 'cloning', message: 'Cloning repository...', step: 2, totalSteps });
 
 		if (existsSync(repoPath)) {
 			rmSync(repoPath, { recursive: true, force: true });
@@ -1570,7 +1790,7 @@ export async function deployGitStackWithProgress(
 		const repoUrl = buildRepoUrl(repo.url, credential);
 
 		// Step 3: Fetching (blobless clone - fetches all commits but blobs on-demand)
-		onProgress({ status: 'fetching', message: `Fetching branch ${effectiveBranch}...`, step: 3, totalSteps });
+		onProgressAndRecord({ status: 'fetching', message: `Fetching branch ${effectiveBranch}...`, step: 3, totalSteps });
 		const cloneResult = await execGit(
 			['clone', '--filter=blob:none', '--branch', effectiveBranch, repoUrl, repoPath],
 			process.cwd(),
@@ -1611,7 +1831,7 @@ export async function deployGitStackWithProgress(
 		currentCommit = commitResult.stdout.substring(0, 7);
 
 		// Step 4: Reading compose file
-		onProgress({ status: 'reading', message: `Reading ${gitStack.composePath}...`, step: 4, totalSteps });
+		onProgressAndRecord({ status: 'reading', message: `Reading ${gitStack.composePath}...`, step: 4, totalSteps });
 		const composePath = repoFilePath(repoPath, gitStack.composePath, "Compose path");
 		if (!existsSync(composePath)) {
 			throw new Error(`Compose file not found: ${gitStack.composePath}`);
@@ -1686,14 +1906,14 @@ export async function deployGitStackWithProgress(
 				deletionData.plan.skipped
 			)
 		);
-		onProgress({ status: 'deploying', message: `File changes: ${changeTable[0]}`, step: 5, totalSteps });
+		onProgressAndRecord({ status: 'deploying', message: `File changes: ${changeTable[0]}`, step: 5, totalSteps });
 		for (const line of changeTable.slice(1)) {
-			onProgress({ status: 'deploying', message: line, step: 5, totalSteps });
+			onProgressAndRecord({ status: 'deploying', message: line, step: 5, totalSteps });
 		}
 
 		// Step 5: Deploying stack
 		// Uses `docker compose up -d --remove-orphans` which only recreates changed services
-		onProgress({ status: 'deploying', message: `Deploying ${gitStack.stackName}...`, step: 5, totalSteps });
+		onProgressAndRecord({ status: 'deploying', message: `Deploying ${gitStack.stackName}...`, step: 5, totalSteps });
 		if (deletionData.plan.toDelete.length > 0) {
 			onProgress({
 				status: 'deploying',
@@ -1712,18 +1932,58 @@ export async function deployGitStackWithProgress(
 			}
 		}
 
-		const result = await deployStack({
-			name: gitStack.stackName,
-			compose: composeContent,
-			envId: gitStack.environmentId,
-			sourceDir: composeDir, // Copy entire directory from git repo
-			composeFileName: progressComposeFileName, // Compose filename relative to source dir
-			envFileName, // Env file relative to compose dir (for --env-file flag, optional)
-			build: gitStack.buildOnDeploy,
-			noBuildCache: gitStack.noBuildCache,
-			pullPolicy: gitStack.repullImages ? 'always' : undefined,
-			filesToDelete: deletionData.plan.toDelete
-		});
+		// The recorder was created up front with empty hashes (for failure coverage before
+		// the compose is known); now that we have the compose + env, fill in the real
+		// content hashes and feed the env values in as redaction secrets. All best-effort:
+		// these reads/updates exist only for the recorder, so a decrypt/DB failure must not
+		// abort the deploy -- swallow it and proceed with whatever we could read.
+		try {
+			const nonSecretVars = await getNonSecretEnvVarsAsRecord(gitStack.stackName, gitStack.environmentId);
+			const secretVars = await getSecretEnvVarsAsRecord(gitStack.stackName, gitStack.environmentId);
+			const effectiveEnvVars = { ...nonSecretVars, ...secretVars };
+			recorder?.setContentHashes(hashComposeContent(composeContent), hashEnvFingerprint(effectiveEnvVars));
+			recorder?.addSecrets(Object.values(effectiveEnvVars));
+		} catch (e) {
+			console.error('Failed to read env vars for run-record redaction (deploy continues):', e);
+		}
+
+		let result: Awaited<ReturnType<typeof deployStack>>;
+		try {
+			result = await deployStack({
+				name: gitStack.stackName,
+				compose: composeContent,
+				envId: gitStack.environmentId,
+				sourceDir: composeDir, // Copy entire directory from git repo
+				composeFileName: progressComposeFileName, // Compose filename relative to source dir
+				envFileName, // Env file relative to compose dir (for --env-file flag, optional)
+				build: gitStack.buildOnDeploy,
+				noBuildCache: gitStack.noBuildCache,
+				pullPolicy: gitStack.repullImages ? 'always' : undefined,
+				filesToDelete: deletionData.plan.toDelete,
+				// Each `line` is already secret-redacted by deployStack (makeLineForwarder
+				// in stacks.ts). Mirror it into the run record's log file AND forward it to
+				// onProgress as a logLine so the UI shows the full compose log under the
+				// step list -- the same single redacted stream, two sinks.
+				onLine: (line) => {
+					recorder?.line(line);
+					onProgress({ status: 'deploying', logLine: line, step: 5, totalSteps });
+				}
+			});
+		} catch (error) {
+			// deployStack has never been observed to throw here, but the record must
+			// not be left "running" forever on the day that changes (same posture
+			// deployGitStack takes around its own deployStack call).
+			await endRecorder(false, error instanceof Error ? error.message : String(error));
+			throw error;
+		}
+
+		// F4 fix (see deployGitStack's own addSecrets() call for the full rationale):
+		// deployStack() resolves the bound secret provider's values internally, after
+		// `recorder` above was already built from the DB-only vars read before calling
+		// it. Feed the provider-resolved values in now, before recorder.end(), so a
+		// provider secret leaking into result.error is still redacted.
+		recorder?.addSecrets(result.resolvedSecrets ?? []);
+		await endRecorder(result.success, result.success ? undefined : result.error);
 
 		if (result.success) {
 			// Deletion sync: persist manifest + log per-file change summary.
@@ -1774,6 +2034,15 @@ export async function deployGitStackWithProgress(
 			syncStatus: 'error',
 			syncError: error.message
 		});
+		// Close the run record as failed. The recorder exists from the start, so a failure
+		// at ANY stage -- clone/fetch/read or the deploy -- leaves a record with the
+		// git-stage log lines captured above. Only log+close if the record isn't already
+		// closed (the deploy-throw inner catch closes it first); appending after close
+		// would write an orphan line the summarized row never reflects.
+		if (!recorderEnded) {
+			recorder?.line(`fatal: ${error.message}`);
+			await endRecorder(false, error.message);
+		}
 		onProgress({ status: 'error', error: error.message });
 		return { success: false, error: error.message };
 	}

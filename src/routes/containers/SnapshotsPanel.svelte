@@ -7,7 +7,7 @@
 	import { formatDateTime, formatRelativeTime } from '$lib/stores/settings';
 	import { formatBytes } from '$lib/utils/format';
 	import { readJobResponse } from '$lib/utils/sse-fetch';
-	import { getRepoTypeIcon } from '$lib/utils/backup';
+	import { getRepoTypeIcon, selectOwnSnapshotsFromDestination } from '$lib/utils/backup';
 	import SnapshotBrowser from './SnapshotBrowser.svelte';
 	import RestoreModal from './RestoreModal.svelte';
 	import SnapshotDiffModal from '../backups/SnapshotDiffModal.svelte';
@@ -102,7 +102,11 @@
 		try {
 			const destRes = await fetch('/api/backup/destinations');
 			const destinations: { id: number; name: string; repository: string }[] = destRes.ok ? await destRes.json() : [];
-			const nameTag = `dockhand:name=${targetName}`;
+			// Scope to THIS env's configs, not just the name: same-name stacks on different
+			// environments write to a shared repo and all carry dockhand:name=<stack>, so a
+			// name-only filter mixed their snapshots (and "latest") across envs (#1546).
+			// configIds is env-scoped (BackupPanel fetches configs with ?env=), so a snapshot's
+			// own dockhand:configid tag uniquely identifies (stack, env). See snapshotMatchesConfigScope.
 			const all: Snapshot[] = [];
 			loadDone = 0;
 			loadTotal = destinations.length;
@@ -119,9 +123,7 @@
 					const data = await readJobResponse(res);
 					if (data?.error) return;
 					const snaps: any[] = data.snapshots ?? data;
-					const mine = snaps
-						.filter((s) => (s.tags || []).some((t: string) => t === nameTag))
-						.map((s) => ({ ...s, _destinationId: dest.id, _destinationName: dest.name, _destinationRepository: dest.repository }));
+					const mine = selectOwnSnapshotsFromDestination(snaps, dest, configIds, targetName);
 					if (mine.length) {
 						all.push(...mine);
 						all.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());

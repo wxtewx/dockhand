@@ -207,6 +207,19 @@ export const vulnerabilityColumns: ColumnConfig[] = [
 	{ id: 'actions', label: '', fixed: 'end', width: 44, resizable: false }
 ];
 
+// Deploy-history grid columns (the "Deploys" panel on a stack). A dense, tabular
+// view of past deploy runs; expanding a row reveals that run's log + details.
+// Merged summary column carries option pills + error text, so it grows.
+export const deployColumns: ColumnConfig[] = [
+	{ id: 'expand', label: '', fixed: 'start', width: 24, resizable: false },
+	{ id: 'status', label: 'Status', width: 120, minWidth: 96, resizable: false, sortable: true, sortField: 'status' },
+	{ id: 'when', label: 'When', width: 230, minWidth: 140, sortable: true, sortField: 'startedAt' },
+	{ id: 'duration', label: 'Duration', width: 90, minWidth: 70, align: 'right', sortable: true, sortField: 'duration' },
+	{ id: 'trigger', label: 'Trigger', width: 120, minWidth: 90, sortable: true, sortField: 'triggeredBy' },
+	{ id: 'summary', label: 'Summary', width: 260, minWidth: 140, grow: true, noTruncate: true },
+	{ id: 'actions', label: '', fixed: 'end', width: 44, resizable: false }
+];
+
 // Map of grid ID to column definitions
 export const gridColumnConfigs: Record<GridId, ColumnConfig[]> = {
 	containers: containerColumns,
@@ -222,7 +235,8 @@ export const gridColumnConfigs: Record<GridId, ColumnConfig[]> = {
 	backupDestinations: backupDestinationColumns,
 	backups: backupColumns,
 	repoSnapshots: repoSnapshotColumns,
-	vulnerabilities: vulnerabilityColumns
+	vulnerabilities: vulnerabilityColumns,
+	deploys: deployColumns
 };
 
 // Get configurable columns (not fixed)

@@ -8,7 +8,8 @@ import {
 	createGitRepository,
 	upsertStackSource,
 	setStackEnvVars,
-	getStackSource
+	getStackSource,
+	secretProviderExists
 } from '$lib/server/db';
 import { deployGitStack } from '$lib/server/git';
 import { authorize } from '$lib/server/authorize';
@@ -96,6 +97,13 @@ export const POST: RequestHandler = async (event) => {
 			!(await auth.can('secrets', 'view', data.environmentId || undefined))
 		) {
 			return json({ error: 'Permission denied: binding a secret provider requires the secrets permission' }, { status: 403 });
+		}
+
+		// A stale provider id (e.g. the provider was deleted/recreated while the editor
+		// held the old list) would otherwise hit a raw foreign-key error on save. Reject
+		// it cleanly so the user knows to reselect a provider (#1522).
+		if (typeof data.secretProviderId === 'number' && !(await secretProviderExists(data.secretProviderId))) {
+			return json({ error: 'The selected secret provider no longer exists. Reopen the stack and pick a current provider.' }, { status: 400 });
 		}
 
 		// Check for name conflicts with existing stacks (regular/external/git)
@@ -215,7 +223,11 @@ export const POST: RequestHandler = async (event) => {
 		if (data.deployNow) {
 			return createJobResponse(async (send) => {
 				try {
-					const deployResult = await deployGitStack(gitStack.id);
+					const deployResult = await deployGitStack(gitStack.id, {
+						triggeredBy: 'manual',
+						userId: auth.user?.id,
+						onLine: (line) => send('progress', { type: 'line', line })
+					});
 					await auditGitStack(event, 'deploy', gitStack.id, gitStack.stackName, gitStack.environmentId);
 					send('result', {
 						...gitStack,

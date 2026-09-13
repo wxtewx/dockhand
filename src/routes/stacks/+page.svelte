@@ -29,6 +29,7 @@
 	import type { ComposeStackInfo, ContainerStats, StackContainer } from '$lib/types';
 	import StackModal from './StackModal.svelte';
 	import DeleteStackModal from './DeleteStackModal.svelte';
+	import ComposeOutputModal from './ComposeOutputModal.svelte';
 	import GitSourceBadge from './GitSourceBadge.svelte';
 	import GitStackModal from './GitStackModal.svelte';
 	import ImportStackModal from './ImportStackModal.svelte';
@@ -520,6 +521,64 @@
 	let restartPopoverOpen = $state<Record<string, boolean>>({});
 	let stackDownLoading = $state<string | null>(null);
 
+	// Live compose output window: shown while a stack action (start/stop/restart/
+	// redeploy/down) runs, fed line-by-line via readJobResponse's onLine callback.
+	let composeOutputOpen = $state(false);
+	let composeOutputTitle = $state('');
+	let composeOutputLines = $state<string[]>([]);
+	let composeOutputRunning = $state(false);
+	// Status-line inputs, measured here in the browser (wall-clock incl. the round
+	// trip through fetch/polling) — NOT the server-side execution time recorded
+	// separately for the deploy-history dataset (Task 10). Different path, different
+	// number; don't conflate the two.
+	let composeOutputStartedAt = 0;
+	let composeOutputOk = $state<boolean | undefined>(undefined);
+	let composeOutputMs = $state<number | undefined>(undefined);
+	let composeOutputExitCode = $state<number | undefined>(undefined);
+
+	let composeOutputStackName = $state<string | undefined>(undefined);
+
+	function startComposeOutput(title: string, stackName?: string) {
+		composeOutputTitle = title;
+		composeOutputStackName = stackName;
+		composeOutputLines = [];
+		composeOutputRunning = true;
+		composeOutputOpen = true;
+		composeOutputStartedAt = Date.now();
+		composeOutputOk = undefined;
+		composeOutputMs = undefined;
+		composeOutputExitCode = undefined;
+	}
+
+	function appendComposeOutputLine(line: string) {
+		composeOutputLines = [...composeOutputLines, line];
+	}
+
+	// Called once the job settles. Older agent versions (pre line-streaming, see Task 5)
+	// only return a batched `output` string — show it if nothing arrived incrementally.
+	// `ok`/`exitCode` come from the job result (or `false`/undefined on a thrown
+	// network error, from the catch blocks below) — the payload does not carry an
+	// exit code today (StackOperationResult has no such field, see stacks.ts), so
+	// `exitCode` stays undefined in practice until the server starts sending one.
+	function finishComposeOutput(output: string | undefined, ok: boolean, exitCode?: number, error?: string) {
+		composeOutputRunning = false;
+		composeOutputOk = ok;
+		composeOutputMs = Date.now() - composeOutputStartedAt;
+		composeOutputExitCode = exitCode;
+		if (composeOutputLines.length === 0 && output) {
+			composeOutputLines = output.split('\n');
+		}
+		// On failure the reason lives in `error` (compose's stderr), which the streamed
+		// log lines don't carry -- append it so the modal shows WHY it failed instead of
+		// ending on a bare "Started" with the cause hidden in a separate dialog.
+		if (!ok && error) {
+			const errLines = error.split('\n').map((l) => l.trimEnd()).filter(Boolean);
+			const already = new Set(composeOutputLines.map((l) => l.trim()));
+			const fresh = errLines.filter((l) => !already.has(l.trim()));
+			if (fresh.length > 0) composeOutputLines = [...composeOutputLines, ...fresh];
+		}
+	}
+
 	// Container-level confirmation popover state
 	let confirmStopContainerId = $state<string | null>(null);
 	let confirmRestartContainerId = $state<string | null>(null);
@@ -965,11 +1024,18 @@
 	async function startStack(name: string) {
 		operationError = null;
 		stackActionLoading = name;
+		startComposeOutput(`Starting ${name}`, name);
 		try {
 			const response = await fetch(appendEnvParam(`/api/stacks/${encodeURIComponent(name)}/start`, envId), { method: 'POST' });
-			const data = await readJobResponse(response);
+			const data = await readJobResponse(response, appendComposeOutputLine);
+			finishComposeOutput(
+				typeof data.output === 'string' ? data.output : undefined,
+				Boolean(data.success),
+				typeof data.exitCode === 'number' ? data.exitCode : undefined,
+				typeof data.error === 'string' ? data.error : undefined
+			);
 			if (!data.success) {
-				showErrorDialog(`Failed to start ${name}`, data.error || 'Failed to start stack');
+				toast.error(`Failed to start ${name}`);
 				return;
 			}
 			toast.success(`Started ${name}`);
@@ -977,7 +1043,8 @@
 		} catch (error) {
 			console.error('Failed to start stack:', error);
 			const errorMsg = error instanceof Error ? error.message : 'Failed to start stack';
-			showErrorDialog(`Failed to start ${name}`, errorMsg);
+			finishComposeOutput(undefined, false, undefined, errorMsg);
+			toast.error(`Failed to start ${name}`);
 		} finally {
 			stackActionLoading = null;
 		}
@@ -986,11 +1053,18 @@
 	async function stopStack(name: string) {
 		operationError = null;
 		stackActionLoading = name;
+		startComposeOutput(`Stopping ${name}`, name);
 		try {
 			const response = await fetch(appendEnvParam(`/api/stacks/${encodeURIComponent(name)}/stop`, envId), { method: 'POST' });
-			const data = await readJobResponse(response);
+			const data = await readJobResponse(response, appendComposeOutputLine);
+			finishComposeOutput(
+				typeof data.output === 'string' ? data.output : undefined,
+				Boolean(data.success),
+				typeof data.exitCode === 'number' ? data.exitCode : undefined,
+				typeof data.error === 'string' ? data.error : undefined
+			);
 			if (!data.success) {
-				showErrorDialog(`Failed to stop ${name}`, data.error || 'Failed to stop stack');
+				toast.error(`Failed to stop ${name}`);
 				return;
 			}
 			toast.success(`Stopped ${name}`);
@@ -998,7 +1072,8 @@
 		} catch (error) {
 			console.error('Failed to stop stack:', error);
 			const errorMsg = error instanceof Error ? error.message : 'Failed to stop stack';
-			showErrorDialog(`Failed to stop ${name}`, errorMsg);
+			finishComposeOutput(undefined, false, undefined, errorMsg);
+			toast.error(`Failed to stop ${name}`);
 		} finally {
 			stackActionLoading = null;
 		}
@@ -1007,15 +1082,24 @@
 	async function restartStack(name: string, mode: 'restart' | 'ordered' | 'recreate' = 'restart') {
 		operationError = null;
 		stackActionLoading = name;
+		startComposeOutput(mode === 'recreate' ? `Recreating ${name}` : `Restarting ${name}`, name);
 		try {
 			let url = appendEnvParam(`/api/stacks/${encodeURIComponent(name)}/restart`, envId);
 			if (mode === 'recreate' || mode === 'ordered') {
 				url += (url.includes('?') ? '&' : '?') + `mode=${mode}`;
 			}
 			const response = await fetch(url, { method: 'POST' });
-			const data = await readJobResponse(response);
+			const data = await readJobResponse(response, appendComposeOutputLine);
+			finishComposeOutput(
+				typeof data.output === 'string' ? data.output : undefined,
+				Boolean(data.success),
+				typeof data.exitCode === 'number' ? data.exitCode : undefined,
+				typeof data.error === 'string' ? data.error : undefined
+			);
 			if (!data.success) {
-				showErrorDialog(`Failed to restart ${name}`, data.error || 'Failed to restart stack');
+				// The reason is now in the output modal's log; a toast points the user to it
+				// without a second, redundant error dialog stacked over the same modal.
+				toast.error(`Failed to restart ${name}`);
 				return;
 			}
 			toast.success(mode === 'recreate' ? `Recreated ${name}` : `Restarted ${name}`);
@@ -1023,7 +1107,8 @@
 		} catch (error) {
 			console.error('Failed to restart stack:', error);
 			const errorMsg = error instanceof Error ? error.message : 'Failed to restart stack';
-			showErrorDialog(`Failed to restart ${name}`, errorMsg);
+			finishComposeOutput(undefined, false, undefined, errorMsg);
+			toast.error(`Failed to restart ${name}`);
 		} finally {
 			stackActionLoading = null;
 		}
@@ -1032,15 +1117,32 @@
 	async function redeployStack(name: string, options: { pull: boolean; build: boolean; forceRecreate: boolean }) {
 		operationError = null;
 		stackActionLoading = name;
+		startComposeOutput(`Redeploying ${name}`, name);
+		// Record which redeploy options were chosen so the log shows them (they are not
+		// otherwise visible once the popover closes).
+		const chosen = [
+			options.pull && 'pull images',
+			options.build && 'build images',
+			options.forceRecreate && 'force recreate'
+		].filter(Boolean);
+		appendComposeOutputLine(`Options: ${chosen.length ? chosen.join(', ') : 'none'}`);
 		try {
 			const response = await fetch(appendEnvParam(`/api/stacks/${encodeURIComponent(name)}/deploy`, envId), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(options)
 			});
-			const data = await readJobResponse(response);
+			const data = await readJobResponse(response, appendComposeOutputLine);
+			finishComposeOutput(
+				typeof data.output === 'string' ? data.output : undefined,
+				Boolean(data.success),
+				typeof data.exitCode === 'number' ? data.exitCode : undefined,
+				typeof data.error === 'string' ? data.error : undefined
+			);
 			if (!data.success) {
-				showErrorDialog(`Failed to redeploy ${name}`, data.error || 'Failed to redeploy stack');
+				// The compose output window carries the full log (incl. the failure reason)
+				// plus the failed status, so a separate error dialog would duplicate it.
+				toast.error(`Failed to redeploy ${name}`);
 				return;
 			}
 			toast.success(`Redeployed ${name}`);
@@ -1048,7 +1150,10 @@
 		} catch (error) {
 			console.error('Failed to redeploy stack:', error);
 			const errorMsg = error instanceof Error ? error.message : 'Failed to redeploy stack';
-			showErrorDialog(`Failed to redeploy ${name}`, errorMsg);
+			// A throw before any output streams would otherwise leave the window with
+			// only the Options line and a red status, so put the error text in it.
+			finishComposeOutput(undefined, false, undefined, errorMsg);
+			toast.error(`Failed to redeploy ${name}`);
 		} finally {
 			stackActionLoading = null;
 		}
@@ -1058,11 +1163,18 @@
 		operationError = null;
 		stackActionLoading = name;
 		stackDownLoading = name;
+		startComposeOutput(`Bringing down ${name}`, name);
 		try {
 			const response = await fetch(appendEnvParam(`/api/stacks/${encodeURIComponent(name)}/down`, envId), { method: 'POST' });
-			const data = await readJobResponse(response);
+			const data = await readJobResponse(response, appendComposeOutputLine);
+			finishComposeOutput(
+				typeof data.output === 'string' ? data.output : undefined,
+				Boolean(data.success),
+				typeof data.exitCode === 'number' ? data.exitCode : undefined,
+				typeof data.error === 'string' ? data.error : undefined
+			);
 			if (!data.success) {
-				showErrorDialog(`Failed to bring down ${name}`, data.error || 'Failed to bring down stack');
+				toast.error(`Failed to bring down ${name}`);
 				return;
 			}
 			toast.success(`Brought down ${name}`);
@@ -1070,7 +1182,8 @@
 		} catch (error) {
 			console.error('Failed to bring down stack:', error);
 			const errorMsg = error instanceof Error ? error.message : 'Failed to bring down stack';
-			showErrorDialog(`Failed to bring down ${name}`, errorMsg);
+			finishComposeOutput(undefined, false, undefined, errorMsg);
+			toast.error(`Failed to bring down ${name}`);
 		} finally {
 			stackActionLoading = null;
 			stackDownLoading = null;
@@ -1743,6 +1856,8 @@
 							<GitDeployProgressPopover
 								stackId={source.gitStack.id}
 								stackName={stack.name}
+								stackIcon={source.icon}
+								envId={$currentEnvironment?.id ?? null}
 								onComplete={fetchStacks}
 							>
 								{#snippet children()}
@@ -2020,48 +2135,43 @@
 								</button>
 							</div>
 						{/if}
-						{#if (stack.status === 'not deployed' || stack.status === 'created') && source.gitStack}
-							<button
-								type="button"
-								onclick={() => openGitModal(source.gitStack)}
-								title="Edit git stack"
-								class="p-1 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
-							>
-								<Pencil class="grid-action-icon grid-action-edit text-muted-foreground hover:text-purple-500" />
-							</button>
+						{#if source.sourceType === 'git' && source.gitStack}
+							<!-- One deploy popover for a git stack in ANY state (only the trigger
+							     icon differs by status), so the instance is stable: a status
+							     flip mid-deploy must not remount it and drop its open dialog. -->
+							{#if stack.status === 'not deployed' || stack.status === 'created'}
+								<button
+									type="button"
+									onclick={() => openGitModal(source.gitStack)}
+									title="Edit git stack"
+									class="p-1 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
+								>
+									<Pencil class="grid-action-icon grid-action-edit text-muted-foreground hover:text-purple-500" />
+								</button>
+							{/if}
 							<GitDeployProgressPopover
 								stackId={source.gitStack.id}
 								stackName={stack.name}
+								stackIcon={source.icon}
+								envId={$currentEnvironment?.id ?? null}
 								onComplete={fetchStacks}
 							>
 								{#snippet children()}
 									<button
 										type="button"
-										title="Deploy"
+										title={(stack.status === 'not deployed' || stack.status === 'created') ? 'Deploy' : 'Sync from Git'}
 										class="p-1 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
 									>
-										<Rocket class="grid-action-icon grid-action-start text-muted-foreground hover:text-violet-500" />
+										{#if stack.status === 'not deployed' || stack.status === 'created'}
+											<Rocket class="grid-action-icon grid-action-start text-muted-foreground hover:text-violet-500" />
+										{:else}
+											<RefreshCw class="grid-action-icon grid-action-restart text-muted-foreground hover:text-purple-500" />
+										{/if}
 									</button>
 								{/snippet}
 							</GitDeployProgressPopover>
-						{:else}
-							{#if source.sourceType === 'git' && source.gitStack}
-								<GitDeployProgressPopover
-									stackId={source.gitStack.id}
-									stackName={stack.name}
-									onComplete={fetchStacks}
-								>
-									{#snippet children()}
-										<button
-											type="button"
-											title="Sync from Git"
-											class="p-1 rounded hover:bg-muted transition-colors opacity-70 hover:opacity-100 cursor-pointer"
-										>
-											<RefreshCw class="grid-action-icon grid-action-restart text-muted-foreground hover:text-purple-500" />
-										</button>
-									{/snippet}
-								</GitDeployProgressPopover>
-							{/if}
+						{/if}
+						{#if stack.status !== 'not deployed' && stack.status !== 'created'}
 							{#if $canAccess('stacks', 'edit')}
 								{#if source.sourceType === 'git' && source.gitStack}
 									<button
@@ -2762,6 +2872,19 @@
 	stackName={deleteStackName}
 	envId={envId ?? null}
 	onConfirm={(opts) => removeStack(deleteStackName, opts)}
+/>
+
+<ComposeOutputModal
+	bind:open={composeOutputOpen}
+	title={composeOutputTitle}
+	lines={composeOutputLines}
+	running={composeOutputRunning}
+	ok={composeOutputOk}
+	ms={composeOutputMs}
+	exitCode={composeOutputExitCode}
+	stackName={composeOutputStackName}
+	stackIcon={composeOutputStackName ? stackSources[composeOutputStackName]?.icon ?? null : null}
+	envId={$currentEnvironment?.id ?? null}
 />
 
 <ContainerInspectModal

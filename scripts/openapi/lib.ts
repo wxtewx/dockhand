@@ -209,7 +209,8 @@ export function discoverRoutes(rootDirs: string[], routesRoot: string): { routes
 //    * resp-<code>-example: <json>
 //    */
 //
-// mini-schema := 'string'|'integer'|'number'|'boolean' | '{' (name':'type'!'?','?)* '}' | 'array<' type '>'
+// mini-schema := 'string'|'integer'|'number'|'boolean'|'object' | '{' (name':'type'!'?','?)* '}' | 'array<' type '>'
+// (bare 'object' = an opaque object with no declared properties; use '{...}' for a documented shape)
 
 export function parseMiniSchema(str: string): MiniSchema {
 	let i = 0;
@@ -244,6 +245,15 @@ export function parseMiniSchema(str: string): MiniSchema {
 		if (i === start) i++;
 		const word = s.slice(start, i) || 'string';
 		if (word === 'integer' || word === 'number' || word === 'boolean' || word === 'string') return { kind: word };
+		// Bare `object` (no `{...}` shape given) — an opaque/untyped object, used
+		// throughout the codebase for fields whose internal shape isn't part of
+		// the documented contract (e.g. `severity:object`, `envVars:object`,
+		// `config:object`). Without this branch it silently fell through to the
+		// generic `string` fallback below, so every one of these fields was
+		// documented in static/openapi.json as `{ "type": "string" }` instead of
+		// `{ "type": "object" }` — wrong for any client generated strictly from
+		// the spec (a typed SDK, an MCP server mirroring the schema, ...).
+		if (word === 'object') return { kind: 'object', properties: {}, required: [] };
 		return { kind: 'string' };
 	}
 
@@ -540,10 +550,28 @@ export function analyzeHandlerBody(body: string, pathParamNames: string[] = []):
 
 	const bodyFields = new Set<string>();
 	// `const { a, b } = await request.json();` and `const { a, b } = body;`
-	const destructureRe = /const\s*\{([^}]*)\}\s*=\s*(?:await\s+)?(?:request\.json\(\)|body)\b/g;
+	// The `\b(?!\.)` guards the bare `body` alternative: it must not match `bodyText`
+	// (\b) NOR `body.config` (the (?!\.) - destructuring a NESTED object off the body
+	// would otherwise record its keys as top-level fields). `request.json()` ends in
+	// `)`, where a trailing boundary would never match, so it needs no guard.
+	const destructureRe = /const\s*\{([^}]*)\}\s*=\s*(?:await\s+)?(?:request\.json\(\)|body\b(?!\.))/g;
 	let dm;
 	while ((dm = destructureRe.exec(body)) !== null) {
 		for (const f of parseDestructuredFields(dm[1])) bodyFields.add(f);
+	}
+	// Member access: `body.foo` / `body?.foo`. Many handlers read the parsed body
+	// field-by-field instead of destructuring, so without this a documented `body:`
+	// annotation could omit a field the code actually reads and drift silently.
+	// Skip a WRITE (`body.foo = ...` and compound `+= ??= ||= &&= *= ...`): the request
+	// body is only ever read, so an assignment means `body` is a local variable (e.g. a
+	// response object literally named `body`), not the parsed request - counting it is a
+	// false positive. The write group matches an optional assignment operator (any op
+	// suffix ending in a single `=`) but NOT a comparison `==`/`===`.
+	const memberRe = /\bbody\??\.([A-Za-z_$][\w$]*)\s*((?:\*\*|<<|>>>?|\?\?|\|\||&&|[+\-*/%&|^])?=(?!=))?/g;
+	let mm;
+	while ((mm = memberRe.exec(body)) !== null) {
+		if (mm[2]) continue; // an assignment (plain or compound) -> a write, skip
+		bodyFields.add(mm[1]);
 	}
 
 	return {

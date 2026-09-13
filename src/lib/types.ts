@@ -186,7 +186,7 @@ export interface GitRepository {
 }
 
 // Grid column configuration types
-export type GridId = 'containers' | 'images' | 'imageTags' | 'networks' | 'stacks' | 'volumes' | 'activity' | 'schedules' | 'audit' | 'environments' | 'backupDestinations' | 'backups' | 'repoSnapshots' | 'vulnerabilities';
+export type GridId = 'containers' | 'images' | 'imageTags' | 'networks' | 'stacks' | 'volumes' | 'activity' | 'schedules' | 'audit' | 'environments' | 'backupDestinations' | 'backups' | 'repoSnapshots' | 'vulnerabilities' | 'deploys';
 
 export interface ColumnConfig {
 	id: string;

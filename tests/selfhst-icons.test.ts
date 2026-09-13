@@ -87,16 +87,23 @@ describe('looksLikeImage (upload magic-byte check)', () => {
 });
 
 // getSelfhstIcon's cache-HIT paths are deterministic (no network). We seed the on-disk
-// cache under a temp DATA_DIR and assert what the cache read returns without ever
-// reaching the CDN. Stale/corrupt entries fall through to a fetch, which fails offline
-// and returns null - that null still proves the bad file was NOT served.
+// cache under a temp DATA_DIR and assert what the cache read returns. Stale/corrupt
+// entries fall through to a fetch; we stub fetch to a synchronous 404 miss so the test
+// never touches the CDN (a real fetch has an 8s timeout that outlives the 5s test
+// budget, so any slow/blocked CDN would time the suite out - the fetch is not the SUT
+// here, the cache read is).
 describe('getSelfhstIcon cache-hit handling', () => {
 	let dir: string;
+	let realFetch: typeof globalThis.fetch;
 	beforeAll(() => {
 		dir = mkdtempSync(join(tmpdir(), 'selfhst-cache-'));
 		process.env.DATA_DIR = dir;
+		realFetch = globalThis.fetch;
+		// Every fall-through fetch is a deterministic miss - no network, no timeout race.
+		globalThis.fetch = (async () => new Response(null, { status: 404 })) as typeof globalThis.fetch;
 	});
 	afterAll(() => {
+		globalThis.fetch = realFetch;
 		delete process.env.DATA_DIR;
 		rmSync(dir, { recursive: true, force: true });
 	});
@@ -115,16 +122,15 @@ describe('getSelfhstIcon cache-hit handling', () => {
 		expect(existsSync(p)).toBe(true); // tombstone kept
 	});
 
-	// A ref that can NEVER exist upstream (valid syntactically, but no such icon) so the
-	// fall-through fetch deterministically returns a 404/miss regardless of network.
+	// A syntactically valid ref; the stubbed fetch returns a 404 miss for it.
 	const MISSING = 'zzz-nonexistent-test-icon';
 
 	test('a corrupt (nonzero non-SVG) cache file is never served (dropped, refetched)', async () => {
 		const p = selfhstCachePath(MISSING);
 		writeFileSync(p, Buffer.from([0x00, 0x01, 0x02])); // binary, no leading '<'
 		const buf = await getSelfhstIcon(MISSING);
-		// Whatever happens, the corrupt bytes are NOT returned. Offline/404 -> null; the file
-		// is either gone or replaced by a 0-byte tombstone, never the original garbage.
+		// The corrupt bytes are NOT returned. The 404 miss -> null; the file is either
+		// gone or replaced by a 0-byte tombstone, never the original garbage.
 		expect(buf).toBeNull();
 		if (existsSync(p)) {
 			expect(readFileSync(p).length).toBe(0); // tombstone, not the corrupt content

@@ -12,8 +12,12 @@ import {
 import { buildRegistryAuthHeader, unixSocketRequest, unixSocketStreamRequest } from '$lib/server/docker';
 import type { RequestHandler } from './$types';
 import { prefersJSON, sseToJSON } from '$lib/server/sse';
+import { updaterImageForVariant } from '$lib/server/updater-image-core';
 
-const UPDATER_IMAGE = 'fnsys/dockhand-updater:latest';
+// Baseline Dockhand (old x86_64 without v2) needs the Alpine/musl updater; the Wolfi
+// default can't exec there (exit 127 at "Launching updater"). Mirrors the backup
+// helper's variant split.
+const UPDATER_IMAGE = updaterImageForVariant(process.env.DOCKHAND_VARIANT);
 const UPDATER_LABEL = 'dockhand.updater';
 
 /** Get TCP Docker host if configured, null otherwise. */

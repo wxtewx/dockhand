@@ -354,6 +354,20 @@ export async function getSecretProviderById(id: number): Promise<SecretProviderW
 	};
 }
 
+/** Lightweight existence check (no config decrypt), for validating a bound provider id. */
+export async function secretProviderExists(id: number): Promise<boolean> {
+	const rows = await db.select({ id: secretProviders.id }).from(secretProviders).where(eq(secretProviders.id, id));
+	return rows.length > 0;
+}
+
+/** Stacks currently bound to a secret provider, so a delete can warn which ones lose it. */
+export async function getStacksUsingSecretProvider(id: number): Promise<Array<{ stackName: string; environmentId: number | null }>> {
+	return db
+		.select({ stackName: stackSources.stackName, environmentId: stackSources.environmentId })
+		.from(stackSources)
+		.where(eq(stackSources.secretProviderId, id));
+}
+
 export async function createSecretProvider(data: {
 	type: SecretProviderType;
 	name: string;
@@ -4262,7 +4276,33 @@ export async function saveDashboardPreferences(data: {
 // SCHEDULE EXECUTION OPERATIONS
 // =============================================================================
 
-export type ScheduleType = 'container_update' | 'git_stack_sync' | 'system_cleanup' | 'env_update_check' | 'image_prune' | 'backup' | 'restore';
+export type ScheduleType = 'container_update' | 'git_stack_sync' | 'system_cleanup' | 'env_update_check' | 'image_prune' | 'backup' | 'restore' | 'stack_deploy' | 'deploy_log_reconcile';
+
+// Runtime list of every ScheduleType. Used to bound a no-type-filter executions
+// query to the caller's viewable types (viewableScheduleTypes). The two type
+// assertions below make it a real drift-guard: `satisfies` rejects a bogus value,
+// and the bidirectional _exhaustive check fails to compile if a union member is
+// missing from (or extra in) this array.
+export const ALL_SCHEDULE_TYPES = [
+	'container_update',
+	'git_stack_sync',
+	'system_cleanup',
+	'env_update_check',
+	'image_prune',
+	'backup',
+	'restore',
+	'stack_deploy',
+	'deploy_log_reconcile'
+] as const satisfies readonly ScheduleType[];
+// Compile error if ALL_SCHEDULE_TYPES and ScheduleType ever diverge.
+type _ScheduleTypeExhaustive =
+	Exclude<ScheduleType, (typeof ALL_SCHEDULE_TYPES)[number]> extends never
+		? Exclude<(typeof ALL_SCHEDULE_TYPES)[number], ScheduleType> extends never
+			? true
+			: never
+		: never;
+const _scheduleTypeExhaustive: _ScheduleTypeExhaustive = true;
+void _scheduleTypeExhaustive;
 export type ScheduleTrigger = 'cron' | 'webhook' | 'manual' | 'startup';
 export type ScheduleStatus =
 	| 'queued'
@@ -4320,8 +4360,23 @@ export interface ScheduleExecutionUpdateData {
 
 export interface ScheduleExecutionFilters {
 	scheduleType?: ScheduleType;
+	// Enterprise per-resource RBAC: restrict to this allow-list of types when the
+	// caller lacks view on every resource (see viewableScheduleTypes). An empty
+	// array matches nothing (drizzle inArray([]) -> false), which is the correct
+	// "caller may see no types" result.
+	scheduleTypes?: ScheduleType[];
 	scheduleId?: number;
 	environmentId?: number | null;
+	// Enterprise env-scoped RBAC: restrict to these environment ids. A row with a
+	// NULL environmentId (system schedules, local-env deploys) is always included
+	// -- those are not attributed to any environment, matching how the per-run
+	// deploy access checks treat null (deploy-run-access.ts). Ignored when the
+	// caller has all-environment access (pass undefined).
+	environmentIds?: number[];
+	// Powers "runs for this stack" lookups (schedule_executions_entity_env_idx) --
+	// paired with environmentId, an exact match on the (entity_name, environment_id)
+	// index this filter was added for.
+	entityName?: string;
 	status?: ScheduleStatus;
 	statuses?: ScheduleStatus[];
 	triggeredBy?: ScheduleTrigger;
@@ -4441,6 +4496,9 @@ export async function getScheduleExecutions(filters: ScheduleExecutionFilters = 
 	if (filters.scheduleType) {
 		conditions.push(eq(scheduleExecutions.scheduleType, filters.scheduleType));
 	}
+	if (filters.scheduleTypes !== undefined) {
+		conditions.push(inArray(scheduleExecutions.scheduleType, filters.scheduleTypes));
+	}
 	if (filters.scheduleId !== undefined) {
 		conditions.push(eq(scheduleExecutions.scheduleId, filters.scheduleId));
 	}
@@ -4450,6 +4508,18 @@ export async function getScheduleExecutions(filters: ScheduleExecutionFilters = 
 		} else {
 			conditions.push(eq(scheduleExecutions.environmentId, filters.environmentId));
 		}
+	}
+	// Enterprise env-scoping: accessible envs OR a null (unattributed) env.
+	if (filters.environmentIds !== undefined) {
+		conditions.push(
+			or(
+				isNull(scheduleExecutions.environmentId),
+				inArray(scheduleExecutions.environmentId, filters.environmentIds)
+			)
+		);
+	}
+	if (filters.entityName !== undefined) {
+		conditions.push(eq(scheduleExecutions.entityName, filters.entityName));
 	}
 	if (filters.status) {
 		conditions.push(eq(scheduleExecutions.status, filters.status));
@@ -4511,6 +4581,44 @@ export async function getScheduleExecutions(filters: ScheduleExecutionFilters = 
 		limit,
 		offset
 	};
+}
+
+/**
+ * ALL execution ids (+ parsed details) for a given schedule type, unpaginated.
+ *
+ * Deliberately bypasses getScheduleExecutions()'s default 50-row page: a caller that
+ * needs to reconcile every record against something else (deploy-log-reconcile.ts,
+ * against files on disk) cannot afford to only see the most recent page -- an older
+ * record just outside the window would look exactly like an orphan file with no
+ * record, and the file behind it would be deleted even though a record exists.
+ *
+ * `environmentId` is included (F5 fix) so the caller can scope its reconciliation
+ * PER ENVIRONMENT -- deploy-log-store.ts now keeps one log directory per environment
+ * (see envDirName()), so a record's file can only ever be found in, or be deleted
+ * from, ITS OWN environment's directory. Without environmentId here,
+ * deploy-log-reconcile.ts would have to either reconcile everything as one flat pool
+ * again (reintroducing the cross-environment mixing the size-budget fix closes) or
+ * guess which environment a record belongs to.
+ */
+export async function getScheduleExecutionIdsByType(
+	scheduleType: ScheduleType
+): Promise<Array<{ id: number; status: ScheduleStatus; details: any | null; environmentId: number | null }>> {
+	const rows = await db
+		.select({
+			id: scheduleExecutions.id,
+			status: scheduleExecutions.status,
+			details: scheduleExecutions.details,
+			environmentId: scheduleExecutions.environmentId
+		})
+		.from(scheduleExecutions)
+		.where(eq(scheduleExecutions.scheduleType, scheduleType));
+
+	return rows.map((row: { id: number; status: string; details: string | null; environmentId: number | null }) => ({
+		id: row.id,
+		status: row.status as ScheduleStatus,
+		details: row.details ? JSON.parse(row.details) : null,
+		environmentId: row.environmentId
+	}));
 }
 
 /**
@@ -4685,9 +4793,12 @@ const SCHEDULE_CLEANUP_ENABLED_KEY = 'schedule_cleanup_enabled';
 const EVENT_CLEANUP_ENABLED_KEY = 'event_cleanup_enabled';
 const SCANNER_CLEANUP_CRON_KEY = 'scanner_cleanup_cron';
 const SCANNER_CLEANUP_ENABLED_KEY = 'scanner_cleanup_enabled';
+const DEPLOY_LOG_RECONCILE_CRON_KEY = 'deploy_log_reconcile_cron';
+const DEPLOY_LOG_RECONCILE_ENABLED_KEY = 'deploy_log_reconcile_enabled';
 const DEFAULT_SCHEDULE_CLEANUP_CRON = '0 3 * * *'; // Daily at 3 AM
 const DEFAULT_EVENT_CLEANUP_CRON = '30 3 * * *'; // Daily at 3:30 AM
 const DEFAULT_SCANNER_CLEANUP_CRON = '0 3 * * 0'; // Weekly Sunday at 3 AM
+const DEFAULT_DEPLOY_LOG_RECONCILE_CRON = '0 4 * * *'; // Daily at 4 AM
 
 export async function getScheduleRetentionDays(): Promise<number> {
 	const result = await db.select().from(settings).where(eq(settings.key, SCHEDULE_RETENTION_KEY));
@@ -4860,6 +4971,50 @@ export async function setScannerCleanupEnabled(enabled: boolean): Promise<void> 
 	} else {
 		await db.insert(settings).values({
 			key: SCANNER_CLEANUP_ENABLED_KEY,
+			value: enabled ? 'true' : 'false'
+		});
+	}
+}
+
+export async function getDeployLogReconcileCron(): Promise<string> {
+	const result = await db.select().from(settings).where(eq(settings.key, DEPLOY_LOG_RECONCILE_CRON_KEY));
+	if (result[0]) {
+		return result[0].value || DEFAULT_DEPLOY_LOG_RECONCILE_CRON;
+	}
+	return DEFAULT_DEPLOY_LOG_RECONCILE_CRON;
+}
+
+export async function setDeployLogReconcileCron(cron: string): Promise<void> {
+	const existing = await db.select().from(settings).where(eq(settings.key, DEPLOY_LOG_RECONCILE_CRON_KEY));
+	if (existing.length > 0) {
+		await db.update(settings)
+			.set({ value: cron, updatedAt: new Date().toISOString() })
+			.where(eq(settings.key, DEPLOY_LOG_RECONCILE_CRON_KEY));
+	} else {
+		await db.insert(settings).values({
+			key: DEPLOY_LOG_RECONCILE_CRON_KEY,
+			value: cron
+		});
+	}
+}
+
+export async function getDeployLogReconcileEnabled(): Promise<boolean> {
+	const result = await db.select().from(settings).where(eq(settings.key, DEPLOY_LOG_RECONCILE_ENABLED_KEY));
+	if (result[0]) {
+		return result[0].value === 'true';
+	}
+	return true; // Enabled by default
+}
+
+export async function setDeployLogReconcileEnabled(enabled: boolean): Promise<void> {
+	const existing = await db.select().from(settings).where(eq(settings.key, DEPLOY_LOG_RECONCILE_ENABLED_KEY));
+	if (existing.length > 0) {
+		await db.update(settings)
+			.set({ value: enabled ? 'true' : 'false', updatedAt: new Date().toISOString() })
+			.where(eq(settings.key, DEPLOY_LOG_RECONCILE_ENABLED_KEY));
+	} else {
+		await db.insert(settings).values({
+			key: DEPLOY_LOG_RECONCILE_ENABLED_KEY,
 			value: enabled ? 'true' : 'false'
 		});
 	}

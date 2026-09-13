@@ -28,6 +28,7 @@ import { chmod, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { isAbsolute, join } from 'node:path';
 import type { ProtonConfig, SecretProvider, TestConnectionResult } from './shared';
+import { stripSurroundingQuotes } from './shared';
 
 const DEFAULT_PASS_CLI_PATH = '/usr/local/bin/pass-cli';
 const LOGIN_TIMEOUT_MS = 30_000;
@@ -368,7 +369,7 @@ export const protonProvider: SecretProvider<ProtonConfig> = {
 	supportsBulk: true,
 
 	isReference(value: unknown): value is string {
-		return typeof value === 'string' && value.trim().startsWith('pass://');
+		return typeof value === 'string' && stripSurroundingQuotes(value).startsWith('pass://');
 	},
 
 	async testConnection(config: ProtonConfig): Promise<TestConnectionResult> {

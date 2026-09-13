@@ -393,10 +393,14 @@
 		setTimeout(() => { generatedOk = false; }, 1500);
 	}
 
-	function copyPassword() {
-		copyToClipboard(formPassword);
-		copiedOk = true;
-		setTimeout(() => { copiedOk = false; }, 1500);
+	async function copyPassword() {
+		const ok = await copyToClipboard(formPassword);
+		if (ok) {
+			copiedOk = true;
+			setTimeout(() => { copiedOk = false; }, 1500);
+		} else {
+			toast.error('Could not copy to clipboard. Copy it manually, or use HTTPS to enable one-click copy.');
+		}
 	}
 
 	function handleBackendChange(value: string) {

@@ -26,6 +26,13 @@
 		/** Bound provider type/name, for the injected banner + pills. */
 		providerType?: string | null;
 		providerName?: string | null;
+		/**
+		 * Whether a secret provider is CURRENTLY bound to this stack. When false but
+		 * injectedSecretKeys is non-empty, the keys are historical (from the last deploy)
+		 * and the next deploy will drop them - the banner says so instead of implying they
+		 * are still active (#1522).
+		 */
+		providerBound?: boolean;
 		/** Set when the live provider probe failed - shown as an amber line. */
 		probeError?: string | null;
 		/** Key NAMES the live probe found in the bound provider (present RIGHT NOW).
@@ -52,6 +59,7 @@
 		injectedSecretKeys = [],
 		providerType = null,
 		providerName = null,
+		providerBound = true,
 		probeError = null,
 		providerKeySet = new Set<string>(),
 		showInterpolationHint = false,
@@ -524,7 +532,7 @@
 			</div>
 		{/if}
 		<!-- Provider-injected secrets loaded at the last deploy -->
-		{#if injectedSecretKeys.length > 0}
+		{#if injectedSecretKeys.length > 0 && providerBound}
 			<div class="flex items-start gap-2 px-2.5 py-2 rounded bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50">
 				<Check class="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
 				<div class="text-xs text-emerald-700 dark:text-emerald-300 min-w-0">
@@ -546,6 +554,24 @@
 					<div class="flex flex-wrap gap-1.5 mt-1.5">
 						{#each injectedSecretKeys as key}
 							<span class="inline-flex items-center gap-1 font-mono text-2xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-800/40 border border-emerald-300 dark:border-emerald-700">
+								<KeyRound class="w-2.5 h-2.5" />{key}
+							</span>
+						{/each}
+					</div>
+				</div>
+			</div>
+		{:else if injectedSecretKeys.length > 0 && !providerBound}
+			<!-- Historical: keys were injected on a previous deploy but no provider is bound now (#1522). -->
+			<div class="flex items-start gap-2 px-2.5 py-2 rounded bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50">
+				<AlertTriangle class="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+				<div class="text-xs text-amber-700 dark:text-amber-300 min-w-0">
+					<div class="font-semibold">No secret provider is bound</div>
+					<p class="text-amber-600 dark:text-amber-400 mt-0.5">
+						These {injectedSecretKeys.length} secret{injectedSecretKeys.length === 1 ? ' was' : 's were'} injected on the last deploy but the stack is no longer bound to a provider. The next deploy will drop {injectedSecretKeys.length === 1 ? 'it' : 'them'}. Reselect a provider to keep them.
+					</p>
+					<div class="flex flex-wrap gap-1.5 mt-1.5">
+						{#each injectedSecretKeys as key}
+							<span class="inline-flex items-center gap-1 font-mono text-2xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-800/40 border border-amber-300 dark:border-amber-700 line-through decoration-amber-500/60">
 								<KeyRound class="w-2.5 h-2.5" />{key}
 							</span>
 						{/each}

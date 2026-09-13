@@ -30,6 +30,11 @@
 	let showModal = $state(false);
 	let editing = $state<SecretProvider | null>(null);
 	let confirmDeleteId = $state<number | null>(null);
+	// Stacks bound to the provider whose delete popover is open, so we can warn the
+	// user that deleting it unbinds them (#1522). Keyed by nothing - only one popover is
+	// open at a time.
+	let deleteAffectedStacks = $state<Array<{ stackName: string; environmentId: number | null }>>([]);
+	let loadingAffected = $state(false);
 	let testingId = $state<number | null>(null);
 	// Brief green tick on the tile's Test button right after a successful test.
 	let testOkId = $state<number | null>(null);
@@ -51,6 +56,22 @@
 	function openModal(provider?: SecretProvider) {
 		editing = provider || null;
 		showModal = true;
+	}
+
+	async function loadAffectedStacks(id: number) {
+		loadingAffected = true;
+		deleteAffectedStacks = [];
+		try {
+			const res = await fetch(`/api/secret-providers/${id}`);
+			if (res.ok) {
+				const data = await res.json();
+				deleteAffectedStacks = data.stacksUsing ?? [];
+			}
+		} catch {
+			// Non-fatal: the confirmation still works, just without the stack list.
+		} finally {
+			loadingAffected = false;
+		}
 	}
 
 	async function deleteProvider(id: number) {
@@ -193,12 +214,14 @@
 										itemName={provider.name}
 										title="Remove"
 										position="left"
+										autoHideMs={0}
 										onConfirm={() =>
 											deleteProvider(provider.id)}
-										onOpenChange={(open) =>
-											(confirmDeleteId = open
-												? provider.id
-												: null)}
+										onOpenChange={(open) => {
+											confirmDeleteId = open ? provider.id : null;
+											if (open) loadAffectedStacks(provider.id);
+											else deleteAffectedStacks = [];
+										}}
 									>
 										{#snippet children({ open })}
 											<Trash2
@@ -206,6 +229,20 @@
 													? 'text-destructive'
 													: 'text-muted-foreground hover:text-destructive'}"
 											/>
+										{/snippet}
+										{#snippet extraContent()}
+											{#if loadingAffected}
+												<p class="text-xs text-muted-foreground">Checking which stacks use this provider...</p>
+											{:else if deleteAffectedStacks.length > 0}
+												<p class="text-xs text-amber-600 dark:text-amber-500">
+													This unbinds {deleteAffectedStacks.length} stack{deleteAffectedStacks.length === 1 ? '' : 's'}; their next deploy drops the injected secrets:
+												</p>
+												<ul class="mt-1 text-xs text-muted-foreground list-disc list-inside max-h-24 overflow-y-auto">
+													{#each deleteAffectedStacks as s}
+														<li>{s.stackName}</li>
+													{/each}
+												</ul>
+											{/if}
 										{/snippet}
 									</ConfirmPopover>
 								{/if}

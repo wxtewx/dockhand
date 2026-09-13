@@ -92,6 +92,7 @@
 	import { canAccess } from '$lib/stores/auth';
 	import { vulnerabilityCriteriaIcons } from '$lib/utils/update-steps';
 	import { compareIps } from '$lib/utils/ip';
+	import { parseTimeStringToSeconds } from '$lib/utils/parse-uptime';
 	import { formatHostPortUrl } from '$lib/utils/url';
 	import { parseCustomUrl } from '$lib/utils/custom-url';
 	import { extractTraefikUrls } from '$lib/utils/traefik-urls';
@@ -1321,31 +1322,6 @@
 		return -Infinity;
 	}
 
-	function parseTimeStringToSeconds(timeStr: string): number {
-		// Parse strings like "2 hours", "3 days", "About a minute", "Less than a second"
-		const str = timeStr.toLowerCase();
-
-		if (str.includes('less than a second')) return 1;
-		if (str.includes('less than a minute') || str.includes('about a minute')) return 60;
-
-		const match = str.match(/(\d+)\s*(second|minute|hour|day|week|month|year)/);
-		if (!match) return 0;
-
-		const value = parseInt(match[1], 10);
-		const unit = match[2];
-
-		switch (unit) {
-			case 'second': return value;
-			case 'minute': return value * 60;
-			case 'hour': return value * 3600;
-			case 'day': return value * 86400;
-			case 'week': return value * 604800;
-			case 'month': return value * 2592000;
-			case 'year': return value * 31536000;
-			default: return 0;
-		}
-	}
-
 	function getHealthVariant(health?: string): 'default' | 'destructive' | 'secondary' | 'outline' {
 		switch (health) {
 			case 'healthy':
@@ -2447,24 +2423,26 @@
 						{/if}
 					{/if}
 
-					<!-- Current Terminal Panel -->
-					{#if currentTerminalContainerId}
-						{@const activeTerminal = activeTerminals.find(t => t.containerId === currentTerminalContainerId)}
-						{#if activeTerminal}
-							<div class="flex-1 min-h-0">
-								<TerminalPanel
-									containerId={activeTerminal.containerId}
-									containerName={activeTerminal.containerName}
-									shell={activeTerminal.shell}
-									user={activeTerminal.user}
-									visible={true}
-									envId={envId}
-									fillHeight={true}
-									onClose={() => closeTerminal(activeTerminal.containerId)}
-								/>
-							</div>
-						{/if}
-					{/if}
+					<!-- Terminal panels: render EVERY open session so each keeps its own
+					     live WebSocket/xterm; only the current one is visible. Switching
+					     just toggles visibility, so a running process (e.g. top) in a
+					     backgrounded session stays alive and its shell stays its own. -->
+					{#each activeTerminals as t (t.containerId)}
+						<!-- Do NOT display:none a backgrounded panel; TerminalPanel hides
+						     itself off-screen while keeping its size so xterm can fit. -->
+						<div class="min-h-0" class:flex-1={t.containerId === currentTerminalContainerId}>
+							<TerminalPanel
+								containerId={t.containerId}
+								containerName={t.containerName}
+								shell={t.shell}
+								user={t.user}
+								visible={t.containerId === currentTerminalContainerId}
+								envId={envId}
+								fillHeight={true}
+								onClose={() => closeTerminal(t.containerId)}
+							/>
+						</div>
+					{/each}
 				</div>
 			{/if}
 		</div>
@@ -2485,21 +2463,21 @@
 				{/if}
 			{/if}
 
-			<!-- Show current terminal panel -->
-			{#if currentTerminalContainerId}
-				{@const activeTerminal = activeTerminals.find(t => t.containerId === currentTerminalContainerId)}
-				{#if activeTerminal}
-					<TerminalPanel
-						containerId={activeTerminal.containerId}
-						containerName={activeTerminal.containerName}
-						shell={activeTerminal.shell}
-						user={activeTerminal.user}
-						visible={true}
-						envId={envId}
-						onClose={() => closeTerminal(activeTerminal.containerId)}
-					/>
-				{/if}
-			{/if}
+			<!-- Terminal panels: render every open session (each keeps its own live
+			     WebSocket/xterm); only the current one is visible. -->
+			{#each activeTerminals as t (t.containerId)}
+				<!-- TerminalPanel hides a backgrounded session off-screen (keeps size for
+				     xterm fit); do not display:none it or a background xterm gets 0x0. -->
+				<TerminalPanel
+					containerId={t.containerId}
+					containerName={t.containerName}
+					shell={t.shell}
+					user={t.user}
+					visible={t.containerId === currentTerminalContainerId}
+					envId={envId}
+					onClose={() => closeTerminal(t.containerId)}
+				/>
+			{/each}
 		{/if}
 	{/if}
 </div>

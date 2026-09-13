@@ -9,6 +9,7 @@
 
 import { writable, get } from 'svelte/store';
 import { getFont, getMonospaceFont, type FontMeta } from '$lib/themes';
+import { preferenceTarget } from '$lib/utils/theme-preference';
 
 export type FontSize = 'xsmall' | 'small' | 'normal' | 'medium' | 'large' | 'xlarge';
 export type ActionIconSize = 'small' | 'normal' | 'large' | 'xlarge';
@@ -161,12 +162,9 @@ function createThemeStore() {
 
 			// Save to database (async, non-blocking)
 			try {
-				const url = userId
-					? `/api/profile/preferences`
-					: `/api/settings/general`;
-
+				const { url, method } = preferenceTarget(userId);
 				await fetch(url, {
-					method: userId ? 'PUT' : 'POST',
+					method,
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({ [key]: value })
 				});

@@ -48,6 +48,20 @@ export type SecretProviderType =
  * self-hosted Vault/Infisical/Connect on the local network still works. Throws on
  * an unsafe host; call it before the first request in every REST provider.
  */
+/**
+ * Strip ONE layer of matching surrounding quotes for reference DETECTION only.
+ * 1Password's "Copy Secret Reference" puts `"op://Vault/Item/field"` on the clipboard
+ * (quotes included), so a pasted value fails a bare `startsWith('op://')` test and the
+ * reference is silently skipped (#1521). Providers normalize with this before the prefix
+ * test, and the resolver uses it to key the reference - the STORED value is left untouched
+ * (so #1086's "stop stripping quotes on save" still holds). Only strips when both ends are
+ * the same quote char; leaves a value with mismatched/one-sided quotes as-is.
+ */
+export function stripSurroundingQuotes(value: string): string {
+	// \1 backreference: strip only when the SAME quote char wraps both ends.
+	return value.trim().replace(/^(["'])(.*)\1$/s, '$2');
+}
+
 export function assertSafeProviderHost(rawUrl: string, label: string): void {
 	const safe = isSafeNotificationUrl(rawUrl);
 	if (!safe.ok) {

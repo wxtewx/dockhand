@@ -56,6 +56,25 @@ export function selfhstRef(icon: string | null | undefined): string | null {
 	return isSelfhstIcon(icon) ? icon!.slice('selfhst:'.length) : null;
 }
 
+/**
+ * Whether an image is Dockhand's own image, so its container shows the app mark.
+ * Matches the `dockhand` repo under the `fnsys`/`finsys` org from any registry,
+ * ignoring the tag/digest (e.g. `fnsys/dockhand:v1.0.47`,
+ * `docker.io/finsys/dockhand`, `registry.bor6.pl/dockhand@sha256:...`).
+ */
+export function isDockhandImage(image: string | null | undefined): boolean {
+	if (!image) return false;
+	const path = image.split('@')[0].split('/'); // drop digest, split path
+	// The tag lives only in the LAST segment (after the last '/'); a registry
+	// host may carry a ':port' earlier, so strip the tag from the last segment only.
+	const name = path[path.length - 1].split(':')[0];
+	if (name !== 'dockhand') return false;
+	const org = path.length >= 2 ? path[path.length - 2] : '';
+	// The official org, or a private-registry host (`registry.example/dockhand`).
+	// A bare or unqualified `<org>/dockhand` is NOT matched - too broad.
+	return org === 'fnsys' || org === 'finsys' || org.includes('.') || org.includes(':');
+}
+
 export { iconMap };
 
 // --- Stack icon set (SEPARATE from env; app/service-oriented) --------------------

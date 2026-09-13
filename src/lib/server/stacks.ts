@@ -10,6 +10,8 @@ import { join, resolve, dirname, basename, isAbsolute, normalize as pathNormaliz
 import { spawn as nodeSpawn } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
 import { redactSecretVars } from './secret-redact';
+import { collectProcess } from './process-output-core';
+import { makeLineForwarder, makeRedactedLineSink } from './secret-redaction';
 import {
 	applyFileDeletions,
 	hashDirFiles,
@@ -47,6 +49,7 @@ import {
 	setStackInjectedSecretKeys
 } from './db';
 import { getProvider } from './secretproviders';
+import { stripSurroundingQuotes } from './secretproviders/shared';
 import { resolveComposeDockerHost, buildComposeBaseArgs } from './compose-docker-args';
 import { unregisterSchedule } from './scheduler';
 import { sendEventNotification } from './notifications';
@@ -88,6 +91,24 @@ export interface StackOperationResult {
 	command?: string;
 	/** Result of applying git deletion sync (files removed / kept, with reasons) */
 	deletion?: DeletionApplyResult;
+	/**
+	 * The process's real exit code, when one exists to report -- the local/direct
+	 * compose path runs the command itself and knows it. Left unset on a timeout
+	 * (the process was killed, not exited) and on the Hawser path (the agent
+	 * protocol doesn't return one). Callers needing an exit code regardless
+	 * (deploy-run-record.ts) fall back to a value consistent with success/failure.
+	 */
+	exitCode?: number;
+	/**
+	 * Set by deployStack() only: every secret value (DB AND provider-resolved --
+	 * Bitwarden/1Password/etc. bulk pulls or inline refs, resolveProviderEnvVars) that
+	 * actually reached the container for THIS run. Provider resolution happens inside
+	 * deployStack(), after any caller-built stack_deploy run recorder was already
+	 * constructed from DB-only vars -- callers MUST feed this into the recorder via
+	 * RunRecorder.addSecrets() before closing it, or a provider-resolved secret that
+	 * surfaces in compose's raw error text is stored unredacted (see deploy-run-record.ts).
+	 */
+	resolvedSecrets?: string[];
 }
 
 /**
@@ -146,6 +167,8 @@ export interface DeployStackOptions {
 	 * (Stack events and Git sync are separate user-facing groups). stack_events is
 	 * still recorded regardless. (#1295) */
 	isGitDeploy?: boolean;
+	/** Optional callback invoked per redacted output line as the compose command runs. */
+	onLine?: (line: string) => void;
 }
 
 // =============================================================================
@@ -241,25 +264,11 @@ function isBinaryContent(bytes: Uint8Array): boolean {
 	}
 }
 
-/**
- * Collect stdout/stderr from a child process and wait for it to exit.
- */
-function collectProcess(proc: ChildProcess): Promise<{ exitCode: number; stdout: string; stderr: string }> {
-	return new Promise((resolve, reject) => {
-		const stdoutChunks: Buffer[] = [];
-		const stderrChunks: Buffer[] = [];
-		proc.stdout?.on('data', (chunk: Buffer) => stdoutChunks.push(chunk));
-		proc.stderr?.on('data', (chunk: Buffer) => stderrChunks.push(chunk));
-		proc.on('error', reject);
-		proc.on('close', (code) => {
-			resolve({
-				exitCode: code ?? 1,
-				stdout: Buffer.concat(stdoutChunks).toString(),
-				stderr: Buffer.concat(stderrChunks).toString()
-			});
-		});
-	});
-}
+// collectProcess lives in ./process-output-core (imported above) -- pure,
+// dependency-free, so it stays unit-testable without dragging in the DB
+// module chain. Re-exported here so existing call sites (loginToRegistries,
+// executeLocalCompose) are unaffected.
+export { collectProcess };
 
 /**
  * Read all files from a directory as a map of relative path -> content.
@@ -803,7 +812,7 @@ export async function saveStackComposeFile(
 		oldEnvPath?: string;  // Old env file path for renaming
 		secretProviderId?: number | null;  // secret provider binding (undefined = unchanged)
 	}
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; composePath?: string }> {
 	// Validate stack name - Docker Compose requires lowercase alphanumeric, hyphens, underscores
 	// Must also start with a letter or number
 	if (!/^[a-z0-9][a-z0-9_-]*$/.test(name)) {
@@ -1002,7 +1011,10 @@ export async function saveStackComposeFile(
 
 	try {
 		writeFileSync(composeFile, content);
-		return { success: true };
+		// Return the path actually written so the caller can persist it even when it
+		// supplied no explicit composePath (else the stored path is null while the file
+		// exists at the default location - #1515).
+		return { success: true, composePath: composeFile };
 	} catch (err: any) {
 		return { success: false, error: `Failed to ${create ? 'create' : 'save'} compose file: ${err.message}` };
 	}
@@ -1158,6 +1170,8 @@ function findComposeOverrideFile(stackDir: string, composeFileName: string): str
  * @param secretVars - Secret environment variables (injected via shell env, NEVER written to disk)
  * @param workingDir - Optional working directory for compose execution (for imported stacks)
  * @param customComposePath - Optional path to existing compose file (for imported stacks, skips writing)
+ * @param onLine - Optional callback invoked per output line, redacted against envVars/secretVars
+ *   (NOT spawnEnv — that also carries PATH/HOME/DOCKER_CONFIG and would over-redact)
  */
 async function executeLocalCompose(
 	operation: 'up' | 'down' | 'stop' | 'start' | 'restart' | 'pull' | 'build',
@@ -1181,7 +1195,8 @@ async function executeLocalCompose(
 	// direct-remote only: when the stack folder was staged to <remoteStackHostDir> on the target
 	// host, rewrite the compose's same-dir relative binds (`./x`) to <remoteStackHostDir>/x so the
 	// remote daemon binds the staged files. undefined = no staging, compose unchanged.
-	remoteStackHostDir?: string
+	remoteStackHostDir?: string,
+	onLine?: (line: string) => void
 ): Promise<StackOperationResult> {
 	const logPrefix = `[Stack:${stackName}]`;
 
@@ -1477,7 +1492,15 @@ async function executeLocalCompose(
 		}, COMPOSE_TIMEOUT_MS);
 
 		try {
-			const { exitCode: code, stdout, stderr } = await collectProcess(proc);
+			// Do NOT use spawnEnv! It also carries PATH, HOME, DOCKER_CONFIG, DOCKER_API_VERSION.
+			// HOME typically falls back to "/root" -- 5 characters, below MIN_REPLACEABLE_LENGTH.
+			// Under our own rule, that would withhold EVERY line containing "/root".
+			const secrets = [...Object.values(envVars ?? {}), ...Object.values(secretVars ?? {})]
+				.filter((v): v is string => typeof v === 'string');
+			const { exitCode: code, stdout, stderr } = await collectProcess(
+				proc,
+				onLine ? makeLineForwarder(onLine, secrets) : undefined
+			);
 
 			console.log(`${logPrefix} ----------------------------------------`);
 			console.log(`${logPrefix} COMPOSE PROCESS COMPLETE`);
@@ -1506,7 +1529,8 @@ async function executeLocalCompose(
 				return {
 					success: true,
 					output: stdout || stderr || `Stack "${stackName}" ${operation} completed successfully`,
-					command: commandStr
+					command: commandStr,
+					exitCode: code
 				};
 			} else {
 				// stderr can echo an interpolated secret value (e.g. a failing
@@ -1516,7 +1540,8 @@ async function executeLocalCompose(
 					success: false,
 					output: redactSecretVars(stdout, secretVars),
 					error: redactSecretVars(stderr, secretVars) || `docker compose ${operation} exited with code ${code}`,
-					command: commandStr
+					command: commandStr,
+					exitCode: code
 				};
 			}
 		} finally {
@@ -1558,6 +1583,12 @@ async function executeLocalCompose(
  *
  * @param envVars - Non-secret environment variables (from .env file)
  * @param secretVars - Secret environment variables (injected via shell env on Hawser, NEVER in .env)
+ * @param onLine - Called per redacted output line while the command runs. Hawser's
+ *   `/_hawser/compose` call is a single request/response, but an agent that understands
+ *   `streamOutput` sends its output alongside it as 'stream' messages, which the Edge
+ *   connection routes back here by requestId. An older agent sends none; for it the
+ *   response's `output` block is surfaced as one line instead. Never both -- see
+ *   makeRedactedLineSink.
  */
 async function executeComposeViaHawser(
 	operation: 'up' | 'down' | 'stop' | 'start' | 'restart' | 'pull' | 'build',
@@ -1575,7 +1606,8 @@ async function executeComposeViaHawser(
 	noBuildCache?: boolean,
 	pullPolicy?: string,
 	filesToDelete?: FileToDelete[],
-	removeFiles?: boolean
+	removeFiles?: boolean,
+	onLine?: (line: string) => void
 ): Promise<StackOperationResult> {
 	const logPrefix = `[Stack:${stackName}]`;
 	// Import dockerFetch dynamically to avoid circular dependency
@@ -1585,6 +1617,10 @@ async function executeComposeViaHawser(
 	// Hawser will inject ALL these as shell environment variables (secrets are NOT written to .env)
 	const allEnvVars = { ...(envVars || {}), ...(secretVars || {}) };
 	const secretCount = secretVars ? Object.keys(secretVars).length : 0;
+	// Unlike spawnEnv on the local path, allEnvVars is genuinely just the stack's own
+	// variables -- no PATH/HOME/DOCKER_CONFIG that would withhold half the output.
+	const secrets = Object.values(allEnvVars).filter((v): v is string => typeof v === 'string');
+	const lines = makeRedactedLineSink(onLine, secrets);
 
 	console.log(`${logPrefix} ----------------------------------------`);
 	console.log(`${logPrefix} EXECUTE COMPOSE VIA HAWSER`);
@@ -1659,7 +1695,10 @@ async function executeComposeViaHawser(
 				? filesToDelete.map(f => ({ path: f.path, sha256: f.hash }))
 				: undefined,
 			// Stack deletion (#1162): remove the agent-side stack dir on down
-			removeFiles: removeFiles || false
+			removeFiles: removeFiles || false,
+			// Ask the agent to also send its output line by line while the command runs.
+			// Old agents ignore the field and just return the block as before.
+			streamOutput: !!onLine
 		});
 
 		console.log(`${logPrefix} Sending request to Hawser agent...`);
@@ -1668,7 +1707,8 @@ async function executeComposeViaHawser(
 			{
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body
+				body,
+				onLine: lines.forward
 			},
 			envId
 		);
@@ -1691,6 +1731,10 @@ async function executeComposeViaHawser(
 		if (result.error) {
 			console.log(`${logPrefix} Error:`, result.error);
 		}
+
+		// Only reaches the operator when the agent streamed nothing -- otherwise they would
+		// see the whole run a second time, appended to the lines they already watched.
+		lines.surfaceBlock(result.output);
 
 		// Git deletion sync: interpret the agent's report. An agent that supports
 		// the feature always returns deletedFiles/skippedFiles (possibly empty
@@ -1758,13 +1802,16 @@ async function executeComposeViaHawser(
  *
  * @param envVars - Non-secret environment variables (from .env file)
  * @param secretVars - Secret environment variables (from DB, injected via shell env)
+ * @param onLine - Optional callback invoked per redacted output line as the command runs.
+ *   Forwarded to whichever execution path is chosen (local socket, direct, or Hawser).
  */
 async function executeComposeCommand(
 	operation: 'up' | 'down' | 'stop' | 'start' | 'restart' | 'pull' | 'build',
 	options: ComposeCommandOptions,
 	composeContent: string,
 	envVars?: Record<string, string>,
-	secretVars?: Record<string, string>
+	secretVars?: Record<string, string>,
+	onLine?: (line: string) => void
 ): Promise<StackOperationResult> {
 	const { stackName, envId, forceRecreate, build, noBuildCache, pullPolicy, removeVolumes, stackFiles, workingDir, composePath, envPath, useOverrideFile, serviceName, composeFileName, filesToDelete, removeFiles } = options;
 
@@ -1791,7 +1838,9 @@ async function executeComposeCommand(
 			serviceName,
 			build,
 			noBuildCache,
-			pullPolicy
+			pullPolicy,
+			undefined,    // remoteStackHostDir
+			onLine
 		);
 	}
 
@@ -1857,7 +1906,8 @@ async function executeComposeCommand(
 				noBuildCache,
 				pullPolicy,
 				filesToDelete,
-				removeFiles
+				removeFiles,
+				onLine
 			);
 		}
 
@@ -1920,7 +1970,8 @@ async function executeComposeCommand(
 				build,
 				noBuildCache,
 				pullPolicy,
-				remoteStackHostDir
+				remoteStackHostDir,
+				onLine
 			);
 		}
 
@@ -1952,7 +2003,9 @@ async function executeComposeCommand(
 				serviceName,
 				build,
 				noBuildCache,
-				pullPolicy
+				pullPolicy,
+				undefined,    // remoteStackHostDir
+				onLine
 			);
 		}
 	}
@@ -2377,7 +2430,12 @@ export async function redeployStackFromDir(
 			composePath,
 			envPath: hasEnv ? envPath : undefined,
 			composeFileName,
-			stackFiles
+			stackFiles,
+			// A restore rewrote the stack dir and swapped the volume data underneath the
+			// stack. Force-recreate so the container is rebuilt fresh against the restored
+			// state; a plain `up` sees the unchanged compose and only restarts the stopped
+			// container, which can leave it not-yet-running after an in-place swap.
+			forceRecreate: true
 		},
 		composeContent,
 		envVars,
@@ -2410,7 +2468,8 @@ async function notifyStackLifecycle(stackName: string, envId: number | null | un
 
 export async function startStack(
 	stackName: string,
-	envId?: number | null
+	envId?: number | null,
+	onLine?: (line: string) => void
 ): Promise<StackOperationResult> {
 	const result = await requireComposeFile(stackName, envId);
 
@@ -2443,7 +2502,8 @@ export async function startStack(
 		opts,
 		result.content!,
 		result.nonSecretVars,
-		result.secretVars
+		result.secretVars,
+		onLine
 	);
 	await notifyStackLifecycle(stackName, envId, 'stack_started', startResult);
 	return startResult;
@@ -2455,7 +2515,8 @@ export async function startStack(
  */
 export async function stopStack(
 	stackName: string,
-	envId?: number | null
+	envId?: number | null,
+	onLine?: (line: string) => void
 ): Promise<StackOperationResult> {
 	const result = await requireComposeFile(stackName, envId);
 
@@ -2477,7 +2538,8 @@ export async function stopStack(
 		{ stackName, envId, workingDir: result.stackDir, composePath: result.composePath, envPath: result.envPath, useOverrideFile: isGitStack, stackFiles: await lifecycleStackFiles(result.stackDir) },
 		result.content!,
 		result.nonSecretVars,
-		result.secretVars
+		result.secretVars,
+		onLine
 	);
 
 	// Stop any dynamically-spawned child containers not in the compose file
@@ -2503,7 +2565,8 @@ export async function stopStack(
 export async function restartStack(
 	stackName: string,
 	envId?: number | null,
-	mode: 'restart' | 'ordered' | 'recreate' = 'restart'
+	mode: 'restart' | 'ordered' | 'recreate' = 'restart',
+	onLine?: (line: string) => void
 ): Promise<StackOperationResult> {
 	const result = await requireComposeFile(stackName, envId);
 
@@ -2524,16 +2587,16 @@ export async function restartStack(
 
 	if (mode === 'recreate') {
 		// Stop first, then bring up with --force-recreate to ensure new container IDs
-		await executeComposeCommand('stop', opts, result.content!, result.nonSecretVars, result.secretVars);
+		await executeComposeCommand('stop', opts, result.content!, result.nonSecretVars, result.secretVars, onLine);
 		await applyProviderSecretsToComposeResult(result, stackName, envId, `[Stack:${stackName}]`);
-		composeResult = await executeComposeCommand('up', { ...opts, forceRecreate: true }, result.content!, result.nonSecretVars, result.secretVars);
+		composeResult = await executeComposeCommand('up', { ...opts, forceRecreate: true }, result.content!, result.nonSecretVars, result.secretVars, onLine);
 	} else if (mode === 'ordered') {
 		// Stop everything, then start in depends_on order (compose start honors the
 		// dependency graph). Same container IDs, no recreate, no re-pull.
-		await executeComposeCommand('stop', opts, result.content!, result.nonSecretVars, result.secretVars);
-		composeResult = await executeComposeCommand('start', opts, result.content!, result.nonSecretVars, result.secretVars);
+		await executeComposeCommand('stop', opts, result.content!, result.nonSecretVars, result.secretVars, onLine);
+		composeResult = await executeComposeCommand('start', opts, result.content!, result.nonSecretVars, result.secretVars, onLine);
 	} else {
-		composeResult = await executeComposeCommand('restart', opts, result.content!, result.nonSecretVars, result.secretVars);
+		composeResult = await executeComposeCommand('restart', opts, result.content!, result.nonSecretVars, result.secretVars, onLine);
 	}
 
 	// Restart any dynamically-spawned child containers not in the compose file
@@ -2549,7 +2612,8 @@ export async function restartStack(
 export async function downStack(
 	stackName: string,
 	envId?: number | null,
-	removeVolumes = false
+	removeVolumes = false,
+	onLine?: (line: string) => void
 ): Promise<StackOperationResult> {
 	const result = await requireComposeFile(stackName, envId);
 
@@ -2567,7 +2631,8 @@ export async function downStack(
 		{ stackName, envId, removeVolumes, workingDir: result.stackDir, composePath: result.composePath, envPath: result.envPath, useOverrideFile: isGitStack, stackFiles: await lifecycleStackFiles(result.stackDir) },
 		result.content!,
 		result.nonSecretVars,
-		result.secretVars
+		result.secretVars,
+		onLine
 	);
 
 	// Remove any dynamically-spawned child containers not in the compose file
@@ -2942,7 +3007,7 @@ async function reconcileStackPendingUpdates(stackName: string, envId: number): P
  * Uses stack locking to prevent concurrent deployments.
  */
 export async function deployStack(options: DeployStackOptions): Promise<StackOperationResult> {
-	const { name, compose, envId, sourceDir, forceRecreate, build, noBuildCache, pullPolicy, composePath, envPath, composeFileName, envFileName, filesToDelete, isGitDeploy } = options;
+	const { name, compose, envId, sourceDir, forceRecreate, build, noBuildCache, pullPolicy, composePath, envPath, composeFileName, envFileName, filesToDelete, isGitDeploy, onLine } = options;
 	const logPrefix = `[Stack:${name}]`;
 
 	console.log(`${logPrefix} ========================================`);
@@ -3055,9 +3120,19 @@ export async function deployStack(options: DeployStackOptions): Promise<StackOpe
 			if (source?.composePath) {
 				workingDir = dirname(source.composePath);
 				actualComposePath = source.composePath;
+				// envPath: a real path is used as-is; null/undefined (unset) falls back to
+				// the .env beside the compose file so its content (e.g. a bulk secret
+				// selector) still reaches resolveProviderEnvVars - same as the default-path
+				// branch below. An empty string means the user chose NO env file, so honor
+				// that and read none. Without the fallback, an internal stack whose
+				// composePath is now stored (#1515) but has an unset envPath would skip the
+				// .env entirely.
 				if (source.envPath) {
 					actualEnvPath = source.envPath;
+				} else if (source.envPath == null) {
+					actualEnvPath = join(workingDir, '.env');
 				}
+				// source.envPath === '' -> leave actualEnvPath undefined (no env file)
 				console.log(`${logPrefix} Using custom path from DB:`, workingDir);
 			} else {
 				// Default: compose file should already exist (written by saveStackComposeFile)
@@ -3164,8 +3239,17 @@ export async function deployStack(options: DeployStackOptions): Promise<StackOpe
 			cmdOptions,
 			compose,
 			composeEnvVars,
-			secretVars
+			secretVars,
+			onLine
 		);
+		// F4 fix: `secretVars` here is POST-resolveProviderEnvVars (line ~3059 above) --
+		// the same set executeComposeCommand just redacted streamed lines against. This
+		// is the single call site inside deployStack(), so setting it here covers both
+		// the local/direct compose path and the Hawser path uniformly. Callers (routes,
+		// deployGitStack) feed this into their stack_deploy run recorder via
+		// RunRecorder.addSecrets() before closing it -- see StackOperationResult's doc
+		// comment and deploy-run-record.ts.
+		result.resolvedSecrets = Object.values(secretVars);
 		console.log(`${logPrefix} ========================================`);
 		console.log(`${logPrefix} DEPLOY STACK RESULT`);
 		console.log(`${logPrefix} ========================================`);
@@ -3545,20 +3629,24 @@ async function resolveProviderEnvVars(
 	// Only providers that support inline references detect any here.
 	const isRef = (value: unknown): value is string =>
 		provider?.supportsReferences ? provider.isReference(value) : false;
+	// The canonical reference string for lookup: surrounding quotes stripped so a value
+	// pasted straight from 1Password's "Copy Secret Reference" (which includes quotes)
+	// resolves the same as the bare op://... form (#1521). The STORED value is untouched.
+	const normalizeRef = (value: string): string => stripSurroundingQuotes(value);
 
 	const envFileRefs = new Map<string, string>();
 	for (const [key, value] of Object.entries(envFileVars)) {
 		if (isRef(value)) {
-			envFileRefs.set(key, value.trim());
+			envFileRefs.set(key, normalizeRef(value));
 		}
 	}
 
 	const refs = new Set<string>();
 	for (const value of Object.values(dbNonSecretVars)) {
-		if (isRef(value)) refs.add(value.trim());
+		if (isRef(value)) refs.add(normalizeRef(value));
 	}
 	for (const value of Object.values(secretVars)) {
-		if (isRef(value)) refs.add(value.trim());
+		if (isRef(value)) refs.add(normalizeRef(value));
 	}
 	for (const ref of envFileRefs.values()) refs.add(ref);
 
@@ -3584,7 +3672,7 @@ async function resolveProviderEnvVars(
 	let promotedFromDb = 0;
 	for (const [key, value] of Object.entries(dbNonSecretVars)) {
 		if (isRef(value)) {
-			const resolved = refMap.get(value.trim());
+			const resolved = refMap.get(normalizeRef(value));
 			if (resolved !== undefined) {
 				delete dbNonSecretVars[key];
 				secretVars[key] = resolved;
@@ -3594,7 +3682,7 @@ async function resolveProviderEnvVars(
 	}
 	for (const [key, value] of Object.entries(secretVars)) {
 		if (isRef(value)) {
-			const resolved = refMap.get(value.trim());
+			const resolved = refMap.get(normalizeRef(value));
 			if (resolved !== undefined) {
 				secretVars[key] = resolved;
 			}

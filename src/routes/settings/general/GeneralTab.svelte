@@ -91,6 +91,8 @@ services:
 	let eventCleanupEnabled = $derived($appSettings.eventCleanupEnabled);
 	let scannerCleanupCron = $derived($appSettings.scannerCleanupCron);
 	let scannerCleanupEnabled = $derived($appSettings.scannerCleanupEnabled);
+	let deployLogReconcileCron = $derived($appSettings.deployLogReconcileCron);
+	let deployLogReconcileEnabled = $derived($appSettings.deployLogReconcileEnabled);
 	let logMaxLines = $derived($appSettings.logMaxLines);
 	let formatLogTimestamps = $derived($appSettings.formatLogTimestamps);
 	let defaultTimezone = $derived($appSettings.defaultTimezone);
@@ -185,6 +187,17 @@ services:
 		const newState = !scannerCleanupEnabled;
 		appSettings.setScannerCleanupEnabled(newState);
 		toast.success(newState ? 'Scanner cleanup enabled' : 'Scanner cleanup disabled');
+	}
+
+	function handleDeployLogReconcileCronChange(cron: string) {
+		appSettings.setDeployLogReconcileCron(cron);
+		toast.success('Deploy log reconcile cron updated');
+	}
+
+	function handleDeployLogReconcileEnabledChange() {
+		const newState = !deployLogReconcileEnabled;
+		appSettings.setDeployLogReconcileEnabled(newState);
+		toast.success(newState ? 'Deploy log reconcile enabled' : 'Deploy log reconcile disabled');
 	}
 
 	function handleGrypeImageBlur(e: Event) {
@@ -293,6 +306,15 @@ services:
 	let semverIncludePrerelease = $state(false);
 	let semverLoaded = $state(false);
 
+	// The global theme defaults (what a new user starts with). With auth on the theme
+	// toggles here edit these, not the admin's own profile. Rendering waits on
+	// globalThemeLoaded: until the fetch fills these, a toggle handed globalValue=undefined
+	// would fall back to the admin's personal store value and show it.
+	let globalColoredActions = $state<boolean | undefined>(undefined);
+	let globalAnimateIcons = $state<boolean | undefined>(undefined);
+	let globalIndentGuides = $state<boolean | undefined>(undefined);
+	let globalThemeLoaded = $state(false);
+
 	onMount(async () => {
 		try {
 			const res = await fetch('/api/settings/semver');
@@ -305,6 +327,17 @@ services:
 			}
 		} catch { /* keep defaults */ }
 		semverLoaded = true;
+
+		try {
+			const res = await fetch('/api/settings/general');
+			if (res.ok) {
+				const g = await res.json();
+				globalColoredActions = !!g.coloredActionButtons;
+				globalAnimateIcons = g.animateIcons ?? true;
+				globalIndentGuides = !!g.editorIndentGuides;
+			}
+		} catch { /* toggles fall back to store when global value is unknown */ }
+		globalThemeLoaded = true;
 	});
 
 	async function saveSemverConfig() {
@@ -580,14 +613,20 @@ services:
 						<!-- Right column: Theme settings (always shown, with hint when auth enabled) -->
 						<div class="space-y-4">
 							<ThemeSelector />
-							<ColoredActionsToggle />
-							<AnimateIconsToggle />
-							<IndentGuidesToggle />
+							<!-- With auth on the toggles edit the GLOBAL defaults, so they wait for
+							     those to load; binding globalValue=undefined first would show the
+							     admin's own profile value. With auth off the store IS the global
+							     value, so they render immediately. -->
+							{#if !$authStore.authEnabled || globalThemeLoaded}
+								<ColoredActionsToggle globalValue={$authStore.authEnabled ? globalColoredActions : undefined} />
+								<AnimateIconsToggle globalValue={$authStore.authEnabled ? globalAnimateIcons : undefined} />
+								<IndentGuidesToggle globalValue={$authStore.authEnabled ? globalIndentGuides : undefined} />
+							{/if}
 							{#if $authStore.authEnabled}
 								<div class="text-xs text-muted-foreground flex items-start gap-1.5 mt-2 p-2 bg-muted/50 rounded-md">
 									<HelpCircle class="w-3.5 h-3.5 shrink-0 mt-0.5" />
 									<div>
-										<p>Personal theme preferences can be configured in your <a href="/profile" class="text-primary hover:underline">profile</a>.</p>
+										<p>These are the <strong>defaults for new users</strong> - they don't change your own view. To customise how <em>you</em> see the app, use the theme settings in your <a href="/profile" class="text-primary hover:underline">profile</a>.</p>
 									</div>
 								</div>
 							{/if}
@@ -1116,6 +1155,42 @@ services:
 								<CronEditor
 									value={scannerCleanupCron}
 									onchange={handleScannerCleanupCronChange}
+									disabled={!$canAccess('settings', 'edit')}
+								/>
+							</div>
+						{/if}
+					</div>
+					<div class="space-y-1 pt-2 border-t">
+						<div class="flex items-center gap-3">
+							<Label>Deploy log reconcile</Label>
+							<Tooltip.Provider delayDuration={100}>
+								<Tooltip.Root>
+									<Tooltip.Trigger>
+										<HelpCircle class="w-4 h-4 text-muted-foreground cursor-help" />
+									</Tooltip.Trigger>
+									<Tooltip.Portal>
+										<Tooltip.Content side="right" sideOffset={8} class="!w-80">
+											Every deploy from Dockhand keeps a log file on disk, linked to its run in the
+											Deploys tab. This job runs on a schedule to keep the two in sync: it deletes
+											orphaned log files whose deploy run was already removed, and marks a run whose
+											log file has gone missing (so the Deploys tab shows "log unavailable" instead
+											of a blank). It never deletes a deploy run itself.
+										</Tooltip.Content>
+									</Tooltip.Portal>
+								</Tooltip.Root>
+							</Tooltip.Provider>
+							<TogglePill
+								checked={deployLogReconcileEnabled}
+								onchange={handleDeployLogReconcileEnabledChange}
+								disabled={!$canAccess('settings', 'edit')}
+							/>
+						</div>
+						<p class="text-xs text-muted-foreground">Keeps deploy-log files in sync with their deploy records: removes logs whose run is gone, and flags runs whose log went missing (never deletes a run).</p>
+						{#if deployLogReconcileEnabled}
+							<div class="mt-2">
+								<CronEditor
+									value={deployLogReconcileCron}
+									onchange={handleDeployLogReconcileCronChange}
 									disabled={!$canAccess('settings', 'edit')}
 								/>
 							</div>

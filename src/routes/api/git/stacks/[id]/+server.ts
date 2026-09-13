@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { getGitStack, updateGitStack, deleteGitStack, deleteStackSource, updateStackSourceName, updateStackEnvVarsName, setStackEnvVars, getStackEnvVars, deleteStackEnvVars, updateStackSource } from '$lib/server/db';
+import { getGitStack, updateGitStack, deleteGitStack, deleteStackSource, updateStackSourceName, updateStackEnvVarsName, setStackEnvVars, getStackEnvVars, deleteStackEnvVars, updateStackSource, secretProviderExists } from '$lib/server/db';
 import { deleteGitStackFiles, deployGitStack } from '$lib/server/git';
 import { normalizeStackBranchUpdate } from '$lib/git-stack-branch';
 import { authorize } from '$lib/server/authorize';
@@ -88,6 +88,12 @@ export const PUT: RequestHandler = async (event) => {
 			!(await auth.can('secrets', 'view', existing.environmentId || undefined))
 		) {
 			return json({ error: 'Permission denied: binding a secret provider requires the secrets permission' }, { status: 403 });
+		}
+
+		// A stale provider id (provider deleted/recreated while the editor held the old
+		// list) would otherwise hit a raw foreign-key error on save (#1522).
+		if (typeof data.secretProviderId === 'number' && !(await secretProviderExists(data.secretProviderId))) {
+			return json({ error: 'The selected secret provider no longer exists. Reopen the stack and pick a current provider.' }, { status: 400 });
 		}
 
 		// Validate stack name if it's being changed
@@ -211,7 +217,11 @@ export const PUT: RequestHandler = async (event) => {
 		if (data.deployNow) {
 			return createJobResponse(async (send) => {
 				try {
-					const deployResult = await deployGitStack(id);
+					const deployResult = await deployGitStack(id, {
+						triggeredBy: 'manual',
+						userId: auth.user?.id,
+						onLine: (line) => send('progress', { type: 'line', line })
+					});
 					await auditGitStack(event, 'deploy', updated.id, updated.stackName, updated.environmentId);
 					send('result', {
 						...updated,

@@ -465,16 +465,10 @@
 					<!-- svelte-ignore a11y_no_static_element_interactions -->
 					<div class="animate-speedy {isJumping ? (clickCount >= 10 ? 'crazy-jumping' : `jumping-${jumpLevel}`) : ''} {hasClicked && !isJumping ? 'clicked' : ''}" onclick={handleLogoClick}>
 						<img
-							src="/logo-light.webp"
+							src="/logo.svg"
 							alt="Dockhand Logo"
-							class="h-36 w-auto object-contain dark:hidden"
-							style="filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.3)) drop-shadow(-1px -1px 1px rgba(255,255,255,0.9));"
-						/>
-						<img
-							src="/logo-dark.webp"
-							alt="Dockhand Logo"
-							class="h-36 w-auto object-contain hidden dark:block"
-							style="filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.6)) drop-shadow(-1px -1px 1px rgba(255,255,255,0.2));"
+							class="h-36 w-auto object-contain"
+							style="filter: drop-shadow(0 2px 3px rgba(0,0,0,0.22));"
 						/>
 						<!-- Sparkles on DOCKHAND text area (bottom half) -->
 						<span class="sparkle sparkle-1">✦</span>
