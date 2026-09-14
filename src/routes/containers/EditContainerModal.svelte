@@ -86,7 +86,7 @@
 				configSets = await response.json();
 			}
 		} catch (err) {
-			console.error('Failed to fetch config sets:', err);
+			console.error('获取配置集失败:', err);
 		}
 	}
 
@@ -126,7 +126,7 @@
 			// Let the list refresh so the row icon reflects the change without an env switch.
 			onIconChanged?.();
 		} catch (e) {
-			console.error('Failed to set container icon:', e);
+			console.error('设置容器图标失败:', e);
 		}
 	}
 	let command = $state('');
@@ -331,7 +331,7 @@
 				const settings = data.settings || data;
 			}
 		} catch (err) {
-			console.error('Failed to check scanner settings:', err);
+			console.error('检查扫描器设置失败:', err);
 		}
 	}
 
@@ -354,7 +354,7 @@
 				};
 			}
 		} catch (err) {
-			console.error('Failed to fetch auto-update settings:', err);
+			console.error('获取自动更新设置失败:', err);
 		}
 	}
 
@@ -371,7 +371,7 @@
 				})
 			});
 		} catch (err) {
-			console.error('Failed to save auto-update settings:', err);
+			console.error('保存自动更新设置失败:', err);
 		}
 	}
 
@@ -382,7 +382,7 @@
 			const data = await response.json();
 
 			if (!response.ok || data.error) {
-				throw new Error(data.error || `Failed to fetch container: ${response.status}`);
+				throw new Error(data.error || `获取容器失败: ${response.status}`);
 			}
 
 			// Parse basic container data
@@ -650,7 +650,7 @@
 				runtime
 			};
 		} catch (err) {
-			error = 'Failed to load container data: ' + String(err);
+			error = '加载容器数据失败：' + String(err);
 		} finally {
 			loadingData = false;
 			// Fetch backup schedule count (BETA GATE: only when backups enabled)
@@ -846,12 +846,12 @@
 
 		let hasErrors = false;
 		if (!name.trim()) {
-			errors.name = 'Container name is required';
+			errors.name = '容器名称为必填项';
 			hasErrors = true;
 		}
 
 		if (!image.trim()) {
-			errors.image = 'Image name is required';
+			errors.image = '镜像名称为必填项';
 			hasErrors = true;
 		}
 
@@ -875,7 +875,7 @@
 		try {
 			// If only name changed, use the rename endpoint
 			if (hasOnlyNameChanged()) {
-				statusMessage = 'Renaming container...';
+				statusMessage = '正在重命名容器...';
 
 				const response = await fetch(appendEnvParam(
 					`/api/containers/${containerId}/rename`,
@@ -890,12 +890,12 @@
 				const result = await response.json();
 
 				if (!response.ok) {
-					error = result.error || 'Failed to rename container';
+					error = result.error || '重命名容器失败';
 					loading = false;
 					return;
 				}
 
-				statusMessage = 'Container renamed successfully!';
+				statusMessage = '容器重命名成功！';
 
 				if (autoUpdateChanged) {
 					await saveAutoUpdateSettings(name.trim());
@@ -910,7 +910,7 @@
 
 			// Full update required - recreate container
 			if (containerConfigChanged) {
-				statusMessage = 'Updating container...';
+				statusMessage = '正在更新容器...';
 
 				const ports: Record<string, { HostIp?: string; HostPort: string }> = {};
 				portMappings
@@ -1053,23 +1053,23 @@
 				const result = await response.json();
 
 				if (!response.ok) {
-					error = result.error || 'Failed to update container';
+					error = result.error || '更新容器失败';
 					if (result.details) {
 						error += ': ' + result.details;
 					}
 					return;
 				}
 
-				statusMessage = 'Container updated successfully!';
+				statusMessage = '容器更新成功！';
 			}
 
 			if (autoUpdateChanged) {
 				if (!containerConfigChanged) {
-					statusMessage = 'Saving auto-update settings...';
+					statusMessage = '正在保存自动更新设置...';
 				}
 				await saveAutoUpdateSettings(name.trim());
 				if (!containerConfigChanged) {
-					statusMessage = 'Auto-update settings saved!';
+					statusMessage = '自动更新设置已保存！';
 				}
 			}
 
@@ -1079,7 +1079,7 @@
 			onClose();
 		} catch (err) {
 			if (signal.aborted) return;
-			error = 'Failed to update container: ' + String(err);
+			error = '更新容器失败：' + String(err);
 		} finally {
 			loading = false;
 			abortController = null;
@@ -1159,13 +1159,13 @@
 				<button
 					type="button"
 					onclick={() => (showIconPicker = true)}
-					title="Change icon"
+					title="修改图标"
 					class="mr-1 rounded p-0.5 hover:bg-muted transition-colors cursor-pointer"
-					aria-label="Change container icon"
+					aria-label="修改容器图标"
 				>
 					<ContainerIcon {image} name={name} override={iconOverride} envId={currentEnvId} class="w-4 h-4" fallbackIcon={Box} showFallbackWhenOff />
 				</button>
-				Edit container
+				编辑容器
 				{#if isEditingTitle}
 					<span class="ml-1">-</span>
 					<input
@@ -1181,7 +1181,7 @@
 					<button
 						type="button"
 						onclick={saveEditingTitle}
-						title="Save"
+						title="保存"
 						class="p-0.5 rounded hover:bg-muted transition-colors"
 					>
 						<Check class="w-3 h-3 text-green-500 hover:text-green-600" />
@@ -1189,7 +1189,7 @@
 					<button
 						type="button"
 						onclick={cancelEditingTitle}
-						title="Cancel"
+						title="取消"
 						class="p-0.5 rounded hover:bg-muted transition-colors"
 					>
 						<X class="w-3 h-3 text-muted-foreground hover:text-foreground" />
@@ -1200,13 +1200,13 @@
 					<button
 						type="button"
 						onclick={startEditingTitle}
-						title="Rename container"
+						title="重命名容器"
 						class="p-0.5 rounded hover:bg-muted transition-colors ml-0.5"
 					>
 						<Pencil class="w-3 h-3 text-muted-foreground hover:text-foreground" />
 					</button>
 					{#if $currentEnvironment}
-						<span class="font-semibold ml-1">on <span class="text-amber-600 dark:text-amber-400">{$currentEnvironment.name}</span></span>
+						<span class="font-semibold ml-1">位于 <span class="text-amber-600 dark:text-amber-400">{$currentEnvironment.name}</span></span>
 					{/if}
 				{/if}
 			</Dialog.Title>
@@ -1215,7 +1215,7 @@
 		{#if loadingData}
 			<div class="flex-1 flex items-center justify-center text-muted-foreground text-sm min-h-[200px]">
 				<Loader2 class="w-5 h-5 animate-spin mr-2" />
-				Loading container data...
+				正在加载容器数据...
 			</div>
 		{:else}
 			<div class="px-5 flex gap-1 border-b shrink-0">
@@ -1225,7 +1225,7 @@
 					onclick={() => activeTab = 'settings'}
 				>
 					<Settings class="w-3.5 h-3.5" />
-					Settings
+					设置
 				</button>
 				<!-- BETA GATE: Backups tab hidden unless FEAT_BACKUPS_ENABLED (see features.ts) -->
 				{#if $page.data.backupsEnabled}
@@ -1235,7 +1235,7 @@
 						onclick={() => activeTab = 'backups'}
 					>
 						<Archive class="w-3.5 h-3.5" />
-						Backups
+						备份
 						{#if backupCount > 0}<span class="bg-primary/15 text-primary text-[10px] px-1.5 rounded-full font-medium">{backupCount}</span>{/if}
 						<!-- Run tally so a failed backup is visible before opening the tab. -->
 						{#if backupTally.ok > 0}<span class="inline-flex items-center gap-0.5 rounded-full bg-emerald-500/15 px-1.5 text-[10px] font-medium text-emerald-500"><Check class="w-2.5 h-2.5" />{backupTally.ok}</span>{/if}
@@ -1258,13 +1258,13 @@
 				{#if showComposeRenameWarning}
 					<div class="mb-4 px-3 py-2 text-xs text-amber-700 dark:text-amber-300 bg-amber-100/50 dark:bg-amber-900/30 rounded-md flex items-start gap-2">
 						<Layers class="w-4 h-4 shrink-0 mt-0.5" />
-						<span>This container is part of the <strong>{composeStackName}</strong> compose stack. Renaming it may cause issues with stack management.</span>
+						<span>该容器属于 <strong>{composeStackName}</strong> 堆栈的一部分，重命名可能会导致堆栈管理异常。</span>
 					</div>
 				{/if}
 				{#if showComposeConfigWarning}
 					<div class="mb-4 px-3 py-2 text-xs text-amber-700 dark:text-amber-300 bg-amber-100/50 dark:bg-amber-900/30 rounded-md flex items-start gap-2">
 						<Layers class="w-4 h-4 shrink-0 mt-0.5" />
-						<span>This container is part of the <strong>{composeStackName}</strong> compose stack. Changes may be overwritten when the stack is redeployed.</span>
+						<span>该容器属于 <strong>{composeStackName}</strong> 堆栈的一部分，重新部署堆栈时可能会覆盖本次修改。</span>
 					</div>
 				{/if}
 
@@ -1340,14 +1340,14 @@
 
 			<div class="flex justify-end gap-2 px-5 py-3 border-t bg-muted/30 shrink-0">
 				<Button type="button" variant="outline" onclick={handleClose} size="sm">
-					Cancel
+					取消
 				</Button>
 				<Button type="button" variant="secondary" disabled={loading} size="sm" onclick={handleSubmit}>
 					{#if loading}
 						<Loader2 class="w-4 h-4 mr-1 animate-spin" />
-						Updating...
+						更新中...
 					{:else}
-						Update container
+						更新容器
 					{/if}
 				</Button>
 			</div>
@@ -1359,20 +1359,20 @@
 <Dialog.Root bind:open={showConfirmClose}>
 	<Dialog.Content class="max-w-sm">
 		<Dialog.Header>
-			<Dialog.Title>Unsaved changes</Dialog.Title>
+			<Dialog.Title>存在未保存的修改</Dialog.Title>
 			<Dialog.Description>
-				You have unsaved changes. Are you sure you want to close without saving?
+				你有尚未保存的更改，确定要直接关闭而不保存吗？
 			</Dialog.Description>
 		</Dialog.Header>
 		<div class="flex justify-end gap-1.5 mt-4">
 			<Button variant="outline" size="sm" onclick={() => showConfirmClose = false}>
-				Continue editing
+				继续编辑
 			</Button>
 			<Button variant="destructive" size="sm" onclick={discardAndClose}>
-				Discard changes
+				放弃修改
 			</Button>
 		</div>
 	</Dialog.Content>
 </Dialog.Root>
 
-<IconPickerModal bind:open={showIconPicker} value={iconOverride} onselect={onIconSelect} title="Choose a container icon" />
+<IconPickerModal bind:open={showIconPicker} value={iconOverride} onselect={onIconSelect} title="选择容器图标" />

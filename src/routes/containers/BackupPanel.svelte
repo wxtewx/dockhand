@@ -25,6 +25,7 @@
 	import ConfirmPopover from '$lib/components/ConfirmPopover.svelte';
 	import { getRepoTypeIcon, parseRetention, parseOptions, retentionSummary as getRetentionSummary, formatCron, runBackupAction, classifyJobResult, tagLogLine, fetchBackupExecutions, type BackupAction, type BackupFormState } from '$lib/utils/backup';
 	import { reconcileSelectedVolumeKeys } from '$lib/utils/mounts';
+	import { getLabelText } from '$lib/types';
 
 	interface Props {
 		containerName: string;
@@ -139,13 +140,13 @@
 		try {
 			const res = await fetch(`/api/backup/configs/${progressConfigId}/stop`, { method: 'POST' });
 			if (res.ok) {
-				progressLogs = [...progressLogs, '[dockhand] Cancelling backup…'];
+				progressLogs = [...progressLogs, '[dockhand] 正在取消备份…'];
 			} else {
 				const d = await res.json().catch(() => ({}));
-				toast.error(d.error || 'Failed to cancel backup');
+				toast.error(d.error || '无法取消备份');
 			}
 		} catch {
-			toast.error('Failed to cancel backup');
+			toast.error('无法取消备份');
 		} finally {
 			cancelling = false;
 		}
@@ -336,13 +337,13 @@
 	 * other actions don't apply to in-place edits.
 	 */
 	async function submitForm(action: BackupAction) {
-		if (!editDestinationId) { toast.error('Select a backup repository'); return; }
+		if (!editDestinationId) { toast.error('请选择备份仓库'); return; }
 		// A local repo on a non-co-located env is allowed here; it fails loud at run
 		// time via the helper's localRepoGuard rather than being blocked up front.
 		// Cron only matters when the schedule will be persisted. run-once
 		// clears it server-side so the field value is irrelevant.
 		if ((action === 'save' || action === 'save-run') && editScheduleInvalid) {
-			toast.error('Schedule is invalid');
+			toast.error('定时表达式无效');
 			return;
 		}
 
@@ -373,13 +374,13 @@
 				} : undefined
 			});
 			if (!result.ok) {
-				if (runsBackup) { progressStatus = 'error'; progressError = result.error || 'Backup failed'; }
-				else toast.error(result.error || 'Backup failed');
+				if (runsBackup) { progressStatus = 'error'; progressError = result.error || '备份失败'; }
+				else toast.error(result.error || '备份失败');
 				return;
 			}
 			if (runsBackup) progressStatus = 'success';
-			if (action === 'save') toast.success(isNew ? 'Backup schedule added' : 'Backup schedule updated');
-			else toast.success(`Backup completed for ${containerName}`);
+			if (action === 'save') toast.success(isNew ? '已添加备份计划' : '已更新备份计划');
+			else toast.success(`已完成 ${containerName} 的备份`);
 			editingConfig = null; isNew = false;
 			fetchConfigs();
 			// 'save-run'/'run-once' just wrote a snapshot — reload the list so it appears
@@ -396,13 +397,13 @@
 		try {
 			const res = await fetch(`/api/backup/configs/${id}`, { method: 'DELETE' });
 			if (res.ok) {
-				toast.success('Backup schedule removed');
+				toast.success('已移除备份计划');
 				fetchConfigs();
 				onConfigSaved?.();
 			} else {
-				toast.error('Failed to delete');
+				toast.error('删除失败');
 			}
-		} catch { toast.error('Failed to delete'); }
+		} catch { toast.error('删除失败'); }
 		confirmDeleteId = null;
 	}
 
@@ -419,13 +420,13 @@
 				body: JSON.stringify({ enabled: !cfg.enabled })
 			});
 			if (res.ok) {
-				toast.success(cfg.enabled ? 'Schedule paused' : 'Schedule resumed');
+				toast.success(cfg.enabled ? '已暂停计划' : '已恢复计划');
 				fetchConfigs();
 				onConfigSaved?.();
 			} else {
-				toast.error('Failed to update schedule');
+				toast.error('更新计划失败');
 			}
-		} catch { toast.error('Failed to update schedule'); }
+		} catch { toast.error('更新计划失败'); }
 		togglingId = null;
 	}
 
@@ -451,19 +452,19 @@
 				// backups page. Only 'success'/'warning' get the green result.
 				if (outcome === 'error' || outcome === 'skipped') {
 					progressStatus = 'error';
-					progressError = message || (outcome === 'skipped' ? 'Backup skipped' : 'Backup failed');
+					progressError = message || (outcome === 'skipped' ? '已跳过本次备份' : '备份失败');
 				} else {
 					progressStatus = 'success';
 				}
-				if (outcome === 'skipped') toast.info(message || 'Backup skipped');
-				else if (outcome === 'warning') toast.warning(message || 'Backup completed with warnings');
+				if (outcome === 'skipped') toast.info(message || '已跳过本次备份');
+				else if (outcome === 'warning') toast.warning(message || '备份完成，但存在警告');
 				fetchConfigs();
 				// A new snapshot was written (success/warning) — reload the list so it
 				// shows up without a manual refresh. Skipped = no snapshot, nothing to do.
 				if (outcome !== 'skipped') void snapshotsPanel?.refresh();
 				void loadHistory(); // a run (even failed/skipped) is a new history entry
-			} else { progressStatus = 'error'; progressError = data.error || 'Failed to start backup'; }
-		} catch { progressStatus = 'error'; progressError = 'Failed to start backup'; } finally { runningBackup = null; }
+			} else { progressStatus = 'error'; progressError = data.error || '启动备份失败'; }
+		} catch { progressStatus = 'error'; progressError = '启动备份失败'; } finally { runningBackup = null; }
 	}
 
 	function cfgRetentionSummary(cfg: BackupConfig): string {
@@ -471,9 +472,9 @@
 	}
 
 	function volumeSummary(cfg: BackupConfig): string {
-		if (cfg.selectedVolumes === null) return `All volumes (${volumes.length})`;
+		if (cfg.selectedVolumes === null) return `全部数据卷 (共 ${volumes.length} 个)`;
 		const sel = typeof cfg.selectedVolumes === 'string' ? JSON.parse(cfg.selectedVolumes) : cfg.selectedVolumes;
-		return `${sel.length} of ${volumes.length} volumes`;
+		return `已选择 ${sel.length}/${volumes.length} 个数据卷`;
 	}
 
 	// Resolved host stack-dir path (stacks only): WHERE the helper will read the stack folder
@@ -512,7 +513,7 @@
 			const res = await fetch(`/api/backup/stack-dir-listing?${params}`);
 			stackListing = await res.json();
 		} catch (e) {
-			stackListing = { kind: 'unknown', reason: e instanceof Error ? e.message : 'probe failed' };
+			stackListing = { kind: 'unknown', reason: e instanceof Error ? e.message : '探测失败' };
 		} finally {
 			loadingStackListing = false;
 		}
@@ -534,21 +535,21 @@
 		class="relative -mb-px border-b-2 px-3 py-1.5 text-sm font-medium transition-colors {subTab === 'schedules' ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}"
 		onclick={() => (subTab = 'schedules')}
 	>
-		Schedules{#if configs.length > 0}<span class="ml-1.5 rounded-full bg-primary/15 px-1.5 text-xs text-primary">{configs.length}</span>{/if}
+		备份计划{#if configs.length > 0}<span class="ml-1.5 rounded-full bg-primary/15 px-1.5 text-xs text-primary">{configs.length}</span>{/if}
 	</button>
 	<button
 		type="button"
 		class="relative -mb-px flex items-center border-b-2 px-3 py-1.5 text-sm font-medium transition-colors {subTab === 'snapshots' ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}"
 		onclick={() => (subTab = 'snapshots')}
 	>
-		Snapshots{#if snapshotsLoading}<Loader2 class="ml-1.5 h-3.5 w-3.5 animate-spin text-primary" />{:else if snapshotCount !== null}<span class="ml-1.5 rounded-full bg-primary/15 px-1.5 text-xs text-primary">{snapshotCount}</span>{/if}
+		快照{#if snapshotsLoading}<Loader2 class="ml-1.5 h-3.5 w-3.5 animate-spin text-primary" />{:else if snapshotCount !== null}<span class="ml-1.5 rounded-full bg-primary/15 px-1.5 text-xs text-primary">{snapshotCount}</span>{/if}
 	</button>
 	<button
 		type="button"
 		class="relative -mb-px flex items-center gap-1.5 border-b-2 px-3 py-1.5 text-sm font-medium transition-colors {subTab === 'history' ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}"
 		onclick={() => (subTab = 'history')}
 	>
-		History
+		执行记录
 		{#if historyLoading}<Loader2 class="h-3.5 w-3.5 animate-spin text-primary" />{:else if tally.ok > 0 || tally.failed > 0}
 			{#if tally.ok > 0}<span class="inline-flex items-center gap-0.5 rounded-full bg-emerald-500/15 px-1.5 text-xs font-medium text-emerald-500"><Check class="h-3 w-3" />{tally.ok}</span>{/if}
 			{#if tally.failed > 0}<span class="inline-flex items-center gap-0.5 rounded-full bg-red-500/15 px-1.5 text-xs font-semibold text-red-500"><X class="h-3 w-3" />{tally.failed}</span>{/if}
@@ -587,11 +588,11 @@
 				<div class="flex-1 min-w-0">
 					<div class="flex items-center gap-2">
 						<Icon class="w-3.5 h-3.5 text-primary/70 flex-shrink-0" />
-						<span class="text-sm font-medium truncate">{dest?.name || 'Unknown'}</span>
-						{#if !cfg.enabled}<Badge variant="secondary" class="text-xs">Paused</Badge>{/if}
+						<span class="text-sm font-medium truncate">{dest?.name || '未知仓库'}</span>
+						{#if !cfg.enabled}<Badge variant="secondary" class="text-xs">已暂停</Badge>{/if}
 					</div>
 					<div class="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-						<span>{cfg.schedule ? formatCron(cfg.schedule) : 'Manual'} · {volumeSummary(cfg)}{cfgRetentionSummary(cfg) ? ` · ${cfgRetentionSummary(cfg)}` : ''}</span>
+						<span>{cfg.schedule ? formatCron(cfg.schedule) : '手动执行'} · {volumeSummary(cfg)}{cfgRetentionSummary(cfg) ? ` · ${cfgRetentionSummary(cfg)}` : ''}</span>
 						{#if cfg.lastBackupAt}
 							<span>·</span>
 							{#if cfg.lastBackupStatus === 'success'}<CheckCircle class="w-2.5 h-2.5 text-green-500" />{:else if cfg.lastBackupStatus === 'failed' || cfg.lastBackupStatus === 'error'}<XCircle class="w-2.5 h-2.5 text-destructive" />{/if}
@@ -601,22 +602,22 @@
 				</div>
 				<div class="flex items-center gap-0.5 flex-shrink-0">
 					{#if cfg.schedule}
-						<button type="button" class="p-1 rounded hover:bg-muted" onclick={() => togglePause(cfg)} disabled={togglingId === cfg.id} title={cfg.enabled ? 'Pause schedule' : 'Resume schedule'}>
+						<button type="button" class="p-1 rounded hover:bg-muted" onclick={() => togglePause(cfg)} disabled={togglingId === cfg.id} title={cfg.enabled ? '暂停计划' : '恢复计划'}>
 							{#if togglingId === cfg.id}<Loader2 class="w-3 h-3 animate-spin text-muted-foreground" />{:else if cfg.enabled}<Pause class="w-3 h-3 text-muted-foreground" />{:else}<RotateCwFadingClock class="w-3 h-3 text-muted-foreground" />{/if}
 						</button>
 					{/if}
-					<button type="button" class="p-1 rounded hover:bg-muted" onclick={() => runBackupNow(cfg)} disabled={runningBackup === cfg.id} title="Run now">
+					<button type="button" class="p-1 rounded hover:bg-muted" onclick={() => runBackupNow(cfg)} disabled={runningBackup === cfg.id} title="立即执行">
 						{#if runningBackup === cfg.id}<Loader2 class="w-3 h-3 animate-spin text-muted-foreground" />{:else}<Play class="w-3 h-3 text-muted-foreground" />{/if}
 					</button>
-					<button type="button" class="p-1 rounded hover:bg-muted" onclick={() => startEditConfig(cfg)} title="Edit">
+					<button type="button" class="p-1 rounded hover:bg-muted" onclick={() => startEditConfig(cfg)} title="编辑">
 						<Pencil class="w-3 h-3 text-muted-foreground" />
 					</button>
 					<ConfirmPopover
 						open={confirmDeleteId === cfg.id}
-						action="Delete"
-						itemType="backup schedule"
+						action="删除"
+						itemType="备份计划"
 						itemName={dest?.name || ''}
-						title="Remove schedule"
+						title="移除计划"
 						position="left"
 						onConfirm={() => deleteConfig(cfg.id)}
 						onOpenChange={(open) => confirmDeleteId = open ? cfg.id : null}
@@ -630,14 +631,14 @@
 		{/each}
 
 		{#if configs.length === 0 && !isNew && !editingConfig}
-			<p class="text-xs text-muted-foreground py-4 text-center">No backup schedules configured for this {type}.</p>
+			<p class="text-xs text-muted-foreground py-4 text-center">尚未为此 {getLabelText(type)} 配置任何备份计划。</p>
 		{/if}
 
 		<!-- Edit/New form -->
 		{#if isNew || editingConfig}
 			<div class="border border-primary/30 rounded-md p-4 space-y-4 bg-muted/10">
 				<div class="flex items-center justify-between">
-					<span class="text-xs font-medium uppercase tracking-wide text-muted-foreground">{isNew ? 'New backup schedule' : 'Edit schedule'}</span>
+					<span class="text-xs font-medium uppercase tracking-wide text-muted-foreground">{isNew ? '新建备份计划' : '编辑计划'}</span>
 					<button type="button" class="p-1 rounded hover:bg-muted" onclick={cancelEdit}>
 						<X class="w-3.5 h-3.5 text-muted-foreground" />
 					</button>
@@ -657,11 +658,11 @@
 				<!-- Toggles -->
 				<div class="flex items-center gap-3 max-w-md">
 					<TogglePill bind:checked={editEnabled} />
-					<Label class="text-xs">Enabled</Label>
+					<Label class="text-xs">启用</Label>
 				</div>
 				<div class="flex items-center gap-3 max-w-md">
 					<TogglePill bind:checked={editStopBefore} />
-					<Label class="text-xs">Stop {type} during backup</Label>
+					<Label class="text-xs">备份期间停止 {getLabelText(type)}</Label>
 				</div>
 				<!-- Stack files on the host: probe the host, show the resolved dir + let the user
 				     pick which entries to back up. Shown BEFORE the volume list. -->
@@ -682,97 +683,93 @@
 					volumes={volumes}
 					bind:allVolumes={editAllVolumes}
 					bind:selectedVolumes={editSelectedVolumes}
-					emptyLabel="No volumes detected on this {type}"
+					emptyLabel="未在此 {getLabelText(type)} 上检测到数据卷"
 				/>
 
 				<!-- Advanced -->
 				<button type="button" class="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground w-full" onclick={() => showAdvanced = !showAdvanced}>
 					<ChevronDown class="w-3.5 h-3.5 transition-transform {showAdvanced ? 'rotate-0' : '-rotate-90'}" />
-					Advanced
+					高级选项
 				</button>
 				{#if showAdvanced}
 					<div class="space-y-3 pl-1">
 						<!-- Retention policy -->
 						<div class="space-y-1.5">
-							<Label class="text-xs font-medium">Retention policy</Label>
-							<p class="text-xs text-muted-foreground">Older snapshots are pruned after each backup. Set 0 to disable.</p>
+							<Label class="text-xs font-medium">保留策略</Label>
+							<p class="text-xs text-muted-foreground">每次备份完成后清理旧快照，设置为 0 代表不启用该规则。</p>
 							<div class="grid grid-cols-5 gap-2">
 								<div class="space-y-0.5">
-									<label class="text-xs text-muted-foreground">Last</label>
+									<label class="text-xs text-muted-foreground">最近</label>
 									<Input bind:value={editKeepLast} type="number" min="0" max="999" class="h-7 text-xs" />
 								</div>
 								<div class="space-y-0.5">
-									<label class="text-xs text-muted-foreground">Daily</label>
+									<label class="text-xs text-muted-foreground">每日</label>
 									<Input bind:value={editKeepDaily} type="number" min="0" max="365" class="h-7 text-xs" />
 								</div>
 								<div class="space-y-0.5">
-									<label class="text-xs text-muted-foreground">Weekly</label>
+									<label class="text-xs text-muted-foreground">每周</label>
 									<Input bind:value={editKeepWeekly} type="number" min="0" max="52" class="h-7 text-xs" />
 								</div>
 								<div class="space-y-0.5">
-									<label class="text-xs text-muted-foreground">Monthly</label>
+									<label class="text-xs text-muted-foreground">每月</label>
 									<Input bind:value={editKeepMonthly} type="number" min="0" max="120" class="h-7 text-xs" />
 								</div>
 								<div class="space-y-0.5">
-									<label class="text-xs text-muted-foreground">Yearly</label>
+									<label class="text-xs text-muted-foreground">每年</label>
 									<Input bind:value={editKeepYearly} type="number" min="0" max="100" class="h-7 text-xs" />
 								</div>
 							</div>
 						</div>
 						<!-- Exclude patterns -->
 						<div class="space-y-1">
-							<Label class="text-xs font-medium">Exclude patterns</Label>
+							<Label class="text-xs font-medium">排除规则</Label>
 							<Input bind:value={editExclude} class="h-7 text-xs font-mono" placeholder="*.log, *.tmp, cache/" />
-							<p class="text-xs text-muted-foreground">Comma-separated glob patterns to exclude from backup.</p>
+							<p class="text-xs text-muted-foreground">使用英文逗号分隔 glob 匹配路径，匹配内容不会被备份。</p>
 						</div>
 						<!-- Exclude cache directories -->
 						<div class="space-y-1">
 							<div class="flex items-center gap-3">
-								<TogglePill bind:checked={editExcludeCaches} onLabel="Yes" offLabel="No" />
-								<Label class="text-xs font-medium">Skip cache directories</Label>
+								<TogglePill bind:checked={editExcludeCaches} onLabel="是" offLabel="否" />
+								<Label class="text-xs font-medium">跳过缓存目录</Label>
 							</div>
 							<p class="text-xs text-muted-foreground leading-snug">
-								Skips folders containing a <code class="font-mono text-xs">CACHEDIR.TAG</code> marker file
-								— used by npm, pip, Cargo, browsers, and many other tools to tag
-								regenerable cache content. Saves significant backup space; the contents
-								can always be rebuilt from source. Turn off only if you have a specific
-								reason to back up cache data.
+								自动忽略包含 <code class="font-mono text-xs">CACHEDIR.TAG</code> 的目录；npm、pip、浏览器等工具生成的可重建缓存。可显著节省备份空间，仅在需要备份缓存文件时关闭。
 							</p>
 						</div>
 						<!-- Compression & bandwidth -->
 						<div class="grid grid-cols-3 gap-2">
 							<div class="space-y-1">
-								<Label class="text-xs font-medium">Compression</Label>
+								<Label class="text-xs font-medium">压缩级别</Label>
 								<Select.Root type="single" value={editCompression} onValueChange={(v) => { editCompression = v; }}>
-									<Select.Trigger class="h-9 w-full text-xs">{editCompression}</Select.Trigger>
+									<Select.Trigger class="h-9 w-full text-xs">{getLabelText(editCompression)}</Select.Trigger>
 									<Select.Content>
-										<Select.Item value="auto">Auto</Select.Item>
-										<Select.Item value="off">Off</Select.Item>
-										<Select.Item value="max">Max</Select.Item>
+										<Select.Item value="auto">自动</Select.Item>
+										<Select.Item value="off">关闭</Select.Item>
+										<Select.Item value="max">最高</Select.Item>
 									</Select.Content>
 								</Select.Root>
 							</div>
 							<div class="space-y-1">
-								<Label class="text-xs font-medium">Upload limit</Label>
+								<Label class="text-xs font-medium">上传限速</Label>
 								<Input bind:value={editLimitUpload} type="number" min="0" class="h-9 text-xs font-mono" placeholder="KiB/s" />
 							</div>
 							<div class="space-y-1">
-								<Label class="text-xs font-medium">Download limit</Label>
+								<Label class="text-xs font-medium">下载限速</Label>
 								<Input bind:value={editLimitDownload} type="number" min="0" class="h-9 text-xs font-mono" placeholder="KiB/s" />
 							</div>
 						</div>
 						<!-- Webhook hooks -->
 						<div class="space-y-1.5">
-							<Label class="text-xs font-medium">Webhook hooks</Label>
+							<Label class="text-xs font-medium">Webhook 通知地址</Label>
 							<div class="space-y-1">
-								<label class="text-xs text-muted-foreground">On success</label>
+								<label class="text-xs text-muted-foreground">备份成功时</label>
 								<Input bind:value={editWebhookSuccess} class="h-7 text-xs font-mono" placeholder="https://healthchecks.io/ping/..." />
 							</div>
 							<div class="space-y-1">
-								<label class="text-xs text-muted-foreground">On failure</label>
+								<label class="text-xs text-muted-foreground">备份失败时</label>
 								<Input bind:value={editWebhookFailure} class="h-7 text-xs font-mono" placeholder="https://hooks.slack.com/..." />
 							</div>
-							<p class="text-xs text-muted-foreground">POST with a JSON payload sent after backup completes (falls back to GET for simple receivers). Use for healthchecks, Slack, etc.</p>
+							<p class="text-xs text-muted-foreground">备份结束后发送 POST 请求 (简易监控地址会自动降级为 GET)，适用于监控、消息推送。</p>
 						</div>
 					</div>
 				{/if}
@@ -782,24 +779,24 @@
 				     state (destination, schedule, volumes, retention, options) —
 				     they only differ in what happens after persistence. -->
 				<div class="flex justify-end gap-2 pt-2 border-t">
-					<Button size="sm" variant="outline" onclick={cancelEdit}>Cancel</Button>
+					<Button size="sm" variant="outline" onclick={cancelEdit}>取消</Button>
 					{#if editingConfig}
 						<Button size="sm" onclick={() => submitForm('save')} disabled={saving || editScheduleInvalid}>
 							{#if saving}<Loader2 class="w-3.5 h-3.5 mr-1 animate-spin" />{:else}<Save class="w-3.5 h-3.5 mr-1" />{/if}
-							Save
+							保存
 						</Button>
 					{:else}
-						<Button size="sm" variant="outline" onclick={() => submitForm('run-once')} disabled={saving || !editDestinationId} title="Run a backup now, don't save a schedule">
+						<Button size="sm" variant="outline" onclick={() => submitForm('run-once')} disabled={saving || !editDestinationId} title="立即执行一次备份，不保存定时计划">
 							{#if saving && submitAction === 'run-once'}<Loader2 class="w-3.5 h-3.5 mr-1 animate-spin" />{:else}<Play class="w-3.5 h-3.5 mr-1" />{/if}
-							Run once
+							仅执行一次
 						</Button>
 						<Button size="sm" variant="outline" onclick={() => submitForm('save')} disabled={saving || editScheduleInvalid || !editDestinationId}>
 							{#if saving && submitAction === 'save'}<Loader2 class="w-3.5 h-3.5 mr-1 animate-spin" />{:else}<Save class="w-3.5 h-3.5 mr-1" />{/if}
-							Save schedule
+							保存计划
 						</Button>
-						<Button size="sm" onclick={() => submitForm('save-run')} disabled={saving || editScheduleInvalid || !editDestinationId} title="Save the schedule and run a backup immediately">
+						<Button size="sm" onclick={() => submitForm('save-run')} disabled={saving || editScheduleInvalid || !editDestinationId} title="保存定时计划并立即执行一次备份">
 							{#if saving && submitAction === 'save-run'}<Loader2 class="w-3.5 h-3.5 mr-1 animate-spin" />{:else}<Play class="w-3.5 h-3.5 mr-1" />{/if}
-							Save & run now
+							保存并立即运行
 						</Button>
 					{/if}
 				</div>
@@ -810,7 +807,7 @@
 		{#if configs.length > 0 && !isNew && !editingConfig}
 			<Button size="sm" variant="ghost" class="w-full text-muted-foreground" onclick={startNewConfig}>
 				<Plus class="w-3.5 h-3.5 mr-1" />
-				Add another schedule
+				添加新计划
 			</Button>
 		{/if}
 
@@ -818,7 +815,7 @@
 		{#if configs.length === 0 && !isNew && !editingConfig}
 			<Button size="sm" variant="outline" class="w-full" onclick={startNewConfig}>
 				<Plus class="w-3.5 h-3.5 mr-1" />
-				Configure a backup
+				配置备份任务
 			</Button>
 		{/if}
 	</div>
@@ -833,7 +830,7 @@
 				<TypeIcon class="h-4 w-4 text-muted-foreground" />
 				<span>{containerName}</span>
 				{#if progressEnv}
-					<span class="text-sm font-normal text-muted-foreground">on</span>
+					<span class="text-sm font-normal text-muted-foreground">位于</span>
 					<span class="flex items-center gap-1 text-sm font-medium text-amber-500"><EnvironmentIcon icon={progressEnv.icon || 'globe'} envId={progressEnv.id} class="h-3.5 w-3.5" />{progressEnv.name}</span>
 				{/if}
 				{#if progressDest}
@@ -842,27 +839,27 @@
 					<span class="flex items-center gap-1.5 rounded-md border bg-muted/40 px-2 py-0.5 text-xs font-normal"><RepoIcon class="h-3.5 w-3.5 text-primary/70" />{progressDest.name}</span>
 				{/if}
 			</Dialog.Title>
-			<Dialog.Description class="sr-only">Live backup progress for {containerName}.</Dialog.Description>
+			<Dialog.Description class="sr-only">{containerName} 的实时备份输出日志。</Dialog.Description>
 		</Dialog.Header>
 		<!-- flex-1 + fixed dialog height: the log fills the space and SCROLLS internally,
 		     so the dialog never grows/jumps as lines stream in. -->
 		<LogConsole lines={progressLogs} class="flex-1 min-h-0" />
 		<div class="flex shrink-0 items-center gap-1.5 text-sm">
 			{#if progressStatus === 'running'}
-				<Loader2 class="h-4 w-4 animate-spin text-muted-foreground" /><span class="text-muted-foreground">Backing up…</span>
+				<Loader2 class="h-4 w-4 animate-spin text-muted-foreground" /><span class="text-muted-foreground">正在备份…</span>
 			{:else if progressStatus === 'success'}
-				<CheckCircle class="h-4 w-4 text-green-500" /><span class="text-green-500">Backup completed</span>
+				<CheckCircle class="h-4 w-4 text-green-500" /><span class="text-green-500">备份完成</span>
 			{:else}
-				<XCircle class="h-4 w-4 text-destructive" /><span class="text-destructive">{progressError || 'Backup failed'}</span>
+				<XCircle class="h-4 w-4 text-destructive" /><span class="text-destructive">{progressError || '备份失败'}</span>
 			{/if}
 		</div>
 		<Dialog.Footer>
 			{#if progressStatus === 'running'}
 				<Button size="sm" variant="destructive" disabled={cancelling || progressConfigId == null} onclick={cancelRunningBackup}>
-					{#if cancelling}<Loader2 class="mr-1 h-3.5 w-3.5 animate-spin" />Cancelling…{:else}<X class="mr-1 h-3.5 w-3.5" />Cancel backup{/if}
+					{#if cancelling}<Loader2 class="mr-1 h-3.5 w-3.5 animate-spin" />正在取消…{:else}<X class="mr-1 h-3.5 w-3.5" />取消备份{/if}
 				</Button>
 			{:else}
-				<Button size="sm" onclick={() => (progressOpen = false)}>OK</Button>
+				<Button size="sm" onclick={() => (progressOpen = false)}>确定</Button>
 			{/if}
 		</Dialog.Footer>
 	</Dialog.Content>
@@ -872,18 +869,18 @@
 <Dialog.Root bind:open={logDialogOpen}>
 	<Dialog.Content class="max-w-4xl h-[80vh] overflow-hidden flex flex-col">
 		<Dialog.Header>
-			<Dialog.Title class="flex items-center gap-2 text-base"><FileText class="h-4 w-4" />Backup log</Dialog.Title>
+			<Dialog.Title class="flex items-center gap-2 text-base"><FileText class="h-4 w-4" />备份日志</Dialog.Title>
 		</Dialog.Header>
 		<div class="flex-1 flex flex-col min-h-0">
 			{#if logDialogLoading}
 				<div class="flex items-center justify-center py-8 gap-2 text-muted-foreground">
 					<Loader2 class="h-4 w-4 animate-spin" />
-					<span class="text-sm">Loading log…</span>
+					<span class="text-sm">正在加载日志…</span>
 				</div>
 			{:else if logDialogContent}
 				<ExecutionLogViewer logs={logDialogContent} />
 			{:else}
-				<p class="py-8 text-center text-sm text-muted-foreground">No log output was recorded for this run.</p>
+				<p class="py-8 text-center text-sm text-muted-foreground">本次执行没有记录输出日志。</p>
 			{/if}
 		</div>
 	</Dialog.Content>

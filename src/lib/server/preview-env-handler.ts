@@ -124,7 +124,7 @@ export async function handlePreviewEnv(
 		const data = await args.request.json();
 
 		if (!data.composePath || typeof data.composePath !== 'string') {
-			return { kind: 'bad-request', message: 'Compose path is required' };
+			return { kind: 'bad-request', message: 'Compose 路径为必填项' };
 		}
 
 		let repoUrl: string;
@@ -148,7 +148,7 @@ export async function handlePreviewEnv(
 			branch = data.branch || 'main';
 			credentialId = data.credentialId || null;
 		} else {
-			return { kind: 'bad-request', message: 'Either repositoryId or url is required' };
+			return { kind: 'bad-request', message: '必须传入仓库 ID 或仓库地址' };
 		}
 
 		// Get credential if specified
@@ -164,7 +164,7 @@ export async function handlePreviewEnv(
 		try {
 			deps.assertSafeRepoTarget(repoUrl);
 		} catch (e: any) {
-			return { kind: 'bad-request', message: e.message || 'Invalid repository URL' };
+			return { kind: 'bad-request', message: e.message || '仓库地址无效' };
 		}
 
 		const result = await deps.previewRepoEnvFiles({
@@ -181,6 +181,6 @@ export async function handlePreviewEnv(
 
 		return { kind: 'success', vars: result.vars, sources: result.sources };
 	} catch (error: any) {
-		return { kind: 'error', message: error.message || 'Failed to preview env files' };
+		return { kind: 'error', message: error.message || '预览环境文件失败' };
 	}
 }

@@ -1,7 +1,7 @@
 /**
  * 1Password Connect provider.
  *
- * Talks to a self-hosted 1Password Connect server over its REST API (v1) using
+ * Talks to a self‑hosted 1Password Connect server over its REST API (v1) using
  * a Connect access token. This is the Business path: teams run a Connect server
  * next to their vaults and Dockhand reads op:// references through it.
  *
@@ -87,7 +87,7 @@ function authHeaders(token: string): Record<string, string> {
 /**
  * Parses an `op://<vault>/<item>/<field>` or
  * `op://<vault>/<item>/<section>/<field>` reference. Returns null for anything
- * that is not a well-formed reference (wrong scheme or wrong segment count).
+ * that is not a well‑formed reference (wrong scheme or wrong segment count).
  */
 function parseReference(ref: string): ParsedReference | null {
 	const trimmed = ref.trim();
@@ -109,8 +109,8 @@ function parseReference(ref: string): ParsedReference | null {
 
 /**
  * Performs a GET against the Connect API and returns the parsed JSON body.
- * Throws on any non-2xx status other than 404, which is signalled by returning
- * `undefined` so per-reference lookups can skip+warn instead of aborting the
+ * Throws on any non‑2xx status other than 404, which is signalled by returning
+ * `undefined` so per‑reference lookups can skip+warn instead of aborting the
  * whole batch. 401/403/5xx and transport errors propagate.
  */
 async function connectGet<T>(
@@ -134,19 +134,19 @@ async function connectGet<T>(
 		return undefined;
 	}
 	if (statusCode < 200 || statusCode >= 300) {
-		// Log the raw body server-side only; the thrown message (which reaches the
+		// Log the raw body server‑side only; the thrown message (which reaches the
 		// deploy job / client) carries just the status, never arbitrary upstream bytes.
 		const detail = await body.text().catch(() => '');
-		if (detail) console.warn(`[1Password Connect] request ${statusCode}: ${detail}`);
-		throw new Error(`1Password Connect request failed (${statusCode})`);
+		if (detail) console.warn(`[1Password Connect] 请求 ${statusCode}: ${detail}`);
+		throw new Error(`1Password Connect 请求失败(${statusCode})`);
 	}
 	return (await body.json()) as T;
 }
 
 /**
- * A per-call cache that memoises the vault list and per-vault item lists so a
- * batch of references sharing vaults/items does not re-fetch. Full items are not
- * cached — each reference targets a distinct field on a possibly-distinct item.
+ * A per‑call cache that memoises the vault list and per‑vault item lists so a
+ * batch of references sharing vaults/items does not re‑fetch. Full items are not
+ * cached — each reference targets a distinct field on a possibly‑distinct item.
  */
 class ResolveCache {
 	private vaults?: ConnectVault[];
@@ -199,24 +199,24 @@ async function resolveOne(cache: ResolveCache, parsed: ParsedReference): Promise
 	const vaults = await cache.listVaults();
 	const vault = vaults.find((v) => v.name === parsed.vault || v.id === parsed.vault);
 	if (!vault) {
-		throw new ReferenceNotFoundError(`vault "${parsed.vault}" not found`);
+		throw new ReferenceNotFoundError(`保管库 "${parsed.vault}" 未找到`);
 	}
 
 	const items = await cache.listItems(vault.id);
 	const itemSummary = items.find((i) => i.title === parsed.item || i.id === parsed.item);
 	if (!itemSummary) {
-		throw new ReferenceNotFoundError(`item "${parsed.item}" not found in vault "${parsed.vault}"`);
+		throw new ReferenceNotFoundError(`在保管库"${parsed.vault}"中未找到项目"${parsed.item}"`);
 	}
 
 	const item = await cache.getItem(vault.id, itemSummary.id);
 	if (!item) {
-		throw new ReferenceNotFoundError(`item "${parsed.item}" not found in vault "${parsed.vault}"`);
+		throw new ReferenceNotFoundError(`在保管库"${parsed.vault}"中未找到项目"${parsed.item}"`);
 	}
 
 	const field = (item.fields ?? []).find((f) => fieldMatches(f, parsed));
 	if (!field || field.value === undefined) {
 		const where = parsed.section ? `${parsed.section}/${parsed.field}` : parsed.field;
-		throw new ReferenceNotFoundError(`field "${where}" not found on item "${parsed.item}"`);
+		throw new ReferenceNotFoundError(`项目"${parsed.item}"上未找到字段"${where}"`);
 	}
 	return field.value;
 }
@@ -235,10 +235,10 @@ export const connectProvider: SecretProvider<ConnectConfig> = {
 		const host = config.host?.trim();
 		const token = config.token?.trim();
 		if (!host) {
-			return { ok: false, error: 'Host is empty' };
+			return { ok: false, error: '主机地址为空' };
 		}
 		if (!token) {
-			return { ok: false, error: 'Token is empty' };
+			return { ok: false, error: '令牌为空' };
 		}
 		try {
 			// GET /v1/vaults authenticates the token and confirms the host is a
@@ -252,24 +252,24 @@ export const connectProvider: SecretProvider<ConnectConfig> = {
 			const text = await body.text();
 			if (statusCode >= 200 && statusCode < 300) {
 				if (!isJsonResponse(text)) {
-					return { ok: false, error: '1Password Connect did not return a JSON response - the host may not be a Connect server' };
+					return { ok: false, error: '1Password Connect 未返回 JSON 响应，该主机可能不是 Connect 服务端' };
 				}
 				return { ok: true };
 			}
 			if (statusCode === 401 || statusCode === 403) {
-				return { ok: false, error: 'Invalid 1Password Connect token' };
+				return { ok: false, error: '无效的 1Password Connect 令牌' };
 			}
-			// Log the raw body server-side; show the client only a message parsed from
+			// Log the raw body server‑side; show the client only a message parsed from
 			// Connect's own {message}/{messages} error shape (never arbitrary bytes).
 			if (text) console.warn(`[1Password Connect] testConnection ${statusCode}: ${text}`);
 			const safe = parseProviderError(text);
 			return {
 				ok: false,
-				error: `1Password Connect request failed (${statusCode})${safe ? `: ${safe}` : ''}`
+				error: `1Password Connect 请求失败(${statusCode})${safe ? `: ${safe}` : ''}`
 			};
 		} catch (e: unknown) {
 			const message = e instanceof Error ? e.message : String(e);
-			return { ok: false, error: message || 'Connection failed' };
+			return { ok: false, error: message || '连接失败' };
 		}
 	},
 
@@ -286,14 +286,14 @@ export const connectProvider: SecretProvider<ConnectConfig> = {
 		for (const ref of refs) {
 			const parsed = parseReference(ref);
 			if (!parsed) {
-				console.warn(`${logPrefix} Skipping malformed op:// reference ${ref}`);
+				console.warn(`${logPrefix} 跳过格式错误的 op:// 引用 ${ref}`);
 				continue;
 			}
 			try {
 				result.set(ref, await resolveOne(cache, parsed));
 			} catch (e: unknown) {
 				if (e instanceof ReferenceNotFoundError) {
-					console.warn(`${logPrefix} Skipping op:// reference ${ref}: ${e.message}`);
+					console.warn(`${logPrefix} 跳过 op:// 引用 ${ref}: ${e.message}`);
 					continue;
 				}
 				throw e;
@@ -304,7 +304,7 @@ export const connectProvider: SecretProvider<ConnectConfig> = {
 
 	async resolveBulk(): Promise<Record<string, string>> {
 		throw new UnsupportedOperationError(
-			'1Password Connect does not support environment bulk pull; use a service account.'
+			'1Password Connect 不支持环境批量拉取，请使用服务账号。'
 		);
 	}
 };

@@ -16,5 +16,5 @@
 
 <Label for={forId}>
 	<span>{label}{#if required}<span class="text-destructive">&nbsp;*</span>{/if}</span>
-	{#if !required && showOptional}<span class="text-muted-foreground text-xs font-normal">(optional)</span>{/if}
+	{#if !required && showOptional}<span class="text-muted-foreground text-xs font-normal">(选填)</span>{/if}
 </Label>

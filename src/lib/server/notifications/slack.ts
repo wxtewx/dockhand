@@ -24,11 +24,11 @@ export async function sendSlack(appriseUrl: string, payload: NotificationPayload
 
 		if (!response.ok) {
 			const text = await response.text().catch(() => '');
-			return { success: false, error: `Slack error ${response.status}: ${text || response.statusText}` };
+			return { success: false, error: `Slack 请求异常 ${response.status}: ${text || response.statusText}` };
 		}
 		await drainResponse(response);
 		return { success: true };
 	} catch (error) {
-		return { success: false, error: `Slack connection failed: ${error instanceof Error ? error.message : String(error)}` };
+		return { success: false, error: `Slack 连接失败: ${error instanceof Error ? error.message : String(error)}` };
 	}
 }

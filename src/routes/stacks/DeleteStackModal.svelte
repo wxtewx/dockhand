@@ -59,18 +59,18 @@
 	// choice (containers are always removed). `kind` picks the icon for the "kept" state.
 	const willHappen = $derived.by(() => {
 		const lines: { delete: boolean | null; kind: 'container' | 'files' | 'volumes'; text: string }[] = [
-			{ delete: null, kind: 'container', text: 'Stop and remove the stack’s containers' },
+			{ delete: null, kind: 'container', text: '停止并移除该堆栈的容器' },
 		];
 		if (hasFiles) {
 			lines.push(removeFiles
-				? { delete: true, kind: 'files', text: 'Delete the stack files on disk' }
-				: { delete: false, kind: 'files', text: 'Keep the stack files on disk' });
+				? { delete: true, kind: 'files', text: '删除磁盘上的堆栈文件' }
+				: { delete: false, kind: 'files', text: '保留磁盘上的堆栈文件' });
 		}
 		if (hasVolumes) {
 			const n = preview!.namedVolumes.length;
 			lines.push(removeVolumes
-				? { delete: true, kind: 'volumes', text: `Delete ${n} named volume(s) — data is unrecoverable` }
-				: { delete: false, kind: 'volumes', text: `Keep ${n} named volume(s)` });
+				? { delete: true, kind: 'volumes', text: `删除 ${n} 个命名数据卷 — 数据将无法恢复` }
+				: { delete: false, kind: 'volumes', text: `保留 ${n} 个命名数据卷` });
 		}
 		return lines;
 	});
@@ -91,16 +91,16 @@
 		<Dialog.Header>
 			<Dialog.Title class="flex items-center gap-2">
 				<Trash2 class="w-5 h-5 text-destructive" />
-				Remove stack "{stackName}"
+				移除堆栈 "{stackName}"
 			</Dialog.Title>
 			<Dialog.Description>
-				Choose what to remove. The stack's containers are always stopped and removed.
+				选择需要删除的内容。堆栈对应的容器将会被自动停止并移除。
 			</Dialog.Description>
 		</Dialog.Header>
 
 		{#if loading}
 			<div class="flex items-center gap-2 py-4 text-sm text-muted-foreground">
-				<Loader2 class="w-4 h-4 animate-spin" /> Checking what can be removed…
+				<Loader2 class="w-4 h-4 animate-spin" /> 正在检测可删除项…
 			</div>
 		{:else if preview}
 			<div class="my-1 space-y-3">
@@ -109,7 +109,7 @@
 						<Checkbox bind:checked={removeFiles} class="mt-0.5" />
 						<Folder class="w-4 h-4 shrink-0 translate-y-0.5 text-amber-500" />
 						<div class="min-w-0">
-							<div class="text-sm">Delete files on disk</div>
+							<div class="text-sm">删除磁盘文件</div>
 							{#if preview.stackDir}
 								<code class="block break-all text-xs text-muted-foreground">{preview.stackDir}</code>
 							{/if}
@@ -128,7 +128,7 @@
 						<Checkbox bind:checked={removeVolumes} class="mt-0.5" />
 						<Database class="w-4 h-4 shrink-0 translate-y-0.5 text-blue-500" />
 						<div class="min-w-0">
-							<div class="text-sm">Delete named volumes <span class="text-muted-foreground">(data is unrecoverable)</span></div>
+							<div class="text-sm">删除命名数据卷 <span class="text-muted-foreground">(删除后数据不可恢复)</span></div>
 							<div class="flex flex-wrap gap-1 mt-0.5">
 								{#each preview.namedVolumes as v}
 									<code class="rounded bg-muted px-1.5 py-0.5 text-xs">{v}</code>
@@ -140,8 +140,7 @@
 
 				{#if !preview.canDeleteFiles && !hasVolumes}
 					<p class="text-sm text-muted-foreground">
-						This stack has no files or named volumes Dockhand manages — only the stack
-						record and its containers will be removed.
+						该堆栈不存在由 Dockhand 管理的文件或命名数据卷，仅会删除堆栈记录及其关联容器。
 					</p>
 				{/if}
 			</div>
@@ -149,7 +148,7 @@
 			<!-- What will happen — fixed set of lines; each flips red(delete)/green(keep). -->
 			<div class="mt-2 rounded-md border bg-muted/30 p-3">
 				<div class="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-					What will happen
+					执行结果预览
 				</div>
 				<ul class="space-y-1 text-sm">
 					{#each willHappen as w}
@@ -177,11 +176,11 @@
 
 		<div class="mt-4 flex justify-end gap-1.5">
 			<Button variant="outline" size="sm" onclick={() => (open = false)} disabled={busy}>
-				Cancel
+				取消
 			</Button>
 			<Button variant="destructive" size="sm" onclick={run} disabled={busy || loading}>
 				{#if busy}<Loader2 class="w-3.5 h-3.5 mr-1 animate-spin" />{:else}<Trash2 class="w-3.5 h-3.5 mr-1" />{/if}
-				Remove
+				确认移除
 			</Button>
 		</div>
 	</Dialog.Content>

@@ -65,7 +65,7 @@ export function stripSurroundingQuotes(value: string): string {
 export function assertSafeProviderHost(rawUrl: string, label: string): void {
 	const safe = isSafeNotificationUrl(rawUrl);
 	if (!safe.ok) {
-		throw new Error(`${label}: host not allowed (${safe.reason})`);
+		throw new Error(`${label}: 不允许使用该主机地址 (${safe.reason})`);
 	}
 }
 
@@ -82,7 +82,7 @@ export function sanitizeSelectorPath(selector: string, label: string): string {
 	const segments = trimmed.split('/');
 	for (const seg of segments) {
 		if (seg === '..' || seg === '.') {
-			throw new Error(`${label}: selector must not contain path traversal ("${selector}")`);
+			throw new Error(`${label}: 选择器不得包含路径遍历字符 ("${selector}")`);
 		}
 	}
 	return segments.map((s) => encodeURIComponent(s)).join('/');

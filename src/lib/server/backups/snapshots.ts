@@ -45,7 +45,7 @@ export async function assertInstanceOwned(
 	enterprise = false,
 ): Promise<string[]> {
 	if (!isValidSnapshotId(snapshotId)) {
-		throw new BackupError('VALIDATION', 'invalid snapshot id');
+		throw new BackupError('VALIDATION', '无效快照 ID');
 	}
 	// ENTERPRISE keeps the strict per-instance check: env-scoped RBAC installs enforce env
 	// boundaries and don't copy repositories between instances, so a snapshot must be THIS
@@ -58,13 +58,13 @@ export async function assertInstanceOwned(
 		'snapshots', '--json', '--no-lock', ...filterArgs, snapshotId,
 	]);
 	if (run.exitCode !== 0) {
-		throw new BackupError('RESTIC', `could not verify snapshot ownership: ${run.stderr.trim() || 'restic failed'}`);
+		throw new BackupError('RESTIC', `无法校验快照归属：${run.stderr.trim() || 'restic 执行失败'}`);
 	}
 	const snaps = parseSnapshots(run.stdout);
 	const match = snaps.find((s) => s.id === snapshotId || s.shortId === snapshotId);
 	if (!match || !(match.tags || []).some((t) => t.startsWith('dockhand:instance='))) {
 		// Not a Dockhand snapshot in this repo (or, for enterprise, not this instance's) -> refuse.
-		throw new BackupError('VALIDATION', 'snapshot not found for this installation', { snapshotId });
+		throw new BackupError('VALIDATION', '未找到属于当前实例的快照', { snapshotId });
 	}
 	return match.tags;
 }
@@ -79,11 +79,11 @@ export async function assertEnvAccess(access: AccessContext, tags: string[]): Pr
 	if (!access.isEnterprise) return; // no per-env boundaries outside enterprise
 	const envId = readEnvIdFromTags(tags);
 	if (envId === null) {
-		throw new BackupError('VALIDATION', 'could not resolve the snapshot environment (denied)');
+		throw new BackupError('VALIDATION', '无法解析快照所属环境，访问已拒绝');
 	}
 	if (envId === 'local') return; // an unscoped snapshot has no env gate
 	if (!(await access.canAccessEnvironment(envId))) {
-		throw new BackupError('VALIDATION', 'access denied to this snapshot environment');
+		throw new BackupError('VALIDATION', '无权访问该快照所属环境');
 	}
 }
 
@@ -181,7 +181,7 @@ export async function listSnapshots(
 	if (run.exitCode !== 0) {
 		// An empty repo (not initialised) and a real error look different; surface
 		// the stderr so the caller can classify. Return [] only on a clean exit.
-		throw new BackupError('RESTIC', run.stderr.trim() || 'could not list snapshots');
+		throw new BackupError('RESTIC', run.stderr.trim() || '无法列出快照');
 	}
 	// restic --tag can't match "has ANY dockhand:instance= tag" (exact-match only), so filter
 	// here: keep only snapshots this repo received FROM DOCKHAND (any instance), never those a

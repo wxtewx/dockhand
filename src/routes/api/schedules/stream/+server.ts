@@ -48,7 +48,7 @@ async function getSchedulesData(): Promise<ScheduleInfo[]> {
 			return {
 				id: setting.id,
 				type: 'container_update' as const,
-				name: `Update container: ${setting.containerName}`,
+				name: `更新容器: ${setting.containerName}`,
 				entityName: setting.containerName,
 				environmentId: setting.environmentId ?? null,
 				environmentName: env?.name ?? null,
@@ -82,7 +82,7 @@ async function getSchedulesData(): Promise<ScheduleInfo[]> {
 			return {
 				id: stack.id,
 				type: 'git_stack_sync' as const,
-				name: `Git sync: ${stack.stackName}`,
+				name: `Git 同步: ${stack.stackName}`,
 				entityName: stack.stackName,
 				environmentId: stack.environmentId ?? null,
 				environmentName: env?.name ?? null,
@@ -116,15 +116,15 @@ async function getSchedulesData(): Promise<ScheduleInfo[]> {
 			// Build description based on autoUpdate and scanning status
 			let description: string;
 			if (settings.autoUpdate) {
-				description = envHasScanning ? 'Check, scan & auto-update containers' : 'Check & auto-update containers';
+				description = envHasScanning ? '检查、扫描并自动更新容器' : '检查并自动更新容器';
 			} else {
-				description = 'Check containers for updates (notify only)';
+				description = '检查容器更新 (仅通知)';
 			}
 
 			return {
 				id: envId,
 				type: 'env_update_check' as const,
-				name: `Update environment: ${env?.name || 'Unknown'}`,
+				name: `更新环境：${env?.name || '未知环境'}`,
 				entityName: env?.name || 'Unknown',
 				description,
 				environmentId: envId,
@@ -158,14 +158,14 @@ async function getSchedulesData(): Promise<ScheduleInfo[]> {
 			const nextRun = isEnabled && settings.cronExpression ? getNextRun(settings.cronExpression, timezone) : null;
 
 			// Build description based on prune mode
-			const description = settings.pruneMode === 'all'
-				? 'Prune all unused images'
-				: 'Prune dangling images only';
+		const description = settings.pruneMode === 'all'
+				? '清理所有未使用的镜像'
+				: '仅清理悬空镜像';
 
 			return {
 				id: envId,
 				type: 'image_prune' as const,
-				name: `Prune images: ${env?.name || 'Unknown'}`,
+				name: `清理镜像：${env?.name || '未知环境'}`,
 				entityName: env?.name || 'Unknown',
 				description,
 				environmentId: envId,
@@ -202,9 +202,9 @@ async function getSchedulesData(): Promise<ScheduleInfo[]> {
 				return {
 					id: config.id,
 					type: 'backup' as const,
-					name: `Backup: ${config.targetName}`,
+					name: `备份: ${config.targetName}`,
 					entityName: config.targetName,
-					description: `Back up ${config.type} to ${dest?.name || 'unknown destination'}`,
+					description: `将 ${config.type} 备份至 ${dest?.name || '未知目标存储位置'}`,
 					environmentId: config.environmentId,
 					environmentName: env?.name ?? null,
 					enabled: isEnabled,
@@ -233,9 +233,9 @@ async function getSchedulesData(): Promise<ScheduleInfo[]> {
 			schedules.push({
 				id: dest.id + 100000,
 				type: 'repo_prune' as any,
-				name: `Prune: ${dest.name}`,
+				name: `清理: ${dest.name}`,
 				entityName: dest.name,
-				description: `Prune unused data from ${dest.name} (max unused ${maxUnused}%)`,
+				description: `清理 ${dest.name} 内未使用的数据 (最大保留未使用数据 ${maxUnused}%)`,
 				maxUnused: String(maxUnused),
 				environmentId: null,
 				environmentName: null,
@@ -257,9 +257,9 @@ async function getSchedulesData(): Promise<ScheduleInfo[]> {
 			schedules.push({
 				id: dest.id + 200000,
 				type: 'repo_check' as any,
-				name: `Check: ${dest.name}`,
+				name: `校验: ${dest.name}`,
 				entityName: dest.name,
-				description: `Check integrity of ${dest.name}`,
+				description: `检查 ${dest.name} 的数据完整性`,
 				environmentId: null,
 				environmentName: null,
 				enabled: true,
@@ -281,9 +281,9 @@ async function getSchedulesData(): Promise<ScheduleInfo[]> {
 			schedules.push({
 				id: dest.id + 300000,
 				type: 'repo_verify' as any,
-				name: `Verify: ${dest.name}`,
+				name: `验证: ${dest.name}`,
 				entityName: dest.name,
-				description: `Verify ${subset} of data in ${dest.name}`,
+				description: `验证 ${dest.name} 中 ${subset} 的数据`,
 				dataSubset: subset,
 				environmentId: null,
 				environmentName: null,
@@ -345,7 +345,7 @@ async function getSchedulesData(): Promise<ScheduleInfo[]> {
 export const GET: RequestHandler = async ({ cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('schedules', 'view')) {
-		return new Response(JSON.stringify({ error: 'Permission denied' }), {
+		return new Response(JSON.stringify({ error: '权限不足' }), {
 			status: 403,
 			headers: { 'Content-Type': 'application/json' }
 		});
@@ -353,15 +353,14 @@ export const GET: RequestHandler = async ({ cookies }) => {
 
 	let controllerClosed = false;
 	let intervalId: ReturnType<typeof setInterval> | null = null;
-	let isPolling = false; // Guard against concurrent poll executions
-	let initialDataSent = false; // Track if initial data was successfully sent
+	let isPolling = false;
+	let initialDataSent = false;
 
 	const stream = new ReadableStream({
 		async start(controller) {
 			const encoder = new TextEncoder();
-			console.log('[Schedules Stream] New connection opened');
+			console.log('[定时任务流] 新连接已打开');
 
-			// Returns true if data was successfully enqueued
 			const safeEnqueue = (data: string): boolean => {
 				if (controllerClosed) {
 					return false;
@@ -370,7 +369,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
 					controller.enqueue(encoder.encode(data));
 					return true;
 				} catch (err) {
-					console.log('[Schedules Stream] Controller closed during enqueue, cleaning up');
+					console.log('[定时任务流] 发送数据时连接已关闭，正在清理');
 					controllerClosed = true;
 					if (intervalId) {
 						clearInterval(intervalId);
@@ -380,12 +379,10 @@ export const GET: RequestHandler = async ({ cookies }) => {
 				}
 			};
 
-			// Send immediate connection confirmation so client knows stream is alive
 			if (!safeEnqueue(`event: connected\ndata: {}\n\n`)) {
-				return; // Connection already closed, abort
+				return;
 			}
 
-			// Send initial data - this is critical, retry logic if needed
 			let retryCount = 0;
 			const maxRetries = 2;
 
@@ -393,43 +390,37 @@ export const GET: RequestHandler = async ({ cookies }) => {
 				try {
 					const schedules = await getSchedulesData();
 
-					// Check if still connected before sending
 					if (controllerClosed) {
-						console.log('[Schedules Stream] Connection closed before initial data could be sent');
+						console.log('[定时任务流] 发送初始数据前连接已关闭');
 						return;
 					}
 
 					if (safeEnqueue(`event: schedules\ndata: ${JSON.stringify({ schedules })}\n\n`)) {
 						initialDataSent = true;
-						console.log('[Schedules Stream] Initial data sent successfully');
+						console.log('[定时任务流] 初始数据发送成功');
 					} else {
-						console.log('[Schedules Stream] Failed to enqueue initial data, connection closed');
+						console.log('[定时任务流] 无法发送初始数据，连接已关闭');
 						return;
 					}
 				} catch (error) {
-					console.error(`[Schedules Stream] Failed to get initial schedules (attempt ${retryCount + 1}):`, error);
+					console.error(`[定时任务流] 获取初始定时任务失败（第 ${retryCount + 1} 次重试）:`, error);
 					retryCount++;
 
 					if (retryCount > maxRetries) {
-						// Send error event to client so they can show an error state
 						safeEnqueue(`event: error\ndata: ${JSON.stringify({ error: String(error), fatal: true })}\n\n`);
 						return;
 					}
 
-					// Brief delay before retry
 					await new Promise(resolve => setTimeout(resolve, 500));
 				}
 			}
 
-			// Only start polling if initial data was sent successfully
 			if (!initialDataSent) {
-				console.log('[Schedules Stream] Initial data was never sent, not starting polling');
+				console.log('[定时任务流] 未成功发送初始数据，不启动轮询');
 				return;
 			}
 
-			// Poll every 2 seconds for updates (with guard against concurrent executions)
 			intervalId = setInterval(async () => {
-				// Skip if already polling or controller closed
 				if (isPolling || controllerClosed) {
 					if (controllerClosed && intervalId) {
 						clearInterval(intervalId);
@@ -443,15 +434,14 @@ export const GET: RequestHandler = async ({ cookies }) => {
 					const schedules = await getSchedulesData();
 					safeEnqueue(`event: schedules\ndata: ${JSON.stringify({ schedules })}\n\n`);
 				} catch (error) {
-					console.error('[Schedules Stream] Failed to get schedules during poll:', error);
-					// Don't send error event for poll failures, just log
+					console.error('[定时任务流] 轮询时获取定时任务失败:', error);
 				} finally {
 					isPolling = false;
 				}
 			}, 2000);
 		},
 		cancel() {
-			console.log('[Schedules Stream] Connection cancelled, cleaning up');
+			console.log('[定时任务流] 连接已取消，正在清理');
 			controllerClosed = true;
 			if (intervalId) {
 				clearInterval(intervalId);

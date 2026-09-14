@@ -40,23 +40,23 @@
 		<Dialog.Header>
 			<Dialog.Title class="flex items-center gap-2 text-destructive">
 				<AlertTriangle class="w-5 h-5" />
-				Disable two-factor authentication
+				禁用双因素认证
 			</Dialog.Title>
 		</Dialog.Header>
 		<div class="space-y-4">
 			<p class="text-sm text-muted-foreground">
-				Are you sure you want to disable two-factor authentication? This will make your account less secure.
+				您确定要禁用双因素认证吗？这会降低你的账户安全性。
 			</p>
 		</div>
 		<Dialog.Footer>
-			<Button variant="outline" onclick={onClose}>Cancel</Button>
+			<Button variant="outline" onclick={onClose}>取消</Button>
 			<Button variant="destructive" onclick={disableMfa} disabled={loading}>
 				{#if loading}
 					<RefreshCw class="w-4 h-4 animate-spin" />
 				{:else}
 					<Shield class="w-4 h-4" />
 				{/if}
-				Disable MFA
+				禁用 MFA
 			</Button>
 		</Dialog.Footer>
 	</Dialog.Content>

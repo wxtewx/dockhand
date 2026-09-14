@@ -21,7 +21,7 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 	const envId = url.searchParams.get('env');
 	const envIdNum = envId ? parseInt(envId) : undefined;
 	if (auth.authEnabled && !(await auth.can('stacks', 'remove', envIdNum))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 	const envAccessDenied = await auth.requireEnvAccess(envIdNum ?? null);
 	if (envAccessDenied) return envAccessDenied;
@@ -38,6 +38,6 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 			canDeleteFiles: !!(stackDir || gitDir),
 		});
 	} catch (error: any) {
-		return json({ error: error.message || 'Failed to compute deletion preview' }, { status: 500 });
+		return json({ error: error.message || '无法计算删除预览内容' }, { status: 500 });
 	}
 };

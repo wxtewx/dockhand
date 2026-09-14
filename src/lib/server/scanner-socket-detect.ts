@@ -48,7 +48,7 @@ export async function detectRemoteSocketPath(envId: number | undefined): Promise
 		}
 	} catch (err) {
 		console.warn(
-			`[Scanner] detectRemoteSocketPath(env=${envId}) failed, defaulting to ${DEFAULT_DOCKER_SOCKET}:`,
+			`[扫描器] detectRemoteSocketPath(环境 ID=${envId}) 执行失败，将默认使用 ${DEFAULT_DOCKER_SOCKET}:`,
 			(err as Error)?.message ?? err
 		);
 	}

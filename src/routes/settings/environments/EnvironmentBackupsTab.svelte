@@ -49,8 +49,8 @@
 	const unconfiguredCount = $derived(unconfiguredItems.length);
 	/** "3 stacks + 5 containers" / "3 stacks" / "5 containers" — only the non-zero parts. */
 	const unconfiguredLabel = $derived([
-		unconfiguredStacks > 0 ? `${unconfiguredStacks} ${unconfiguredStacks === 1 ? 'stack' : 'stacks'}` : '',
-		unconfiguredContainers > 0 ? `${unconfiguredContainers} ${unconfiguredContainers === 1 ? 'container' : 'containers'}` : '',
+		unconfiguredStacks > 0 ? `${unconfiguredStacks} ${unconfiguredStacks === 1 ? '堆栈' : '堆栈'}` : '',
+		unconfiguredContainers > 0 ? `${unconfiguredContainers} ${unconfiguredContainers === 1 ? '容器' : '容器'}` : '',
 	].filter(Boolean).join(' + '));
 
 	async function fetchAll() {
@@ -115,7 +115,7 @@
 	}
 
 	async function batchApply() {
-		if (!batchDestId) { toast.error('Select a repository'); return; }
+		if (!batchDestId) { toast.error('请选择仓库'); return; }
 		batchSaving = true;
 		let created = 0;
 		for (const item of items) {
@@ -137,7 +137,7 @@
 				if (res.ok) created++;
 			} catch {}
 		}
-		toast.success(`Created ${created} backup schedule${created > 1 ? 's' : ''}`);
+		toast.success(`已创建 ${created} 条备份计划`);
 		showBatch = false;
 		batchSaving = false;
 		await fetchAll();
@@ -151,14 +151,14 @@
 		<Loader2 class="w-5 h-5 animate-spin text-muted-foreground" />
 	</div>
 {:else if items.length === 0}
-	<p class="text-sm text-muted-foreground py-4 text-center">No containers or stacks found on this environment.</p>
+	<p class="text-sm text-muted-foreground py-4 text-center">该环境未找到任何容器或堆栈。</p>
 {:else}
 	<!-- Batch setup -->
 	{#if unconfiguredCount > 0}
 		{#if !showBatch}
 			<div class="mb-2">
 				<Button variant="outline" size="sm" class="w-full" onclick={() => { showBatch = true; if (!batchDestId && usableDestinations.length > 0) batchDestId = usableDestinations[0].id; }}>
-					<Zap class="w-3.5 h-3.5 mr-1.5" />Schedule all ({unconfiguredLabel})
+					<Zap class="w-3.5 h-3.5 mr-1.5" />批量设置 ({unconfiguredLabel})
 				</Button>
 			</div>
 		{:else}
@@ -172,7 +172,7 @@
 									{@const DIcon = getRepoTypeIcon(dest.repository)}
 									<span class="flex items-center gap-1.5 truncate"><DIcon class="w-3.5 h-3.5 text-primary/60 flex-shrink-0" />{dest.name}</span>
 								{/if}
-							{:else}Select repository{/if}
+							{:else}选择仓库{/if}
 						</Select.Trigger>
 						<Select.Content>
 							{#each usableDestinations as dest}
@@ -189,7 +189,7 @@
 					<Button variant="ghost" size="sm" class="text-xs" onclick={() => showBatch = false}>Cancel</Button>
 					<Button size="sm" disabled={!batchDestId || batchSaving} onclick={batchApply}>
 						{#if batchSaving}<Loader2 class="w-3.5 h-3.5 mr-1 animate-spin" />{/if}
-						Schedule {unconfiguredLabel}
+						为 {unconfiguredLabel} 创建计划
 					</Button>
 				</div>
 			</div>
@@ -226,15 +226,15 @@
 					<span class="flex min-w-0 flex-1 items-center gap-1.5">
 						<span class="truncate text-sm">{item.name}</span>
 						{#if item.git}
-							<span class="inline-flex flex-shrink-0 items-center gap-1 rounded-full border border-purple-500/30 bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-medium text-purple-600 dark:text-purple-400" title="Git-deployed stack"><GitBranch class="h-2.5 w-2.5" />git</span>
+							<span class="inline-flex flex-shrink-0 items-center gap-1 rounded-full border border-purple-500/30 bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-medium text-purple-600 dark:text-purple-400" title="Git 部署堆栈"><GitBranch class="h-2.5 w-2.5" />git</span>
 						{/if}
 						{#if item.external}
-							<span class="inline-flex flex-shrink-0 items-center rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground" title="Untracked stack — can't be backed up until adopted">external</span>
+							<span class="inline-flex flex-shrink-0 items-center rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground" title="未追踪堆栈，接入后才可备份">外部</span>
 						{/if}
 					</span>
 
 					{#if item.external}
-						<span class="text-xs text-muted-foreground/60 flex-shrink-0" title="This stack is untracked — Dockhand doesn't know its compose file location, so it can't be backed up. Adopt it (Stacks → Adopt) first.">adopt first</span>
+						<span class="text-xs text-muted-foreground/60 flex-shrink-0" title="该堆栈未被追踪，Dockhand 无法获取编排文件路径，暂不支持备份。请先接入 (堆栈 → 接入堆栈)。">请先接入</span>
 					{:else if hasBackup}
 						<ArrowRight class="w-3 h-3 text-muted-foreground/40 flex-shrink-0" />
 						{#if itemConfigs.length === 1}
@@ -246,14 +246,14 @@
 									<DestIcon class="w-3 h-3 text-primary/60" />
 									{dest.name}
 								{/if}
-								{cfg.schedule ? formatCron(cfg.schedule) : 'manual'}
+								{cfg.schedule ? formatCron(cfg.schedule) : '手动执行'}
 							</span>
 						{:else}
-							<span class="text-xs text-muted-foreground flex-shrink-0">{itemConfigs.length} schedules</span>
+							<span class="text-xs text-muted-foreground flex-shrink-0">{itemConfigs.length} 条计划</span>
 						{/if}
 					{:else}
 						<span class="text-xs text-muted-foreground/50 flex items-center gap-1 flex-shrink-0">
-							<Plus class="w-3 h-3" />configure
+							<Plus class="w-3 h-3" />配置备份
 						</span>
 					{/if}
 				</svelte:element>

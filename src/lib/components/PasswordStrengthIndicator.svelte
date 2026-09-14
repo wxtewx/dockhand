@@ -24,11 +24,11 @@
 	});
 
 	const strengthLabel = $derived(
-		strength === 0 ? 'Too short' :
-		strength === 1 ? 'Weak' :
-		strength === 2 ? 'Fair' :
-		strength === 3 ? 'Good' :
-		'Strong'
+		strength === 0 ? '太短' :
+		strength === 1 ? '弱' :
+		strength === 2 ? '一般' :
+		strength === 3 ? '良好' :
+		'强'
 	);
 
 	const strengthColor = $derived(

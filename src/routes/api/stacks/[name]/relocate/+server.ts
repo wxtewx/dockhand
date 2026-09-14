@@ -28,7 +28,7 @@ export const POST: RequestHandler = async ({ params, request, url, cookies }) =>
 	const envId = url.searchParams.get('env');
 	const envIdNum = envId ? parseInt(envId) : undefined;
 	if (auth.authEnabled && !(await auth.can('stacks', 'edit', envIdNum))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 	const envAccessDenied = await auth.requireEnvAccess(envIdNum ?? null);
 	if (envAccessDenied) return envAccessDenied;
@@ -38,7 +38,7 @@ export const POST: RequestHandler = async ({ params, request, url, cookies }) =>
 		const { oldDir, newComposePath, newEnvPath } = body;
 
 		if (!oldDir || !newComposePath) {
-			return json({ error: 'oldDir and newComposePath are required' }, { status: 400 });
+			return json({ error: 'oldDir 和 newComposePath 为必填项' }, { status: 400 });
 		}
 
 		const newDir = dirname(newComposePath);
@@ -49,7 +49,7 @@ export const POST: RequestHandler = async ({ params, request, url, cookies }) =>
 		// master key or /proc/self/environ back through the response.
 		for (const p of [oldDir, newComposePath, newDir, newEnvPath].filter(Boolean)) {
 			if (isProtectedPath(p)) {
-				return json({ error: 'Path is not allowed' }, { status: 403 });
+				return json({ error: '路径不被允许' }, { status: 403 });
 			}
 		}
 
@@ -57,12 +57,12 @@ export const POST: RequestHandler = async ({ params, request, url, cookies }) =>
 		// stack name up front so this can't be used as a generic move/read primitive
 		// against an arbitrary route name.
 		if (!(await getStackSource(name, envIdNum ?? null))) {
-			return json({ error: 'Stack not found' }, { status: 404 });
+			return json({ error: '堆栈未找到' }, { status: 404 });
 		}
 
 		// Verify old directory exists
 		if (!existsSync(oldDir)) {
-			return json({ error: 'Source directory does not exist' }, { status: 400 });
+			return json({ error: '源目录不存在' }, { status: 400 });
 		}
 
 		// Create new directory if it doesn't exist
@@ -92,10 +92,10 @@ export const POST: RequestHandler = async ({ params, request, url, cookies }) =>
 						unlinkSync(oldFilePath);
 						movedFiles.push(file);
 					} catch (copyErr: any) {
-						errors.push(`Failed to copy ${file}: ${copyErr.message}`);
+						errors.push(`复制 ${file} 失败：${copyErr.message}`);
 					}
 				} else {
-					errors.push(`Failed to move ${file}: ${renameErr.message}`);
+					errors.push(`移动 ${file} 失败：${renameErr.message}`);
 				}
 			}
 		}
@@ -156,7 +156,7 @@ export const POST: RequestHandler = async ({ params, request, url, cookies }) =>
 			envVars
 		});
 	} catch (error: any) {
-		console.error(`Error relocating stack ${name}:`, error);
-		return json({ error: error.message || 'Failed to relocate stack' }, { status: 500 });
+		console.error(`迁移堆栈 ${name} 时出错：`, error);
+		return json({ error: error.message || '迁移堆栈失败' }, { status: 500 });
 	}
 };

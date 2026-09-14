@@ -225,22 +225,22 @@ export type StackDirProbeHint =
  */
 export function stackDirProbeFixHint(hint: StackDirProbeHint | undefined, hostPath: string | undefined): string {
 	const envName = hint && 'envName' in hint ? hint.envName : null;
-	const settingsLoc = envName ? `Settings > Environments > ${envName}` : `Settings > Environments`;
+	const settingsLoc = envName ? `设置 > 环境 > ${envName}` : `设置 > 环境`;
 	const at = hostPath ? ` at ${hostPath}` : '';
 	// A direct-remote env stages the files on deploy: if the path is set but the folder is
 	// empty, the stack simply hasn't been deployed there yet - a redeploy stages it. Naming a
 	// path change here (as the other branches do) is the wrong advice and sends the user in
 	// circles when the path is already correct.
 	if (hint?.kind === 'user-set' && hint.transport === 'direct') {
-		return ` The Remote stack path is set, but this stack's files aren't on ${envName ?? 'the host'} yet - redeploy the stack so Dockhand stages them${at}. (down/start/restart don't copy; it must be a deploy.)`;
+		return ` 远程堆栈路径已设置，但此堆栈的文件尚未存在于 ${envName ?? '主机'} 上 - 重新部署堆栈，让 Dockhand 同步文件${at}。 (down/start/restart 不会复制文件，必须执行部署。)`;
 	}
 	// Hawser (defaulted or user-set): the agent keeps stacks under its own dir, so an empty
 	// probe means the configured HOST path doesn't map to where the agent actually writes.
 	if (hint?.kind === 'hawser-defaulted' || hint?.kind === 'user-set') {
-		return ` Set "Remote stack path (for backup)" in ${settingsLoc} to the real host path where this stack's files live.`;
+		return ` 在 ${settingsLoc} 中将 "远程堆栈路径 (用于备份)" 设置为此堆栈文件所在的真实主机路径。`;
 	}
 	// Local stack: a redeploy stages the files into the managed stack dir.
-	return ` Redeploy the stack to stage its files there.`;
+	return ` 重新部署堆栈以在此处同步文件。`;
 }
 
 /** Result of resolving the candidate host stack folder (before the runtime probe). */
@@ -308,19 +308,19 @@ export function resolveHostStackDir(input: HostStackDirInput): HostStackDirResol
 	const norm = (p: string | null | undefined): string => (typeof p === 'string' ? p.trim().replace(/\/+$/, '') : '');
 
 	const viaBind = norm(input.bindDerivedHostPath);
-	if (viaBind) return { kind: 'candidate', hostPath: viaBind, composeFile, source: 'derived from a relative compose bind (daemon-reported host source)' };
+	if (viaBind) return { kind: 'candidate', hostPath: viaBind, composeFile, source: '源自 compose 相对绑定 (由守护进程上报主机路径)' };
 
 	const viaRemoteDir = norm(input.remoteStacksDirHostPath);
-	if (viaRemoteDir) return { kind: 'candidate', hostPath: viaRemoteDir, composeFile, source: 'declared host stack path (direct-remote remote_stacks_dir / hawser agent STACKS_DIR)' };
+	if (viaRemoteDir) return { kind: 'candidate', hostPath: viaRemoteDir, composeFile, source: '已声明的主机堆栈路径 (direct-remote remote_stacks_dir / hawser agent STACKS_DIR)' };
 
 	const viaData = norm(input.dataDirHostPath);
-	if (viaData) return { kind: 'candidate', hostPath: viaData, composeFile, source: 'DATA_DIR -> HOST_DATA_DIR translation (Dockhand-deployed, local)' };
+	if (viaData) return { kind: 'candidate', hostPath: viaData, composeFile, source: 'DATA_DIR -> HOST_DATA_DIR 转换 (Dockhand 部署，本地)' };
 
 	const viaMount = norm(input.mountHostPath);
-	if (viaMount) return { kind: 'candidate', hostPath: viaMount, composeFile, source: 'container mount translation (adopted/external stack)' };
+	if (viaMount) return { kind: 'candidate', hostPath: viaMount, composeFile, source: '容器挂载转换 (接入/外部堆栈)' };
 
 	const wd = norm(input.workingDirLabel);
-	if (wd) return { kind: 'candidate', hostPath: wd, composeFile, source: 'compose working_dir label (hawser agent / matching paths)' };
+	if (wd) return { kind: 'candidate', hostPath: wd, composeFile, source: 'compose working_dir 标签 (hawser agent / 路径匹配)' };
 
-	return { kind: 'unknown', reason: 'could not locate the stack folder on the host (no DATA_DIR/mount translation and no working_dir label)' };
+	return { kind: 'unknown', reason: '无法在主机上定位堆栈文件夹 (无 DATA_DIR/挂载转换，也无 working_dir 标签)' };
 }
