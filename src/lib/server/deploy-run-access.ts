@@ -69,16 +69,16 @@ export async function loadOwnedDeployRun(
 ): Promise<{ run: ScheduleExecutionData } | { response: Response }> {
 	const runId = parseInt(runIdParam, 10);
 	if (isNaN(runId)) {
-		return { response: json({ error: 'Invalid run id' }, { status: 400 }) };
+		return { response: json({ error: '无效的运行 id' }, { status: 400 }) };
 	}
 
 	const run = await getScheduleExecution(runId);
 	if (!run || run.scheduleType !== 'stack_deploy' || run.entityName !== stackName) {
-		return { response: json({ error: 'Deploy run not found' }, { status: 404 }) };
+		return { response: json({ error: '部署运行未找到' }, { status: 404 }) };
 	}
 
 	if (run.environmentId != null && auth.isEnterprise && !(await auth.canAccessEnvironment(run.environmentId))) {
-		return { response: json({ error: 'Access denied to this environment' }, { status: 403 }) };
+		return { response: json({ error: '无权访问此环境' }, { status: 403 }) };
 	}
 
 	return { run };

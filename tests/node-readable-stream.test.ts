@@ -5,7 +5,7 @@ import { toWebReadableStream } from '../src/lib/server/node-readable-stream';
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 describe('toWebReadableStream', () => {
-	test('keeps a fast producer bounded behind a slow consumer', async () => {
+	test('高速生产者会被慢速消费者限流', async () => {
 		const totalChunks = 128;
 		const chunkSize = 64 * 1024;
 		let produced = 0;
@@ -44,7 +44,7 @@ describe('toWebReadableStream', () => {
 		expect(receivedBytes).toBe(totalChunks * chunkSize);
 	});
 
-	test('destroys the Node stream when the Web reader is cancelled', async () => {
+	test('Web reader 取消时销毁 Node 流', async () => {
 		const source = new PassThrough();
 		const reader = toWebReadableStream(source).getReader();
 		source.write(Buffer.from('chunk'));
@@ -56,20 +56,20 @@ describe('toWebReadableStream', () => {
 		});
 		const closed = new Promise<void>((resolve) => source.once('close', resolve));
 
-		await reader.cancel(new Error('cancelled'));
+		await reader.cancel(new Error('已取消'));
 		await closed;
 
 		expect(source.destroyed).toBe(true);
-		expect(cancelError?.message).toBe('cancelled');
+		expect(cancelError?.message).toBe('已取消');
 	});
 
-	test('forwards Node stream errors to the Web reader', async () => {
+	test('将 Node 流的错误转发至 Web reader', async () => {
 		const source = new PassThrough();
 		const reader = toWebReadableStream(source).getReader();
 		const pendingRead = reader.read();
 
-		source.destroy(new Error('source failed'));
+		source.destroy(new Error('数据源失败'));
 
-		await expect(pendingRead).rejects.toThrow('source failed');
+		await expect(pendingRead).rejects.toThrow('数据源失败');
 	});
 });

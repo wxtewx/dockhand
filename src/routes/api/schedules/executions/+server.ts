@@ -132,7 +132,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 		return json(result);
 	} catch (error: any) {
-		console.error('Failed to get schedule executions:', error);
+		console.error('获取定时任务执行记录失败:', error);
 		return json({ error: error.message }, { status: 500 });
 	}
 };

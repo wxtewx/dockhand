@@ -34,7 +34,7 @@ export async function aggregateVulnerabilities(envIdNum: number): Promise<Aggreg
 		existingImageIds = new Set(images.map((img) => img.id));
 	} catch (error) {
 		if (!(error instanceof DockerConnectionError) && !(error instanceof EnvironmentNotFoundError)) {
-			console.error('Error listing images for vulnerability summary:', error);
+			console.error('获取漏洞汇总的镜像列表时出错:', error);
 		}
 	}
 	try {
@@ -54,7 +54,7 @@ export async function aggregateVulnerabilities(envIdNum: number): Promise<Aggreg
 		}
 	} catch (error) {
 		if (!(error instanceof DockerConnectionError) && !(error instanceof EnvironmentNotFoundError)) {
-			console.error('Error listing containers for vulnerability enrichment:', error);
+			console.error('用于漏洞信息补充的容器列表获取失败:', error);
 		}
 	}
 

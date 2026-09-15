@@ -36,7 +36,7 @@ export function exportResponse(opts: {
 	switch (format) {
 		case 'csv':
 			content = toCSV(findings);
-			contentType = 'text/csv';
+			contentType = 'text/csv; charset=utf-8';
 			ext = 'csv';
 			break;
 		case 'sarif':

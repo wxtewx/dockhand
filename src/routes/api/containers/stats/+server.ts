@@ -99,7 +99,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('containers', 'view', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Early return if no environments configured (fresh install)
@@ -131,7 +131,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 					memory_stats: (rawStats as any).memory_stats
 				});
 			}
-			return json({ error: 'Container not found' }, { status: 404 });
+			return json({ error: '容器未找到' }, { status: 404 });
 		}
 
 		// Get stats for each running container (in parallel with timeout)
@@ -180,9 +180,9 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 	} catch (error: any) {
 		// Return 404 for deleted environments so client can clear stale cache
 		if (error instanceof EnvironmentNotFoundError) {
-			return json({ error: 'Environment not found' }, { status: 404 });
+			return json({ error: '环境未找到' }, { status: 404 });
 		}
-		console.error('Failed to get container stats:', error.message || error);
+		console.error('获取容器统计信息失败:', error.message || error);
 		return json([], { status: 200 }); // Return empty array instead of error
 	}
 };

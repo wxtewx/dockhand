@@ -79,17 +79,17 @@ async function fetchStackCompose(repository: { url: string; stackfile: string })
 	// strict webhook policy (block all private ranges) fits.
 	const safety = isSafeWebhookUrl(rawUrl);
 	if (!safety.ok) {
-		throw new Error(`Refusing to fetch compose file: ${safety.reason}`);
+		throw new Error(`拒绝拉取 Compose 文件: ${safety.reason}`);
 	}
 
 	// redirect:'manual' - a public URL that 3xx-redirects to a private/metadata
 	// host would bypass the literal-host check above, so refuse to follow it.
 	const response = await fetch(rawUrl, { redirect: 'manual', signal: AbortSignal.timeout(10000) });
 	if (response.status >= 300 && response.status < 400) {
-		throw new Error('Refusing to fetch compose file: server tried to redirect the request');
+		throw new Error('拒绝拉取 Compose 文件: 服务端尝试对请求执行重定向');
 	}
 	if (!response.ok) {
-		throw new Error(`Failed to fetch compose file: ${response.status}`);
+		throw new Error(`获取 Compose 文件失败: ${response.status}`);
 	}
 	return await response.text();
 }
@@ -110,14 +110,14 @@ async function fetchStackCompose(repository: { url: string; stackfile: string })
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('templates', 'deploy')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const { template } = await request.json() as { template: TemplateItem };
 
 		if (!template) {
-			return json({ error: 'Template is required' }, { status: 400 });
+			return json({ error: '模板为必填项' }, { status: 400 });
 		}
 
 		let compose: string;
@@ -130,7 +130,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 		return json({ compose });
 	} catch (error) {
-		const message = error instanceof Error ? error.message : 'Failed to generate compose';
+		const message = error instanceof Error ? error.message : '生成编排配置失败';
 		return json({ error: message }, { status: 500 });
 	}
 };

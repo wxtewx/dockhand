@@ -31,12 +31,12 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 	try {
 		const id = parseInt(params.id, 10);
 		if (isNaN(id)) {
-			return json({ error: 'Invalid execution ID' }, { status: 400 });
+			return json({ error: '无效的执行 ID' }, { status: 400 });
 		}
 
 		const execution = await getScheduleExecution(id);
 		if (!execution) {
-			return json({ error: 'Execution not found' }, { status: 404 });
+			return json({ error: '未找到执行记录' }, { status: 404 });
 		}
 
 		// The row's logs/errorMessage are as sensitive as the feature that ran, so
@@ -59,7 +59,7 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 
 		return json(execution);
 	} catch (error: any) {
-		console.error('Failed to get schedule execution:', error);
+		console.error('获取定时任务执行记录失败:', error);
 		return json({ error: error.message }, { status: 500 });
 	}
 };
@@ -78,18 +78,18 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 export const DELETE: RequestHandler = async ({ params, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !auth.isAuthenticated) {
-		return json({ error: 'Authentication required' }, { status: 401 });
+		return json({ error: '权限不足' }, { status: 401 });
 	}
 
 	try {
 		const id = parseInt(params.id, 10);
 		if (isNaN(id)) {
-			return json({ error: 'Invalid execution ID' }, { status: 400 });
+			return json({ error: '无效的执行 ID' }, { status: 400 });
 		}
 
 		const execution = await getScheduleExecution(id);
 		if (!execution) {
-			return json({ error: 'Execution not found' }, { status: 404 });
+			return json({ error: '未找到执行记录' }, { status: 404 });
 		}
 
 		// Deleting a run record is gated by the :edit of the feature that ran it
@@ -98,14 +98,14 @@ export const DELETE: RequestHandler = async ({ params, cookies }) => {
 		if (auth.authEnabled) {
 			const resource = resourceForScheduleType(execution.scheduleType);
 			if (!(await auth.can(resource, 'edit'))) {
-				return json({ error: 'Permission denied' }, { status: 403 });
+				return json({ error: '权限不足' }, { status: 403 });
 			}
 			if (
 				execution.environmentId != null &&
 				auth.isEnterprise &&
 				!(await auth.canAccessEnvironment(execution.environmentId))
 			) {
-				return json({ error: 'Access denied to this environment' }, { status: 403 });
+				return json({ error: '无权访问此环境' }, { status: 403 });
 			}
 		}
 
@@ -113,7 +113,7 @@ export const DELETE: RequestHandler = async ({ params, cookies }) => {
 
 		return json({ success: true });
 	} catch (error: any) {
-		console.error('Failed to delete schedule execution:', error);
+		console.error('删除定时任务执行记录失败:', error);
 		return json({ error: error.message }, { status: 500 });
 	}
 };

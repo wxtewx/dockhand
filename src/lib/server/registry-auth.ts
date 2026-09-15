@@ -59,7 +59,7 @@ export type FetchLike = (url: string, init?: { headers?: Record<string, string>;
  */
 function assertSafeRegistryUrl(u: string): void {
 	const r = isSafeNotificationUrl(u);
-	if (!r.ok) throw new Error(`registry token URL blocked: ${r.reason}`);
+	if (!r.ok) throw new Error(`镜像仓库令牌 URL 已被拦截: ${r.reason}`);
 }
 
 /**

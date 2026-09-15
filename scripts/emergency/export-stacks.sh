@@ -15,7 +15,7 @@
 set -e
 
 echo "========================================"
-echo "  Dockhand - Export Compose Stacks"
+echo "  Dockhand - 导出 Compose 堆栈"
 echo "========================================"
 echo ""
 
@@ -29,33 +29,33 @@ if [ ! -d "$STACKS_DIR" ] && [ -d "$HOME/.dockhand/stacks" ]; then
 fi
 
 if [ ! -d "$STACKS_DIR" ]; then
-    echo "Error: Stacks directory not found at $STACKS_DIR"
+    echo "错误：未找到堆栈目录 $STACKS_DIR"
     exit 1
 fi
 
 # Count stacks
 STACK_COUNT=$(find "$STACKS_DIR" -maxdepth 1 -type d ! -path "$STACKS_DIR" 2>/dev/null | wc -l | tr -d ' ')
 
-echo "This script will export all compose stacks."
+echo "本脚本将导出所有 Compose 堆栈。"
 echo ""
-echo "Stacks directory: $STACKS_DIR"
-echo "Output directory: $OUTPUT_DIR"
-echo "Stacks found: $STACK_COUNT"
+echo "堆栈目录：$STACKS_DIR"
+echo "输出目录：$OUTPUT_DIR"
+echo "找到的堆栈数量：$STACK_COUNT"
 echo ""
 
 if [ "$STACK_COUNT" -eq "0" ]; then
-    echo "No stacks found to export."
+    echo "未找到可导出的堆栈。"
     exit 0
 fi
 
-printf "Continue? [y/N]: "
+printf "是否继续？[y/N]："
 read CONFIRM
 
 case "$CONFIRM" in
     [yY]|[yY][eE][sS])
         ;;
     *)
-        echo "Aborted."
+        echo "已取消。"
         exit 0
         ;;
 esac
@@ -65,7 +65,7 @@ echo ""
 # Create output directory
 mkdir -p "$OUTPUT_DIR"
 
-echo "Exporting stacks..."
+echo "正在导出堆栈..."
 echo ""
 
 # Export each stack
@@ -82,13 +82,13 @@ find "$STACKS_DIR" -maxdepth 1 -type d ! -path "$STACKS_DIR" | while read stack_
             cp "$stack_dir/.env" "$OUTPUT_DIR/$STACK_NAME/"
         fi
 
-        echo "  Exported: $STACK_NAME"
+        echo "  已导出：$STACK_NAME"
     fi
 done
 
 echo ""
-echo "Export complete!"
-echo "Stacks exported to: $OUTPUT_DIR"
+echo "导出完成！"
+echo "堆栈已导出至：$OUTPUT_DIR"
 echo ""
-echo "To copy from Docker container to host:"
+echo "从 Docker 容器复制到主机的命令："
 echo "  docker cp dockhand:$OUTPUT_DIR ./stacks-backup"

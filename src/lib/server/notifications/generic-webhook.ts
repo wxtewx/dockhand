@@ -20,11 +20,11 @@ export async function sendGenericWebhook(appriseUrl: string, payload: Notificati
 
 		if (!response.ok) {
 			const text = await response.text().catch(() => '');
-			return { success: false, error: `Webhook error ${response.status}: ${text || response.statusText}` };
+			return { success: false, error: `Webhook 请求异常 ${response.status}: ${text || response.statusText}` };
 		}
 		await drainResponse(response);
 		return { success: true };
 	} catch (error) {
-		return { success: false, error: `Webhook connection failed: ${error instanceof Error ? error.message : String(error)}` };
+		return { success: false, error: `Webhook 连接失败: ${error instanceof Error ? error.message : String(error)}` };
 	}
 }

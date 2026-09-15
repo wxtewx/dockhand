@@ -22,7 +22,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 	const auth = await authorize(cookies);
 	const envId = parseEnv(url.searchParams.get('env'));
 	if (auth.authEnabled && !(await auth.can('containers', 'view', envId ?? undefined))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 	return json(await getContainerIconOverrides(envId));
 };

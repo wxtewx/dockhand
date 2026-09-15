@@ -74,29 +74,29 @@ export function getStepIcon(step: StepType): ComponentType {
 export function getStepLabel(step: StepType): string {
 	switch (step) {
 		case 'pulling':
-			return 'Pulling image';
+			return '正在拉取镜像';
 		case 'scanning':
-			return 'Scanning for vulnerabilities';
+			return '正在扫描漏洞';
 		case 'stopping':
-			return 'Stopping';
+			return '正在停止';
 		case 'removing':
-			return 'Removing';
+			return '正在移除';
 		case 'creating':
-			return 'Creating';
+			return '正在创建';
 		case 'starting':
-			return 'Starting';
+			return '正在启动';
 		case 'done':
-			return 'Done';
+			return '完成';
 		case 'updated':
-			return 'Updated';
+			return '已更新';
 		case 'failed':
-			return 'Failed';
+			return '失败';
 		case 'blocked':
-			return 'Blocked by vulnerabilities';
+			return '因漏洞被阻止';
 		case 'checked':
-			return 'Checked';
+			return '已检查';
 		case 'skipped':
-			return 'Up-to-date';
+			return '已是最新';
 		default:
 			return step;
 	}
@@ -124,11 +124,11 @@ export function getStepColor(step: StepType): string {
 
 // Vulnerability criteria labels
 export const vulnerabilityCriteriaLabels: Record<VulnerabilityCriteria, string> = {
-	never: 'Never block',
-	any: 'Any vulnerability',
-	critical_high: 'Critical or high',
-	critical: 'Critical only',
-	more_than_current: 'More than current image'
+	never: '从不阻止',
+	any: '任意漏洞',
+	critical_high: '严重或高危',
+	critical: '仅严重',
+	more_than_current: '多于当前镜像'
 };
 
 // Vulnerability criteria icons with colors and titles
@@ -136,11 +136,11 @@ export const vulnerabilityCriteriaIcons: Record<
 	VulnerabilityCriteria,
 	{ component: ComponentType; class: string; title: string }
 > = {
-	never: { component: ShieldOff, class: 'w-3.5 h-3.5 text-muted-foreground', title: 'No vulnerability blocking' },
-	any: { component: ShieldAlert, class: 'w-3.5 h-3.5 text-amber-500', title: 'Block on any vulnerability' },
-	critical_high: { component: ShieldX, class: 'w-3.5 h-3.5 text-orange-500', title: 'Block on critical or high' },
-	critical: { component: ShieldX, class: 'w-3.5 h-3.5 text-red-500', title: 'Block on critical only' },
-	more_than_current: { component: Shield, class: 'w-3.5 h-3.5 text-blue-500', title: 'Block if more than current' }
+	never: { component: ShieldOff, class: 'w-3.5 h-3.5 text-muted-foreground', title: '不阻止漏洞' },
+	any: { component: ShieldAlert, class: 'w-3.5 h-3.5 text-amber-500', title: '任意漏洞均阻止' },
+	critical_high: { component: ShieldX, class: 'w-3.5 h-3.5 text-orange-500', title: '严重或高危时阻止' },
+	critical: { component: ShieldX, class: 'w-3.5 h-3.5 text-red-500', title: '仅严重漏洞时阻止' },
+	more_than_current: { component: Shield, class: 'w-3.5 h-3.5 text-blue-500', title: '多于当前镜像时阻止' }
 };
 
 // Get badge variant based on criteria severity

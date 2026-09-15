@@ -62,7 +62,7 @@
 		<Dialog.Header class="pb-0">
 			<Dialog.Title class="flex items-center gap-2 text-base">
 				<Archive class="w-4 h-4" />
-				Edit backup — {config?.targetName ?? ''}
+				编辑备份 — {config?.targetName ?? ''}
 			</Dialog.Title>
 		</Dialog.Header>
 
@@ -70,7 +70,7 @@
 			{#if config}
 				{#if loading}
 					<div class="flex items-center gap-2 p-4 text-sm text-muted-foreground">
-						<Loader2 class="w-4 h-4 animate-spin" /> Loading volumes…
+						<Loader2 class="w-4 h-4 animate-spin" /> 正在加载数据卷…
 					</div>
 				{:else}
 					<BackupPanel

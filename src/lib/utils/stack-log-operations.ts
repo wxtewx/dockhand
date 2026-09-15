@@ -17,11 +17,11 @@ export type StackLogOperation = 'start' | 'stop' | 'restart' | 'deploy' | 'down'
 
 /** All operations, in display order, with a human label for the settings list. */
 export const STACK_LOG_OPERATIONS: { key: StackLogOperation; label: string }[] = [
-	{ key: 'start', label: 'Start' },
-	{ key: 'stop', label: 'Stop' },
-	{ key: 'restart', label: 'Restart / recreate' },
-	{ key: 'deploy', label: 'Deploy / redeploy' },
-	{ key: 'down', label: 'Down' }
+	{ key: 'start', label: '启动' },
+	{ key: 'stop', label: '停止' },
+	{ key: 'restart', label: '重启 / 重建' },
+	{ key: 'deploy', label: '部署 / 重新部署' },
+	{ key: 'down', label: '销毁' }
 ];
 
 const ALL_KEYS = STACK_LOG_OPERATIONS.map((o) => o.key);

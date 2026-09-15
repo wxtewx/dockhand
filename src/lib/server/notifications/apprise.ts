@@ -30,7 +30,7 @@ export async function sendApprise(appriseUrl: string, payload: NotificationPaylo
 
 	const parts = cleanPath.split('/').filter(Boolean);
 	if (parts.length < 2) {
-		return { success: false, error: 'Invalid Apprise URL. Expected: apprise://host[:port]/key' };
+		return { success: false, error: '无效的 Apprise 地址，正确格式: apprise://host[:port]/key' };
 	}
 	const hostPort = parts[0];
 	// The Apprise key is the last path segment. Anything between host and key
@@ -75,19 +75,19 @@ export async function sendApprise(appriseUrl: string, payload: NotificationPaylo
 		//   200 → success, 204 → key not configured, 424 → at least one
 		//   downstream provider failed or tag didn't match.
 		if (response.status === 204) {
-			return { success: false, error: `Apprise: no configuration found for key "${key}"` };
+			return { success: false, error: `Apprise: 未找到密钥 "${key}" 对应的通知配置` };
 		}
 		if (response.status === 424) {
 			const text = await response.text().catch(() => '');
-			return { success: false, error: `Apprise: at least one downstream provider failed${text ? ` — ${text}` : ''}` };
+			return { success: false, error: `Apprise: 至少一个下游通知渠道发送失败${text ? ` — ${text}` : ''}` };
 		}
 		if (!response.ok) {
 			const text = await response.text().catch(() => '');
-			return { success: false, error: `Apprise error ${response.status}: ${text || response.statusText}` };
+			return { success: false, error: `Apprise 请求异常 ${response.status}: ${text || response.statusText}` };
 		}
 		await drainResponse(response);
 		return { success: true };
 	} catch (error) {
-		return { success: false, error: `Apprise connection failed: ${error instanceof Error ? error.message : String(error)}` };
+		return { success: false, error: `Apprise 连接失败: ${error instanceof Error ? error.message : String(error)}` };
 	}
 }

@@ -36,10 +36,10 @@ export const POST: RequestHandler = async ({ request }) => {
 	try {
 		body = await request.json();
 	} catch {
-		return json({ error: 'Invalid JSON body' }, { status: 400 });
+		return json({ error: '无效的 JSON 请求体' }, { status: 400 });
 	}
 	if (!Array.isArray(body.refs)) {
-		return json({ error: 'Body must include a refs array' }, { status: 400 });
+		return json({ error: '请求体必须包含 refs 数组' }, { status: 400 });
 	}
 
 	// De-dupe, validate, and cap before doing any work.

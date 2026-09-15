@@ -31,10 +31,10 @@ export const GET: RequestHandler = async ({ params, url, cookies, request }) => 
 	if (invalidSnap) return invalidSnap;
 
 	const destIdParam = url.searchParams.get('destinationId');
-	if (!destIdParam) return json({ error: 'destinationId parameter is required' }, { status: 400 });
+	if (!destIdParam) return json({ error: '必须提供 destinationId 参数' }, { status: 400 });
 
 	const destinationId = parseInt(destIdParam);
-	if (isNaN(destinationId)) return json({ error: 'Invalid destinationId' }, { status: 400 });
+	if (isNaN(destinationId)) return json({ error: '无效的 destinationId' }, { status: 400 });
 
 	// (HIGH #8) Enforce per-environment access on the snapshot's OWNING env,
 	// resolved server-side from its tag — not a caller-supplied param.
@@ -42,14 +42,14 @@ export const GET: RequestHandler = async ({ params, url, cookies, request }) => 
 	if (envDenied) return envDenied;
 
 	const path = url.searchParams.get('path');
-	if (!path) return json({ error: 'path parameter is required' }, { status: 400 });
+	if (!path) return json({ error: '必须提供 path 参数' }, { status: 400 });
 
 	const download = url.searchParams.get('download') === '1';
 	const isDir = url.searchParams.get('type') === 'directory';
 
 	// Validate path — no traversal
 	if (path.includes('..')) {
-		return json({ error: 'Invalid path' }, { status: 400 });
+		return json({ error: '路径不合法' }, { status: 400 });
 	}
 
 	// Restrict dumps to the known snapshot roots so arbitrary snapshot paths can't be
@@ -60,7 +60,7 @@ export const GET: RequestHandler = async ({ params, url, cookies, request }) => 
 		path !== '/volumes' && path !== '/metadata' &&
 		!path.startsWith('/volumes/') && !path.startsWith('/metadata/')
 	) {
-		return json({ error: 'Invalid path' }, { status: 400 });
+		return json({ error: '路径不合法' }, { status: 400 });
 	}
 
 	// metadata.json carries secrets (stack.secrets ciphertext + container Config.Env
@@ -70,13 +70,13 @@ export const GET: RequestHandler = async ({ params, url, cookies, request }) => 
 	const isMetadataFile = path === '/metadata/metadata.json';
 	if (isMetadataFile || (isDir && download && (path === '/metadata' || path === '/metadata/'))) {
 		if (download) {
-			return json({ error: 'metadata.json cannot be downloaded raw; use the snapshot metadata endpoint (secrets are redacted there)' }, { status: 403 });
+			return json({ error: '无法直接下载 metadata.json 原始文件，请使用快照元数据接口 (该接口会脱敏密钥信息)' }, { status: 403 });
 		}
 		// Job-polling: `restic dump` behind a reverse proxy would abort at ~15s.
 		return jobResult(request, async () => {
 			const raw = await dumpSnapshotFile(destinationId, snapshotId, '/metadata/metadata.json');
 			const layout = parseSnapshotLayout(raw);
-			if (!layout) return { error: 'metadata unreadable' };
+			if (!layout) return { error: '元数据无法读取' };
 			return { content: JSON.stringify(redactSnapshotLayout(layout), null, 2) };
 		});
 	}

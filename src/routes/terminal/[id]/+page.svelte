@@ -89,15 +89,15 @@
 		const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 		const wsUrl = `${protocol}//${window.location.host}/api/containers/${containerId}/exec?shell=${encodeURIComponent(shell)}&user=${encodeURIComponent(user)}`;
 
-		terminal.writeln(`\x1b[90mConnecting to ${name}...\x1b[0m`);
-		terminal.writeln(`\x1b[90mShell: ${shell}, User: ${user || 'default'}\x1b[0m`);
+		terminal.writeln(`\x1b[90m正在连接到 ${name}...\x1b[0m`);
+		terminal.writeln(`\x1b[90m终端：${shell}，用户：${user || '默认'}\x1b[0m`);
 		terminal.writeln('');
 
 		ws = new WebSocket(wsUrl);
 
 		ws.onopen = () => {
 			connected = true;
-			document.title = `Terminal - ${name}`;
+			document.title = `终端 - ${name}`;
 			terminal?.focus();
 			// Send initial resize
 			if (fitAddon && terminal) {
@@ -115,9 +115,9 @@
 					terminal?.write(msg.data);
 				} else if (msg.type === 'error') {
 					error = msg.message;
-					terminal?.writeln(`\x1b[31mError: ${msg.message}\x1b[0m`);
+					terminal?.writeln(`\x1b[31m错误：${msg.message}\x1b[0m`);
 				} else if (msg.type === 'exit') {
-					terminal?.writeln('\x1b[90m\r\nSession ended.\x1b[0m');
+					terminal?.writeln('\x1b[90m\r\n会话已结束。\x1b[0m');
 					connected = false;
 					// Close the window after a brief delay so user sees the message
 					setTimeout(() => {
@@ -130,14 +130,14 @@
 		};
 
 		ws.onerror = (e) => {
-			console.error('WebSocket error:', e);
-			error = 'Connection error';
-			terminal?.writeln('\x1b[31mConnection error\x1b[0m');
+			console.error('WebSocket 错误：', e);
+			error = '连接错误';
+			terminal?.writeln('\x1b[31m连接错误\x1b[0m');
 		};
 
 		ws.onclose = () => {
 			connected = false;
-			terminal?.writeln('\x1b[90mDisconnected.\x1b[0m');
+			terminal?.writeln('\x1b[90m已断开连接。\x1b[0m');
 		};
 	}
 
@@ -194,7 +194,7 @@
 </script>
 
 <svelte:head>
-	<title>Terminal - {containerName || 'Loading...'}</title>
+	<title>终端 - {containerName || '加载中...'}</title>
 </svelte:head>
 
 <div class="h-screen w-screen flex flex-col bg-[#0c0c0c]">
@@ -206,18 +206,18 @@
 			{#if connected}
 				<span class="inline-flex items-center gap-1 text-xs text-green-500">
 					<span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-					Connected
+					已连接
 				</span>
 			{:else if error}
 				<span class="text-xs text-red-500">{error}</span>
 			{:else}
-				<span class="text-xs text-zinc-500">Connecting...</span>
+				<span class="text-xs text-zinc-500">正在连接...</span>
 			{/if}
 		</div>
 		<div class="flex items-center gap-2 text-xs text-zinc-500">
-			<span>Shell: {shell}</span>
+			<span>终端：{shell}</span>
 			<span>|</span>
-			<span>User: {user}</span>
+			<span>用户：{user}</span>
 		</div>
 	</div>
 
@@ -227,7 +227,7 @@
 			<div bind:this={terminalRef} class="h-full w-full"></div>
 		{:else}
 			<div class="h-full w-full flex items-center justify-center">
-				<span class="text-zinc-500">Loading terminal...</span>
+				<span class="text-zinc-500">正在加载终端...</span>
 			</div>
 		{/if}
 	</div>

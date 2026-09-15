@@ -7,12 +7,12 @@
 DB_LABEL="PostgreSQL"
 
 if [ -z "$DATABASE_URL" ]; then
-    echo "Error: DATABASE_URL environment variable not set"
-    echo "Example: DATABASE_URL=postgres://user:pass@host:5432/dockhand"
+    echo "错误：未设置 DATABASE_URL 环境变量"
+    echo "示例: DATABASE_URL=postgres://user:pass@host:5432/dockhand"
     exit 1
 fi
 if ! command -v psql >/dev/null 2>&1; then
-    echo "Error: psql not found. Install the postgresql-client package."
+    echo "错误：未找到 psql，请安装 postgresql-client 软件包。"
     exit 1
 fi
 DB_DISPLAY="$(printf '%s' "$DATABASE_URL" | sed 's#://[^@]*@#://***@#')"  # hide credentials

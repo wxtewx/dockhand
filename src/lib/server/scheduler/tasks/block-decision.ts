@@ -55,12 +55,12 @@ export async function resolveBlockDecision(
 		if (cached) {
 			currentSummary = cached;
 			currentFromCache = true;
-			log(`more_than_current: current image cached scan = ${total(cached)} vulns (${cached.critical}C/${cached.high}H/${cached.medium}M/${cached.low}L)`);
+			log(`more_than_current: 当前镜像缓存扫描 = ${total(cached)} 个漏洞 (${cached.critical}C/${cached.high}H/${cached.medium}M/${cached.low}L)`);
 		} else {
-			log(`more_than_current: no cached scan for current image`);
+			log(`more_than_current: 当前镜像没有缓存扫描`);
 		}
 	} catch (err: any) {
-		log(`more_than_current: cache lookup failed (${err.message})`);
+		log(`more_than_current: 缓存查询失败 (${err.message})`);
 	}
 
 	const wouldBlock = currentSummary !== undefined && newTotal > total(currentSummary);
@@ -71,8 +71,8 @@ export async function resolveBlockDecision(
 	if (!currentFromCache || wouldBlock) {
 		log(
 			currentFromCache
-				? `more_than_current: cached comparison would block (new ${newTotal} > current ${total(currentSummary!)}) — re-scanning current image to confirm`
-				: `more_than_current: scanning current image (${currentImageId.substring(0, 19)}) for comparison`
+				? `more_than_current: 缓存比较结果将阻断 (新镜像 ${newTotal} > 当前 ${total(currentSummary!)}) — 重新扫描当前镜像以确认`
+				: `more_than_current: 扫描当前镜像 (${currentImageId.substring(0, 19)}) 用于比较`
 		);
 		try {
 			const results = await scanImage(currentImageId, envId ?? undefined, (p) => {
@@ -80,7 +80,7 @@ export async function resolveBlockDecision(
 			});
 			if (results.length > 0) {
 				const fresh = combineScanSummaries(results.map((r) => ({ summary: r.summary })));
-				log(`more_than_current: current image fresh scan = ${total(fresh)} vulns (${fresh.critical}C/${fresh.high}H/${fresh.medium}M/${fresh.low}L)`);
+				log(`more_than_current: 当前镜像全新扫描 = ${total(fresh)} 个漏洞 (${fresh.critical}C/${fresh.high}H/${fresh.medium}M/${fresh.low}L)`);
 				currentSummary = fresh;
 				// Persist so the next cycle starts from a current value.
 				for (const r of results) {
@@ -104,10 +104,10 @@ export async function resolveBlockDecision(
 					} catch { /* ignore save errors */ }
 				}
 			} else {
-				log(`more_than_current: current image scan returned no results`);
+				log(`more_than_current: 当前镜像扫描未返回结果`);
 			}
 		} catch (err: any) {
-			log(`more_than_current: current image scan failed (${err.message})`);
+			log(`more_than_current: 当前镜像扫描失败 (${err.message})`);
 		}
 	}
 
@@ -115,8 +115,8 @@ export async function resolveBlockDecision(
 	const curTotal = currentSummary ? total(currentSummary) : 'unknown';
 	log(
 		decision.blocked
-			? `more_than_current: BLOCKED — new ${newTotal} > current ${curTotal}`
-			: `more_than_current: allowed — new ${newTotal} <= current ${curTotal}${currentSummary === undefined ? ' (current count unavailable; not blocking)' : ''}`
+			? `more_than_current: 已阻断 — 新镜像 ${newTotal} > 当前 ${curTotal}`
+			: `more_than_current: 已放行 — 新镜像 ${newTotal} <= 当前 ${curTotal}${currentSummary === undefined ? ' (当前数量不可用；不阻断)' : ''}`
 	);
 	return decision;
 }

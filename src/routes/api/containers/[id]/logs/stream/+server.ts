@@ -93,7 +93,7 @@ function parseDockerFrame(buffer: Buffer, offset: number): { type: number; size:
 async function handleEdgeLogsStream(containerId: string, tail: string, environmentId: number, since?: string, until?: string): Promise<Response> {
 	// Check if edge agent is connected
 	if (!isEdgeConnected(environmentId)) {
-		return new Response(JSON.stringify({ error: 'Edge agent not connected' }), {
+		return new Response(JSON.stringify({ error: '边缘代理未连接' }), {
 			status: 503,
 			headers: { 'Content-Type': 'application/json' }
 		});
@@ -206,7 +206,7 @@ async function handleEdgeLogsStream(containerId: string, tail: string, environme
 								safeEnqueue(`event: log\ndata: ${JSON.stringify({ text, containerName })}\n\n`);
 							}
 						}
-						safeEnqueue(`event: end\ndata: ${JSON.stringify({ reason: reason || 'stream ended' })}\n\n`);
+						safeEnqueue(`event: end\ndata: ${JSON.stringify({ reason: reason || '流已结束' })}\n\n`);
 						if (!controllerClosed) {
 							try {
 								controller.close();
@@ -283,7 +283,7 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('containers', 'logs', envIdNum)) {
-		return new Response(JSON.stringify({ error: 'Permission denied' }), {
+		return new Response(JSON.stringify({ error: '权限不足' }), {
 			status: 403,
 			headers: { 'Content-Type': 'application/json' }
 		});
@@ -370,7 +370,7 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 				}
 
 				if (!response.ok) {
-					safeEnqueue(`event: error\ndata: ${JSON.stringify({ error: `Docker API error: ${response.status}` })}\n\n`);
+					safeEnqueue(`event: error\ndata: ${JSON.stringify({ error: `Docker API 错误：${response.status}` })}\n\n`);
 					if (!controllerClosed) controller.close();
 					return;
 				}
@@ -380,7 +380,7 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 
 				const reader = response.body?.getReader();
 				if (!reader) {
-					safeEnqueue(`event: error\ndata: ${JSON.stringify({ error: 'No response body' })}\n\n`);
+					safeEnqueue(`event: error\ndata: ${JSON.stringify({ error: '无响应体' })}\n\n`);
 					if (!controllerClosed) controller.close();
 					return;
 				}
@@ -398,7 +398,7 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 								safeEnqueue(`event: log\ndata: ${JSON.stringify({ text, containerName })}\n\n`);
 							}
 						}
-						safeEnqueue(`event: end\ndata: ${JSON.stringify({ reason: 'stream ended' })}\n\n`);
+						safeEnqueue(`event: end\ndata: ${JSON.stringify({ reason: '流已结束' })}\n\n`);
 						break;
 					}
 
