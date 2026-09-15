@@ -76,12 +76,12 @@
 
 	// Updater log markers → step id mapping
 	const UPDATER_STEP_MARKERS: { start: string; end: string; id: string }[] = [
-		{ start: 'Stopping container', end: 'Container stopped', id: 'stopping' },
-		{ start: 'Removing old container', end: 'Old container removed', id: 'removing' },
-		{ start: 'Renaming container', end: 'Container renamed', id: 'renaming' },
-		{ start: 'Connecting to network', end: 'Networks connected', id: 'connecting' },
-		{ start: 'Starting container', end: 'Container is running', id: 'starting' }
-	];
+        { start: '正在停止容器', end: '容器已停止', id: 'stopping' },
+        { start: '正在移除旧容器', end: '旧容器已移除', id: 'removing' },
+        { start: '正在重命名容器', end: '容器已重命名', id: 'renaming' },
+        { start: '正在连接到网络', end: '网络已连接', id: 'connecting' },
+        { start: '正在启动容器', end: '容器正在运行', id: 'starting' }
+    ];
 
 	let steps = $state<StepState[]>(ALL_STEPS.map(s => ({ id: s.id, label: s.label, status: 'pending', logs: [], showLogs: false })));
 	let scrollTick = $state(0);
