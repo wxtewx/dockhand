@@ -4,17 +4,17 @@
 
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { goto } from '$app/navigation';
+	import { goto, afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { toast } from 'svelte-sonner';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
+	import { SearchInput } from '$lib/components/ui/search-input';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as Popover from '$lib/components/ui/popover';
 	import MultiSelectFilter from '$lib/components/MultiSelectFilter.svelte';
-	import { Play, Square, Trash2, Plus, ArrowBigDown, Search, Pencil, ExternalLink, GitBranch, RefreshCw, Loader2, FileCode, FileText, FileOutput, Box, RotateCcw, ScrollText, Terminal, Eye, Network, HardDrive, Heart, HeartPulse, HeartOff, ChevronsUpDown, ChevronsDownUp, Rocket, AlertTriangle, X, Layers, Pause, CircleDashed, Skull, FolderOpen, Variable, Clock, RotateCw, Import, Ship, Cable, LayoutPanelLeft, Rows3, GripVertical, Globe, CircleArrowUp, NotepadText, Tag, Copy, Check } from 'lucide-svelte';
+	import { Play, Square, Trash2, Plus, ArrowBigDown, Pencil, ExternalLink, GitBranch, RefreshCw, Loader2, FileCode, FileText, FileOutput, Box, RotateCcw, ScrollText, Terminal, Eye, Network, HardDrive, Heart, HeartPulse, HeartOff, ChevronsUpDown, ChevronsDownUp, Rocket, AlertTriangle, X, Layers, Pause, CircleDashed, Skull, FolderOpen, Variable, Clock, RotateCw, Import, Ship, Cable, LayoutPanelLeft, Rows3, GripVertical, Globe, CircleArrowUp, NotepadText, Tag, Copy, Check } from 'lucide-svelte';
 	import { formatPorts } from '$lib/utils/port-format';
 	import { parseCustomUrl } from '$lib/utils/custom-url';
 	import { extractTraefikUrls } from '$lib/utils/traefik-urls';
@@ -25,6 +25,11 @@
 	import { shouldShowStackLog, type StackLogOperation } from '$lib/utils/stack-log-operations';
 	import ConfirmPopover from '$lib/components/ConfirmPopover.svelte';
 	import StackIcon from '$lib/components/StackIcon.svelte';
+	import TagChips from '$lib/components/TagChips.svelte';
+	import TagEditPopover from '$lib/components/TagEditPopover.svelte';
+	import TagFilter from '$lib/components/TagFilter.svelte';
+	import { matchesTagFilter, tagGroupDescriptor, type Tag as UserTag, type TagColor as UserTagColor } from '$lib/utils/tags-core';
+	import TagLucideIcon from '$lib/components/TagLucideIcon.svelte';
 	import ContainerIcon from '$lib/components/ContainerIcon.svelte';
 	import BatchOperationModal from '$lib/components/BatchOperationModal.svelte';
 	import type { ComposeStackInfo, ContainerStats, StackContainer } from '$lib/types';
@@ -47,7 +52,7 @@
 	import LogsPanel from '../logs/LogsPanel.svelte';
 	import { currentEnvironment, environments, appendEnvParam, clearStaleEnvironment } from '$lib/stores/environment';
 	import { onDockerEvent, isContainerListChange } from '$lib/stores/events';
-	import { canAccess } from '$lib/stores/auth';
+	import { canAccess, isAdmin } from '$lib/stores/auth';
 	import { readJobResponse } from '$lib/utils/sse-fetch';
 	import { EmptyState, NoEnvironment } from '$lib/components/ui/empty-state';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -101,6 +106,116 @@
 	let stackModalGitInfo = $state<{ commit?: string; url?: string; branch?: string } | null>(null);
 	let editingGitStack = $state<any>(null);
 	let envId = $state<number | null>(null);
+
+	// User-defined tags: assignments (name -> tagId[]) + catalog + filter.
+	let tagsMap = $state<Record<string, number[]>>({});
+	let tagCatalog = $state<UserTag[]>([]);
+	const tagById = $derived(new Map(tagCatalog.map((t) => [t.id, t])));
+	function tagsFor(stackName: string): UserTag[] {
+		return (tagsMap[stackName] ?? []).map((id) => tagById.get(id)).filter((t): t is UserTag => !!t);
+	}
+
+	// Group-by-tag: partition rows by their unique tag COMBINATION. Persisted per browser.
+	const SHOW_TAGS_KEY = 'dockhand-stacks-show-tags';
+	const SHOW_BANDS_KEY = 'dockhand-stacks-group-bands';
+	const INLINE_TAG_EDIT_KEY = 'dockhand-stacks-inline-tag-editing';
+	const TAG_SETTINGS_EXPANDED_KEY = 'dockhand-stacks-tag-settings-expanded';
+	// Show tag chips on rows (default true - only '0' hides them).
+	let showTags = $state(typeof window === 'undefined' || localStorage.getItem(SHOW_TAGS_KEY) !== '0');
+	// Coloured group bands (default true - only '0' hides them).
+	let showBands = $state(typeof window === 'undefined' || localStorage.getItem(SHOW_BANDS_KEY) !== '0');
+	// Show a tag-edit button on each row (default true - only '0' hides it).
+	let inlineTagEditing = $state(typeof window === 'undefined' || localStorage.getItem(INLINE_TAG_EDIT_KEY) !== '0');
+	// Tag-settings section open/closed (default open - only '0' collapses it).
+	let tagSettingsExpanded = $state(typeof window === 'undefined' || localStorage.getItem(TAG_SETTINGS_EXPANDED_KEY) !== '0');
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		localStorage.setItem(SHOW_TAGS_KEY, showTags ? '1' : '0');
+	});
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		localStorage.setItem(SHOW_BANDS_KEY, showBands ? '1' : '0');
+	});
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		localStorage.setItem(INLINE_TAG_EDIT_KEY, inlineTagEditing ? '1' : '0');
+	});
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		localStorage.setItem(TAG_SETTINGS_EXPANDED_KEY, tagSettingsExpanded ? '1' : '0');
+	});
+	const GROUP_BY_TAG_KEY = 'dockhand-stacks-group-by-tag';
+	const COLLAPSED_GROUPS_KEY = 'dockhand-stacks-collapsed-groups';
+	let groupByTag = $state(typeof window !== 'undefined' && localStorage.getItem(GROUP_BY_TAG_KEY) === '1');
+	let collapsedGroups = $state<Set<string>>(loadCollapsedGroups());
+	function loadCollapsedGroups(): Set<string> {
+		if (typeof window === 'undefined') return new Set();
+		try { const s = localStorage.getItem(COLLAPSED_GROUPS_KEY); return new Set(s ? JSON.parse(s) : []); } catch { return new Set(); }
+	}
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		localStorage.setItem(GROUP_BY_TAG_KEY, groupByTag ? '1' : '0');
+	});
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		localStorage.setItem(COLLAPSED_GROUPS_KEY, JSON.stringify([...collapsedGroups]));
+	});
+	const stackGroupBy = $derived(groupByTag ? (s: any) => tagGroupDescriptor(tagsFor(s.name)) : undefined);
+	async function loadTags(forEnvId: number | null) {
+		try {
+			const [assignRes, catRes] = await Promise.all([
+				fetch(appendEnvParam('/api/stack-tags', forEnvId)), // assignments: per env
+				fetch('/api/tags')                                   // catalog: global
+			]);
+			tagsMap = assignRes.ok ? await assignRes.json() : {};
+			tagCatalog = catRes.ok ? (await catRes.json()).tags : [];
+		} catch { tagsMap = {}; tagCatalog = []; }
+		// Drop any persisted filter id no longer in the catalog (deleted tag / wiped
+		// DB) so a stale id can't filter the whole list to empty with no visible cause.
+		const valid = new Set(tagCatalog.map((t) => t.id));
+		if (tagFilter.some((id) => !valid.has(id))) tagFilter = tagFilter.filter((id) => valid.has(id));
+	}
+	async function createTag(name: string, color: UserTagColor, icon: string | null): Promise<UserTag | null> {
+		try {
+			const res = await fetch('/api/tags', {
+				method: 'POST', headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ name, color, icon })
+			});
+			if (!res.ok) return null;
+			const tag = await res.json();
+			await loadTags(envId);
+			return tag;
+		} catch { return null; }
+	}
+	async function applyStackTags(stackName: string, tagIds: number[]) {
+		tagsMap = { ...tagsMap, [stackName]: tagIds };
+		try {
+			await fetch(appendEnvParam(`/api/stacks/${encodeURIComponent(stackName)}/tags`, envId), {
+				method: 'PUT', headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ tagIds })
+			});
+		} catch { /* optimistic */ }
+	}
+	// Tag filter, persisted per browser.
+	const TAG_FILTER_KEY = 'dockhand-stacks-tag-filter';
+	const TAG_FILTER_MODE_KEY = 'dockhand-stacks-tag-filter-mode';
+	let tagFilter = $state<number[]>(loadTagFilter());
+	let tagFilterMode = $state<'all' | 'any'>(loadTagFilterMode());
+	function loadTagFilter(): number[] {
+		if (typeof window === 'undefined') return [];
+		try { const s = localStorage.getItem(TAG_FILTER_KEY); return s ? JSON.parse(s) : []; } catch { return []; }
+	}
+	function loadTagFilterMode(): 'all' | 'any' {
+		if (typeof window === 'undefined') return 'any';
+		const s = localStorage.getItem(TAG_FILTER_MODE_KEY);
+		return s === 'all' || s === 'any' ? s : 'any';
+	}
+	$effect(() => {
+		const f = tagFilter, m = tagFilterMode;
+		if (typeof window === 'undefined') return;
+		localStorage.setItem(TAG_FILTER_KEY, JSON.stringify(f));
+		localStorage.setItem(TAG_FILTER_MODE_KEY, m);
+	});
 
 	// Single-container update (mirrors the containers page action)
 	let showBatchUpdateModal = $state(false);
@@ -654,6 +769,11 @@
 			result = result.filter(stack => statusFilter.includes(getDisplayStatus(stack).toLowerCase()));
 		}
 
+		// Filter by user-defined tags.
+		if (tagFilter.length > 0) {
+			result = result.filter(stack => matchesTagFilter(tagsMap[stack.name], tagFilter, tagFilterMode));
+		}
+
 		// Sort
 		result = [...result].sort((a, b) => {
 			let cmp = 0;
@@ -869,11 +989,14 @@
 			fetchStacks();
 			fetchStats();
 			loadScannerSettings();
+			loadTags(newEnvId);
 		} else if (!env) {
 			// No environment - clear data and stop loading
 			envId = null;
 			stacks = [];
 			containerStats = new Map();
+			tagsMap = {};
+			tagCatalog = [];
 			loading = false;
 		}
 	});
@@ -1504,6 +1627,23 @@
 		}
 	}
 
+	// Deep-link from the command palette: ?expand=<name> filters to that stack and expands
+	// it, mirroring a click on the stack name. Handled in afterNavigate (not just onMount)
+	// so it also fires when a goto lands on the already-mounted stacks page (same-route
+	// navigation does not remount). Guard on the last-applied value so an unrelated
+	// navigation (that keeps the param in the URL) doesn't re-apply it.
+	let lastAppliedExpand: string | null = null;
+	afterNavigate(() => {
+		const expandName = $page.url.searchParams.get('expand');
+		if (expandName && expandName !== lastAppliedExpand) {
+			lastAppliedExpand = expandName;
+			searchInput = expandName;
+			searchQuery = expandName;
+			expandedStacks = new Set(expandedStacks).add(expandName);
+			saveExpandedState();
+		}
+	});
+
 	onMount(() => {
 		loadExpandedState();
 		loadStatusFilter();
@@ -1589,16 +1729,7 @@
 			{/if}
 		</PageHeader>
 		<div class="flex flex-wrap items-center gap-2">
-			<div class="relative">
-				<Search class="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-				<Input
-					type="text"
-					placeholder="Search stacks..."
-					bind:value={searchInput}
-					onkeydown={(e) => e.key === 'Escape' && (searchInput = '')}
-					class="pl-8 h-8 w-48 text-sm"
-				/>
-			</div>
+			<SearchInput bind:value={searchInput} placeholder="Search stacks..." class="h-8 w-48 text-sm" />
 			<MultiSelectFilter
 				bind:value={statusFilter}
 				options={stackStatusTypes}
@@ -1607,6 +1738,7 @@
 				width="w-44"
 				defaultIcon={Layers}
 			/>
+			<TagFilter tags={tagCatalog} bind:selected={tagFilter} bind:mode={tagFilterMode} bind:groupBy={groupByTag} bind:showTags={showTags} bind:showBands={showBands} bind:inlineEditing={inlineTagEditing} bind:settingsExpanded={tagSettingsExpanded} />
 			<Button size="sm" variant="outline" onclick={fetchStacks}>
 				<RefreshCw class="w-3.5 h-3.5" />
 				Refresh
@@ -1792,6 +1924,10 @@
 			gridId="stacks"
 			loading={loading}
 			selectable
+			groupBy={stackGroupBy}
+			bind:collapsedGroups={collapsedGroups}
+			ungroupedLabel="Untagged"
+			showGroupBands={showBands}
 			bind:selectedKeys={selectedStacks}
 			expandable
 			bind:expandedKeys={expandedStacks}
@@ -1810,6 +1946,12 @@
 				return `${isExp ? 'bg-muted/40' : ''} ${isSel ? 'bg-muted/30' : ''}`;
 			}}
 		>
+			{#snippet groupHeaderLabel(group)}
+				{#each group.icons as ic}
+					{#if ic}<TagLucideIcon name={ic} class="h-3 w-3 shrink-0" />{:else}<Tag class="h-3 w-3 shrink-0" />{/if}
+				{/each}
+				<span>{group.label}</span>
+			{/snippet}
 			{#snippet cell(column, stack, rowState)}
 				{@const source = getStackSource(stack.name)}
 				{#if column.id === 'name'}
@@ -1926,6 +2068,18 @@
 								{stack.newerVersionCount} container{(stack.newerVersionCount ?? 0) > 1 ? 's have' : ' has'} a newer version tag.
 							</Tooltip.Content>
 						</Tooltip.Root>
+					{/if}
+					{#if showTags}<TagChips tags={tagsFor(stack.name)} />{/if}
+					{#if inlineTagEditing && $canAccess('stacks', 'edit')}
+						<span onclick={(e) => e.stopPropagation()} role="presentation">
+							<TagEditPopover
+								catalog={tagCatalog}
+								selected={tagsMap[stack.name] ?? []}
+								onCreate={createTag}
+								onApply={(ids) => applyStackTags(stack.name, ids)}
+								allowCreate={$isAdmin}
+							/>
+						</span>
 					{/if}
 					</span>
 				{:else if column.id === 'source'}
@@ -2863,6 +3017,7 @@
 		editingStackName = '';
 		stackModalReadonly = false;
 		stackModalGitInfo = null;
+		loadTags(envId);
 	}}
 	onSuccess={fetchStacks}
 />
@@ -2877,6 +3032,7 @@
 	onClose={() => {
 		showGitModal = false;
 		editingGitStack = null;
+		loadTags(envId);
 	}}
 	onSaved={fetchStacks}
 />

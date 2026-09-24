@@ -1,7 +1,7 @@
 {
 	"name": "dockhand",
 	"private": true,
-	"version": "1.0.46",
+	"version": "1.0.49",
 	"type": "module",
 	"scripts": {
 		"dev": "npx vite dev",
@@ -41,6 +41,7 @@
 		"@lezer/highlight": "1.2.3",
 		"@lucide/lab": "0.1.2",
 		"@replit/codemirror-indentation-markers": "6.5.3",
+		"@uiw/codemirror-themes-all": "4.25.11",
 		"ansi_up": "6.0.6",
 		"argon2": "0.41.1",
 		"better-sqlite3": "11.7.0",

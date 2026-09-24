@@ -3,7 +3,7 @@
  * messy real-world tag lists.
  */
 import { describe, it, expect } from 'bun:test';
-import { findNewerVersionTag, findNewerImageTag, classifyBump } from '../src/lib/server/semver/find-newer';
+import { findNewerVersionTag, findNewerImageTag, classifyBump, isRedundantNewerVersion } from '../src/lib/server/semver/find-newer';
 import { parseTag } from '../src/lib/server/semver/tag-parser';
 
 describe('findNewerVersionTag — happy paths', () => {
@@ -160,5 +160,64 @@ describe('findNewerImageTag — skip non-image (Helm chart) tags', () => {
 		const probe = async () => { probes++; return { ok: false }; };
 		await findNewerImageTag('1.0.0', ['1.0.0', '1.1.0', '1.2.0', '1.3.0', '1.4.0', '1.5.0', '1.6.0', '1.7.0'], probe, {}, 2);
 		expect(probes).toBeLessThanOrEqual(3); // maxSkips=2 -> at most 3 attempts
+	});
+});
+
+describe('isRedundantNewerVersion', () => {
+	const D = 'sha256:ab1c3dd381940233af12512b97d47b508fd3a0f17fbe3ba388739b7bc17cbc0b';
+	it('true when the candidate digest equals a running-image digest (mariadb 12.3 == 12.3.3)', () => {
+		// The real #1572 case: 12.3.3 resolves to the same index digest the 12.3 tag runs.
+		expect(isRedundantNewerVersion(D, [D])).toBe(true);
+	});
+	it('true when it matches ANY of several local digests', () => {
+		expect(isRedundantNewerVersion(D, ['sha256:other', D])).toBe(true);
+	});
+	it('false when the candidate is a genuinely different image (a real 12.3.4)', () => {
+		expect(isRedundantNewerVersion('sha256:different', [D])).toBe(false);
+	});
+	it('false (never suppress) when either side has no digest', () => {
+		expect(isRedundantNewerVersion(null, [D])).toBe(false);
+		expect(isRedundantNewerVersion(undefined, [D])).toBe(false);
+		expect(isRedundantNewerVersion(D, [])).toBe(false);
+		expect(isRedundantNewerVersion(D, [null, undefined])).toBe(false);
+	});
+	it('matches when the running image recorded the per-arch CHILD digest (#1367 shape)', () => {
+		// local = child digest; candidate index digest differs, but its child digests
+		// include the local one -> same image, must suppress.
+		const child = 'sha256:childaaaa';
+		expect(isRedundantNewerVersion('sha256:indexdiff', [child], [child, 'sha256:otherarch'])).toBe(true);
+	});
+	it('false when neither index nor any child digest matches (a real different image)', () => {
+		expect(isRedundantNewerVersion('sha256:indexnew', ['sha256:localchild'], ['sha256:arch1', 'sha256:arch2'])).toBe(false);
+	});
+});
+
+describe('findNewerImageTag suppresses a same-digest candidate (#1572)', () => {
+	const RUNNING = 'sha256:running';
+	// The probe marks the running-digest candidate `redundant`, mirroring what
+	// checkNewerVersion does via isRedundantNewerVersion.
+	const probeFor = (digestByTag: Record<string, string>) => async (tag: string) => {
+		const digest = digestByTag[tag];
+		if (digest && digest === RUNNING) return { ok: false, redundant: true };
+		return { ok: true, digest };
+	};
+
+	it('returns null when the highest newer tag is the same image already running', async () => {
+		// The real #1572 case: current 12.3, highest tag 12.3.3 == running digest.
+		const r = await findNewerImageTag('12.3', ['12.3', '12.3.3'], probeFor({ '12.3.3': RUNNING }), {});
+		expect(r).toBeNull();
+	});
+
+	it('does NOT downgrade to a lower patch when the highest tag is redundant', async () => {
+		// 12.3.3 (highest) == running; 12.3.2 is a DIFFERENT (older) image. Must not
+		// offer 12.3.2 as an "update" - that would be a downgrade.
+		const r = await findNewerImageTag('12.3', ['12.3', '12.3.2', '12.3.3'], probeFor({ '12.3.3': RUNNING, '12.3.2': 'sha256:older' }), {});
+		expect(r).toBeNull();
+	});
+
+	it('still offers a genuinely newer tag when the highest is NOT the running image', async () => {
+		// 12.3.4 exists with a new digest -> a real update, offered.
+		const r = await findNewerImageTag('12.3', ['12.3', '12.3.3', '12.3.4'], probeFor({ '12.3.3': RUNNING, '12.3.4': 'sha256:new' }), {});
+		expect(r?.tag).toBe('12.3.4');
 	});
 });

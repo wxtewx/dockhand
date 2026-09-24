@@ -41,22 +41,50 @@ export function imageBasename(image: string): string {
 	return s;
 }
 
+/** Drop separators so `thelounge` can match the reference `the-lounge`. */
+function stripSeparators(s: string): string {
+	return s.replace(/[-_]/g, '');
+}
+
 /**
- * Resolve an already-normalized base name to a known selfh.st Reference: alias table,
- * then exact match. No fuzzy substring guessing (that mis-badges - e.g. `redis-exporter`
- * should not become `redis`). Returns null when there is no confident match.
+ * A base is matched to a reference by: alias table, exact match, then a
+ * separator-insensitive match (image basenames drop the hyphens the selfh.st
+ * Reference keeps, e.g. `thelounge` -> `the-lounge`, `homeassistant` -> `home-assistant`).
+ * The separator match is equality-after-normalization, NOT a substring/fuzzy guess, so it
+ * never mis-badges (`redisexporter` has no reference and stays unmatched); the real
+ * manifest has zero refs that collapse to the same separator-stripped key, so the map is
+ * unambiguous. `separatorless` is prebuilt from knownRefs so the lookup stays O(1).
  */
-function resolveBase(base: string, knownRefs: Set<string>): string | null {
+function resolveBase(
+	base: string,
+	knownRefs: Set<string>,
+	separatorless: Map<string, string>
+): string | null {
 	if (!base) return null;
 	const alias = IMAGE_ALIASES[base];
 	if (alias && knownRefs.has(alias)) return alias;
 	if (knownRefs.has(base)) return base;
+	const stripped = stripSeparators(base);
+	if (!stripped) return null; // an all-separator base ("---") must not match a "" key
+	const collapsed = separatorless.get(stripped);
+	if (collapsed) return collapsed;
 	return null;
 }
 
+/** Build the separator-stripped -> reference lookup for a manifest's reference set. */
+function buildSeparatorlessMap(knownRefs: Set<string>): Map<string, string> {
+	const map = new Map<string, string>();
+	for (const ref of knownRefs) map.set(stripSeparators(ref), ref);
+	return map;
+}
+
 /** Match a Docker image reference to a selfh.st Reference (by its basename). */
-export function matchSelfhstRef(image: string, knownRefs: Set<string>): string | null {
-	return resolveBase(imageBasename(image), knownRefs);
+export function matchSelfhstRef(
+	image: string,
+	knownRefs: Set<string>,
+	separatorless: Map<string, string> = buildSeparatorlessMap(knownRefs)
+): string | null {
+	return resolveBase(imageBasename(image), knownRefs, separatorless);
 }
 
 /**
@@ -79,8 +107,12 @@ export function containerNameBase(name: string): string {
  * then exact name == reference. No fuzzy guessing - a generic name like `web` or `app`
  * that isn't a known reference stays unmatched.
  */
-export function matchSelfhstByName(name: string, knownRefs: Set<string>): string | null {
-	return resolveBase(containerNameBase(name), knownRefs);
+export function matchSelfhstByName(
+	name: string,
+	knownRefs: Set<string>,
+	separatorless: Map<string, string> = buildSeparatorlessMap(knownRefs)
+): string | null {
+	return resolveBase(containerNameBase(name), knownRefs, separatorless);
 }
 
 /**
@@ -93,10 +125,13 @@ export function createSelfhstMatcher(
 	knownRefs: Set<string>
 ): (image: string, name?: string) => string | null {
 	const cache = new Map<string, string | null>();
+	const separatorless = buildSeparatorlessMap(knownRefs);
 	return (image: string, name = '') => {
 		const key = `${image} ${name}`;
 		if (cache.has(key)) return cache.get(key)!;
-		const ref = matchSelfhstRef(image, knownRefs) ?? matchSelfhstByName(name, knownRefs);
+		const ref =
+			matchSelfhstRef(image, knownRefs, separatorless) ??
+			matchSelfhstByName(name, knownRefs, separatorless);
 		cache.set(key, ref);
 		return ref;
 	};

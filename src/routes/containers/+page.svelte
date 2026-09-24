@@ -7,6 +7,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { toast } from 'svelte-sonner';
+	import { containerMatchesSearch } from '$lib/utils/container-search-core';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Popover from '$lib/components/ui/popover';
 	import * as Select from '$lib/components/ui/select';
@@ -22,6 +23,7 @@
 	import { Switch } from '$lib/components/ui/switch';
 	import { Label } from '$lib/components/ui/label';
 	import { Input } from '$lib/components/ui/input';
+	import { SearchInput } from '$lib/components/ui/search-input';
 	import {
 		Play,
 		Square,
@@ -38,7 +40,6 @@
 		ArrowUpDown,
 		ArrowUp,
 		ArrowDown,
-		Search,
 		ExternalLink,
 		Globe,
 		LayoutPanelLeft,
@@ -62,8 +63,6 @@
 		Shield,
 		ShieldCheck,
 		Box,
-		Ship,
-		Cable,
 		Copy,
 		Loader2,
 		AlertCircle,
@@ -85,12 +84,17 @@
 	import VersionUpdateBadge from '$lib/components/VersionUpdateBadge.svelte';
 	import VersionUpdateModal from '$lib/components/VersionUpdateModal.svelte';
 	import type { ContainerInfo, TerminalMode } from '$lib/types';
+	import { matchesTagFilter, tagGroupDescriptor, type Tag as UserTag, type TagColor } from '$lib/utils/tags-core';
+	import TagChips from '$lib/components/TagChips.svelte';
+	import TagEditPopover from '$lib/components/TagEditPopover.svelte';
+	import TagFilter from '$lib/components/TagFilter.svelte';
+	import TagLucideIcon from '$lib/components/TagLucideIcon.svelte';
 	import { EmptyState, NoEnvironment } from '$lib/components/ui/empty-state';
 	import { currentEnvironment, environments, appendEnvParam, clearStaleEnvironment } from '$lib/stores/environment';
 	import { containerStore } from '$lib/stores/containers';
 	import { onDockerEvent, isContainerListChange } from '$lib/stores/events';
 	import { appSettings } from '$lib/stores/settings';
-	import { canAccess } from '$lib/stores/auth';
+	import { canAccess, isAdmin } from '$lib/stores/auth';
 	import { vulnerabilityCriteriaIcons } from '$lib/utils/update-steps';
 	import { compareIps } from '$lib/utils/ip';
 	import { parseTimeStringToSeconds } from '$lib/utils/parse-uptime';
@@ -123,6 +127,125 @@
 		} catch {
 			iconOverrides = {};
 		}
+	}
+
+	// User-defined tags: assignments (name -> tagId[]) + the catalog.
+	let tagsMap = $state<Record<string, number[]>>({});
+	let tagCatalog = $state<UserTag[]>([]);
+	const tagById = $derived(new Map(tagCatalog.map((t) => [t.id, t])));
+	async function loadTags(forEnvId: number | null) {
+		try {
+			const res = await fetch(appendEnvParam('/api/container-tags', forEnvId));
+			tagsMap = res.ok ? await res.json() : {};
+		} catch {
+			tagsMap = {};
+		}
+	}
+	async function loadTagCatalog() {
+		// The tag catalog is global (not env-scoped); assignments load per env.
+		try {
+			const res = await fetch('/api/tags');
+			tagCatalog = res.ok ? (await res.json()).tags : [];
+		} catch {
+			tagCatalog = [];
+		}
+		// Drop any persisted filter id that no longer exists in the catalog (a
+		// deleted tag, or a wiped DB) - otherwise a stale id filters the whole
+		// list to empty with no visible cause.
+		const valid = new Set(tagCatalog.map((t) => t.id));
+		if (tagFilter.some((id) => !valid.has(id))) tagFilter = tagFilter.filter((id) => valid.has(id));
+	}
+	// Tag filter, persisted per browser so it survives a refresh.
+	const TAG_FILTER_KEY = 'dockhand-containers-tag-filter';
+	const TAG_FILTER_MODE_KEY = 'dockhand-containers-tag-filter-mode';
+	let tagFilter = $state<number[]>(loadTagFilter());
+	let tagFilterMode = $state<'all' | 'any'>(loadTagFilterMode());
+	function loadTagFilter(): number[] {
+		if (typeof window === 'undefined') return [];
+		try { const s = localStorage.getItem(TAG_FILTER_KEY); return s ? JSON.parse(s) : []; } catch { return []; }
+	}
+	function loadTagFilterMode(): 'all' | 'any' {
+		if (typeof window === 'undefined') return 'any';
+		const s = localStorage.getItem(TAG_FILTER_MODE_KEY);
+		return s === 'all' || s === 'any' ? s : 'any';
+	}
+	$effect(() => {
+		const f = tagFilter, m = tagFilterMode;
+		if (typeof window === 'undefined') return;
+		localStorage.setItem(TAG_FILTER_KEY, JSON.stringify(f));
+		localStorage.setItem(TAG_FILTER_MODE_KEY, m);
+	});
+	function tagsFor(name: string): UserTag[] {
+		return (tagsMap[name] ?? []).map((id) => tagById.get(id)).filter((t): t is UserTag => !!t);
+	}
+
+	// Group-by-tag: partition rows by their unique tag COMBINATION (a container with
+	// prod+infra forms its own group, distinct from just prod). Persisted per browser.
+	const GROUP_BY_TAG_KEY = 'dockhand-containers-group-by-tag';
+	const COLLAPSED_GROUPS_KEY = 'dockhand-containers-collapsed-groups';
+	const SHOW_TAGS_KEY = 'dockhand-containers-show-tags';
+	const SHOW_BANDS_KEY = 'dockhand-containers-group-bands';
+	const INLINE_TAG_EDIT_KEY = 'dockhand-containers-inline-tag-editing';
+	const TAG_SETTINGS_EXPANDED_KEY = 'dockhand-containers-tag-settings-expanded';
+	// Show tag chips on rows (default true - only '0' hides them).
+	let showTags = $state(typeof window === 'undefined' || localStorage.getItem(SHOW_TAGS_KEY) !== '0');
+	// Coloured group bands (default true - only '0' hides them).
+	let showBands = $state(typeof window === 'undefined' || localStorage.getItem(SHOW_BANDS_KEY) !== '0');
+	// Show a tag-edit button on each row (default true - only '0' hides it).
+	let inlineTagEditing = $state(typeof window === 'undefined' || localStorage.getItem(INLINE_TAG_EDIT_KEY) !== '0');
+	// Tag-settings section open/closed (default open - only '0' collapses it).
+	let tagSettingsExpanded = $state(typeof window === 'undefined' || localStorage.getItem(TAG_SETTINGS_EXPANDED_KEY) !== '0');
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		localStorage.setItem(SHOW_TAGS_KEY, showTags ? '1' : '0');
+	});
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		localStorage.setItem(SHOW_BANDS_KEY, showBands ? '1' : '0');
+	});
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		localStorage.setItem(INLINE_TAG_EDIT_KEY, inlineTagEditing ? '1' : '0');
+	});
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		localStorage.setItem(TAG_SETTINGS_EXPANDED_KEY, tagSettingsExpanded ? '1' : '0');
+	});
+	let groupByTag = $state(typeof window !== 'undefined' && localStorage.getItem(GROUP_BY_TAG_KEY) === '1');
+	let collapsedGroups = $state<Set<string>>(loadCollapsedGroups());
+	function loadCollapsedGroups(): Set<string> {
+		if (typeof window === 'undefined') return new Set();
+		try { const s = localStorage.getItem(COLLAPSED_GROUPS_KEY); return new Set(s ? JSON.parse(s) : []); } catch { return new Set(); }
+	}
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		localStorage.setItem(GROUP_BY_TAG_KEY, groupByTag ? '1' : '0');
+	});
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		localStorage.setItem(COLLAPSED_GROUPS_KEY, JSON.stringify([...collapsedGroups]));
+	});
+	const containerGroupBy = $derived(groupByTag ? (c: any) => tagGroupDescriptor(tagsFor(c.name)) : undefined);
+	async function createTag(name: string, color: TagColor, icon: string | null): Promise<UserTag | null> {
+		try {
+			const res = await fetch('/api/tags', {
+				method: 'POST', headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ name, color, icon })
+			});
+			if (!res.ok) return null;
+			const tag = await res.json();
+			await loadTagCatalog();
+			return tag;
+		} catch { return null; }
+	}
+	async function applyContainerTags(name: string, tagIds: number[]) {
+		tagsMap = { ...tagsMap, [name]: tagIds };
+		try {
+			await fetch(appendEnvParam(`/api/container-tags/${encodeURIComponent(name)}`, envId), {
+				method: 'PUT', headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ tagIds })
+			});
+		} catch { /* optimistic; reload on next env switch */ }
 	}
 	const containerStats = $derived($containerStore.stats);
 	const autoUpdateSettings = $derived($containerStore.autoUpdateSettings);
@@ -230,12 +353,16 @@
 			// Refresh data (store handles loading state internally)
 			containerStore.refresh(newEnvId);
 			loadIconOverrides(newEnvId);
+			loadTags(newEnvId);
+			loadTagCatalog(); // global catalog; assignments come from loadTags
 		} else if (!env) {
 			// No environment - clear data and stop loading
 			envId = null;
 			shellDetectionCache = {};
 			containerStore.clear();
 			iconOverrides = {};
+			tagsMap = {};
+			tagCatalog = [];
 		}
 	});
 	let showCreateModal = $state(false);
@@ -803,14 +930,15 @@
 			result = result.filter((c) => newerVersionsMap.has(c.id));
 		}
 
-		// Filter by search query
+		// Filter by search query (name, image, any label key/value, or a
+		// `label:key`/`label:key=value` filter - see containerMatchesSearch).
 		if (searchQuery.trim()) {
-			const query = searchQuery.toLowerCase();
-			result = result.filter(c =>
-				c.name.toLowerCase().includes(query) ||
-				c.image.toLowerCase().includes(query) ||
-				(c.labels?.['com.docker.compose.project'] || '').toLowerCase().includes(query)
-			);
+			result = result.filter(c => containerMatchesSearch(c, searchQuery));
+		}
+
+		// Filter by user-defined tags.
+		if (tagFilter.length > 0) {
+			result = result.filter((c) => matchesTagFilter(tagsMap[c.name], tagFilter, tagFilterMode));
 		}
 
 		// Sort
@@ -916,8 +1044,12 @@
 		return containerStore.refreshContainers(envId);
 	}
 
-	// Check if highlightChanges is enabled for current environment
-	const highlightChangesEnabled = $derived($currentEnvironment?.highlightChanges ?? true);
+	// Check if highlightChanges is enabled for current environment. Read from the full
+	// environments list first (authoritative); the thin currentEnvironment store omits
+	// the flag on some switch paths, which otherwise reverts it to the default.
+	const highlightChangesEnabled = $derived(
+		currentEnvDetails?.highlightChanges ?? $currentEnvironment?.highlightChanges ?? true
+	);
 
 	// Helper to check if a stat field changed significantly
 	function hasFieldChanged(containerId: string, field: string, oldVal: number | undefined, newVal: number | undefined): boolean {
@@ -1430,16 +1562,7 @@
 	<div class="shrink-0 flex flex-wrap justify-between items-center gap-3 min-h-8">
 		<PageHeader icon={Box} title="Containers" count={containers.length} />
 		<div class="flex flex-wrap items-center gap-2">
-			<div class="relative">
-				<Search class="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-				<Input
-					type="text"
-					placeholder="Search containers..."
-					bind:value={searchQuery}
-					onkeydown={(e) => e.key === 'Escape' && (searchQuery = '')}
-					class="pl-8 h-8 w-48 text-sm"
-				/>
-																																																				</div>
+			<SearchInput bind:value={searchQuery} placeholder="Search name, image, label..." class="h-8 w-64 text-sm" />
 			<!-- Status filter (multi-select). The synthetic 'update-available'
 			     entry appears once at least one container has a pending update,
 			     and ANDs with selected real states (#1063). -->
@@ -1451,7 +1574,11 @@
 				width="w-44"
 				defaultIcon={Box}
 			/>
-			<div class="flex gap-2">
+			<TagFilter tags={tagCatalog} bind:selected={tagFilter} bind:mode={tagFilterMode} bind:groupBy={groupByTag} bind:showTags={showTags} bind:showBands={showBands} bind:inlineEditing={inlineTagEditing} bind:settingsExpanded={tagSettingsExpanded} />
+			<!-- Action buttons: scroll horizontally on narrow screens (mobile) instead of
+			     clipping the overflow. min-w-0 lets the row shrink below its content so
+			     overflow-x can kick in; shrink-0 keeps each button its natural size. -->
+			<div class="flex gap-2 overflow-x-auto min-w-0 max-w-full [&>*]:shrink-0">
 				{#if $canAccess('containers', 'create')}
 				<Button size="sm" variant="secondary" onclick={() => (showCreateModal = true)}>
 					<Plus class="w-3.5 h-3.5" />
@@ -1713,6 +1840,10 @@
 				gridId="containers"
 				loading={loading}
 				selectable
+				groupBy={containerGroupBy}
+				bind:collapsedGroups={collapsedGroups}
+				ungroupedLabel="Untagged"
+				showGroupBands={showBands}
 				bind:selectedKeys={selectedContainers}
 				sortState={{ field: sortField, direction: sortDirection }}
 				onSortChange={(state) => { sortField = state.field as SortField; sortDirection = state.direction; }}
@@ -1731,6 +1862,12 @@
 					highlightedRowId = highlightedRowId === container.id ? null : container.id;
 				}}
 			>
+				{#snippet groupHeaderLabel(group)}
+					{#each group.icons as ic}
+						{#if ic}<TagLucideIcon name={ic} class="h-3 w-3 shrink-0" />{:else}<Tag class="h-3 w-3 shrink-0" />{/if}
+					{/each}
+					<span>{group.label}</span>
+				{/snippet}
 				{#snippet cell(column, container, rowState)}
 					{@const ports = formatPorts(container.ports)}
 					{@const stack = getComposeProject(container.labels)}
@@ -1743,66 +1880,58 @@
 								title={container.name}
 								onclick={(e) => { e.stopPropagation(); inspectContainer(container); }}
 							>{container.name}</button>
-							{#if container.systemContainer}
-								{@const hasUpdate = containersWithUpdatesSet.has(container.id)}
+							<!-- System containers (Dockhand, Hawser) carry no label badge; only an
+							     amber update indicator when a new version is out (they can't be
+							     self-updated from the UI, so the tooltip points to the update path). -->
+							{#if container.systemContainer && containersWithUpdatesSet.has(container.id)}
 								<Tooltip.Root>
 									<Tooltip.Trigger>
-										<Badge variant="secondary" class="text-2xs py-0 px-1 shrink-0 {hasUpdate ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20' : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20'} cursor-help flex items-center gap-0.5">
-											{#if container.systemContainer === 'dockhand'}
-												<Ship class="w-2.5 h-2.5" />
-											{:else}
-												<Cable class="w-2.5 h-2.5" />
-											{/if}
-											{container.systemContainer === 'dockhand' ? 'Dockhand' : 'Hawser'}
-											{#if hasUpdate}
-												<CircleArrowUp class="w-2.5 h-2.5" />
-											{/if}
+										<Badge variant="secondary" class="text-2xs py-0 px-1 shrink-0 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 cursor-help flex items-center gap-0.5">
+											<CircleArrowUp class="w-2.5 h-2.5" />
 										</Badge>
 									</Tooltip.Trigger>
 									<Tooltip.Content side="right" class="w-auto p-3">
-										{#if container.systemContainer === 'dockhand'}
-											{#if hasUpdate}
-												<div class="space-y-2">
-													<p class="font-medium text-sm flex items-center gap-1.5 whitespace-nowrap">
-														<CircleArrowUp class="w-4 h-4 text-amber-500" />
-														Update available
-													</p>
-													<a
-														href="/settings?tab=about"
-														class="text-primary hover:underline text-xs flex items-center gap-1 whitespace-nowrap"
-														onclick={(e) => e.stopPropagation()}
-													>
-														Settings &gt; About
-													</a>
-												</div>
+										<div class="space-y-2">
+											<p class="font-medium text-sm flex items-center gap-1.5 whitespace-nowrap">
+												<CircleArrowUp class="w-4 h-4 text-amber-500" />
+												Update available
+											</p>
+											{#if container.systemContainer === 'dockhand'}
+												<a
+													href="/settings?tab=about"
+													class="text-primary hover:underline text-xs flex items-center gap-1 whitespace-nowrap"
+													onclick={(e) => e.stopPropagation()}
+												>
+													Settings &gt; About
+												</a>
 											{:else}
-												<p class="text-sm whitespace-nowrap">Dockhand management container</p>
+												<p class="text-muted-foreground text-xs whitespace-nowrap">Update on the remote host where Hawser runs.</p>
+												<a
+													href="https://github.com/Finsys/hawser"
+													target="_blank"
+													rel="noopener noreferrer"
+													class="text-primary hover:underline text-xs flex items-center gap-1 whitespace-nowrap"
+													onclick={(e) => e.stopPropagation()}
+												>
+													<ExternalLink class="w-3 h-3" />
+													Update instructions on GitHub
+												</a>
 											{/if}
-										{:else}
-											{#if hasUpdate}
-												<div class="space-y-2">
-													<p class="font-medium text-sm flex items-center gap-1.5 whitespace-nowrap">
-														<CircleArrowUp class="w-4 h-4 text-amber-500" />
-														Update available
-													</p>
-													<p class="text-muted-foreground text-xs whitespace-nowrap">Update on the remote host where Hawser runs.</p>
-													<a
-														href="https://github.com/Finsys/hawser"
-														target="_blank"
-														rel="noopener noreferrer"
-														class="text-primary hover:underline text-xs flex items-center gap-1 whitespace-nowrap"
-														onclick={(e) => e.stopPropagation()}
-													>
-														<ExternalLink class="w-3 h-3" />
-														Update instructions on GitHub
-													</a>
-												</div>
-											{:else}
-												<p class="text-sm whitespace-nowrap">Hawser remote agent</p>
-											{/if}
-										{/if}
+										</div>
 									</Tooltip.Content>
 								</Tooltip.Root>
+							{/if}
+							{#if showTags}<TagChips tags={tagsFor(container.name)} />{/if}
+							{#if inlineTagEditing && $canAccess('containers', 'edit')}
+								<span onclick={(e) => e.stopPropagation()} role="presentation">
+									<TagEditPopover
+										catalog={tagCatalog}
+										selected={tagsMap[container.name] ?? []}
+										onCreate={createTag}
+										onApply={(ids) => applyContainerTags(container.name, ids)}
+										allowCreate={$isAdmin}
+									/>
+								</span>
 							{/if}
 						</div>
 					{:else if column.id === 'image'}
@@ -1917,10 +2046,11 @@
 						<div class="{isFieldHighlighted(container.id, 'memory') ? 'stat-highlight' : ''} text-right">
 							{#if containerStats.get(container.id)}
 								{@const stats = containerStats.get(container.id)}
+								{@const memLimitLabel = stats.memoryLimit ? formatBytes(stats.memoryLimit) : 'unlimited'}
 								{@const memoryTooltip = stats.memoryCache > 0
-									? `${formatBytes(stats.memoryUsage)} / ${formatBytes(stats.memoryLimit)} (Total: ${formatBytes(stats.memoryRaw)} | Cache: ${formatBytes(stats.memoryCache)})`
-									: `${formatBytes(stats.memoryUsage)} / ${formatBytes(stats.memoryLimit)}`}
-								<span class="text-xs font-mono {stats.memoryPercent > 80 ? 'text-red-500' : stats.memoryPercent > 50 ? 'text-yellow-500' : 'text-muted-foreground'}" title={memoryTooltip}>{formatBytesCompact(stats.memoryUsage)}<span class="text-muted-foreground/50">/{formatBytesCompact(stats.memoryLimit, 0)}</span></span>
+									? `${formatBytes(stats.memoryUsage)} / ${memLimitLabel} (Total: ${formatBytes(stats.memoryRaw)} | Cache: ${formatBytes(stats.memoryCache)})`
+									: `${formatBytes(stats.memoryUsage)} / ${memLimitLabel}`}
+								<span class="text-xs font-mono {stats.memoryPercent > 80 ? 'text-red-500' : stats.memoryPercent > 50 ? 'text-yellow-500' : 'text-muted-foreground'}" title={memoryTooltip}>{formatBytesCompact(stats.memoryUsage)}<span class="text-muted-foreground/50">/{stats.memoryLimit ? formatBytesCompact(stats.memoryLimit, 0) : '∞'}</span></span>
 							{:else if container.state === 'running'}
 								<span class="text-xs text-muted-foreground/50">...</span>
 							{:else}
@@ -2535,7 +2665,7 @@
 <EditContainerModal
 	bind:open={showEditModal}
 	containerId={editContainerId}
-	onClose={() => (showEditModal = false)}
+	onClose={() => { showEditModal = false; loadTags(envId); }}
 	onSuccess={fetchContainers}
 	onIconChanged={() => loadIconOverrides(envId)}
 />

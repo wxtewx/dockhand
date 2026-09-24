@@ -527,7 +527,11 @@ const wsToEnvId = new Map<any, number>();
 function webSocketPlugin(): Plugin {
 	return {
 		name: 'websocket',
-		configureServer() {
+		async configureServer() {
+			// Install the process crash guard before the dev WS server accepts anything,
+			// so dev matches prod (where it installs before listen via hooks.server.ts).
+			await import('./src/lib/server/crash-guard.js');
+
 			// Start cleanup interval for dev mode only
 			startCleanupInterval();
 

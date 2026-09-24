@@ -26,6 +26,18 @@ describe('memorySupportFromInfo', () => {
 		expect(r.swapLimitSupported).toBe(false);
 	});
 
+	it('does NOT warn on a Windows daemon even though MemoryLimit is false (#1574)', () => {
+		// Windows reports MemoryLimit:false but per-container memory works fine, so the
+		// Linux cgroup-accounting warning is wrong there.
+		const r = memorySupportFromInfo({ MemoryLimit: false, SwapLimit: false, OSType: 'windows' });
+		expect(r.warn).toBe(false);
+		expect(r.memoryLimitSupported).toBe(false); // still reflects the raw flag
+	});
+
+	it('still warns on a Linux daemon with MemoryLimit false (RPi case unchanged)', () => {
+		expect(memorySupportFromInfo({ MemoryLimit: false, OSType: 'linux' }).warn).toBe(true);
+	});
+
 	it('doc url points at the manual anchor', () => {
 		expect(MEMORY_SUPPORT_DOC_URL).toBe('https://dockhand.pro/manual/#troubleshooting-rpi-memory');
 	});

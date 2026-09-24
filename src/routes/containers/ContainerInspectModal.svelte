@@ -891,7 +891,7 @@
 										<div class="h-8 flex items-center justify-center text-xs text-muted-foreground">Loading...</div>
 									{/if}
 									<div class="text-2xs text-muted-foreground mt-1">
-										{formatBytes(currentStats?.memoryUsage ?? 0)} / {formatBytes(currentStats?.memoryLimit ?? 0)}
+										{formatBytes(currentStats?.memoryUsage ?? 0)} / {currentStats?.memoryLimit ? formatBytes(currentStats.memoryLimit) : 'unlimited'}
 									</div>
 								</div>
 								<!-- Network I/O -->

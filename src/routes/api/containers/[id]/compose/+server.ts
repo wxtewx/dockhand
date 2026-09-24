@@ -13,7 +13,7 @@ import { inspectToCompose, type DockerInspect } from '$lib/utils/inspect-to-comp
  * @openapi
  * summary: Generate a docker-compose service definition from a running container's inspect (requires the 'view' permission)
  * path: id:string! Container ID or name (from GET /api/containers)
- * query: env:integer The target environment ID (omit for the local/default Docker host) (from GET /api/environments)
+ * query: env:integer! The target environment ID the container lives in (from GET /api/environments)
  * resp-200: {compose:string, composeFullEnv:string, serviceName:string, stackProject:string}
  * resp-200-desc: compose keeps only user-set env; composeFullEnv keeps every env var (incl. image-inherited); stackProject is the compose project the container already belongs to, or null
  * resp-403: Permission denied

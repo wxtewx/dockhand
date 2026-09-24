@@ -18,6 +18,7 @@
 	import NavigationSelector from '$lib/components/NavigationSelector.svelte';
 	import AnimateIconsToggle from '$lib/components/AnimateIconsToggle.svelte';
 	import IndentGuidesToggle from '$lib/components/IndentGuidesToggle.svelte';
+	import EditorThemeSelector from '$lib/components/EditorThemeSelector.svelte';
 	import ColoredActionsToggle from '$lib/components/ColoredActionsToggle.svelte';
 	import SemverCheckConfig from '$lib/components/SemverCheckConfig.svelte';
 	import { onMount } from 'svelte';
@@ -570,54 +571,6 @@ services:
 								</div>
 								<p class="text-xs text-muted-foreground">Show URLs inferred from Traefik and Pangolin labels alongside dockhand.url</p>
 							</div>
-							<div class="space-y-1">
-								<div class="flex items-center gap-3">
-									<Label>Time format</Label>
-									<ToggleSwitch
-										value={timeFormat}
-										leftValue="24h"
-										rightValue="12h"
-										onchange={(newFormat) => {
-											appSettings.setTimeFormat(newFormat as '12h' | '24h');
-											toast.success(`Time format set to ${newFormat === '12h' ? '12-hour (AM/PM)' : '24-hour'}`);
-										}}
-										disabled={!$canAccess('settings', 'edit')}
-									/>
-								</div>
-								<p class="text-xs text-muted-foreground">Display timestamps in 12-hour (AM/PM) or 24-hour format</p>
-							</div>
-							<div class="space-y-1">
-								<div class="flex items-center gap-3">
-									<Label>Date format</Label>
-									<Select.Root
-										type="single"
-										value={dateFormat}
-										onValueChange={(value) => {
-											if (value) {
-												appSettings.setDateFormat(value as DateFormat);
-												toast.success(`Date format set to ${value}`);
-											}
-										}}
-										disabled={!$canAccess('settings', 'edit')}
-									>
-										<Select.Trigger class="w-[180px]">
-											<Calendar class="w-4 h-4 mr-2" />
-											<span>{dateFormat}</span>
-										</Select.Trigger>
-										<Select.Content>
-											{#each dateFormatOptions as option}
-												<Select.Item value={option.value}>
-													<div class="flex items-center justify-between w-full gap-4">
-														<span>{option.label}</span>
-														<span class="text-xs text-muted-foreground">{option.example}</span>
-													</div>
-												</Select.Item>
-											{/each}
-										</Select.Content>
-									</Select.Root>
-								</div>
-								<p class="text-xs text-muted-foreground">How dates are displayed throughout the app</p>
-							</div>
 						</div>
 						<!-- Right column: Theme settings (always shown, with hint when auth enabled) -->
 						<div class="space-y-4">
@@ -641,6 +594,66 @@ services:
 							{/if}
 						</div>
 					</div>
+				<!-- Time + date format span the full card width, two columns, so they get
+				     room instead of crowding inside the narrow settings column. -->
+				<div class="mt-4 border-t pt-4">
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+						<div class="space-y-1">
+							<div class="flex items-center gap-3">
+								<Label>Time format</Label>
+								<ToggleSwitch
+									value={timeFormat}
+									leftValue="24h"
+									rightValue="12h"
+									onchange={(newFormat) => {
+										appSettings.setTimeFormat(newFormat as '12h' | '24h');
+										toast.success(`Time format set to ${newFormat === '12h' ? '12-hour (AM/PM)' : '24-hour'}`);
+									}}
+									disabled={!$canAccess('settings', 'edit')}
+								/>
+							</div>
+							<p class="text-xs text-muted-foreground">Clock display used throughout the app</p>
+						</div>
+						<div class="space-y-1">
+							<div class="flex items-center gap-3">
+								<Label>Date format</Label>
+								<Select.Root
+									type="single"
+									value={dateFormat}
+									onValueChange={(value) => {
+										if (value) {
+											appSettings.setDateFormat(value as DateFormat);
+											toast.success(`Date format set to ${value}`);
+										}
+									}}
+									disabled={!$canAccess('settings', 'edit')}
+								>
+									<Select.Trigger class="w-[180px]">
+										<Calendar class="w-4 h-4 mr-2" />
+										<span>{dateFormat}</span>
+									</Select.Trigger>
+									<Select.Content>
+										{#each dateFormatOptions as option}
+											<Select.Item value={option.value}>
+												<div class="flex items-center justify-between w-full gap-4">
+													<span>{option.label}</span>
+													<span class="text-xs text-muted-foreground">{option.example}</span>
+												</div>
+											</Select.Item>
+										{/each}
+									</Select.Content>
+								</Select.Root>
+							</div>
+							<p class="text-xs text-muted-foreground">Date display used throughout the app</p>
+						</div>
+					</div>
+				</div>
+				<!-- Editor theme spans the full card width so the live preview isn't cramped. -->
+				{#if !$authStore.authEnabled || globalThemeLoaded}
+					<div class="mt-4 border-t pt-4">
+						<EditorThemeSelector />
+					</div>
+				{/if}
 				</Card.Content>
 			</Card.Root>
 
@@ -1265,14 +1278,14 @@ services:
 					<div class="space-y-3">
 						<div class="space-y-1">
 							<div class="flex items-center gap-3">
-								<Label>Label filter matching</Label>
+								<Label>Environment label filter matching</Label>
 								<Tooltip.Root>
 									<Tooltip.Trigger>
 										<HelpCircle class="w-3.5 h-3.5 text-muted-foreground" />
 									</Tooltip.Trigger>
 									<Tooltip.Content class="w-80">
 										<p class="text-xs">
-											Controls how multiple selected labels filter environments on the dashboard.
+											Controls how multiple selected environment labels filter environments on the dashboard.
 											<strong>"Any"</strong>: shows environments that have at least one of the selected labels.
 											<strong>"All"</strong>: shows only environments that have every selected label.
 										</p>

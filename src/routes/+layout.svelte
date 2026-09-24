@@ -2,7 +2,9 @@
 	import '../app.css';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
+	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
+	import { toast } from 'svelte-sonner';
 	import { Toaster } from '$lib/components/ui/sonner';
 	import AppSidebar from '$lib/components/app-sidebar.svelte';
 	import ThemeToggle from '$lib/components/theme-toggle.svelte';
@@ -14,7 +16,9 @@
 	import { connectSSE, disconnectSSE } from '$lib/stores/events';
 	import { currentEnvironment, environments } from '$lib/stores/environment';
 	import { licenseStore, daysUntilExpiry } from '$lib/stores/license';
+	import { get } from 'svelte/store';
 	import { authStore } from '$lib/stores/auth';
+	import { extractPath, isSessionExpiryCandidate } from '$lib/utils/session-expiry';
 	import { themeStore, applyTheme } from '$lib/stores/theme';
 	import { gridPreferencesStore } from '$lib/stores/grid-preferences';
 	import { appSettings } from '$lib/stores/settings';
@@ -87,7 +91,44 @@
 		// Check auth status
 		authStore.check();
 
+		// Redirect to the login page when the session expires mid-use (#1577): once auth is
+		// enabled, a stale session makes every /api/* call return 401, but the UI otherwise
+		// keeps showing the last page. Intercept fetch to catch that centrally, so we don't
+		// have to touch every call site. A 401 is only treated as expiry after re-checking
+		// the session with the server, so a proxied upstream-auth 401 (e.g. bad registry
+		// credentials on /api/registry/image) doesn't wrongly log the user out.
+		const originalFetch = window.fetch;
+		let checkingExpiry = false; // dedupe concurrent 401s while the session re-check is in flight
+		window.fetch = async (...args) => {
+			const response = await originalFetch(...args);
+			try {
+				const path = extractPath(args[0], window.location.origin);
+				if (
+					isSessionExpiryCandidate(response.status, path) &&
+					get(authStore).authEnabled &&
+					!checkingExpiry &&
+					window.location.pathname !== '/login'
+				) {
+					checkingExpiry = true;
+					try {
+						await authStore.check(); // confirm with the server whether the session is actually gone
+						const auth = get(authStore);
+						if (auth.authEnabled && !auth.authenticated && window.location.pathname !== '/login') {
+							toast.error('Your session has expired. Please sign in again.');
+							goto('/login');
+						}
+					} finally {
+						checkingExpiry = false;
+					}
+				}
+			} catch {
+				// URL parsing / check failures are non-fatal; never break the original response.
+			}
+			return response;
+		};
+
 		return () => {
+			window.fetch = originalFetch;
 			disconnectSSE();
 		};
 	});

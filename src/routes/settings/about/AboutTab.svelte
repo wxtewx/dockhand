@@ -4,8 +4,8 @@
 	import { releasedEntries } from '$lib/utils/changelog-filter';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
-	import { Box, Images, HardDrive, Network, Cpu, Server, Crown, Building2, Layers, Clock, Code, Package, ExternalLink, Search, FileText, Tag, Sparkles, Bug, ChevronDown, ChevronRight, Plug, ScrollText, Shield, MessageSquarePlus, GitBranch, Coffee, Monitor, Cog, MemoryStick, Database, CircleArrowUp, Loader2, CheckCircle2, TriangleAlert } from 'lucide-svelte';
+	import { SearchInput } from '$lib/components/ui/search-input';
+	import { Box, Images, HardDrive, Network, Cpu, Server, Crown, Building2, Layers, Clock, Code, Package, ExternalLink, FileText, Tag, Sparkles, Bug, ChevronDown, ChevronRight, Plug, ScrollText, Shield, MessageSquarePlus, GitBranch, Coffee, Monitor, Cog, MemoryStick, Database, CircleArrowUp, Loader2, CheckCircle2, TriangleAlert } from 'lucide-svelte';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import { onMount, onDestroy } from 'svelte';
 	import { licenseStore } from '$lib/stores/license';
@@ -907,15 +907,7 @@
 
 			<Tabs.Content value="dependencies" class="px-4 pb-4">
 				<div class="mb-3">
-					<div class="relative w-full max-w-xs">
-						<Search class="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-						<Input
-							type="text"
-							placeholder="Search packages or licenses..."
-							class="h-7 text-xs pl-7"
-							bind:value={depsSearch}
-						/>
-					</div>
+					<SearchInput bind:value={depsSearch} placeholder="Search packages or licenses..." class="h-7 text-xs" containerClass="w-full max-w-xs" />
 				</div>
 				{#if loadingDeps}
 					<div class="flex items-center justify-center py-8">

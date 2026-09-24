@@ -87,6 +87,7 @@
 		name: string;
 		image: string;
 		command: string;
+		entrypoint: string;
 		restartPolicy: string;
 		restartMaxRetries: number | '';
 		networkMode: string;
@@ -173,6 +174,7 @@
 		name = $bindable(),
 		image = $bindable(),
 		command = $bindable(),
+		entrypoint = $bindable(''),
 		restartPolicy = $bindable(),
 		restartMaxRetries = $bindable(),
 		networkMode = $bindable(),
@@ -884,6 +886,11 @@
 		<div class="space-y-1.5">
 			<Label for="command" class="text-xs font-medium">Command (optional)</Label>
 			<Input id="command" bind:value={command} placeholder="/bin/sh -c 'echo hello'" class="h-9" />
+		</div>
+
+		<div class="space-y-1.5">
+			<Label for="entrypoint" class="text-xs font-medium">Entrypoint (optional)</Label>
+			<Input id="entrypoint" bind:value={entrypoint} placeholder="/docker-entrypoint.sh" class="h-9" />
 		</div>
 
 		<div class="grid grid-cols-2 gap-3">

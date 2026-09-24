@@ -73,6 +73,22 @@
 		}
 	});
 
+	// React to the ?container= URL param CHANGING while already mounted (e.g. a
+	// cross-host jump from the command palette). onMount only matches the URL once,
+	// so a later navigation to a container - possibly on another host, hence keyed on
+	// `containers` too - is handled here once its list has loaded.
+	let lastHandledUrlContainer: string | null = null;
+	$effect(() => {
+		const urlContainerId = $page.url.searchParams.get('container');
+		const list = containers;
+		if (!urlContainerId || urlContainerId === lastHandledUrlContainer) return;
+		const container = list.find(c => c.id === urlContainerId || c.id.startsWith(urlContainerId));
+		if (!container) return;
+		lastHandledUrlContainer = urlContainerId;
+		if (selectedContainer?.id === container.id) return;
+		selectContainer(container);
+	});
+
 	// Filtered containers based on search
 	let filteredContainers = $derived(() => {
 		if (!searchQuery.trim()) return containers;

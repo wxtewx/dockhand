@@ -901,7 +901,8 @@ export async function triggerSystemJob(jobId: string): Promise<{ success: boolea
  */
 export async function triggerDeployLogReconcile(): Promise<{ success: boolean; executionId?: number; error?: string }> {
 	try {
-		runDeployLogReconcileJob('manual');
+		// Run in background - the job records its own execution row.
+		void runDeployLogReconcileJob('manual');
 		return { success: true };
 	} catch (error: any) {
 		return { success: false, error: error.message };

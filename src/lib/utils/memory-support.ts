@@ -20,10 +20,14 @@ export interface MemorySupportInfo {
  * `SwapLimit` are booleans; a missing/undefined field is treated as SUPPORTED (no
  * warning) so an older daemon or a partial info payload never produces a false alarm.
  */
-export function memorySupportFromInfo(info: { MemoryLimit?: boolean; SwapLimit?: boolean } | null | undefined): MemorySupportInfo {
+export function memorySupportFromInfo(info: { MemoryLimit?: boolean; SwapLimit?: boolean; OSType?: string } | null | undefined): MemorySupportInfo {
 	const memoryLimitSupported = info?.MemoryLimit !== false;
 	const swapLimitSupported = info?.SwapLimit !== false;
-	return { warn: !memoryLimitSupported, memoryLimitSupported, swapLimitSupported };
+	// cgroup memory accounting is a Linux concept. A Windows daemon reports
+	// MemoryLimit:false but reports per-container memory fine (via privateworkingset),
+	// so the "enable cgroup accounting" warning is wrong there - never warn (#1574).
+	const warn = !memoryLimitSupported && info?.OSType !== 'windows';
+	return { warn, memoryLimitSupported, swapLimitSupported };
 }
 
 /** Link to the manual section explaining how to enable cgroup memory accounting. */

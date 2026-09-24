@@ -50,6 +50,40 @@ describe('matchSelfhstRef', () => {
 	});
 });
 
+describe('separator-insensitive match (image basename drops the reference hyphens)', () => {
+	const refs = new Set(['the-lounge', 'home-assistant', 'uptime-kuma', 'paperless-ngx', 'redis']);
+
+	test('an unhyphenated image basename matches a hyphenated reference', () => {
+		// The Lounge ships as thelounge/thelounge but selfh.st calls it the-lounge.
+		expect(matchSelfhstRef('thelounge/thelounge:latest', refs)).toBe('the-lounge');
+		expect(matchSelfhstRef('ghcr.io/thelounge/thelounge', refs)).toBe('the-lounge');
+		expect(matchSelfhstRef('uptimekuma/uptime-kuma', refs)).toBe('uptime-kuma');
+	});
+
+	test('resolves via the container name too', () => {
+		expect(matchSelfhstByName('/thelounge', refs)).toBe('the-lounge');
+		expect(matchSelfhstByName('paperlessngx-1', refs)).toBe('paperless-ngx');
+	});
+
+	test('it is equality-after-normalization, never a substring/fuzzy match', () => {
+		// no reference collapses to redisexporter, so it stays unmatched (not redis)
+		expect(matchSelfhstRef('oliver006/redis-exporter', refs)).toBeNull();
+		expect(matchSelfhstRef('prom/node-exporter', refs)).toBeNull();
+	});
+
+	test('an all-separator base does not match (empty stripped key)', () => {
+		// `---` strips to "" and must never resolve, even against a degenerate manifest
+		expect(matchSelfhstByName('---', new Set(['the-lounge']))).toBeNull();
+		expect(matchSelfhstByName('___', new Set(['the-lounge']))).toBeNull();
+	});
+
+	test('createSelfhstMatcher picks up the separator-insensitive match', () => {
+		const m = createSelfhstMatcher(new Set(['the-lounge']));
+		expect(m('thelounge/thelounge')).toBe('the-lounge');
+		expect(m('thelounge/thelounge')).toBe('the-lounge'); // cached
+	});
+});
+
 describe('containerNameBase', () => {
 	test('strips leading slash and compose replica suffix, lowercases', () => {
 		expect(containerNameBase('/traefik')).toBe('traefik');

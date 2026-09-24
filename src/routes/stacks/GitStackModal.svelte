@@ -23,9 +23,11 @@
 	import IconPickerModal from './IconPickerModal.svelte';
 	import ComposeOutputModal from './ComposeOutputModal.svelte';
 	import StackIcon from '$lib/components/StackIcon.svelte';
+	import StackTagsSection from '$lib/components/StackTagsSection.svelte';
 	import { appendEnvParam } from '$lib/stores/environment';
 	import { persistStackIcon } from '$lib/utils/stack-icon';
 	import { type EnvVar, type ValidationResult } from '$lib/components/StackEnvVarsEditor.svelte';
+	import { mergeGitStackEnvVars, isGitStackOverride } from '$lib/env-merge';
 	import { toast } from 'svelte-sonner';
 	import { focusFirstInput } from '$lib/utils';
 	import { readJobResponse } from '$lib/utils/sse-fetch';
@@ -377,13 +379,10 @@
 		}
 	}
 
-	async function loadEnvFileContents(path: string) {
-		if (!gitStack || !path) {
-			fileEnvVars = {};
-			return;
-		}
-
-		loadingFileVars = true;
+	// Read one .env file from the synced clone (repo-root-relative path). Not-found /
+	// error yields {} so a missing file is harmless.
+	async function readRepoEnvFile(path: string): Promise<Record<string, string>> {
+		if (!gitStack || !path) return {};
 		try {
 			const response = await fetch(`/api/git/stacks/${gitStack.id}/env-files`, {
 				method: 'POST',
@@ -392,11 +391,32 @@
 			});
 			if (response.ok) {
 				const data = await response.json();
-				fileEnvVars = data.vars || {};
+				return data.vars || {};
 			}
 		} catch (e) {
-			console.error('Failed to load env file contents:', e);
+			console.error('Failed to read env file contents:', e);
+		}
+		return {};
+	}
+
+	// Populate fileEnvVars with what the deploy sees: the compose-dir default .env as
+	// the base, then the explicit envFilePath layered on top (deploy applies the custom
+	// env file second). This is the diff base for save AND the file base for the merge.
+	async function loadEnvFileContents(explicitPath: string | null) {
+		if (!gitStack) {
 			fileEnvVars = {};
+			return;
+		}
+		loadingFileVars = true;
+		try {
+			const composeDir = (formComposePath || 'compose.yaml').replace(/[^/]*$/, '');
+			const defaultEnvPath = `${composeDir}.env`;
+			const base = await readRepoEnvFile(defaultEnvPath);
+			const overlay =
+				explicitPath && explicitPath !== defaultEnvPath
+					? await readRepoEnvFile(explicitPath)
+					: {};
+			fileEnvVars = { ...base, ...overlay };
 		} finally {
 			loadingFileVars = false;
 		}
@@ -478,16 +498,12 @@
 				return;
 			}
 
-			// Convert to EnvVar array - preserve existing user entries that aren't in repo
-			const existingUserVars = envVars.filter(v => v.key.trim() && !(v.key in vars));
-			const newVars: EnvVar[] = Object.entries(vars).map(([key, value]) => ({
-				key,
-				value,
-				isSecret: false
-			}));
-
-			envVars = [...newVars, ...existingUserVars];
+			// Refresh the file base from the repo, then merge the current editor state on
+			// top so re-populating never clobbers the user's values. Any editor value that
+			// differs from the fresh repo (a real edit, or a secret) wins; keys the user
+			// never touched follow the refreshed repo value.
 			fileEnvVars = vars;
+			envVars = mergeGitStackEnvVars(vars, envVars.filter((v) => v.key.trim()));
 
 			toast.success(`Loaded ${count} variable${count === 1 ? '' : 's'}`, {
 				description: 'You can now customize values before deploying'
@@ -551,12 +567,19 @@
 			formBranch = gitStack.branch ?? null;
 
 			// Load env files and overrides SYNCHRONOUSLY to avoid race conditions
-			// Wait for all loads to complete before allowing any other effect to run
+			// Wait for all loads to complete before allowing any other effect to run.
+			// Always read the repo .env (default compose-dir .env + explicit envFilePath)
+			// so the editor can show the full effective set, not just DB overrides.
 			await Promise.all([
 				loadEnvFiles(),
 				loadEnvVarsOverrides(),
-				gitStack.envFilePath ? loadEnvFileContents(gitStack.envFilePath) : Promise.resolve()
+				loadEnvFileContents(gitStack.envFilePath)
 			]);
+
+			// Merge repo .env (base) with DB overrides/secrets so untouched populated
+			// vars stay visible on reopen. The save filter still drops file-equal
+			// non-secrets, keeping the DB override-only (git-sync pickup intact).
+			envVars = mergeGitStackEnvVars(fileEnvVars, envVars);
 		} else {
 			formRepoMode = repositories.length > 0 ? 'existing' : 'new';
 			formRepositoryId = null;
@@ -690,14 +713,10 @@
 		formError = '';
 
 		try {
-			// Only save vars that are actual overrides (differ from file) or new (not in file)
-			// This ensures file updates from git are picked up on next sync
-			const overrideVars = envVars.filter(v => {
-				if (!v.key.trim()) return false;
-				const fileValue = fileEnvVars[v.key];
-				// Save if: not in file (new var), value differs from file, or is a secret
-				return fileValue === undefined || v.value !== fileValue || v.isSecret;
-			});
+			// Store only actual overrides (differ from file / new / secret) so file updates
+			// from git are picked up on next sync. Shared predicate keeps this in step with
+			// the merge round-trip guard and the re-populate preserve step.
+			const overrideVars = envVars.filter((v) => isGitStackOverride(v, fileEnvVars));
 
 			let body: any = {
 				stackName: formStackName,
@@ -1176,6 +1195,13 @@
 				{/if}
 			</div>
 
+			{#if gitStack?.stackName}
+				<div class="space-y-2">
+					<Label>Tags</Label>
+					<StackTagsSection stackName={gitStack.stackName} envId={effectiveEnvId} />
+				</div>
+			{/if}
+
 			{#if gitStack && selectedRepo}
 				<div class="space-y-2">
 					<Label>Repository</Label>
@@ -1489,36 +1515,34 @@
 					showInterpolationHint={true}
 				>
 					{#snippet headerActions()}
-						{#if !gitStack}
-							<div class="flex items-center gap-0.5">
-								<Button
-									type="button"
-									size="sm"
-									variant="ghost"
-									onclick={populateEnvVars}
-									disabled={populatingEnvVars || (formRepoMode === 'existing' && !formRepositoryId) || (formRepoMode === 'new' && !formNewRepoUrl.trim())}
-									class="h-6 text-xs px-2"
-								>
-									{#if populatingEnvVars}
-										<Loader2 class="w-3.5 h-3.5 mr-1 animate-spin" />
-										Loading...
-									{:else}
-										<Download class="w-3.5 h-3.5" />
-										Populate
-									{/if}
-								</Button>
-								<Tooltip.Root>
-									<Tooltip.Trigger>
-										<HelpCircle class="w-3.5 h-3.5 text-muted-foreground cursor-help" />
-									</Tooltip.Trigger>
-									<Tooltip.Content>
-										<div class="w-64">
-											<p class="text-xs">Clone the repository and load environment variables from the <code class="bg-muted px-1 rounded">.env</code> file (in compose directory) and additional env file (if specified), so you can see what you can override.</p>
-										</div>
-									</Tooltip.Content>
-								</Tooltip.Root>
-							</div>
-						{/if}
+						<div class="flex items-center gap-0.5">
+							<Button
+								type="button"
+								size="sm"
+								variant="ghost"
+								onclick={populateEnvVars}
+								disabled={populatingEnvVars || (formRepoMode === 'existing' && !formRepositoryId) || (formRepoMode === 'new' && !formNewRepoUrl.trim())}
+								class="h-6 text-xs px-2"
+							>
+								{#if populatingEnvVars}
+									<Loader2 class="w-3.5 h-3.5 mr-1 animate-spin" />
+									Loading...
+								{:else}
+									<Download class="w-3.5 h-3.5" />
+									Populate
+								{/if}
+							</Button>
+							<Tooltip.Root>
+								<Tooltip.Trigger>
+									<HelpCircle class="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+								</Tooltip.Trigger>
+								<Tooltip.Content>
+									<div class="w-64">
+										<p class="text-xs">Clone the repository and load environment variables from the <code class="bg-muted px-1 rounded">.env</code> file (in compose directory) and additional env file (if specified), so you can see what you can override.</p>
+									</div>
+								</Tooltip.Content>
+							</Tooltip.Root>
+						</div>
 					{/snippet}
 				</StackEnvVarsPanel>
 			</div>

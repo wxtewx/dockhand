@@ -36,14 +36,14 @@
 <div class="flex items-start gap-3">
 	<div class="flex-1">
 		<Label>Collect system metrics</Label>
-		<p class="text-xs text-muted-foreground">Collect CPU and memory usage statistics from this environment</p>
+		<p class="text-xs text-muted-foreground">Collect CPU and memory history for the dashboard tiles and charts. The live per-container stats on the containers page are always shown and are not affected by this.</p>
 	</div>
 	<TogglePill bind:checked={collectMetrics} />
 </div>
 <div class="flex items-start gap-3">
 	<div class="flex-1">
 		<Label>Highlight value changes</Label>
-		<p class="text-xs text-muted-foreground">Show amber glow when container values change in the containers list</p>
+		<p class="text-xs text-muted-foreground">Flash an amber glow on a container's stat cell when its value changes. The numbers keep updating either way - this only controls the highlight animation.</p>
 	</div>
 	<TogglePill bind:checked={highlightChanges} />
 </div>

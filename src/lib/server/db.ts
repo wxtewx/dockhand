@@ -6,6 +6,7 @@
  */
 
 import type { SecretProviderConfig, SecretProviderType } from './secretproviders/shared';
+import { normalizeColor, type Tag, type TagColor } from '$lib/utils/tags-core';
 import { mergeProviderConfigForWrite } from './secretproviders/shared';
 import {
 	db,
@@ -44,6 +45,9 @@ import {
 	secretProviders,
 	stackSources,
 	containerIconOverrides,
+	tags,
+	containerTags,
+	stackTags,
 	vulnerabilityScans,
 	auditLogs,
 	containerEvents,
@@ -552,8 +556,9 @@ export async function getUserThemePreferences(userId: number): Promise<{
 	coloredActionButtons: boolean;
 	actionIconSize: string;
 	editorIndentGuides: boolean;
+	editorTheme: string;
 }> {
-	const [lightTheme, darkTheme, font, fontSize, gridFontSize, terminalFont, editorFont, animateIcons, coloredActionButtons, actionIconSize, editorIndentGuides] = await Promise.all([
+	const [lightTheme, darkTheme, font, fontSize, gridFontSize, terminalFont, editorFont, animateIcons, coloredActionButtons, actionIconSize, editorIndentGuides, editorTheme] = await Promise.all([
 		getUserSetting(userId, 'light_theme'),
 		getUserSetting(userId, 'dark_theme'),
 		getUserSetting(userId, 'font'),
@@ -564,7 +569,8 @@ export async function getUserThemePreferences(userId: number): Promise<{
 		getUserSetting(userId, 'animate_icons'),
 		getUserSetting(userId, 'colored_action_buttons'),
 		getUserSetting(userId, 'action_icon_size'),
-		getUserSetting(userId, 'editor_indent_guides')
+		getUserSetting(userId, 'editor_indent_guides'),
+		getUserSetting(userId, 'editor_theme')
 	]);
 	return {
 		lightTheme: lightTheme || 'default',
@@ -580,13 +586,14 @@ export async function getUserThemePreferences(userId: number): Promise<{
 		coloredActionButtons: coloredActionButtons === 'true',
 		actionIconSize: actionIconSize || 'normal',
 		// Default OFF — only true when explicitly stored (#1410)
-		editorIndentGuides: editorIndentGuides === 'true'
+		editorIndentGuides: editorIndentGuides === 'true',
+		editorTheme: editorTheme || 'default'
 	};
 }
 
 export async function setUserThemePreferences(
 	userId: number,
-	prefs: { lightTheme?: string; darkTheme?: string; font?: string; fontSize?: string; gridFontSize?: string; terminalFont?: string; editorFont?: string; animateIcons?: boolean; coloredActionButtons?: boolean; actionIconSize?: string; editorIndentGuides?: boolean }
+	prefs: { lightTheme?: string; darkTheme?: string; font?: string; fontSize?: string; gridFontSize?: string; terminalFont?: string; editorFont?: string; animateIcons?: boolean; coloredActionButtons?: boolean; actionIconSize?: string; editorIndentGuides?: boolean; editorTheme?: string }
 ): Promise<void> {
 	const updates: Promise<void>[] = [];
 	if (prefs.lightTheme !== undefined) {
@@ -621,6 +628,9 @@ export async function setUserThemePreferences(
 	}
 	if (prefs.editorIndentGuides !== undefined) {
 		updates.push(setUserSetting(userId, 'editor_indent_guides', prefs.editorIndentGuides ? 'true' : 'false'));
+	}
+	if (prefs.editorTheme !== undefined) {
+		updates.push(setUserSetting(userId, 'editor_theme', prefs.editorTheme));
 	}
 	await Promise.all(updates);
 }
@@ -3275,6 +3285,121 @@ export async function deleteContainerIconOverride(containerName: string, environ
 }
 
 // =============================================================================
+// TAGS (user-defined organizational tags)
+// GLOBAL tag catalog (name + colour, unique on name) plus per-env assignment rows
+// keyed by container/stack name. Distinct from Docker labels.
+// =============================================================================
+
+function envClause(col: any, environmentId: number | null) {
+	return environmentId !== null ? eq(col, environmentId) : isNull(col);
+}
+
+function toTag(r: { id: number; name: string; color: string; icon: string | null }): Tag {
+	return { id: r.id, name: r.name, color: normalizeColor(r.color), icon: r.icon ?? null };
+}
+
+/** The whole tag catalog (global - not env-scoped). */
+export async function getTags(): Promise<Tag[]> {
+	const rows = await db.select().from(tags).orderBy(tags.name);
+	return rows.map(toTag);
+}
+
+/**
+ * Get an existing catalog tag by name, or create it. Matching is case-INSENSITIVE
+ * (so "Prod" and "prod" are the same tag), consistent with the rename collision
+ * check and the UI dedup. Done in JS over the (small, curated) catalog rather than
+ * a LOWER() query so it stays dialect-portable across SQLite and Postgres.
+ */
+export async function getOrCreateTag(name: string, color: TagColor, icon?: string | null): Promise<Tag> {
+	const lower = name.toLowerCase();
+	const findExisting = async () =>
+		(await db.select().from(tags)).find((t) => t.name.toLowerCase() === lower);
+	const existing = await findExisting();
+	if (existing) return toTag(existing);
+	// A concurrent same-name create races here; the case-insensitive unique index
+	// (COLLATE NOCASE / lower(name), see migration 0016) makes the loser's insert
+	// throw even for a case variant. Swallow it and re-select the winner so
+	// getOrCreateTag stays idempotent instead of surfacing a 500.
+	try {
+		await db.insert(tags).values({ name, color, icon: icon ?? null });
+	} catch {
+		/* unique violation - the winner is found by the re-select below */
+	}
+	return toTag((await findExisting())!);
+}
+
+/** Update a catalog tag's name/colour/icon. `icon: null` clears it. */
+export async function updateTag(tagId: number, patch: { name?: string; color?: TagColor; icon?: string | null }): Promise<void> {
+	const set: Record<string, unknown> = {};
+	if (patch.name !== undefined) set.name = patch.name;
+	if (patch.color !== undefined) set.color = patch.color;
+	if (patch.icon !== undefined) set.icon = patch.icon;
+	if (Object.keys(set).length === 0) return;
+	await db.update(tags).set(set).where(eq(tags.id, tagId));
+}
+
+/** Delete a catalog tag (assignments in every environment cascade away). */
+export async function deleteTag(tagId: number): Promise<void> {
+	await db.delete(tags).where(eq(tags.id, tagId));
+}
+
+/** Tag ids assigned to one container. */
+export async function getContainerTagIds(containerName: string, environmentId: number | null): Promise<number[]> {
+	const rows = await db.select().from(containerTags)
+		.where(and(eq(containerTags.containerName, containerName), envClause(containerTags.environmentId, environmentId)));
+	return rows.map((r) => r.tagId);
+}
+
+/** All container assignments in an environment as a name -> tagId[] map (no N+1). */
+export async function getContainerTagsMap(environmentId: number | null): Promise<Record<string, number[]>> {
+	const rows = await db.select().from(containerTags).where(envClause(containerTags.environmentId, environmentId));
+	const map: Record<string, number[]> = {};
+	for (const r of rows) {
+		map[r.containerName] ??= [];
+		map[r.containerName].push(r.tagId);
+	}
+	return map;
+}
+
+/** Replace a container's tag assignments. */
+export async function setContainerTagIds(containerName: string, environmentId: number | null, tagIds: number[]): Promise<void> {
+	await db.delete(containerTags)
+		.where(and(eq(containerTags.containerName, containerName), envClause(containerTags.environmentId, environmentId)));
+	const ids = [...new Set(tagIds)];
+	if (ids.length) {
+		await db.insert(containerTags).values(ids.map((tagId) => ({ containerName, environmentId, tagId })));
+	}
+}
+
+/** Tag ids assigned to one stack. */
+export async function getStackTagIds(stackName: string, environmentId: number | null): Promise<number[]> {
+	const rows = await db.select().from(stackTags)
+		.where(and(eq(stackTags.stackName, stackName), envClause(stackTags.environmentId, environmentId)));
+	return rows.map((r) => r.tagId);
+}
+
+/** All stack assignments in an environment as a name -> tagId[] map. */
+export async function getStackTagsMap(environmentId: number | null): Promise<Record<string, number[]>> {
+	const rows = await db.select().from(stackTags).where(envClause(stackTags.environmentId, environmentId));
+	const map: Record<string, number[]> = {};
+	for (const r of rows) {
+		map[r.stackName] ??= [];
+		map[r.stackName].push(r.tagId);
+	}
+	return map;
+}
+
+/** Replace a stack's tag assignments. */
+export async function setStackTagIds(stackName: string, environmentId: number | null, tagIds: number[]): Promise<void> {
+	await db.delete(stackTags)
+		.where(and(eq(stackTags.stackName, stackName), envClause(stackTags.environmentId, environmentId)));
+	const ids = [...new Set(tagIds)];
+	if (ids.length) {
+		await db.insert(stackTags).values(ids.map((tagId) => ({ stackName, environmentId, tagId })));
+	}
+}
+
+// =============================================================================
 // VULNERABILITY SCAN RESULTS
 // =============================================================================
 
@@ -3995,7 +4120,10 @@ export async function getContainerEvents(filters: ContainerEventFilters = {}): P
 		.from(containerEvents)
 		.leftJoin(environments, eq(containerEvents.environmentId, environments.id))
 		.where(whereClause)
-		.orderBy(desc(containerEvents.timestamp))
+		// id is the tie-breaker: timestamp alone is not unique (a burst of events shares
+		// a timestamp), and offset pagination over a non-unique sort is non-deterministic,
+		// so a row can repeat or vanish across pages.
+		.orderBy(desc(containerEvents.timestamp), desc(containerEvents.id))
 		.limit(limit)
 		.offset(offset);
 

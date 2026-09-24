@@ -21,9 +21,10 @@ export async function ensureSelfhstMatcher(): Promise<void> {
 	try {
 		const res = await fetch('/api/icons/selfhst-manifest');
 		if (!res.ok) return;
-		const entries = (await res.json()) as { Reference?: string; SVG?: string }[];
+		const entries = (await res.json()) as { Reference?: string; SVG?: string; WebP?: string; PNG?: string }[];
 		const refs = new Set<string>();
-		for (const e of entries) if (e.SVG === 'Yes' && e.Reference) refs.add(e.Reference.toLowerCase());
+		// Keep any icon available in a format we can serve (SVG, else WebP, else PNG).
+		for (const e of entries) if (e.Reference && (e.SVG === 'Yes' || e.WebP === 'Yes' || e.PNG === 'Yes')) refs.add(e.Reference.toLowerCase());
 		matcher.set(createSelfhstMatcher(refs));
 		loaded = true;
 	} catch {

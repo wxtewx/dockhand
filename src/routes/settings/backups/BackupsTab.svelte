@@ -4,9 +4,10 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Input } from '$lib/components/ui/input';
+	import { SearchInput } from '$lib/components/ui/search-input';
 	import * as Select from '$lib/components/ui/select';
 	import { DataGrid } from '$lib/components/data-grid';
-	import { Plus, Trash2, Pencil, HardDrive, Server, CheckCircle, XCircle, AlertCircle, Wifi, Database, RefreshCw, Search, FolderSync, Archive, Loader2, Save, CircleHelp, Unlock, PackageCheck, Eraser, BarChart3, Wrench, FolderCheck, KeyRound } from 'lucide-svelte';
+	import { Plus, Trash2, Pencil, HardDrive, Server, CheckCircle, XCircle, AlertCircle, Wifi, Database, RefreshCw, FolderSync, Archive, Loader2, Save, CircleHelp, Unlock, PackageCheck, Eraser, BarChart3, Wrench, FolderCheck, KeyRound } from 'lucide-svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Label } from '$lib/components/ui/label';
 	import { appSettings } from '$lib/stores/settings';
@@ -588,14 +589,7 @@
 
 	<div class="flex justify-between items-center">
 		<div class="flex items-center gap-3">
-			<div class="relative">
-				<Search class="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-				<Input
-					bind:value={searchQuery}
-					placeholder="Filter destinations..."
-					class="pl-9 h-8 w-64 text-sm"
-				/>
-			</div>
+			<SearchInput bind:value={searchQuery} placeholder="Filter destinations..." class="h-8 w-64 text-sm" />
 			<Select.Root type="single" value={statusFilter} onValueChange={(v) => statusFilter = (v as typeof statusFilter) ?? 'all'}>
 				<Select.Trigger class="h-8 w-40 text-sm">
 					{statusFilter === 'success' ? 'Initialized' : statusFilter === 'needs_init' ? 'Needs init' : statusFilter === 'failed' ? 'Failed' : 'All statuses'}
@@ -923,9 +917,9 @@
 												<Table.Cell class="cursor-pointer font-mono text-xs text-muted-foreground py-1" style="padding-left:8px" onclick={() => { snapshotBrowseDestId = browseDestId; snapshotBrowseId = snap.id; snapshotBrowseName = group.name; snapshotBrowseOpen = true; }}>{snap.shortId}</Table.Cell>
 												<Table.Cell class="text-xs py-1" style="padding-left:8px">{formatDateTime(snap.time)} <span class="text-muted-foreground opacity-60">({formatRelativeTime(snap.time)})</span></Table.Cell>
 												<Table.Cell class="text-right py-1">
-													<span class="inline-flex p-1 rounded hover:bg-muted transition-colors text-muted-foreground" title="Browse snapshot content">
+													<button type="button" class="inline-flex p-1 rounded hover:bg-muted transition-colors text-muted-foreground" title="Browse snapshot content" onclick={(e) => { e.stopPropagation(); snapshotBrowseDestId = browseDestId; snapshotBrowseId = snap.id; snapshotBrowseName = group.name; snapshotBrowseOpen = true; }}>
 														<FolderOpen class="w-3.5 h-3.5" />
-													</span>
+													</button>
 												</Table.Cell>
 											</Table.Row>
 										{/each}

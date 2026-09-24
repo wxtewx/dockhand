@@ -16,11 +16,12 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
+	import { SearchInput } from '$lib/components/ui/search-input';
 	import { Label } from '$lib/components/ui/label';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Select from '$lib/components/ui/select';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import { Trash2, Upload, RefreshCw, Play, Search, Layers, Server, ShieldCheck, ShieldAlert, Shield, ShieldQuestion, CheckSquare, Square, Tag, Check, XCircle, Icon, AlertTriangle, X, Images, Copy, Download, ChevronRight, ChevronDown, Loader2, ArrowUp, ArrowDown, ArrowUpDown, CircleDashed, CircleDot, Circle, Filter, FileJson, FileSpreadsheet, ShieldPlus } from 'lucide-svelte';
+	import { Trash2, Upload, RefreshCw, Play, Layers, Server, ShieldCheck, ShieldAlert, Shield, ShieldQuestion, CheckSquare, SquareMinus, Square, Tag, Check, XCircle, Icon, AlertTriangle, X, Images, Copy, Download, ChevronRight, ChevronDown, Loader2, ArrowUp, ArrowDown, ArrowUpDown, CircleDashed, CircleDot, Circle, Filter, FileJson, FileSpreadsheet, ShieldPlus } from 'lucide-svelte';
 	import { broom, whale } from '@lucide/lab';
 	import { formatBytes } from '$lib/utils/format';
 	import * as Tooltip from '$lib/components/ui/tooltip';
@@ -975,16 +976,7 @@
 
 		{#if activeTab === 'images'}
 		<div class="flex flex-wrap items-center gap-2">
-			<div class="relative">
-				<Search class="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-				<Input
-					type="text"
-					placeholder="Search images..."
-					bind:value={searchQuery}
-					onkeydown={(e) => e.key === 'Escape' && (searchQuery = '')}
-					class="pl-8 h-8 w-48 text-sm"
-				/>
-			</div>
+			<SearchInput bind:value={searchQuery} placeholder="Search images..." class="h-8 w-48 text-sm" />
 			<Select.Root type="single" bind:value={usageFilter}>
 				<Select.Trigger size="sm" class="w-36 text-sm">
 					{#if usageFilter === 'all'}
@@ -1103,16 +1095,7 @@
 
 		{#if activeTab === 'vulnerabilities'}
 		<div class="flex flex-wrap items-center gap-2 w-full">
-			<div class="relative">
-				<Search class="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-				<Input
-					type="text"
-					placeholder="Search CVE, package, image, container, stack..."
-					bind:value={vulnSearch}
-					onkeydown={(e) => e.key === 'Escape' && (vulnSearch = '')}
-					class="pl-8 h-8 w-80 text-sm"
-				/>
-			</div>
+			<SearchInput bind:value={vulnSearch} placeholder="Search CVE, package, image, container, stack..." class="h-8 w-80 text-sm" />
 			<MultiSelectFilter
 				bind:value={vulnSeverityFilter}
 				options={vulnSeverityOptions}
@@ -1262,7 +1245,7 @@
 						{#if allSelected}
 							<CheckSquare class="w-3.5 h-3.5 text-muted-foreground" />
 						{:else if someSelected}
-							<CheckSquare class="w-3.5 h-3.5 text-muted-foreground" />
+							<SquareMinus class="w-3.5 h-3.5 text-muted-foreground" />
 						{:else}
 							<Square class="w-3.5 h-3.5 text-muted-foreground" />
 						{/if}

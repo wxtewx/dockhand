@@ -385,6 +385,41 @@ export const containerIconOverrides = pgTable('container_icon_overrides', {
 	containerIconEnvUnique: unique().on(table.containerName, table.environmentId)
 }));
 
+// User-defined organizational tags for containers and stacks. Distinct
+// from Docker labels. GLOBAL tag catalog (unique on name, not env-scoped); assignment
+// rows (container_tags/stack_tags) are keyed by name and stay env-scoped.
+export const tags = pgTable('tags', {
+	id: serial('id').primaryKey(),
+	name: text('name').notNull(),
+	color: text('color').notNull().default('slate'),
+	icon: text('icon'),
+	createdAt: timestamp('created_at', { mode: 'string' }).defaultNow()
+}, (table) => ({
+	// Case-INSENSITIVE unique on name (lower(name) in the migration) so "Prod" and
+	// "prod" collide; drizzle's DSL can't express that, so it lives in 0016.
+	tagNameUnique: unique().on(table.name)
+}));
+
+export const containerTags = pgTable('container_tags', {
+	id: serial('id').primaryKey(),
+	containerName: text('container_name').notNull(),
+	environmentId: integer('environment_id').references(() => environments.id, { onDelete: 'cascade' }),
+	tagId: integer('tag_id').notNull().references(() => tags.id, { onDelete: 'cascade' }),
+	createdAt: timestamp('created_at', { mode: 'string' }).defaultNow()
+}, (table) => ({
+	containerTagUnique: unique().on(table.containerName, table.environmentId, table.tagId)
+}));
+
+export const stackTags = pgTable('stack_tags', {
+	id: serial('id').primaryKey(),
+	stackName: text('stack_name').notNull(),
+	environmentId: integer('environment_id').references(() => environments.id, { onDelete: 'cascade' }),
+	tagId: integer('tag_id').notNull().references(() => tags.id, { onDelete: 'cascade' }),
+	createdAt: timestamp('created_at', { mode: 'string' }).defaultNow()
+}, (table) => ({
+	stackTagUnique: unique().on(table.stackName, table.environmentId, table.tagId)
+}));
+
 export const stackEnvironmentVariables = pgTable('stack_environment_variables', {
 	id: serial('id').primaryKey(),
 	stackName: text('stack_name').notNull(),

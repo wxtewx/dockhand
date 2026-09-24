@@ -16,19 +16,23 @@ import { createHash } from 'node:crypto';
 import { pumpWebStreamToWritable } from './stream-pump';
 import { toWebReadableStream } from './node-readable-stream';
 import { buildImagePruneFilters } from './image-prune-core';
+import { demuxDockerStream } from './docker-demux-core';
 import { computeRequestTimeoutMs } from './backups/request-timeout';
 import { helperWaitDeadline, helperExitFromState } from './helper-wait-core';
 import type { Environment } from './db';
 import { getSetting } from './db';
 import { getAdditionalVolumeBinds, dedupeVolumesForRecreate } from './mount-dedupe';
 import { resolveNanoCpusConflict, resolvePodmanUsernsMode } from './hostconfig-recreate';
+import { expectedEvents, EXPECTED_EVENT_TTL_MS } from './expected-events-core';
+import { decideRespawnOutcome, isExactNameMatch } from './systemd-recreate-core';
 // Import-light image parsing shared with the semver layer; re-exported below for callers.
 import { parseImageReference } from './registry/image-ref';
 export { parseImageReference } from './registry/image-ref';
 import { rebaseEnvOntoImage, rebaseLabelsOntoImage, rebaseCommand, describeEnvRebase, describeLabelRebase, type ImageEnvLabels } from './container-env-merge';
 import { encodeRegistryAuth, fetchRegistryToken, isSafeRegistryHost } from './registry-auth';
+import { resolveRegistryScheme, type StoredRegistryScheme } from './registry-scheme-core';
 import { classifyManifest, type ArtifactKind } from './semver/manifest-artifact';
-import { isSystemContainer, classifyEmptyDigestImage, localDigestIsIndexChild } from './scheduler/tasks/update-utils';
+import { isSystemContainer, classifyEmptyDigestImage, localDigestIsIndexChild, indexChildDigests } from './scheduler/tasks/update-utils';
 import { deepDiff } from '../utils/diff.js';
 import { getInstanceId } from './backups/identity';
 import { isOwnedBackupHelper } from './backups/reap-core';
@@ -204,46 +208,6 @@ function detectDockerSocket(): string {
 }
 
 const socketPath = detectDockerSocket();
-
-/**
- * Demultiplex Docker stream output (strip 8-byte headers)
- * Docker streams have: 1 byte type, 3 bytes padding, 4 bytes size BE, then payload
- */
-function demuxDockerStream(buffer: Buffer, options?: { separateStreams?: boolean }): string | { stdout: string; stderr: string } {
-	const stdout: string[] = [];
-	const stderr: string[] = [];
-	let offset = 0;
-
-	while (offset < buffer.length) {
-		if (offset + 8 > buffer.length) break;
-
-		const streamType = buffer.readUInt8(offset);
-		const frameSize = buffer.readUInt32BE(offset + 4);
-
-		if (frameSize === 0 || frameSize > buffer.length - offset - 8) {
-			// Invalid frame, return raw content with control chars stripped
-			const raw = buffer.toString('utf-8').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
-			return options?.separateStreams ? { stdout: raw, stderr: '' } : raw;
-		}
-
-		const payload = buffer.slice(offset + 8, offset + 8 + frameSize).toString('utf-8');
-
-		if (streamType === 1) {
-			stdout.push(payload);
-		} else if (streamType === 2) {
-			stderr.push(payload);
-		} else {
-			stdout.push(payload); // Default to stdout for unknown types
-		}
-
-		offset += 8 + frameSize;
-	}
-
-	if (options?.separateStreams) {
-		return { stdout: stdout.join(''), stderr: stderr.join('') };
-	}
-	return [...stdout, ...stderr].join('');
-}
 
 /**
  * Process Docker stream frames incrementally from a buffer
@@ -977,6 +941,17 @@ export async function dockerFetch(
 		// duplex:'half' under Node's fetch, else it throws before sending.
 		if (typeof (finalOptions.body as ReadableStream | undefined)?.getReader === 'function') {
 			(finalOptions as RequestInit & { duplex?: string }).duplex = 'half';
+		}
+
+		// A streaming response (logs follow, events, backup helper progress) can stay
+		// quiet longer than undici's 300s bodyTimeout, which would abort it as an
+		// unhandled UND_ERR_BODY_TIMEOUT. Route these through a dispatcher whose bodyTimeout
+		// is disabled; they are bounded by their own AbortController (fired on container
+		// exit) instead. headersTimeout stays at undici's default so a pre-header stall
+		// is still capped.
+		if (streaming) {
+			const { getStreamingDispatcher } = await import('./dns-dispatcher');
+			(finalOptions as RequestInit & { dispatcher?: unknown }).dispatcher = getStreamingDispatcher();
 		}
 
 		try {
@@ -1884,6 +1859,100 @@ export async function createContainer(options: CreateContainerOptions, envId?: n
 	return { id: result.Id, start: () => startContainer(result.Id, envId) };
 }
 
+/**
+ * Recreate a Podman Quadlet / systemd-managed container by handing the lifecycle to
+ * systemd instead of doing our own stop/rename/create/start.
+ *
+ * The unit's ExecStop removes the container and its Restart= policy respawns it from
+ * `podman run --replace` on the CURRENT tag (the image already pulled), so a single stop
+ * is the whole recreate. We then poll for the respawned container to come back under the
+ * same name, RUNNING, with a new id, and return that id. If it never reaches running
+ * (no Restart= policy, or a crash-loop on the new image), throw an actionable error
+ * rather than the misleading rename failure - and never report a broken update as success.
+ */
+async function recreateSystemdManagedContainer(
+	opts: { name: string; oldContainerId: string; wasRunning: boolean; unit: string },
+	envId: number | null | undefined,
+	log?: (msg: string) => void
+): Promise<{ Id: string }> {
+	const { name, oldContainerId, wasRunning, unit } = opts;
+	log?.(`Managed by systemd unit ${unit} - handing the recreate to systemd (Quadlet)`);
+
+	// A stopped Quadlet container does not exist: the unit's ExecStop (podman rm -f)
+	// already removed it and the unit is inactive. We have only the Podman API (no
+	// systemctl), so we cannot bring the unit up - a stop would be a no-op and we would
+	// wait out the timeout for nothing. Fail fast with something the user can act on.
+	if (!wasRunning) {
+		throw new Error(
+			`Cannot update ${name}: it is managed by the systemd unit ${unit} and is not ` +
+				`running. Start the unit (systemctl start ${unit}) so it comes up on the ` +
+				`newly pulled image.`
+		);
+	}
+
+	// Stopping is what triggers the unit's ExecStop (podman rm) + Restart respawn. The
+	// stop/kill/die events are an expected part of the update, not a crash.
+	expectedEvents.markExpected(oldContainerId, Date.now(), EXPECTED_EVENT_TTL_MS);
+	log?.('Stopping container (systemd will recreate it on the new image)...');
+	try {
+		await stopContainer(oldContainerId, envId);
+	} catch {
+		// A Quadlet stop can race the unit's own teardown; the container may already be
+		// gone. Not fatal - we verify the respawn below.
+	}
+
+	// Poll for the unit to bring the container back under the same name, RUNNING, with a
+	// new id. A container that reappears but never reaches running (crash-loop on a broken
+	// new image) is a FAILURE on timeout, not a success.
+	try {
+		const deadline = Date.now() + SYSTEMD_RESPAWN_TIMEOUT_MS;
+		for (;;) {
+			await sleep(SYSTEMD_RESPAWN_POLL_MS);
+			const found = await findRunningContainerByName(name, envId).catch(() => null);
+			const outcome = decideRespawnOutcome(found, oldContainerId, Date.now() >= deadline);
+			if (!outcome.done) continue;
+			if (outcome.ok) {
+				log?.(`systemd recreated ${name} (new container ${outcome.id.slice(0, 12)})`);
+				return { Id: outcome.id };
+			}
+			throw new Error(
+				`systemd unit ${unit} did not bring ${name} back to a running state after the ` +
+					`update. The image was pulled; check the unit (a Restart= policy is required, ` +
+					`and verify the container is not failing to start on the new image).`
+			);
+		}
+	} finally {
+		// Clear the suppression on every exit path so a genuine later crash still alarms.
+		expectedEvents.clear(oldContainerId);
+	}
+}
+
+/** Find a container by exact name via the daemon's name filter. Returns id + state, or null. */
+async function findRunningContainerByName(
+	name: string,
+	envId?: number | null
+): Promise<{ Id: string; State: string } | null> {
+	const filters = JSON.stringify({ name: [`^/?${name}$`] });
+	const res = await dockerFetch(
+		`/containers/json?all=true&filters=${encodeURIComponent(filters)}`,
+		{},
+		envId
+	);
+	if (!res.ok) {
+		await res.text();
+		return null;
+	}
+	const list = (await res.json()) as Array<{ Id: string; Names: string[]; State: string }>;
+	// The name filter is a regex-contains on Podman/Docker; keep only an EXACT name match.
+	const match = list.find((c) => isExactNameMatch(c.Names, name));
+	return match ? { Id: match.Id, State: match.State } : null;
+}
+
+// Generous window: systemd honours RestartSec, and a heavy image can take a while to
+// become running even though it is already pulled.
+const SYSTEMD_RESPAWN_TIMEOUT_MS = 90_000;
+const SYSTEMD_RESPAWN_POLL_MS = 500;
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 /**
  * Recreate a container using full Config/HostConfig passthrough from inspect data.
@@ -1922,6 +1991,23 @@ export async function recreateContainerFromInspect(
 	const oldContainerId = inspectData.Id;
 	const wasRunning = inspectData.State?.Running;
 
+	// Podman Quadlet / systemd-managed container: the unit owns the lifecycle. Its
+	// ExecStop is `podman rm -f`, so the moment we stop the container systemd DELETES it
+	// and (Restart= policy) respawns a fresh one from the unit's `podman run --replace`,
+	// which reads the CURRENT tag - i.e. the image we just pulled. Our own
+	// stop/rename/create/start therefore cannot work: the rename step hits the
+	// already-removed id ("Failed to rename old container"), and creating our own
+	// container would collide with systemd's respawn. So hand the recreate to systemd:
+	// stop, then wait for the unit to bring the container back on the new image.
+	const systemdUnit = config.Labels?.['PODMAN_SYSTEMD_UNIT'];
+	if (systemdUnit) {
+		return await recreateSystemdManagedContainer(
+			{ name, oldContainerId, wasRunning, unit: systemdUnit },
+			envId,
+			log
+		);
+	}
+
 	// Detect shared/special network modes where network manipulation must be skipped
 	const networkMode = hostConfig.NetworkMode || '';
 	const isSharedNetwork = networkMode.startsWith('container:') ||
@@ -1936,6 +2022,9 @@ export async function recreateContainerFromInspect(
 	// 1. Stop the container
 	if (wasRunning) {
 		log?.('Stopping container...');
+		// The stop/kill/die events this triggers are an EXPECTED part of the update,
+		// not a crash - mark the id so the event handler skips their notifications (#68).
+		expectedEvents.markExpected(oldContainerId, Date.now(), EXPECTED_EVENT_TTL_MS);
 		await stopContainer(oldContainerId, envId);
 	}
 
@@ -1997,6 +2086,10 @@ export async function recreateContainerFromInspect(
 			if (wasRunning) {
 				await startContainer(oldContainerId, envId).catch(() => {});
 			}
+			// The old container is alive again under its real name; its stop/kill were
+			// no longer "expected" once we chose to keep it, so a later genuine crash
+			// must alarm - drop the suppression mark (#68).
+			expectedEvents.clear(oldContainerId);
 		} catch {
 			log?.('Rollback failed');
 		}
@@ -2284,8 +2377,8 @@ export async function createContainerFromMetadata(
 	envId?: number | null,
 	log?: (msg: string) => void
 ): Promise<{ Id: string }> {
-	const config = { ...metadata.config } || {};
-	const hostConfig = { ...metadata.hostConfig } || {};
+	const config = { ...metadata.config };
+	const hostConfig = { ...metadata.hostConfig };
 	const networks: Record<string, any> = metadata.networkSettings?.Networks || {};
 
 	const networkMode = hostConfig.NetworkMode || '';
@@ -3109,6 +3202,25 @@ export async function findRegistryCredentials(registryHost: string): Promise<{ u
 }
 
 /**
+ * Resolve http vs https for a registry host from the stored registries, so the
+ * challenge/token request honours a plain-HTTP registry (#1580). Defaults to https.
+ */
+async function getRegistrySchemeForHost(registryHost: string): Promise<'http' | 'https'> {
+	try {
+		const { getRegistries } = await import('./db.js');
+		const registries = await getRegistries();
+		const stored: StoredRegistryScheme[] = registries.map((reg) => {
+			const parsed = parseRegistryUrl(reg.url);
+			return { host: parsed.host, protocol: parsed.protocol, isHub: DOCKER_HUB_HOSTS.has(parsed.host) };
+		});
+		const requested = parseRegistryUrl(registryHost);
+		return resolveRegistryScheme(requested.host, stored, DOCKER_HUB_HOSTS.has(requested.host));
+	} catch {
+		return 'https';
+	}
+}
+
+/**
  * Get bearer token from registry using challenge-response flow.
  * This follows the Docker Registry v2 authentication spec:
  * 1. Make request to /v2/ to get WWW-Authenticate challenge
@@ -3122,7 +3234,10 @@ async function getRegistryBearerToken(registry: string, repo: string): Promise<s
 			console.error(`[Registry] Refusing token request for ${registry}: ${hostSafety.reason}`);
 			return null;
 		}
-		const registryUrl = `https://${registry}`;
+		// Honour the scheme the registry was configured with (#1580): a plain-HTTP local
+		// registry must not get an HTTPS challenge. Defaults to https when unconfigured.
+		const scheme = await getRegistrySchemeForHost(registry);
+		const registryUrl = `${scheme}://${registry}`;
 
 		// Look up stored credentials for this registry
 		const credentials = await findRegistryCredentials(registry);
@@ -3642,7 +3757,10 @@ export async function getRegistryManifestDigest(imageName: string): Promise<stri
 		const { registry, repo, tag } = parseImageReference(imageName);
 		if (!isSafeRegistryHost(registry).ok) return null;
 		const token = await getRegistryBearerToken(registry, repo);
-		const manifestUrl = `https://${registry}/v2/${repo}/manifests/${tag}`;
+		// Honour the stored registry scheme for the manifest fetch too (#1580), not just
+		// the token challenge - otherwise a plain-HTTP registry still gets an HTTPS request.
+		const scheme = await getRegistrySchemeForHost(registry);
+		const manifestUrl = `${scheme}://${registry}/v2/${repo}/manifests/${tag}`;
 
 		const headers: Record<string, string> = {
 			'User-Agent': 'Dockhand/1.0',
@@ -3695,10 +3813,11 @@ export async function getTagArtifactKind(
 	registry: string,
 	repo: string,
 	tag: string
-): Promise<{ kind: ArtifactKind; digest: string | null }> {
+): Promise<{ kind: ArtifactKind; digest: string | null; childDigests?: string[] }> {
 	try {
 		if (!isSafeRegistryHost(registry).ok) return { kind: 'image', digest: null };
 		const token = await getRegistryBearerToken(registry, repo);
+		const scheme = await getRegistrySchemeForHost(registry);
 		const headers: Record<string, string> = {
 			'User-Agent': 'Dockhand/1.0',
 			'Accept': [
@@ -3710,7 +3829,7 @@ export async function getTagArtifactKind(
 		};
 		if (token) headers['Authorization'] = token;
 
-		const res = await fetch(`https://${registry}/v2/${repo}/manifests/${tag}`, {
+		const res = await fetch(`${scheme}://${registry}/v2/${repo}/manifests/${tag}`, {
 			method: 'GET',
 			headers,
 			signal: AbortSignal.timeout(8000)
@@ -3724,9 +3843,11 @@ export async function getTagArtifactKind(
 		const body = (await res.json().catch(() => null)) as
 			| { mediaType?: string; config?: { mediaType?: string }; manifests?: unknown[] }
 			| null;
-		return { kind: classifyManifest(body, topMediaType), digest };
+		// Per-arch child digests of a multi-arch index, so a same-image check can match
+		// a host that recorded the child digest in RepoDigests instead of the index (#1367).
+		return { kind: classifyManifest(body, topMediaType), digest, childDigests: indexChildDigests(body) };
 	} catch {
-		return { kind: 'image', digest: null };
+		return { kind: 'image', digest: null, childDigests: [] };
 	}
 }
 
@@ -3752,6 +3873,7 @@ async function localDigestMatchesRegistryChild(
 		const { registry, repo, tag } = parseImageReference(imageName);
 		if (!isSafeRegistryHost(registry).ok) return false;
 		const token = await getRegistryBearerToken(registry, repo);
+		const scheme = await getRegistrySchemeForHost(registry);
 		const headers: Record<string, string> = {
 			'User-Agent': 'Dockhand/1.0',
 			'Accept': [
@@ -3761,7 +3883,7 @@ async function localDigestMatchesRegistryChild(
 		};
 		if (token) headers['Authorization'] = token;
 
-		const response = await fetch(`https://${registry}/v2/${repo}/manifests/${tag}`, {
+		const response = await fetch(`${scheme}://${registry}/v2/${repo}/manifests/${tag}`, {
 			method: 'GET',
 			headers,
 			signal: AbortSignal.timeout(8000)
@@ -3785,6 +3907,9 @@ export interface ImageUpdateCheckResult {
 	isLocalImage?: boolean;
 	/** Error message if check failed */
 	error?: string;
+	/** The running image's RepoDigests (sha256:...), for the semver check to suppress
+	 *  a newer-version tag that resolves to the same digest already installed (#1572). */
+	localDigests?: string[];
 }
 
 /**
@@ -3866,17 +3991,20 @@ export async function checkImageUpdateAvailable(
 		const registryDigest = await getRegistryManifestDigest(imageName);
 
 		if (!registryDigest) {
-			// Registry unreachable or image not found - can't determine update status
+			// Registry unreachable or image not found - can't determine update status.
+			// Still return localDigests: the semver check may run on the API path
+			// regardless of this error and needs them to suppress a same-digest tag.
 			return {
 				hasUpdate: false,
 				currentDigest: currentRepoDigests[0],
+				localDigests,
 				error: 'Could not query registry'
 			};
 		}
 
 		// Check if registry digest matches ANY of the local digests
 		if (localDigests.includes(registryDigest)) {
-			return { hasUpdate: false, currentDigest: currentRepoDigests[0] };
+			return { hasUpdate: false, currentDigest: currentRepoDigests[0], localDigests };
 		}
 
 		// The HEAD digest (always the manifest-list/index digest) didn't match. Before
@@ -3884,13 +4012,14 @@ export async function checkImageUpdateAvailable(
 		// child digest won't equal the index digest even when the image is current
 		// (#1367). Best-effort GET of the index; on any failure hasUpdate stays true.
 		if (await localDigestMatchesRegistryChild(imageName, localDigests)) {
-			return { hasUpdate: false, currentDigest: currentRepoDigests[0] };
+			return { hasUpdate: false, currentDigest: currentRepoDigests[0], localDigests };
 		}
 
 		return {
 			hasUpdate: true,
 			currentDigest: currentRepoDigests[0],
-			registryDigest
+			registryDigest,
+			localDigests
 		};
 	} catch (e: any) {
 		return { hasUpdate: false, error: e.message };
@@ -4832,6 +4961,59 @@ export async function execInContainer(
 	return output;
 }
 
+/**
+ * One-shot exec that returns the result instead of throwing on a non-zero exit -
+ * argv in, { stdout, stderr, exitCode } out. Separate from execInContainer, whose
+ * throw-on-failure contract many internal callers rely on.
+ */
+export async function runExecInContainer(
+	containerId: string,
+	cmd: string[],
+	envId?: number | null,
+	options?: { user?: string | null; workingDir?: string | null }
+): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+	const execBody: any = {
+		Cmd: cmd,
+		AttachStdout: true,
+		AttachStderr: true,
+		Tty: false
+	};
+	if (options?.user) execBody.User = options.user;
+	if (options?.workingDir) execBody.WorkingDir = options.workingDir;
+
+	const execCreate = await dockerJsonRequest<{ Id: string }>(
+		`/containers/${containerId}/exec`,
+		{ method: 'POST', body: JSON.stringify(execBody) },
+		envId
+	);
+
+	const response = await dockerFetch(
+		`/exec/${execCreate.Id}/start`,
+		{
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ Detach: false, Tty: false })
+		},
+		envId
+	);
+
+	if (!response.ok) await throwDockerError(response);
+
+	const buffer = Buffer.from(await response.arrayBuffer());
+	const { stdout, stderr } = demuxDockerStream(buffer, { separateStreams: true }) as {
+		stdout: string;
+		stderr: string;
+	};
+
+	const execInfo = await dockerJsonRequest<{ ExitCode: number | null }>(
+		`/exec/${execCreate.Id}/json`,
+		{},
+		envId
+	);
+
+	return { stdout, stderr, exitCode: execInfo.ExitCode ?? 0 };
+}
+
 // Get Docker events as a stream (for SSE)
 // For streaming mode: call with just filters
 // For polling mode: call with since and until to get a finite window of events
@@ -5315,9 +5497,12 @@ async function streamLocalStderr(
 	onStdout?: (data: string) => void
 ): Promise<void> {
 	const wantStdout = onStdout ? 'true' : 'false';
+	// Pass the caller's abort signal to the fetch itself, not only to the reader below:
+	// with no body timeout on the streaming dispatcher, a fetch that stalls BEFORE the
+	// response arrives has no other bound, so container-exit must be able to cancel it.
 	const response = await dockerFetch(
 		`/containers/${containerId}/logs?stdout=${wantStdout}&stderr=true&follow=true`,
-		{ streaming: true },
+		{ streaming: true, signal },
 		envId
 	);
 
@@ -5390,7 +5575,7 @@ async function streamEdgeStderr(
 }
 
 // Extract stdout from a buffer, with raw fallback if frame parsing returns nothing.
-// Mirrors demuxDockerStream's fallback (line ~202-205) for non-multiplexed Docker output.
+// Mirrors demuxDockerStream's invalid-frame fallback in docker-demux-core.ts for non-multiplexed Docker output.
 function extractStdoutFromBuffer(buffer: Buffer): string {
 	const result = processStreamFrames(buffer, undefined, undefined);
 
@@ -6049,9 +6234,26 @@ export async function chmodContainerPath(
 		throw new Error('Invalid chmod mode');
 	}
 
-	// Build command
-	const cmd = recursive ? ['chmod', '-R', mode, safePath] : ['chmod', mode, safePath];
+	// Build command. `--` stops chmod reading a path that begins with `-` as an option.
+	const cmd = recursive ? ['chmod', '-R', mode, '--', safePath] : ['chmod', mode, '--', safePath];
 	await execInContainer(containerId, cmd, envId);
+}
+
+/**
+ * chown a path in a container. `owner` must already be validated
+ * (parseChownSpec) - a `user`, `user:group`, `uid` or `uid:gid` token.
+ */
+export async function chownContainerPath(
+	containerId: string,
+	path: string,
+	owner: string,
+	recursive: boolean = false,
+	envId?: number | null
+): Promise<void> {
+	const safePath = path.replace(/[;&|`$(){}[\]<>'"\\]/g, '');
+	// `--` stops chown reading a path that begins with `-` as an option.
+	const cmd = recursive ? ['chown', '-R', owner, '--', safePath] : ['chown', owner, '--', safePath];
+	await execInContainer(containerId, cmd, envId, 'root');
 }
 
 // Volume browsing and export helpers

@@ -3,6 +3,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Pencil, Check, Loader2, X, Layers, Settings, Archive } from 'lucide-svelte';
 	import { currentEnvironment, appendEnvParam } from '$lib/stores/environment';
+	import ContainerTagsSection from '$lib/components/ContainerTagsSection.svelte';
 	import { page } from '$app/stores'; // BETA GATE: backups feature flag
 	import { focusFirstInput } from '$lib/utils';
 	import ContainerIcon from '$lib/components/ContainerIcon.svelte';
@@ -130,6 +131,7 @@
 		}
 	}
 	let command = $state('');
+	let entrypoint = $state('');
 	let restartPolicy = $state('no');
 	let restartMaxRetries = $state<number | ''>('');
 	let networkMode = $state('bridge');
@@ -218,6 +220,7 @@
 		name: string;
 		image: string;
 		command: string;
+		entrypoint: string;
 		restartPolicy: string;
 		networkMode: string;
 		portMappings: typeof portMappings;
@@ -390,6 +393,9 @@
 			image = data.Config.Image;
 			loadIconOverride(name);
 			command = data.Config.Cmd ? data.Config.Cmd.map((arg: string) =>
+				arg.includes(' ') ? `"${arg}"` : arg
+			).join(' ') : '';
+			entrypoint = data.Config.Entrypoint ? data.Config.Entrypoint.map((arg: string) =>
 				arg.includes(' ') ? `"${arg}"` : arg
 			).join(' ') : '';
 			restartPolicy = data.HostConfig.RestartPolicy?.Name || 'no';
@@ -609,6 +615,7 @@
 				name,
 				image,
 				command,
+				entrypoint,
 				restartPolicy,
 				networkMode,
 				portMappings: JSON.parse(JSON.stringify(portMappings)),
@@ -687,6 +694,7 @@
 		if (name.trim() !== originalConfig.name) return true;
 		if (image.trim() !== originalConfig.image) return true;
 		if (command.trim() !== originalConfig.command) return true;
+		if (entrypoint.trim() !== originalConfig.entrypoint) return true;
 		if (restartPolicy !== originalConfig.restartPolicy) return true;
 		if (networkMode !== originalConfig.networkMode) return true;
 
@@ -773,6 +781,7 @@
 		return JSON.stringify({
 			image: image.trim(),
 			command: command.trim(),
+			entrypoint: entrypoint.trim(),
 			restartPolicy,
 			networkMode,
 			portMappings: portMappings.filter(p => p.containerPort && p.hostPort),
@@ -790,6 +799,7 @@
 		return JSON.stringify({
 			image: originalConfig.image,
 			command: originalConfig.command,
+			entrypoint: originalConfig.entrypoint,
 			restartPolicy: originalConfig.restartPolicy,
 			networkMode: originalConfig.networkMode,
 			portMappings: originalConfig.portMappings.filter(p => p.containerPort && p.hostPort),
@@ -936,7 +946,10 @@
 						labelsObj[l.key] = l.value;
 					});
 
-				const cmd = command.trim() ? parseShellCommand(command.trim()) : undefined;
+				// null (not undefined) when cleared, so JSON.stringify keeps the key and
+				// the server's merge treats it as "clear" and falls back to the image CMD.
+				const cmd = command.trim() ? parseShellCommand(command.trim()) : null;
+				const entrypointArr = entrypoint.trim() ? parseShellCommand(entrypoint.trim()) : null;
 
 				let healthcheck: any = undefined;
 				if (healthcheckEnabled && healthcheckCommand.trim()) {
@@ -1008,6 +1021,7 @@
 					env: env.length > 0 ? env : null,
 					labels: labelsObj,
 					cmd,
+					entrypoint: entrypointArr,
 					restartPolicy,
 					restartMaxRetries: restartPolicy === 'on-failure' && restartMaxRetries !== '' ? Number(restartMaxRetries) : null,
 					networkMode,
@@ -1268,6 +1282,11 @@
 					</div>
 				{/if}
 
+				<div class="space-y-1.5 pb-4 border-b">
+					<span class="text-xs font-medium">Tags</span>
+					<ContainerTagsSection containerName={name} envId={currentEnvId} />
+				</div>
+
 				<ContainerSettingsTab
 					mode="edit"
 					{containerId}
@@ -1275,6 +1294,7 @@
 					bind:name
 					bind:image
 					bind:command
+					bind:entrypoint
 					bind:restartPolicy
 					bind:restartMaxRetries
 					bind:networkMode

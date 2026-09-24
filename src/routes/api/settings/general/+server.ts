@@ -41,6 +41,7 @@ import { sendToEventSubprocess, sendToMetricsSubprocess } from '$lib/server/subp
 import { DEFAULT_GRYPE_IMAGE, DEFAULT_TRIVY_IMAGE } from '$lib/server/scanner';
 import { DEFAULT_HELPER_IMAGE } from '$lib/server/backups/restic';
 import { DEFAULT_STACK_LOG_OPERATIONS, sanitizeStackLogOperations, parseStackLogOperationsStorage, type StackLogOperation } from '$lib/utils/stack-log-operations';
+import { isValidEditorThemeId } from '$lib/utils/editor-themes';
 
 // The real engine default (version-pinned, `-baseline`-aware). NOT a hardcoded
 // `:latest` — that would advertise a floating tag the backup engine never uses and,
@@ -91,6 +92,7 @@ export interface GeneralSettings {
 	gridFontSize: string;
 	terminalFont: string;
 	editorFont: string;
+	editorTheme: string;
 	// Compact ports
 	compactPorts: boolean;
 	// Show exposed (internal) ports
@@ -165,6 +167,7 @@ const DEFAULT_SETTINGS: Omit<GeneralSettings, 'scheduleRetentionDays' | 'eventRe
 	gridFontSize: 'normal',
 	terminalFont: 'system-mono',
 	editorFont: 'system-mono',
+	editorTheme: 'default',
 	externalStackPaths: [],
 	primaryStackLocation: null,
 	defaultGrypeImage: DEFAULT_GRYPE_IMAGE,
@@ -278,6 +281,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
 			gridFontSize,
 			terminalFont,
 			editorFont,
+			editorTheme,
 			compactPorts,
 			showExposedPorts,
 			showGitCommitHash,
@@ -333,6 +337,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
 			getSetting('theme_grid_font_size'),
 			getSetting('theme_terminal_font'),
 			getSetting('theme_editor_font'),
+			getSetting('theme_editor_theme'),
 			getSetting('compact_ports'),
 			getSetting('show_exposed_ports'),
 			getSetting('show_git_commit_hash'),
@@ -392,6 +397,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
 			gridFontSize: gridFontSize ?? DEFAULT_SETTINGS.gridFontSize,
 			terminalFont: terminalFont ?? DEFAULT_SETTINGS.terminalFont,
 			editorFont: editorFont ?? DEFAULT_SETTINGS.editorFont,
+			editorTheme: editorTheme ?? DEFAULT_SETTINGS.editorTheme,
 			compactPorts: compactPorts ?? DEFAULT_SETTINGS.compactPorts,
 			showGitCommitHash: showGitCommitHash ?? DEFAULT_SETTINGS.showGitCommitHash,
 			showExposedPorts: showExposedPorts ?? DEFAULT_SETTINGS.showExposedPorts,
@@ -426,7 +432,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
  * @openapi
  * summary: Update global general settings (all fields optional; only supplied keys are written)
  * description: A large flat settings bag - theme/fonts, scanner defaults, cleanup schedules, event/metrics collection, editor options (e.g. editorIndentGuides), and more.
- * body: {animateIcons:boolean, editorIndentGuides:boolean, coloredActionButtons:boolean, lightTheme:string, darkTheme:string, defaultTimezone:string, logBufferSizeKb:integer, externalStackPaths:string, actionIconSize:string, compactPorts:boolean, confirmDestructive:boolean, dateFormat:string, defaultBackupImage:string, defaultComposeTemplate:string, defaultGrypeArgs:string, defaultGrypeImage:string, defaultScannerDns:array<string>, defaultScannerNetworkMode:string, defaultTrivyArgs:string, defaultTrivyImage:string, deployLogReconcileCron:string, deployLogReconcileEnabled:boolean, downloadFormat:string, editorFont:string, eventCleanupCron:string, eventCleanupEnabled:boolean, eventCollectionMode:string, eventPollInterval:integer, eventRetentionDays:integer, font:string, fontSize:string, formatLogTimestamps:boolean, gridFontSize:string, highlightUpdates:boolean, honorProxyLabels:boolean, labelFilterMode:string, logMaxLines:integer, metricsCollectionInterval:integer, primaryStackLocation:string, protectScannerImages:boolean, scannerCleanupCron:string, scannerCleanupEnabled:boolean, scheduleCleanupCron:string, scheduleCleanupEnabled:boolean, scheduleRetentionDays:integer, showExposedPorts:boolean, showGitCommitHash:boolean, showImageChangelogLinks:boolean, showStoppedContainers:boolean, showWhatsNew:boolean, terminalFont:string, timeFormat:string, useSelfhstIcons:boolean, stackLogOperations:array<string>}
+ * body: {animateIcons:boolean, editorIndentGuides:boolean, coloredActionButtons:boolean, lightTheme:string, darkTheme:string, defaultTimezone:string, logBufferSizeKb:integer, externalStackPaths:string, actionIconSize:string, compactPorts:boolean, confirmDestructive:boolean, dateFormat:string, defaultBackupImage:string, defaultComposeTemplate:string, defaultGrypeArgs:string, defaultGrypeImage:string, defaultScannerDns:array<string>, defaultScannerNetworkMode:string, defaultTrivyArgs:string, defaultTrivyImage:string, deployLogReconcileCron:string, deployLogReconcileEnabled:boolean, downloadFormat:string, editorFont:string, editorTheme:string, eventCleanupCron:string, eventCleanupEnabled:boolean, eventCollectionMode:string, eventPollInterval:integer, eventRetentionDays:integer, font:string, fontSize:string, formatLogTimestamps:boolean, gridFontSize:string, highlightUpdates:boolean, honorProxyLabels:boolean, labelFilterMode:string, logMaxLines:integer, metricsCollectionInterval:integer, primaryStackLocation:string, protectScannerImages:boolean, scannerCleanupCron:string, scannerCleanupEnabled:boolean, scheduleCleanupCron:string, scheduleCleanupEnabled:boolean, scheduleRetentionDays:integer, showExposedPorts:boolean, showGitCommitHash:boolean, showImageChangelogLinks:boolean, showStoppedContainers:boolean, showWhatsNew:boolean, terminalFont:string, timeFormat:string, useSelfhstIcons:boolean, stackLogOperations:array<string>}
  * resp-403: Permission denied (needs settings:edit)
  * resp-500: Failed to save settings
  */
@@ -438,7 +444,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 	try {
 		const body = await request.json();
-		const { confirmDestructive, showStoppedContainers, highlightUpdates, coloredActionButtons, actionIconSize, timeFormat, dateFormat, downloadFormat, defaultGrypeArgs, defaultTrivyArgs, scheduleRetentionDays, eventRetentionDays, scheduleCleanupCron, eventCleanupCron, scheduleCleanupEnabled, eventCleanupEnabled, scannerCleanupCron, scannerCleanupEnabled, deployLogReconcileCron, deployLogReconcileEnabled, logBufferSizeKb, logMaxLines, defaultTimezone, eventCollectionMode, eventPollInterval, metricsCollectionInterval, lightTheme, darkTheme, font, fontSize, gridFontSize, terminalFont, editorFont, compactPorts, showExposedPorts, showGitCommitHash, formatLogTimestamps, externalStackPaths, primaryStackLocation, defaultGrypeImage, defaultTrivyImage, defaultComposeTemplate, labelFilterMode, defaultBackupImage, honorProxyLabels, showImageChangelogLinks, useSelfhstIcons, animateIcons, editorIndentGuides, protectScannerImages, showWhatsNew, defaultScannerNetworkMode, defaultScannerDns, stackLogOperations } = body;
+		const { confirmDestructive, showStoppedContainers, highlightUpdates, coloredActionButtons, actionIconSize, timeFormat, dateFormat, downloadFormat, defaultGrypeArgs, defaultTrivyArgs, scheduleRetentionDays, eventRetentionDays, scheduleCleanupCron, eventCleanupCron, scheduleCleanupEnabled, eventCleanupEnabled, scannerCleanupCron, scannerCleanupEnabled, deployLogReconcileCron, deployLogReconcileEnabled, logBufferSizeKb, logMaxLines, defaultTimezone, eventCollectionMode, eventPollInterval, metricsCollectionInterval, lightTheme, darkTheme, font, fontSize, gridFontSize, terminalFont, editorFont, editorTheme, compactPorts, showExposedPorts, showGitCommitHash, formatLogTimestamps, externalStackPaths, primaryStackLocation, defaultGrypeImage, defaultTrivyImage, defaultComposeTemplate, labelFilterMode, defaultBackupImage, honorProxyLabels, showImageChangelogLinks, useSelfhstIcons, animateIcons, editorIndentGuides, protectScannerImages, showWhatsNew, defaultScannerNetworkMode, defaultScannerDns, stackLogOperations } = body;
 
 		if (confirmDestructive !== undefined) {
 			await setSetting('confirm_destructive', confirmDestructive);
@@ -557,6 +563,9 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		if (editorFont !== undefined && VALID_EDITOR_FONTS.includes(editorFont)) {
 			await setSetting('theme_editor_font', editorFont);
 		}
+		if (editorTheme !== undefined && isValidEditorThemeId(editorTheme)) {
+			await setSetting('theme_editor_theme', editorTheme);
+		}
 		if (showGitCommitHash !== undefined) {
 			await setSetting('show_git_commit_hash', showGitCommitHash);
 		}
@@ -673,6 +682,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			gridFontSizeVal,
 			terminalFontVal,
 			editorFontVal,
+			editorThemeVal,
 			compactPortsVal,
 			showExposedPortsVal,
 			showGitCommitHashVal,
@@ -728,6 +738,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			getSetting('theme_grid_font_size'),
 			getSetting('theme_terminal_font'),
 			getSetting('theme_editor_font'),
+			getSetting('theme_editor_theme'),
 			getSetting('compact_ports'),
 			getSetting('show_exposed_ports'),
 			getSetting('show_git_commit_hash'),
@@ -787,6 +798,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			gridFontSize: gridFontSizeVal ?? DEFAULT_SETTINGS.gridFontSize,
 			terminalFont: terminalFontVal ?? DEFAULT_SETTINGS.terminalFont,
 			editorFont: editorFontVal ?? DEFAULT_SETTINGS.editorFont,
+			editorTheme: editorThemeVal ?? DEFAULT_SETTINGS.editorTheme,
 			compactPorts: compactPortsVal ?? DEFAULT_SETTINGS.compactPorts,
 			showExposedPorts: showExposedPortsVal ?? DEFAULT_SETTINGS.showExposedPorts,
 			showGitCommitHash: showGitCommitHashVal ?? DEFAULT_SETTINGS.showGitCommitHash,

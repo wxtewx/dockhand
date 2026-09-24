@@ -23,6 +23,7 @@
 	import FilesystemBrowser from './FilesystemBrowser.svelte';
 	import IconPickerModal from './IconPickerModal.svelte';
 	import StackIcon from '$lib/components/StackIcon.svelte';
+	import StackTagsSection from '$lib/components/StackTagsSection.svelte';
 	import PathBarItem from './PathBarItem.svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Badge } from '$lib/components/ui/badge';
@@ -1822,34 +1823,36 @@
 				throw new Error((typeof rawEnvError.error === 'string' ? rawEnvError.error : rawEnvError.message) || 'Failed to save environment file');
 			}
 
-			// Save only secrets to DB (non-secrets are in the .env file written above)
+			// Save secrets to DB (non-secrets live in the .env file written above). Run this
+			// UNCONDITIONALLY: the PUT replaces the stack's DB rows with exactly the current
+			// secrets, so emptying the env clears stale rows too. Skipping it when there were
+			// no tracked secrets left old DB rows behind, which the deploy then re-injected -
+			// the "emptied env still applies" bug.
 			const secretVars = prepared.variables.filter(v => v.isSecret);
-			if (secretVars.length > 0 || hadExistingDbVars) {
-				const envResponse = await fetch(
-					appendEnvParam(`/api/stacks/${encodeURIComponent(stackName)}/env`, envId),
-					{
-						method: 'PUT',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({
-							variables: secretVars.map(v => ({
-								key: v.key.trim(),
-								value: v.value,
-								isSecret: true
-							}))
-						})
-					}
-				);
-
-				if (!envResponse.ok) {
-					// Log but don't fail - DB stores secret values
-					console.warn('Failed to save secret variables to database');
+			const envResponse = await fetch(
+				appendEnvParam(`/api/stacks/${encodeURIComponent(stackName)}/env`, envId),
+				{
+					method: 'PUT',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						variables: secretVars.map(v => ({
+							key: v.key.trim(),
+							value: v.value,
+							isSecret: true
+						}))
+					})
 				}
+			);
 
-				hadExistingDbVars = secretVars.length > 0;
-				existingSecretKeys = new Set(
-					secretVars.filter(v => v.key.trim()).map(v => v.key.trim())
-				);
+			if (!envResponse.ok) {
+				// Log but don't fail - DB stores secret values
+				console.warn('Failed to save secret variables to database');
 			}
+
+			hadExistingDbVars = secretVars.length > 0;
+			existingSecretKeys = new Set(
+				secretVars.filter(v => v.key.trim()).map(v => v.key.trim())
+			);
 
 			if (restart) startOutput(`Redeploying ${stackName}`);
 
@@ -2293,6 +2296,14 @@
 					</div>
 				</div>
 			{:else}
+				<!-- Tags (edit mode: stack has a stable name+env key) -->
+				{#if mode === 'edit' && stackName}
+					<div class="px-6 py-3 border-b border-zinc-200 dark:border-zinc-700 flex items-center gap-2 flex-wrap">
+						<Label class="text-xs text-zinc-500 dark:text-zinc-400">Tags</Label>
+						<StackTagsSection {stackName} envId={$currentEnvironment?.id ?? null} />
+					</div>
+				{/if}
+
 				<!-- Stack name and location inputs (create mode only) -->
 				{#if mode === 'create'}
 					<div class="px-6 py-4 border-b border-zinc-200 dark:border-zinc-700">

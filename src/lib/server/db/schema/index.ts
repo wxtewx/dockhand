@@ -383,6 +383,44 @@ export const containerIconOverrides = sqliteTable('container_icon_overrides', {
 	containerIconEnvUnique: unique().on(table.containerName, table.environmentId)
 }));
 
+// User-defined organizational tags for containers and stacks.
+// Distinct from Docker labels. The catalog below is GLOBAL (one 'prod'/'infra'/etc
+// across the whole instance, unique on name). Assignments (container_tags/stack_tags)
+// ARE env-scoped and keyed by the container/stack NAME (stable across recreation), so
+// which containers/stacks carry a tag is decided per environment.
+export const tags = sqliteTable('tags', {
+	id: integer('id').primaryKey({ autoIncrement: true }),
+	name: text('name').notNull(),
+	color: text('color').notNull().default('slate'), // one of the fixed palette (tags-core.ts)
+	icon: text('icon'),                              // optional lucide icon name; null = default tag icon
+	createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`)
+}, (table) => ({
+	// Unique on name. The migration makes the index case-INSENSITIVE (COLLATE NOCASE
+	// on sqlite, lower(name) on pg) so "Prod" and "prod" are the same tag even under
+	// a concurrent create; drizzle's DSL can't express that, so it lives in 0016.
+	tagNameUnique: unique().on(table.name)
+}));
+
+export const containerTags = sqliteTable('container_tags', {
+	id: integer('id').primaryKey({ autoIncrement: true }),
+	containerName: text('container_name').notNull(),
+	environmentId: integer('environment_id').references(() => environments.id, { onDelete: 'cascade' }),
+	tagId: integer('tag_id').notNull().references(() => tags.id, { onDelete: 'cascade' }),
+	createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`)
+}, (table) => ({
+	containerTagUnique: unique().on(table.containerName, table.environmentId, table.tagId)
+}));
+
+export const stackTags = sqliteTable('stack_tags', {
+	id: integer('id').primaryKey({ autoIncrement: true }),
+	stackName: text('stack_name').notNull(),
+	environmentId: integer('environment_id').references(() => environments.id, { onDelete: 'cascade' }),
+	tagId: integer('tag_id').notNull().references(() => tags.id, { onDelete: 'cascade' }),
+	createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`)
+}, (table) => ({
+	stackTagUnique: unique().on(table.stackName, table.environmentId, table.tagId)
+}));
+
 export const stackEnvironmentVariables = sqliteTable('stack_environment_variables', {
 	id: integer('id').primaryKey({ autoIncrement: true }),
 	stackName: text('stack_name').notNull(),

@@ -9,7 +9,7 @@
 	import { formatBytes } from '$lib/utils/format';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Input } from '$lib/components/ui/input';
+	import { SearchInput } from '$lib/components/ui/search-input';
 	import { SnapshotLoadProgress } from '$lib/components/ui/snapshot-load-progress';
 	import * as Select from '$lib/components/ui/select';
 	import * as Tooltip from '$lib/components/ui/tooltip';
@@ -19,7 +19,7 @@
 	import ConfirmPopover from '$lib/components/ConfirmPopover.svelte';
 	import EnvironmentIcon from '$lib/components/EnvironmentIcon.svelte';
 	import {
-		Archive, Box, Layers, ChevronDown, ChevronRight, RefreshCw, Search, Play, Pause, Trash2, FolderOpen, RotateCcw,
+		Archive, Box, Layers, ChevronDown, ChevronRight, RefreshCw, Play, Pause, Trash2, FolderOpen, RotateCcw,
 		CheckCircle, XCircle, AlertCircle, Loader2, Clock, X, ArrowLeftRight, Package, Pencil
 	} from 'lucide-svelte';
 	import RotateCwFadingClock from '$lib/components/icons/RotateCwFadingClock.svelte';
@@ -757,10 +757,7 @@
 			{/if}
 		</PageHeader>
 		<div class="flex flex-wrap items-center gap-2">
-			<div class="relative">
-				<Search class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-				<Input bind:value={searchQuery} placeholder="Filter backups..." class="pl-8 h-8 w-48 text-sm" />
-			</div>
+			<SearchInput bind:value={searchQuery} placeholder="Filter backups..." class="h-8 w-48 text-sm" />
 			<Select.Root type="single" value={filterType} onValueChange={(v) => { filterType = v === 'all' ? '' : v; }}>
 				<Select.Trigger class="h-8 w-32 text-xs">
 					{#if filterType === 'container'}<Box class="w-3 h-3 mr-1 text-muted-foreground" />Containers

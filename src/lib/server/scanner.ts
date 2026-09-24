@@ -12,8 +12,17 @@ import {
 	runContainerWithStreaming,
 	inspectImage,
 	checkImageUpdateAvailable,
-	getNegotiatedApiVersion
+	getNegotiatedApiVersion,
+	findRegistryCredentials,
+	parseImageReference
 } from './docker';
+import {
+	isDaemonExportFailure,
+	toRegistryScanCmd,
+	registryAuthEnv,
+	imageRegistryAuthority,
+	RegistryFallbackMemory
+} from './scanner-registry-core';
 import { getEnvironment, getEnvSetting, getSetting } from './db';
 import { sendEventNotification } from './notifications';
 import { detectRemoteSocketPath } from './scanner-socket-detect';
@@ -117,6 +126,11 @@ async function withScannerLock<T>(scannerType: string, fn: () => Promise<T>): Pr
 // Track in-progress scans per image to prevent duplicate scans
 // Key: "{scannerType}:{imageName}", Value: Promise that resolves to the scan result
 const inProgressScans = new Map<string, Promise<string>>();
+
+// Per-env memory of a broken daemon image store (blob-loss on `docker save`), so
+// later scans on that env go registry-first instead of retrying the doomed daemon
+// export every time. Process-lifetime only; resets on restart (#1569/#1350).
+const registryFallback = new RegistryFallbackMemory();
 
 /** Scanner queue depth — for the metrics endpoint. `inProgress` = distinct
  *  image scans running/deduped; `locked` = scanner types holding the serial lock. */
@@ -664,7 +678,10 @@ async function runScannerContainer(
 	}
 }
 
-// Internal implementation of scanner container run
+// Internal implementation of scanner container run. Handles the daemon-export
+// blob bug (#1569/#1350): if this env is already known-broken, go registry-first;
+// otherwise try the daemon path and, on a blob-export failure, remember the env
+// and retry straight from the registry.
 async function runScannerContainerImpl(
 	scannerImage: string,
 	scannerType: 'grype' | 'trivy',
@@ -673,10 +690,31 @@ async function runScannerContainerImpl(
 	envId?: number,
 	onOutput?: (line: string) => void
 ): Promise<string> {
-	// Serialize scans of the same type to avoid DB lock conflicts and re-downloads
-	return withScannerLock(scannerType, () =>
-		runScannerContainerCore(scannerImage, scannerType, imageName, cmd, envId, onOutput)
-	);
+	const run = (registryMode: boolean) =>
+		// Serialize scans of the same type to avoid DB lock conflicts and re-downloads
+		withScannerLock(scannerType, () =>
+			runScannerContainerCore(scannerImage, scannerType, imageName, cmd, envId, onOutput, registryMode)
+		);
+
+	// This env's store already lost blobs on a prior scan -> skip the doomed daemon
+	// export and scan the registry directly.
+	if (registryFallback.prefersRegistry(envId)) {
+		console.log(`[Scanner] ${scannerType}: env ${envId ?? 'local'} known to break daemon export - scanning registry directly`);
+		return run(true);
+	}
+
+	try {
+		return await run(false);
+	} catch (error) {
+		const msg = error instanceof Error ? error.message : String(error);
+		if (!isDaemonExportFailure(msg)) throw error;
+		// The daemon handed the scanner an incomplete tar (containerd/OCI store blob
+		// loss). Remember this env and retry from the registry.
+		console.warn(`[Scanner] ${scannerType}: daemon export produced an incomplete image for ${imageName}; retrying from the registry`);
+		onOutput?.(`Daemon image export was incomplete; retrying scan from the registry...`);
+		registryFallback.markBroken(envId);
+		return run(true);
+	}
 }
 
 async function runScannerContainerCore(
@@ -685,9 +723,10 @@ async function runScannerContainerCore(
 	imageName: string,
 	cmd: string[],
 	envId?: number,
-	onOutput?: (line: string) => void
+	onOutput?: (line: string) => void,
+	registryMode?: boolean
 ): Promise<string> {
-	console.log(`[Scanner] Starting ${scannerType} scan for image: ${imageName}, envId: ${envId ?? 'local'}`);
+	console.log(`[Scanner] Starting ${scannerType} scan for image: ${imageName}, envId: ${envId ?? 'local'}${registryMode ? ' (registry mode)' : ''}`);
 
 	// Always use the base cache path — serial lock prevents concurrent conflicts
 	const basePath = scannerType === 'grype' ? '/cache/grype' : '/cache/trivy';
@@ -776,14 +815,32 @@ async function runScannerContainerCore(
 		console.log(`[Scanner] Standard mode - using volume: ${volumeName}`);
 	}
 
-	// Build binds — only include socket mount when using socket mode
+	// Build binds — only include socket mount when using socket mode.
+	// In registry mode the scanner pulls straight from the registry, so the daemon
+	// socket is deliberately NOT mounted (that is the whole point - it bypasses the
+	// broken `docker save`).
 	const binds: string[] = [];
-	if (hostSocketPath) {
+	if (hostSocketPath && !registryMode) {
 		binds.push(`${hostSocketPath}:/var/run/docker.sock:ro`);
 	}
 	binds.push(cacheBind);
 
 	console.log(`[Scanner] Container bind mounts: ${JSON.stringify(binds)}`);
+
+	// Registry mode: rewrite the command to scan the registry ref (grype needs a
+	// `registry:` source prefix; trivy scans the ref once no socket is present) and
+	// attach credentials for the image's registry from the configured registries.
+	// The scanner now reads from the registry instead of the local daemon, so it
+	// needs outbound reachability to the registry. On a hawser env the scanner runs
+	// on the remote host with default networking; if that registry is internal-only
+	// and was previously reachable only via the daemon, the registry scan can't reach
+	// it. Surface that so a split-network user knows why.
+	if (registryMode) {
+		cmd = toRegistryScanCmd(scannerType, cmd, imageName);
+		if (isHawser) {
+			console.warn(`[Scanner] Registry-mode fallback on a remote (hawser) env - the scanner container must be able to reach the registry from the remote host's default network.`);
+		}
+	}
 
 	// Environment variables to ensure scanners use the correct cache path
 	const envVars = scannerType === 'grype'
@@ -812,9 +869,29 @@ async function runScannerContainerCore(
 		}
 	}
 
-	// In TCP mode, pass DOCKER_HOST so scanner connects to Docker via TCP
-	if (scannerDockerHost) {
+	// In TCP mode, pass DOCKER_HOST so scanner connects to Docker via TCP.
+	// Not in registry mode - there is no daemon connection to make.
+	if (scannerDockerHost && !registryMode) {
 		envVars.push(`DOCKER_HOST=${scannerDockerHost}`);
+	}
+
+	// Registry mode: attach credentials for the image's registry so a private
+	// image (e.g. a self-hosted ZOT) authenticates. Public images match nothing
+	// and scan anonymously, exactly as before this fix.
+	if (registryMode) {
+		// findRegistryCredentials matches on the registry HOST, not the full ref, so
+		// resolve the registry the same way image pulls do (parseImageReference), not
+		// by passing the tagged image name (which never matches a stored org path).
+		const registry = parseImageReference(imageName).registry;
+		const authority = imageRegistryAuthority(imageName);
+		const creds = await findRegistryCredentials(registry);
+		const authEnv = registryAuthEnv(scannerType, creds, authority ?? undefined);
+		if (authEnv.length > 0) {
+			envVars.push(...authEnv);
+			console.log(`[Scanner] Registry mode - using stored credentials for ${registry}`);
+		} else {
+			console.log(`[Scanner] Registry mode - no stored credentials for ${registry}, anonymous`);
+		}
 	}
 
 	// Apply user-configured overrides on top of auto-detection (#1219).

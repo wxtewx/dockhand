@@ -25,6 +25,7 @@ import {
 } from './db';
 import { sendEnvironmentNotification, sendEventNotification } from './notifications';
 import { isNotifyDisabledByLabel } from './container-labels';
+import { expectedEvents } from './expected-events-core';
 import { rssBeforeOp, rssAfterOp } from './rss-tracker';
 import { pushMetric } from './metrics-store';
 
@@ -322,8 +323,10 @@ async function handleContainerEvent(msg: GoMessage): Promise<void> {
 	// Sub-category: notification
 	const notifBefore = rssBeforeOp();
 
-	// Check dockhand.notify label — Docker includes container labels in event Actor.Attributes
-	if (!isNotifyDisabledByLabel(event.Actor?.Attributes)) {
+	// Check dockhand.notify label — Docker includes container labels in event Actor.Attributes.
+	// Also skip die/kill/stop that an in-progress update deliberately caused (#68).
+	const suppressExpected = expectedEvents.shouldSuppress(containerId, action, Date.now());
+	if (!suppressExpected && !isNotifyDisabledByLabel(event.Actor?.Attributes)) {
 		const actionLabel = action.startsWith('health_status')
 			? action.includes('unhealthy') ? 'Unhealthy' : 'Healthy'
 			: action.charAt(0).toUpperCase() + action.slice(1);

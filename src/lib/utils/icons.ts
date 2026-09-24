@@ -9,7 +9,11 @@ import {
 	Anchor, Ship, Plane, Rocket, Car, Bike, TrainFront, Bus, Truck,
 	Activity, BarChart3, ChartLine, ChartPie, TrendingUp, Gauge, Timer,
 	Mail, MessageSquare, Phone, Video, Camera, Music, Headphones, Volume2,
-	MapPin, Map, Compass, Navigation, Flag, Bookmark, Target
+	MapPin, Map, Compass, Navigation, Flag, Bookmark, Target,
+	Apple, Asterisk, Beer, BellRing, Book, CircleDot, CloudRain, CloudUpload, Dot, Droplet,
+	File, Filter, Fish, Flashlight, Flower2, GraduationCap, Highlighter, Layers3,
+	LayoutDashboard, LayoutGrid, ListMusic, MemoryStick, MessageCircle, Music2, PenTool, Play,
+	QrCode, Reply, Search, Share2, ShoppingBag, SlidersHorizontal, ToggleLeft, UserCog, UtensilsCrossed
 } from 'lucide-svelte';
 import type { ComponentType } from 'svelte';
 
@@ -36,7 +40,28 @@ const iconMap: Record<string, ComponentType> = {
 	'mail': Mail, 'message-square': MessageSquare, 'phone': Phone, 'video': Video,
 	'camera': Camera, 'music': Music, 'headphones': Headphones, 'volume-2': Volume2,
 	'map-pin': MapPin, 'map': Map, 'compass': Compass, 'navigation': Navigation,
-	'flag': Flag, 'bookmark': Bookmark, 'target': Target
+	'flag': Flag, 'bookmark': Bookmark, 'target': Target,
+	'folder': Folder, 'file': File, 'file-text': FileText, 'files': Files, 'image': ImageIcon,
+	'film': Film, 'play': Play, 'music-2': Music2, 'list-music': ListMusic, 'podcast': Podcast,
+	'gamepad': Gamepad2, 'dices': Dices, 'puzzle': Puzzle, 'trophy': Trophy, 'medal': Medal, 'ticket': Ticket,
+	'cloud-download': CloudDownload, 'cloud-upload': CloudUpload, 'download': Download, 'upload': Upload,
+	'share': Share2, 'rss': Rss, 'link': Link,
+	'users': Users, 'user': User, 'user-cog': UserCog, 'contact': Contact, 'bot': Bot, 'brain': BrainCircuit,
+	'bell': Bell, 'bell-ring': BellRing, 'calendar': Calendar, 'clock': Clock, 'alarm-clock': AlarmClock, 'hourglass': Hourglass,
+	'shopping-cart': ShoppingCart, 'shopping-bag': ShoppingBag, 'credit-card': CreditCard, 'wallet': Wallet,
+	'dollar-sign': DollarSign, 'receipt': Receipt, 'banknote': Banknote,
+	'coffee': Coffee, 'pizza': Pizza, 'utensils': UtensilsCrossed, 'beer': Beer, 'wine': Wine, 'apple': Apple,
+	'leaf': Leaf, 'tree': TreePine, 'flower': Flower2, 'bug': Bug, 'cat': Cat, 'dog': Dog, 'fish': Fish, 'bird': Bird,
+	'palette': Palette, 'brush': Brush, 'pen-tool': PenTool, 'grid': Grid3x3, 'layout-grid': LayoutGrid, 'dashboard': LayoutDashboard,
+	'memory-stick': MemoryStick, 'usb': Usb, 'plug': Plug, 'battery': Battery, 'power': Power, 'bluetooth': Bluetooth,
+	'layers-3': Layers3, 'workflow': Workflow, 'boxes': Boxes, 'component': Component, 'blocks': Blocks,
+	'thermometer': Thermometer, 'droplet': Droplet, 'wind': Wind, 'umbrella': Umbrella, 'cloud-rain': CloudRain,
+	'lightbulb': Lightbulb, 'flashlight': Flashlight, 'fingerprint': Fingerprint, 'scan-line': ScanLine,
+	'qr-code': QrCode, 'webhook': Webhook,
+	'book': Book, 'book-open': BookOpen, 'graduation-cap': GraduationCap, 'newspaper': Newspaper,
+	'feather': Feather, 'pencil': Pencil, 'highlighter': Highlighter,
+	'inbox': Inbox, 'send': Send, 'reply': Reply, 'at-sign': AtSign, 'hash': Hash, 'message-circle': MessageCircle, 'megaphone': Megaphone,
+	'filter': Filter, 'search': Search, 'sliders': SlidersHorizontal, 'toggle': ToggleLeft, 'circle-dot': CircleDot, 'dot': Dot, 'asterisk': Asterisk
 };
 
 export function getIconComponent(iconName: string): ComponentType {

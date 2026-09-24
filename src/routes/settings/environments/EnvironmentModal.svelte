@@ -764,7 +764,7 @@
 					toast.success(`Connected! Docker ${result.info.serverVersion} - ${result.info.containers} containers`);
 					// Docker reports the kernel's cgroup memory controller is off -> container
 					// memory will show 0. Surface it now so the user isn't left guessing.
-					if (result.info.memoryLimitSupported === false) memWarnOpen = true;
+					if (result.info.showMemoryWarning) memWarnOpen = true;
 				}
 			} else {
 				toast.error(result.error || 'Connection failed');
