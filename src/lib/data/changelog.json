@@ -2,7 +2,7 @@
   {
     "version": "1.0.49",
     "date": "2026-09-22",
-    "comingSoon": true,
+    "comingSoon": false,
     "changes": [
       { "type": "fix", "text": "全选复选框在部分选中时显示半选状态，而不是完整勾选 (#1605)" },
       { "type": "fix", "text": "长时间备份过程中日志流暂停时不再造成应用崩溃 (#1610)" },
