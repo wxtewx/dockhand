@@ -73,8 +73,8 @@
 				ldapConfigs = await response.json();
 			}
 		} catch (error) {
-			console.error('Failed to fetch LDAP configs:', error);
-			toast.error('Failed to fetch LDAP configurations');
+			console.error('获取 LDAP 配置失败:', error);
+			toast.error('获取 LDAP 配置失败');
 		} finally {
 			ldapLoading = false;
 		}
@@ -87,7 +87,7 @@
 				roles = await response.json();
 			}
 		} catch (error) {
-			console.error('Failed to fetch roles:', error);
+			console.error('获取角色失败:', error);
 		}
 	}
 
@@ -112,13 +112,13 @@
 			const response = await fetch(`/api/auth/ldap/${configId}`, { method: 'DELETE' });
 			if (response.ok) {
 				await fetchLdapConfigs();
-				toast.success('LDAP configuration deleted');
+				toast.success('LDAP 配置已删除');
 			} else {
-				toast.error('Failed to delete LDAP configuration');
+				toast.error('删除 LDAP 配置失败');
 			}
 		} catch (error) {
-			console.error('Failed to delete LDAP config:', error);
-			toast.error('Failed to delete LDAP configuration');
+			console.error('删除 LDAP 配置失败:', error);
+			toast.error('删除 LDAP 配置失败');
 		} finally {
 			confirmDeleteLdapId = null;
 		}
@@ -132,13 +132,13 @@
 			const data = await response.json();
 			ldapTestResult = data;
 			if (data.success) {
-				toast.success(`LDAP connection successful - found ${data.userCount} users`);
+				toast.success(`LDAP 连接成功 - 找到 ${data.userCount} 个用户`);
 			} else {
-				toast.error(`LDAP connection failed: ${data.error}`);
+				toast.error(`LDAP 连接失败: ${data.error}`);
 			}
 		} catch (error) {
-			ldapTestResult = { success: false, error: 'Failed to test connection' };
-			toast.error('Failed to test LDAP connection');
+			ldapTestResult = { success: false, error: '连接测试失败' };
+			toast.error('LDAP 连接测试失败');
 		} finally {
 			ldapTesting = null;
 		}
@@ -153,13 +153,13 @@
 			});
 			if (response.ok) {
 				await fetchLdapConfigs();
-				toast.success(`LDAP ${config.enabled ? 'disabled' : 'enabled'}`);
+				toast.success(`LDAP 已${config.enabled ? '禁用' : '启用'}`);
 			} else {
-				toast.error('Failed to toggle LDAP configuration');
+				toast.error('切换 LDAP 配置状态失败');
 			}
 		} catch (error) {
-			console.error('Failed to toggle LDAP config:', error);
-			toast.error('Failed to toggle LDAP configuration');
+			console.error('切换 LDAP 配置状态失败:', error);
+			toast.error('切换 LDAP 配置状态失败');
 		}
 	}
 
@@ -188,14 +188,13 @@
 			<div class="text-center">
 				<h3 class="text-lg font-medium mb-2 flex items-center justify-center gap-2">
 					<Crown class="w-5 h-5 text-amber-500" />
-					Enterprise feature
+					企业版功能
 				</h3>
 				<p class="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
-					LDAP / Active Directory integration is available with an enterprise license. Connect to your organization's directory services for centralized authentication.
-				</p>
+					LDAP / Active Directory 集成仅企业版许可证可用。连接到您组织的目录服务以实现集中式身份认证。
 				<Button onclick={() => onTabChange('license')}>
 					<Key class="w-4 h-4" />
-					Activate license
+					激活许可证
 				</Button>
 			</div>
 		</Card.Content>
@@ -208,14 +207,14 @@
 					<div>
 						<Card.Title class="text-sm font-medium flex items-center gap-2">
 							<Network class="w-4 h-4" />
-							LDAP configurations
+							LDAP 配置
 						</Card.Title>
-						<p class="text-xs text-muted-foreground mt-1">Connect to LDAP or Active Directory servers for centralized user authentication.</p>
+						<p class="text-xs text-muted-foreground mt-1">连接到 LDAP 或 Active Directory 服务器，实现集中式用户认证。</p>
 					</div>
 					{#if $canAccess('settings', 'edit')}
 						<Button size="sm" onclick={() => openLdapModal(null)}>
 							<Plus class="w-4 h-4" />
-							Add LDAP
+							添加 LDAP
 						</Button>
 					{/if}
 				</div>
@@ -228,8 +227,8 @@
 				{:else if ldapConfigs.length === 0}
 					<EmptyState
 						icon={Network}
-						title="No LDAP providers configured"
-						description="Click 'Add LDAP' to configure a new LDAP server"
+						title="未配置 LDAP 提供商"
+						description="点击 “添加 LDAP” 配置新的 LDAP 服务器"
 						class="py-8"
 					/>
 				{:else}
@@ -242,9 +241,9 @@
 										<div class="flex items-center gap-2">
 											<span class="font-medium">{config.name}</span>
 											{#if config.enabled}
-												<Badge variant="default" class="text-xs">Enabled</Badge>
+												<Badge variant="default" class="text-xs">已启用</Badge>
 											{:else}
-												<Badge variant="secondary" class="text-xs">Disabled</Badge>
+												<Badge variant="secondary" class="text-xs">已禁用</Badge>
 											{/if}
 										</div>
 										<p class="text-xs text-muted-foreground">{config.serverUrl}</p>
@@ -260,7 +259,7 @@
 										{#if ldapTesting === config.id}
 											<RefreshCw class="w-4 h-4 animate-spin" />
 										{:else}
-											Test
+											测试
 										{/if}
 									</Button>
 									{#if $canAccess('settings', 'edit')}
@@ -269,7 +268,7 @@
 											size="sm"
 											onclick={() => toggleLdapEnabled(config)}
 										>
-											{config.enabled ? 'Disable' : 'Enable'}
+											{config.enabled ? '禁用' : '启用'}
 										</Button>
 										<Button
 											variant="outline"
@@ -280,8 +279,8 @@
 										</Button>
 										<ConfirmPopover
 											open={confirmDeleteLdapId === config.id}
-											action="Delete"
-											itemType="LDAP config"
+											action="删除"
+											itemType="LDAP 配置"
 											itemName={config.name}
 											onConfirm={() => deleteLdapConfig(config.id)}
 											onOpenChange={(open) => confirmDeleteLdapId = open ? config.id : null}
@@ -298,9 +297,9 @@
 					{#if ldapTestResult}
 						<div class="mt-4 p-3 rounded-lg {ldapTestResult.success ? 'bg-green-500/10 text-green-600' : 'bg-destructive/10 text-destructive'}">
 							{#if ldapTestResult.success}
-								<p class="text-sm">Connection successful! Found {ldapTestResult.userCount} users.</p>
+								<p class="text-sm">连接成功！找到 {ldapTestResult.userCount} 个用户。</p>
 							{:else}
-								<p class="text-sm">Connection failed: {ldapTestResult.error}</p>
+								<p class="text-sm">连接失败：{ldapTestResult.error}</p>
 							{/if}
 						</div>
 					{/if}

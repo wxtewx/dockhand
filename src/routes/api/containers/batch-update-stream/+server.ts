@@ -93,20 +93,20 @@ export const POST: RequestHandler = async (event) => {
 
 	// Need create permission to recreate containers
 	if (auth.authEnabled && !await auth.can('containers', 'create', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	let body: { containerIds: string[]; vulnerabilityCriteria?: VulnerabilityCriteria };
 	try {
 		body = await request.json();
 	} catch {
-		return json({ error: 'Invalid JSON body' }, { status: 400 });
+		return json({ error: '无效的 JSON 格式' }, { status: 400 });
 	}
 
 	const { containerIds, vulnerabilityCriteria = 'never' } = body;
 
 	if (!containerIds || !Array.isArray(containerIds) || containerIds.length === 0) {
-		return json({ error: 'containerIds array is required' }, { status: 400 });
+		return json({ error: '必须提供 containerIds 数组' }, { status: 400 });
 	}
 
 	// Job pattern: create job, run in background, return jobId immediately
@@ -132,7 +132,7 @@ export const POST: RequestHandler = async (event) => {
 		sendData({
 			type: 'start',
 			total: containerIds.length,
-			message: `Starting update of ${containerIds.length} container${containerIds.length > 1 ? 's' : ''}${shouldScan ? ' with vulnerability scanning' : ''}`
+			message: `开始更新 ${containerIds.length} 个容器${shouldScan ? ' (含漏洞扫描)' : ''}`
 		});
 
 		// Process containers sequentially
@@ -154,7 +154,7 @@ export const POST: RequestHandler = async (event) => {
 						current: i + 1,
 						total: containerIds.length,
 						success: false,
-						error: 'Container not found'
+						error: '容器未找到'
 					});
 					failCount++;
 					continue;
@@ -190,7 +190,7 @@ export const POST: RequestHandler = async (event) => {
 						current: i + 1,
 						total: containerIds.length,
 						success: true,
-						message: `Skipping ${containerName} - cannot update ${systemType} container`
+						message: `已跳过 ${containerName} - 无法更新 ${systemType} 容器`
 					});
 					skippedCount++;
 					continue;
@@ -206,7 +206,7 @@ export const POST: RequestHandler = async (event) => {
 						current: i + 1,
 						total: containerIds.length,
 						success: true,
-						message: `Skipping ${containerName} - dockhand.update=false label`
+						message: `已跳过 ${containerName} - dockhand.update=false 标签`
 					});
 					skippedCount++;
 					continue;
@@ -222,7 +222,7 @@ export const POST: RequestHandler = async (event) => {
 						current: i + 1,
 						total: containerIds.length,
 						success: true,
-						message: `Skipping ${containerName} - image pinned to specific digest`
+						message: `已跳过 ${containerName} - 镜像已固定到指定摘要`
 					});
 					skippedCount++;
 					continue;
@@ -236,7 +236,7 @@ export const POST: RequestHandler = async (event) => {
 					step: 'pulling',
 					current: i + 1,
 					total: containerIds.length,
-					message: `Pulling ${imageName}...`
+					message: `正在拉取 ${imageName}...`
 				});
 
 				try {
@@ -261,7 +261,7 @@ export const POST: RequestHandler = async (event) => {
 						current: i + 1,
 						total: containerIds.length,
 						success: false,
-						error: `Pull failed: ${pullError.message}`
+						error: `拉取失败: ${pullError.message}`
 					});
 					failCount++;
 					continue;
@@ -282,7 +282,7 @@ export const POST: RequestHandler = async (event) => {
 							current: i + 1,
 							total: containerIds.length,
 							success: false,
-							error: 'Failed to get new image ID after pull'
+							error: '拉取后无法获取新镜像 ID'
 						});
 						failCount++;
 						continue;
@@ -308,7 +308,7 @@ export const POST: RequestHandler = async (event) => {
 						step: 'scanning',
 						current: i + 1,
 						total: containerIds.length,
-						message: `Scanning ${imageName} for vulnerabilities...`
+						message: `正在扫描 ${imageName} 漏洞...`
 					});
 
 					let scanBlocked = false;
@@ -401,8 +401,8 @@ export const POST: RequestHandler = async (event) => {
 							scannerResults: individualScannerResults.length > 0 ? individualScannerResults : undefined,
 							vulnerabilities: vulnerabilities.length > 0 ? vulnerabilities : undefined,
 							message: hasVulns
-								? `Scan complete: ${totalCritical} critical, ${totalHigh} high, ${totalMedium} medium, ${totalLow} low`
-								: 'Scan complete: no vulnerabilities found'
+								? `扫描完成：严重 ${totalCritical}，高危 ${totalHigh}，中危 ${totalMedium}，低危 ${totalLow}`
+								: '扫描完成：未发现漏洞'
 						});
 
 					} catch (scanErr: any) {
@@ -414,7 +414,7 @@ export const POST: RequestHandler = async (event) => {
 							current: i + 1,
 							total: containerIds.length,
 							success: false,
-							error: `Scan failed: ${scanErr.message}`
+							error: `扫描失败: ${scanErr.message}`
 						});
 
 						// Clean up temp image on scan failure
@@ -438,7 +438,7 @@ export const POST: RequestHandler = async (event) => {
 							success: false,
 							scannerResults: individualScannerResults.length > 0 ? individualScannerResults : undefined,
 							blockReason,
-							message: `Update blocked: ${blockReason}`
+							message: `更新已阻止：${blockReason}`
 						});
 
 						try {
@@ -478,7 +478,7 @@ export const POST: RequestHandler = async (event) => {
 					step: 'creating',
 					current: i + 1,
 					total: containerIds.length,
-					message: `Recreating ${containerName}...`
+					message: `正在重建 ${containerName}...`
 				});
 
 				const recreateResult = await recreateContainer(containerName, envIdNum, {
@@ -503,7 +503,7 @@ export const POST: RequestHandler = async (event) => {
 						current: i + 1,
 						total: containerIds.length,
 						success: false,
-						error: recreateResult.error || 'Container recreation failed'
+						error: recreateResult.error || '容器重建失败'
 					});
 					failCount++;
 					continue;
@@ -521,7 +521,7 @@ export const POST: RequestHandler = async (event) => {
 					current: i + 1,
 					total: containerIds.length,
 					success: true,
-					message: `${containerName} updated successfully`
+					message: `${containerName} 更新成功`
 				});
 				successCount++;
 
@@ -558,8 +558,8 @@ export const POST: RequestHandler = async (event) => {
 				skipped: skippedCount
 			},
 			message: skippedCount > 0 || blockedCount > 0
-				? `Updated ${successCount} of ${containerIds.length} containers${blockedCount > 0 ? ` (${blockedCount} blocked)` : ''}${skippedCount > 0 ? ` (${skippedCount} skipped)` : ''}`
-				: `Updated ${successCount} of ${containerIds.length} containers`
+				? `已更新 ${successCount}/${containerIds.length} 个容器${blockedCount > 0 ? `（${blockedCount} 个已阻止）` : ''}${skippedCount > 0 ? `（${skippedCount} 个已跳过）` : ''}`
+				: `已更新 ${successCount}/${containerIds.length} 个容器`
 		};
 		sendData(completeData);
 		completeJob(job, completeData);

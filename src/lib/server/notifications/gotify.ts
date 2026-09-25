@@ -5,7 +5,7 @@ import { notificationFetch, drainResponse, type NotificationPayload, type Notifi
 export async function sendGotify(appriseUrl: string, payload: NotificationPayload): Promise<NotificationResult> {
 	const parsed = buildGotifyUrl(appriseUrl);
 	if (!parsed) {
-		return { success: false, error: 'Invalid Gotify URL format. Expected: gotify://hostname/token' };
+		return { success: false, error: '无效的 Gotify 地址格式，标准格式: gotify://hostname/token' };
 	}
 
 	const titleWithEnv = payload.environmentName ? `${payload.title} [${payload.environmentName}]` : payload.title;
@@ -24,11 +24,11 @@ export async function sendGotify(appriseUrl: string, payload: NotificationPayloa
 
 		if (!response.ok) {
 			const text = await response.text().catch(() => '');
-			return { success: false, error: `Gotify error ${response.status}: ${text || response.statusText}` };
+			return { success: false, error: `Gotify 请求异常 ${response.status}: ${text || response.statusText}` };
 		}
 		await drainResponse(response);
 		return { success: true };
 	} catch (error) {
-		return { success: false, error: `Gotify connection failed: ${error instanceof Error ? error.message : String(error)}` };
+		return { success: false, error: `Gotify 连接失败: ${error instanceof Error ? error.message : String(error)}` };
 	}
 }

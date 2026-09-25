@@ -19,20 +19,20 @@
 	// reach. `needsEnv` = the page is env-scoped (shown with the chosen env in the hint and
 	// eligible for env-click). `permission` / `gate` / `enterpriseOnly` mirror canSeeMenuItem.
 	const ALL_PAGES = [
-		{ value: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard, needsEnv: false, permission: 'always' },
-		{ value: 'containers', label: 'Containers', Icon: Box, needsEnv: true, permission: 'containers' },
-		{ value: 'logs', label: 'Logs', Icon: ScrollText, needsEnv: true, permission: 'containers' },
-		{ value: 'terminal', label: 'Shell', Icon: Terminal, needsEnv: true, permission: 'containers' },
-		{ value: 'stacks', label: 'Compose stacks', Icon: Layers, needsEnv: true, permission: 'stacks' },
-		{ value: 'images', label: 'Images', Icon: Images, needsEnv: true, permission: 'images' },
-		{ value: 'volumes', label: 'Volumes', Icon: HardDrive, needsEnv: true, permission: 'volumes' },
-		{ value: 'networks', label: 'Networks', Icon: Network, needsEnv: true, permission: 'networks' },
-		{ value: 'templates', label: 'Templates', Icon: LibraryBig, needsEnv: false, permission: 'templates' },
-		{ value: 'registry', label: 'Registry', Icon: Download, needsEnv: false, permission: 'registries' },
-		{ value: 'activity', label: 'Activity', Icon: Activity, needsEnv: false, permission: 'activity' },
-		{ value: 'backups', label: 'Backups', Icon: Archive, needsEnv: false, permission: 'backups', gate: 'backups' },
-		{ value: 'schedules', label: 'Schedules', Icon: Timer, needsEnv: false, permission: 'schedules' },
-		{ value: 'audit', label: 'Audit log', Icon: ClipboardList, needsEnv: false, permission: 'audit_logs', enterpriseOnly: true }
+		{ value: 'dashboard', label: '仪表盘', Icon: LayoutDashboard, needsEnv: false, permission: 'always' },
+		{ value: 'containers', label: '容器', Icon: Box, needsEnv: true, permission: 'containers' },
+		{ value: 'logs', label: '日志', Icon: ScrollText, needsEnv: true, permission: 'containers' },
+		{ value: 'terminal', label: '终端', Icon: Terminal, needsEnv: true, permission: 'containers' },
+		{ value: 'stacks', label: 'Compose 堆栈', Icon: Layers, needsEnv: true, permission: 'stacks' },
+		{ value: 'images', label: '镜像', Icon: Images, needsEnv: true, permission: 'images' },
+		{ value: 'volumes', label: '数据卷', Icon: HardDrive, needsEnv: true, permission: 'volumes' },
+		{ value: 'networks', label: '网络', Icon: Network, needsEnv: true, permission: 'networks' },
+		{ value: 'templates', label: '模板', Icon: LibraryBig, needsEnv: false, permission: 'templates' },
+		{ value: 'registry', label: '镜像仓库', Icon: Download, needsEnv: false, permission: 'registries' },
+		{ value: 'activity', label: '活动记录', Icon: Activity, needsEnv: false, permission: 'activity' },
+		{ value: 'backups', label: '备份', Icon: Archive, needsEnv: false, permission: 'backups', gate: 'backups' },
+		{ value: 'schedules', label: '定时任务', Icon: Timer, needsEnv: false, permission: 'schedules' },
+		{ value: 'audit', label: '审计日志', Icon: ClipboardList, needsEnv: false, permission: 'audit_logs', enterpriseOnly: true }
 	] as const;
 
 	// Visibility mirrors app-sidebar's canSeeMenuItem: hide the Backups beta unless the gate is
@@ -74,7 +74,7 @@
 	const clickSel = $derived(resolve(envClickPageV, 'containers'));
 
 	// Label helper for the trigger + the (default: X) hint.
-	const pageLabel = (v: string | null): string => v ? pageOf(v).label : 'Dashboard';
+	const pageLabel = (v: string | null): string => v ? pageOf(v).label : '仪表盘';
 
 	onMount(async () => {
 		try {
@@ -111,9 +111,9 @@
 					envClickPage: envClickPageV ?? ''
 				})
 			});
-			if (!res.ok) toast.error('Failed to save navigation preference');
+			if (!res.ok) toast.error('保存导航偏好设置失败');
 		} catch {
-			toast.error('Failed to save navigation preference');
+			toast.error('保存导航偏好设置失败');
 		}
 	}
 	function persist() {
@@ -130,13 +130,13 @@
 	<!-- 1. Open the app on: the landing PAGE. The environment is not forced - the app opens on
 	     the last-used one. -->
 	<div class="space-y-1.5 min-w-0 flex-1">
-		<Label>Open the app on</Label>
+		<Label>默认打开页面</Label>
 		<div class="flex items-center gap-2.5">
 			<Select.Root type="single" value={homeSel} onValueChange={(v) => { if (v) pickHome(v); }}>
 				<Select.Trigger class="flex-1 min-w-0">
 					<div class="flex items-center gap-2">
 						{#if isUser && landingPage === null}
-							<span class="text-muted-foreground truncate">Global default ({pageLabel(globalDefaults.landingPage ?? 'dashboard')})</span>
+							<span class="text-muted-foreground truncate">全局默认 ({pageLabel(globalDefaults.landingPage ?? 'dashboard')})</span>
 						{:else}
 							{@const m = pageOf(landingPage)}
 							<m.Icon class="w-4 h-4 text-muted-foreground" />
@@ -146,7 +146,7 @@
 				</Select.Trigger>
 				<Select.Content>
 					{#if isUser}
-						<Select.Item value={INHERIT}><span class="text-muted-foreground">Use global default</span></Select.Item>
+						<Select.Item value={INHERIT}><span class="text-muted-foreground">使用全局默认配置</span></Select.Item>
 					{/if}
 					{#each PAGES as page}
 						<Select.Item value={page.value}>
@@ -159,18 +159,18 @@
 				</Select.Content>
 			</Select.Root>
 		</div>
-		<p class="text-xs text-muted-foreground">Where the app opens (on the last-used environment).</p>
+		<p class="text-xs text-muted-foreground">应用启动时跳转的页面 (自动进入上次使用的环境)。</p>
 	</div>
 
 	<!-- 3. Dashboard env-click target. Clicking an environment is an intentional "show me THIS
 	     view of this env", so it's always a concrete page (default: containers). -->
 	<div class="space-y-1.5 min-w-0 flex-1">
-		<Label>Environment click</Label>
+		<Label>环境点击跳转页面</Label>
 		<Select.Root type="single" value={clickSel} onValueChange={(v) => { if (v) pickClick(v); }}>
 			<Select.Trigger class="w-full">
 				<div class="flex items-center gap-2">
 					{#if isUser && envClickPageV === null}
-						<span class="text-muted-foreground">Global default ({pageLabel(globalDefaults.envClickPage ?? 'containers')})</span>
+						<span class="text-muted-foreground">全局默认 ({pageLabel(globalDefaults.envClickPage ?? 'containers')})</span>
 					{:else}
 						{@const m = pageOf(envClickPageV ?? 'containers')}
 						<m.Icon class="w-4 h-4 text-muted-foreground" />
@@ -180,7 +180,7 @@
 			</Select.Trigger>
 			<Select.Content>
 				{#if isUser}
-					<Select.Item value={INHERIT}><span class="text-muted-foreground">Use global default</span></Select.Item>
+					<Select.Item value={INHERIT}><span class="text-muted-foreground">使用全局默认配置</span></Select.Item>
 				{/if}
 				{#each CLICK_PAGES as page}
 					<Select.Item value={page.value}>
@@ -192,6 +192,6 @@
 				{/each}
 			</Select.Content>
 		</Select.Root>
-		<p class="text-xs text-muted-foreground">Where a tile click goes.</p>
+		<p class="text-xs text-muted-foreground">点击环境卡片后跳转的目标页面。</p>
 	</div>
 </div>

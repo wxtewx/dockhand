@@ -10,20 +10,20 @@
 set -e
 
 echo "========================================"
-echo "  Dockhand - Factory Reset Database (SQLite)"
+echo "  Dockhand - 数据库恢复出厂设置 (SQLite)"
 echo "========================================"
 echo ""
-echo "WARNING: This will DELETE ALL DATA!"
+echo "警告：此操作将删除所有数据！"
 echo ""
-echo "This includes:"
-echo "  - All users and their settings"
-echo "  - All sessions"
-echo "  - Authentication settings"
-echo "  - Activity logs"
-echo "  - Environment configurations"
-echo "  - OIDC/SSO settings"
+echo "删除内容包括："
+echo "  - 所有用户及其配置"
+echo "  - 所有会话"
+echo "  - 身份认证配置"
+echo "  - 操作日志"
+echo "  - 环境配置"
+echo "  - OIDC/SSO 配置"
 echo ""
-echo "The database will be recreated on next startup."
+echo "数据库将在下次启动时重新创建。"
 echo ""
 
 # Default database path
@@ -35,39 +35,39 @@ if [ ! -f "$DB_PATH" ] && [ -f "./data/db/dockhand.db" ]; then
 fi
 
 if [ ! -f "$DB_PATH" ]; then
-    echo "Error: Database not found at $DB_PATH"
-    echo "Nothing to reset."
+    echo "错误：未在路径 $DB_PATH 找到数据库"
+    echo "无需要重置的内容。"
     exit 0
 fi
 
-echo "Database: $DB_PATH"
+echo "数据库：$DB_PATH"
 echo ""
-printf "Continue? [y/N]: "
+printf "是否继续？[y/N]："
 read CONFIRM
 
 case "$CONFIRM" in
     [yY]|[yY][eE][sS])
         ;;
     *)
-        echo "Aborted."
+        echo "已取消。"
         exit 0
         ;;
 esac
 
 echo ""
-echo "Creating backup before reset..."
+echo "正在重置前创建备份..."
 BACKUP_FILE="${DB_PATH}.backup.$(date +%Y%m%d_%H%M%S)"
 cp "$DB_PATH" "$BACKUP_FILE"
-echo "Backup saved to: $BACKUP_FILE"
+echo "备份已保存至：$BACKUP_FILE"
 
 echo ""
-echo "Deleting database..."
+echo "正在删除数据库..."
 rm -f "$DB_PATH"
 rm -f "${DB_PATH}-wal"
 rm -f "${DB_PATH}-shm"
 
 echo ""
-echo "Database deleted successfully."
+echo "数据库删除成功。"
 echo ""
-echo "Restart Dockhand to recreate a fresh database:"
+echo "重启 Dockhand 以创建全新数据库："
 echo "  docker restart dockhand"

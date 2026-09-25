@@ -98,7 +98,7 @@
 		{#snippet child({ props })}
 			<button
 				type="button"
-				title={triggerVariant === 'icon' ? 'Redeploy' : 'More deploy options'}
+				title={triggerVariant === 'icon' ? '重新部署' : '更多部署选项'}
 				{...props}
 				onclick={handleTriggerClick}
 				{disabled}
@@ -122,23 +122,23 @@
 		<div class="space-y-3">
 			<p class="flex items-center gap-1.5 text-xs text-muted-foreground">
 				<StackIcon icon={stackIcon} {stackName} {envId} class="w-4 h-4 shrink-0" />
-				<span class="truncate">Redeploy stack <strong class="font-semibold text-foreground">{stackName}</strong></span>
+				<span class="truncate">重新部署堆栈 <strong class="font-semibold text-foreground">{stackName}</strong></span>
 			</p>
 			<div class="space-y-2">
 				<label class="flex items-center gap-2 cursor-pointer">
 					<Checkbox bind:checked={pull} disabled={deploying} />
-					<span class="text-xs">Pull images</span>
+					<span class="text-xs">拉取镜像</span>
 				</label>
 				<label class="flex items-center gap-2 cursor-pointer">
 					<Checkbox bind:checked={build} disabled={deploying} />
-					<span class="text-xs">Build images</span>
+					<span class="text-xs">构建镜像</span>
 				</label>
 				{#if reason}
 					<p class="text-2xs text-muted-foreground pl-6 -mt-1">{reason}</p>
 				{/if}
 				<label class="flex items-center gap-2 cursor-pointer">
 					<Checkbox bind:checked={forceRecreate} disabled={deploying} />
-					<span class="text-xs">Force recreate</span>
+					<span class="text-xs">强制重新创建</span>
 				</label>
 			</div>
 			<Button
@@ -149,9 +149,9 @@
 			>
 				{#if deploying}
 					<Loader2 class="w-3 h-3 mr-1 animate-spin" />
-					Deploying...
+					部署中...
 				{:else}
-					Deploy
+					部署
 				{/if}
 			</Button>
 		</div>

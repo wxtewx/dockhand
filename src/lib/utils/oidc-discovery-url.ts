@@ -30,12 +30,12 @@ export async function fetchOidcDiscovery<R extends { ok: boolean; statusText: st
 		} catch (err: any) {
 			const cause = err?.cause?.message || err?.cause?.code || err?.cause;
 			throw new Error(
-				`Failed to reach OIDC issuer at ${url}: ${err?.message || err}` +
+				`无法访问位于 ${url} 的OIDC颁发者：${err?.message || err}` +
 				(cause ? ` (${cause})` : '')
 			);
 		}
 		if (r.ok) return r;
 		lastNotOk = r.statusText;
 	}
-	throw new Error(`Failed to fetch OIDC discovery document: ${lastNotOk}`);
+	throw new Error(`获取 OIDC 发现文档失败: ${lastNotOk}`);
 }

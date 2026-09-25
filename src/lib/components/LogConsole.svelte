@@ -52,7 +52,7 @@
 	<div class="mb-2 flex shrink-0 items-center justify-between text-xs text-muted-foreground">
 		<div class="flex items-center gap-2">
 			<Terminal class="h-3.5 w-3.5" />
-			<span>Output ({lines.length} {lines.length === 1 ? 'line' : 'lines'})</span>
+			<span>输出 ({lines.length} {lines.length === 1 ? '行' : '行'})</span>
 		</div>
 		<button type="button" onclick={() => (dark = !dark)} class="cursor-pointer rounded p-1 transition-colors hover:bg-muted" title="Toggle log theme">
 			{#if dark}<Sun class="h-3.5 w-3.5" />{:else}<Moon class="h-3.5 w-3.5" />{/if}

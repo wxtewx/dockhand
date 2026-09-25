@@ -19,7 +19,7 @@
 		value = $bindable(''),
 		class: className,
 		containerClass,
-		placeholder = 'Search...',
+		placeholder = '搜索...',
 		onkeydown,
 		...rest
 	}: Props = $props();
@@ -45,7 +45,7 @@
 		<button
 			type="button"
 			tabindex={-1}
-			aria-label="Clear search"
+			aria-label="清除搜索"
 			onclick={() => (value = '')}
 			class="absolute right-2 top-1/2 -translate-y-1/2 rounded-sm p-0.5 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
 		>

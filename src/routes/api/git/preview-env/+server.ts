@@ -78,7 +78,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		case 'success':
 			return json({ vars: outcome.vars, sources: outcome.sources });
 		case 'permission-denied':
-			return json({ error: 'Permission denied' }, { status: 403 });
+			return json({ error: '权限被拒绝' }, { status: 403 });
 		case 'bad-request': {
 			const body: Record<string, unknown> = { error: outcome.message };
 			if (outcome.vars) body.vars = outcome.vars;
@@ -86,7 +86,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			return json(body, { status: 400 });
 		}
 		case 'not-found':
-			return json({ error: 'Repository not found' }, { status: 404 });
+			return json({ error: '仓库不存在' }, { status: 404 });
 		case 'error':
 			return json({ error: outcome.message }, { status: 500 });
 	}

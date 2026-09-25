@@ -81,7 +81,7 @@ export const POST: RequestHandler = async (event) => {
 	const body = await request.json();
 
 	if (!body.name || !body.repository || !body.password) {
-		return json({ error: 'Missing required fields: name, repository, password' }, { status: 400 });
+		return json({ error: '缺少必填参数：name、repository、password' }, { status: 400 });
 	}
 
 	// Validate repository scheme + SSRF host (audit #7/#53) and restic flags (#7)
@@ -96,7 +96,7 @@ export const POST: RequestHandler = async (event) => {
 			? validateAndSerializeFlags(body.backupFlags, body.restoreFlags)
 			: validateAndSerializeFlags(body.flags, '');
 	} catch (e) {
-		return json({ error: e instanceof Error ? e.message : 'Invalid restic flags' }, { status: 400 });
+		return json({ error: e instanceof Error ? e.message : '无效的 restic 参数' }, { status: 400 });
 	}
 
 	// Validate any cron schedules in the supplied policies (audit #7)
@@ -139,7 +139,7 @@ export const POST: RequestHandler = async (event) => {
 					lastTestAt: new Date().toISOString()
 				});
 			} else {
-				await updateBackupDestinationTestStatus(destination.id, 'failed', test.error ?? 'Repository is not reachable or the password is incorrect');
+				await updateBackupDestinationTestStatus(destination.id, 'failed', test.error ?? '无法连接仓库或密码错误');
 			}
 		} catch (initErr) {
 			// Init failed — destination saved but not initialized. Record the
@@ -160,7 +160,7 @@ export const POST: RequestHandler = async (event) => {
 		return json(prepareDestination(destination, { includeEnvVars: true }), { status: 201 });
 	} catch (error: any) {
 		if (error.message?.includes('UNIQUE constraint')) {
-			return json({ error: 'A destination with this name already exists' }, { status: 409 });
+			return json({ error: '已存在同名的存储位置' }, { status: 409 });
 		}
 		return json({ error: error.message }, { status: 500 });
 	}

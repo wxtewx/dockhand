@@ -69,7 +69,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 	if (auth.authEnabled) {
 		if (scheduleType) {
 			if (!(await auth.can(resourceForScheduleType(scheduleType), 'view'))) {
-				return json({ error: 'Permission denied' }, { status: 403 });
+				return json({ error: '权限不足' }, { status: 403 });
 			}
 		} else {
 			const viewable = {
@@ -79,7 +79,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 			};
 			viewableTypes = viewableScheduleTypes(viewable, ALL_SCHEDULE_TYPES) as ScheduleType[] | null;
 			if (viewableTypes !== null && viewableTypes.length === 0) {
-				return json({ error: 'Permission denied' }, { status: 403 });
+				return json({ error: '权限不足' }, { status: 403 });
 			}
 		}
 	}
@@ -132,7 +132,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 		return json(result);
 	} catch (error: any) {
-		console.error('Failed to get schedule executions:', error);
+		console.error('获取定时任务执行记录失败:', error);
 		return json({ error: error.message }, { status: 500 });
 	}
 };

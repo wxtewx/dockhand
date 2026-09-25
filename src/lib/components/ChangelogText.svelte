@@ -62,9 +62,9 @@
 	}
 
 	function refTitle(token: ChangelogToken): string {
-		if (token.kind === 'issue') return `Issue #${token.num}`;
-		if (token.kind === 'pr') return `Pull request #${token.num}`;
-		if (token.kind === 'user') return `@${token.name} on GitHub`;
+		if (token.kind === 'issue') return `工单 #${token.num}`;
+		if (token.kind === 'pr') return `合并请求 #${token.num}`;
+		if (token.kind === 'user') return `GitHub 用户 @${token.name}`;
 		return '';
 	}
 </script>

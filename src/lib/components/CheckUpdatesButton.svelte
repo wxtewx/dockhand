@@ -76,12 +76,12 @@
 
 	function showFailedChecksToast(failed: FailedCheckItem[], prefix: string) {
 		const details = failed.map((f) => `• ${f.containerName}: ${f.error}`).join('\n');
-		toast.warning(`${prefix} (${failed.length} failed to check)`, {
+		toast.warning(`${prefix} (${failed.length} 个容器检测失败)`, {
 			description: details,
 			descriptionClass: 'whitespace-pre-line',
 			class: '!w-[28rem] !max-w-[28rem]',
 			duration: Infinity,
-			action: { label: 'OK', onClick: () => {} }
+			action: { label: '确定', onClick: () => {} }
 		});
 	}
 
@@ -139,21 +139,21 @@
 			// A newer version tag is a real result even when no digest update exists,
 			// so it counts toward the "found" state and the summary message.
 			const semverNote = newerVersions.length > 0
-				? `${newerVersions.length} newer version tag${newerVersions.length !== 1 ? 's' : ''}`
+				? `${newerVersions.length} 个新版本标签${newerVersions.length !== 1 ? '' : ''}`
 				: '';
 
 			if (withUpdates.length === 0 && newerVersions.length === 0) {
 				// Keep the "Latest" status until re-check / env-switch — don't auto-revert (#1019)
 				status = 'none';
 				if (failed.length > 0) {
-					showFailedChecksToast(failed, 'All containers are up to date');
+					showFailedChecksToast(failed, '所有容器均已是最新版本');
 				} else {
-					toast.success('All containers are up to date');
+					toast.success('所有容器均已是最新版本');
 				}
 			} else {
 				status = 'found';
 				const parts = [
-					withUpdates.length > 0 ? `${withUpdates.length} update${withUpdates.length !== 1 ? 's' : ''} available` : '',
+					withUpdates.length > 0 ? `${withUpdates.length} 个可用更新` : '',
 					semverNote
 				].filter(Boolean);
 				const summary = parts.join(', ');
@@ -177,28 +177,28 @@
 	variant="outline"
 	onclick={checkForUpdates}
 	disabled={status === 'checking'}
-	title="Check for available updates"
+	title="检测可用更新"
 	class="relative overflow-hidden"
 >
 	{#if displayStatus === 'checking'}
 		<CircleArrowUp class="w-3.5 h-3.5 animate-spin" />
 		{#if progress.total > 0}
-			<span class="tabular-nums">Checking {String(progress.checked).padStart(String(progress.total).length, ' ')}/{progress.total}</span>
+			<span class="tabular-nums">正在检测 {String(progress.checked).padStart(String(progress.total).length, ' ')}/{progress.total}</span>
 			<div
 				class="absolute bottom-0 left-0 h-px bg-foreground transition-[width] duration-150 ease-out"
 				style="width: {(progress.checked / progress.total) * 100}%"
 			></div>
 		{:else}
-			Check for updates
+			检测更新
 		{/if}
 	{:else if displayStatus === 'none' || displayStatus === 'found'}
 		<Check class="w-3.5 h-3.5 mr-1 text-green-600" />
-		Check for updates
+		检测更新
 	{:else if displayStatus === 'error'}
 		<XCircle class="w-3.5 h-3.5 mr-1 text-destructive" />
-		Check for updates
+		检测更新
 	{:else}
 		<CircleArrowUp class="w-3.5 h-3.5" />
-		Check for updates
+		检测更新
 	{/if}
 </Button>

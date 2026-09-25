@@ -14,7 +14,7 @@ function containsPathTraversal(value: string): boolean {
  */
 export function validateDockerIdParam(id: string, resourceType = 'resource'): Response | null {
 	if (!id || containsPathTraversal(id)) {
-		return json({ error: `Invalid ${resourceType} ID` }, { status: 400 });
+		return json({ error: `${resourceType} ID 无效` }, { status: 400 });
 	}
 	return null;
 }
@@ -25,7 +25,7 @@ export function validateDockerIdParam(id: string, resourceType = 'resource'): Re
  */
 export function validateSnapshotId(id: string): Response | null {
 	if (!id || !/^[0-9a-f]{8,64}$/.test(id)) {
-		return json({ error: 'Invalid snapshot ID' }, { status: 400 });
+		return json({ error: '无效快照 ID' }, { status: 400 });
 	}
 	return null;
 }

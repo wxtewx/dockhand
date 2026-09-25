@@ -57,9 +57,9 @@
 
 	function getAuthLabel(type: string) {
 		switch (type) {
-			case 'ssh': return 'SSH Key';
-			case 'password': return 'Password';
-			default: return 'None';
+			case 'ssh': return 'SSH 密钥';
+			case 'password': return '密码';
+			default: return '无';
 		}
 	}
 
@@ -97,7 +97,7 @@
 
 	async function testRepository() {
 		if (!formUrl.trim()) {
-			formErrors.url = 'Repository URL is required to test';
+			formErrors.url = '测试需要填写仓库 URL';
 			return;
 		}
 
@@ -119,13 +119,13 @@
 			testResult = data;
 
 			if (data.success) {
-				toast.success(`Connection successful! Branch: ${data.branch}, Commit: ${data.lastCommit}`);
+				toast.success(`连接成功！分支：${data.branch}，提交：${data.lastCommit}`);
 			} else {
-				toast.error(data.error || 'Connection test failed');
+				toast.error(data.error || '连接测试失败');
 			}
 		} catch (error) {
-			testResult = { success: false, error: 'Failed to test connection' };
-			toast.error('Failed to test connection');
+			testResult = { success: false, error: '测试连接失败' };
+			toast.error('测试连接失败');
 		} finally {
 			testing = false;
 		}
@@ -135,11 +135,11 @@
 		formErrors = {};
 
 		if (!formName.trim()) {
-			formErrors.name = 'Name is required';
+			formErrors.name = '名称为必填项';
 		}
 
 		if (!formUrl.trim()) {
-			formErrors.url = 'Repository URL is required';
+			formErrors.url = '仓库 URL 为必填项';
 		}
 
 		if (formErrors.name || formErrors.url) {
@@ -172,21 +172,21 @@
 
 			if (!response.ok) {
 				if (data.error?.includes('already exists')) {
-					formErrors.name = 'Repository name already exists';
+					formErrors.name = '仓库名称已存在';
 				} else {
-					formError = data.error || 'Failed to save repository';
+					formError = data.error || '保存仓库失败';
 				}
-				toast.error(formError || 'Failed to save repository');
+				toast.error(formError || '保存仓库失败');
 				return;
 			}
 
 			const wasEditing = repository !== null;
 			onSaved();
 			onClose();
-			toast.success(wasEditing ? 'Repository updated' : 'Repository added');
+			toast.success(wasEditing ? '仓库已更新' : '仓库已添加');
 		} catch (error) {
-			formError = 'Failed to save repository';
-			toast.error('Failed to save repository');
+			formError = '保存仓库失败';
+			toast.error('保存仓库失败');
 		} finally {
 			formSaving = false;
 		}
@@ -199,36 +199,36 @@
 		<Dialog.Header>
 			<Dialog.Title class="flex items-center gap-2">
 				<GitBranch class="w-5 h-5" />
-				{isEditing ? 'Edit' : 'Add'} Git repository
+				{isEditing ? '编辑' : '添加'} Git 仓库
 			</Dialog.Title>
 			<Dialog.Description>
-				{isEditing ? 'Update repository settings' : 'Add a Git repository that can be used to deploy stacks'}
+				{isEditing ? '更新仓库设置' : '添加可用于部署堆栈的 Git 仓库'}
 			</Dialog.Description>
 		</Dialog.Header>
 
 		<form onsubmit={(e) => { e.preventDefault(); saveRepository(); }} class="space-y-4">
 			<div class="space-y-2">
-				<Label for="repo-name">Name</Label>
+				<Label for="repo-name">名称</Label>
 				<Input
 					id="repo-name"
 					bind:value={formName}
-					placeholder="e.g., my-app-repo"
+					placeholder="例如：my-app-repo"
 					class={formErrors.name ? 'border-destructive focus-visible:ring-destructive' : ''}
 					oninput={() => formErrors.name = undefined}
 				/>
 				{#if formErrors.name}
 					<p class="text-xs text-destructive">{formErrors.name}</p>
 				{:else if !isEditing}
-					<p class="text-xs text-muted-foreground">A friendly name to identify this repository</p>
+					<p class="text-xs text-muted-foreground">用于标识该仓库的友好名称</p>
 				{/if}
 			</div>
 
 			<div class="space-y-2">
-				<Label for="repo-url">Repository URL</Label>
+				<Label for="repo-url">仓库 URL</Label>
 				<Input
 					id="repo-url"
 					bind:value={formUrl}
-					placeholder="https://github.com/user/repo.git or git@github.com:user/repo.git"
+					placeholder="https://github.com/user/repo.git 或 git@github.com:user/repo.git"
 					class={formErrors.url ? 'border-destructive focus-visible:ring-destructive' : ''}
 					oninput={() => { formErrors.url = undefined; testResult = null; }}
 				/>
@@ -238,12 +238,12 @@
 			</div>
 
 			<div class="space-y-2">
-				<Label for="repo-branch">Branch</Label>
+				<Label for="repo-branch">分支</Label>
 				<Input id="repo-branch" bind:value={formBranch} placeholder="main" oninput={() => testResult = null} />
 			</div>
 
 			<div class="space-y-2">
-				<Label for="repo-credential">Credential (optional)</Label>
+				<Label for="repo-credential">凭据 (可选)</Label>
 				<Select.Root
 					type="single"
 					value={formCredentialId?.toString() ?? 'none'}
@@ -260,7 +260,7 @@
 						{:else}
 							<span class="flex items-center gap-2">
 								<Globe class="w-4 h-4 text-muted-foreground" />
-								None (public repository)
+								无 (公共仓库)
 							</span>
 						{/if}
 					</Select.Trigger>
@@ -268,7 +268,7 @@
 						<Select.Item value="none">
 							<span class="flex items-center gap-2">
 								<Globe class="w-4 h-4 text-muted-foreground" />
-								None (public repository)
+								无 (公共仓库)
 							</span>
 						</Select.Item>
 						{#each credentials as cred}
@@ -289,7 +289,7 @@
 				</Select.Root>
 				{#if credentials.length === 0 && !isEditing}
 					<p class="text-xs text-muted-foreground">
-						<a href="/settings?tab=git&subtab=credentials" class="text-primary hover:underline">Add credentials</a> for private repositories
+						<a href="/settings?tab=git&subtab=credentials" class="text-primary hover:underline">添加凭据</a> 以访问私有仓库
 					</p>
 				{/if}
 			</div>
@@ -299,7 +299,7 @@
 			{/if}
 
 			<Dialog.Footer>
-				<Button variant="outline" type="button" onclick={onClose}>Cancel</Button>
+				<Button variant="outline" type="button" onclick={onClose}>取消</Button>
 				<Button
 					type="button"
 					variant="outline"
@@ -314,14 +314,14 @@
 					{:else}
 						<Play class="w-4 h-4 mr-1.5" />
 					{/if}
-					Test
+					测试
 				</Button>
 				<Button type="submit" disabled={formSaving}>
 					{#if formSaving}
 						<Loader2 class="w-4 h-4 mr-1 animate-spin" />
-						Saving...
+						保存中...
 					{:else}
-						{isEditing ? 'Save changes' : 'Add repository'}
+						{isEditing ? '保存更改' : '添加仓库'}
 					{/if}
 				</Button>
 			</Dialog.Footer>

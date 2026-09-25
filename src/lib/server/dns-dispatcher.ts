@@ -118,20 +118,20 @@ if (ALLOW_IPV6) {
 		dns.setDefaultResultOrder(DNS_RESULT_ORDER as 'verbatim' | 'ipv6first');
 		net.setDefaultAutoSelectFamily(true);
 	} catch (e) {
-		console.warn(`[DNS] Could not apply DNS_RESULT_ORDER=${DNS_RESULT_ORDER}:`, e);
+		console.warn(`[DNS] 无法应用 DNS_RESULT_ORDER=${DNS_RESULT_ORDER}:`, e);
 	}
-	console.log(`[DNS] DNS_RESULT_ORDER=${DNS_RESULT_ORDER} — IPv6 fallback enabled, using native resolver`);
+	console.log(`[DNS] DNS_RESULT_ORDER=${DNS_RESULT_ORDER} — 已开启 IPv6 降级策略，使用系统原生解析器`);
 	if (hasProxy) {
 		const proxyUrl = process.env.HTTPS_PROXY || process.env.https_proxy ||
 			process.env.HTTP_PROXY || process.env.http_proxy;
-		console.log(`[DNS] HTTP proxy detected (${proxyUrl}), using EnvHttpProxyAgent`);
+		console.log(`[DNS] 检测到 HTTP 代理 (${proxyUrl}), 启用 EnvHttpProxyAgent`);
 		setGlobalDispatcher(new EnvHttpProxyAgent());
 	}
 	// else: leave undici's built-in global dispatcher untouched.
 } else if (hasProxy) {
 	const proxyUrl = process.env.HTTPS_PROXY || process.env.https_proxy ||
 		process.env.HTTP_PROXY || process.env.http_proxy;
-	console.log(`[DNS] HTTP proxy detected (${proxyUrl}), using EnvHttpProxyAgent`);
+	console.log(`[DNS] 检测到 HTTP 代理 (${proxyUrl})，正在使用 EnvHttpProxyAgent`);
 	setGlobalDispatcher(new EnvHttpProxyAgent({ connect: connectOptions }));
 } else {
 	setGlobalDispatcher(new Agent({ connect: connectOptions }));

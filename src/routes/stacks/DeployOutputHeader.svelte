@@ -44,7 +44,7 @@
 		<span class="truncate font-medium">{stackName}</span>
 	{/if}
 	{#if env}
-		<span class="shrink-0 text-muted-foreground">on</span>
+		<span class="shrink-0 text-muted-foreground">在</span>
 		<EnvironmentIcon icon={env.icon || 'server'} envId={env.id} class="{iconClass} shrink-0 text-muted-foreground" />
 		<span class="truncate font-medium text-amber-600 dark:text-amber-400">{env.name}</span>
 	{/if}

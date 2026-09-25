@@ -85,7 +85,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY package.json package-lock.json ./
 RUN MAKEFLAGS="-j$(nproc)" npm ci --ignore-scripts \
     && MAKEFLAGS="-j$(nproc)" npm rebuild better-sqlite3 argon2
-ENV PATH="/app/node_modules/.bin:${PATH}"
+
 # Copy source code and build
 COPY . .
 RUN npm run build

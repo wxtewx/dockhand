@@ -33,12 +33,12 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 	const auth = await authorize(cookies);
 
 	if (auth.authEnabled && !auth.isAuthenticated) {
-		return json({ error: 'Authentication required' }, { status: 401 });
+		return json({ error: '需要进行身份验证' }, { status: 401 });
 	}
 	// Coarse gate -- see the identical comment in
 	// .../deploys/[runId]/+server.ts's GET handler.
 	if (auth.authEnabled && !(await auth.can('stacks', 'view'))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const stackName = decodeURIComponent(params.name);
@@ -54,14 +54,14 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 	// that survived redaction, see the module doc comment below), so this
 	// check runs BEFORE readRunLog() ever touches the file.
 	if (auth.authEnabled && !(await auth.can('stacks', 'view', run.environmentId ?? undefined))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// F5 fix: scoped to the run's OWN environment directory (deploy-log-store.ts) --
 	// readRunLog() only reaches a file another environment's run wrote.
 	const log = await readRunLog(run.environmentId, String(run.id));
 	if (log === null) {
-		return json({ error: 'Log not found' }, { status: 404 });
+		return json({ error: '未找到日志' }, { status: 404 });
 	}
 
 	return new Response(log, { headers: { 'content-type': 'text/plain' } });

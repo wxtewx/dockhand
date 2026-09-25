@@ -30,17 +30,17 @@ import type { SecretProviderConfig } from '$lib/server/secretproviders/shared';
 export const POST: RequestHandler = async ({ params, cookies, request }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !(await auth.can('secrets', 'view'))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限拒绝' }, { status: 403 });
 	}
 
 	const id = Number.parseInt(params.id);
 	if (Number.isNaN(id)) {
-		return json({ error: 'Invalid secret provider ID' }, { status: 400 });
+		return json({ error: '无效的密钥提供程序 ID' }, { status: 400 });
 	}
 
 	const provider = await getSecretProviderById(id);
 	if (!provider) {
-		return json({ error: 'Secret provider not found' }, { status: 404 });
+		return json({ error: '未找到密钥提供程序' }, { status: 404 });
 	}
 
 	let configToTest: SecretProviderConfig = provider.config;
@@ -63,7 +63,7 @@ export const POST: RequestHandler = async ({ params, cookies, request }) => {
 					// not reused for a new host, so the caller must supply one for it.
 					return json({
 						ok: false,
-						error: 'You changed the host or address, so enter its credential to test - the saved one is not reused for a different server.'
+						error: '您修改了主机或地址，请输入该服务器的凭据进行测试，已保存的凭据不会复用于其他服务器。'
 					}, { status: 200 });
 				}
 				configToTest = incoming as unknown as SecretProviderConfig;

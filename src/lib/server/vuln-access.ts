@@ -28,16 +28,16 @@ export async function authorizeVulnAccess(cookies: Cookies, url: URL): Promise<V
 	if (envParam !== null) {
 		const n = Number(envParam);
 		if (!Number.isInteger(n) || n < 0) {
-			return { envIdNum: undefined, authEnabled: auth.authEnabled, denied: { message: 'Invalid env', status: 400 } };
+			return { envIdNum: undefined, authEnabled: auth.authEnabled, denied: { message: '环境参数无效', status: 400 } };
 		}
 		envIdNum = n;
 	}
 
 	if (auth.authEnabled && !(await auth.can('images', 'view', envIdNum))) {
-		return { envIdNum, authEnabled: auth.authEnabled, denied: { message: 'Permission denied', status: 403 } };
+		return { envIdNum, authEnabled: auth.authEnabled, denied: { message: '权限被拒绝', status: 403 } };
 	}
 	if (envIdNum !== undefined && auth.isEnterprise && !(await auth.canAccessEnvironment(envIdNum))) {
-		return { envIdNum, authEnabled: auth.authEnabled, denied: { message: 'Access denied to this environment', status: 403 } };
+		return { envIdNum, authEnabled: auth.authEnabled, denied: { message: '无权访问此环境', status: 403 } };
 	}
 	return { envIdNum, authEnabled: auth.authEnabled };
 }

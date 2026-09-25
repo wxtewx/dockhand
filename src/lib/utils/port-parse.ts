@@ -67,16 +67,16 @@ export function validatePort(port: string): string {
 	if (rangeMatch) {
 		const start = parseInt(rangeMatch[1]);
 		const end = parseInt(rangeMatch[2]);
-		if (start < 1 || start > 65535) return `Port ${start} out of range (1-65535)`;
-		if (end < 1 || end > 65535) return `Port ${end} out of range (1-65535)`;
-		if (start >= end) return 'Range start must be less than end';
+		if (start < 1 || start > 65535) return `端口 ${start} 超出范围 (1-65535)`;
+		if (end < 1 || end > 65535) return `端口 ${end} 超出范围 (1-65535)`;
+		if (start >= end) return '区间起始值必须小于结束值';
 		return '';
 	}
 
 	// Single port
-	if (!/^\d+$/.test(port)) return 'Invalid port number';
+	if (!/^\d+$/.test(port)) return '端口格式无效';
 	const num = parseInt(port);
-	if (num < 1 || num > 65535) return 'Port out of range (1-65535)';
+	if (num < 1 || num > 65535) return '端口超出范围 (1-65535)';
 	return '';
 }
 
@@ -91,13 +91,13 @@ export function validateIp(ip: string): string {
 	if (/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) {
 		const parts = ip.split('.').map(Number);
 		if (parts.every(p => p >= 0 && p <= 255)) return '';
-		return 'Invalid IPv4 address';
+		return 'IPv4 地址无效';
 	}
 
 	// IPv6 (simplified check — accept common forms)
 	if (/^[0-9a-fA-F:]+$/.test(ip)) return '';
 
-	return 'Invalid IP address';
+	return 'IP 地址无效';
 }
 
 /**

@@ -18,11 +18,11 @@ export function formatUnhandledRejection(reason: unknown): string[] {
 	const err = reason instanceof Error ? reason : new Error(String(reason));
 	const code = (err as NodeJS.ErrnoException).code;
 	const lines = [
-		`[crash-guard] Unhandled promise rejection (process kept alive)${code ? ` [${code}]` : ''}: ${err.message}`
+		`[崩溃防护] 未处理的 Promise 拒绝 (进程继续运行)${code ? ` [${code}]` : ''}: ${err.message}`
 	];
 	if (err.stack) lines.push(err.stack);
 	const cause = (err as Error & { cause?: unknown }).cause;
-	if (cause) lines.push(`[crash-guard] caused by: ${cause instanceof Error ? cause.stack || cause.message : String(cause)}`);
+	if (cause) lines.push(`[崩溃防护] 起因: ${cause instanceof Error ? cause.stack || cause.message : String(cause)}`);
 	return lines;
 }
 
