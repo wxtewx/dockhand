@@ -28,6 +28,7 @@ import { assertSafeRepoUrl, assertSafeGitRef, repoFilePath, repoBaseEnvPath } fr
 import { assertSafeRepoTarget } from './git-branch-lookup';
 import { shouldDeployGitStack, shouldForceRecreateGitStack } from './git-deploy-policy';
 import { resolveStackBranch } from '../git-stack-branch';
+import { expandValue } from '$lib/utils/env-file-values';
 import {
 	parseManifest,
 	serializeManifest,
@@ -2131,7 +2132,16 @@ export async function listGitStackEnvFiles(stackId: number): Promise<{ files: st
  * Parse a .env file content into key-value pairs.
  * Handles comments, empty lines, and quoted values.
  */
-export function parseEnvFileContent(content: string, stackName?: string): Record<string, string> {
+export function parseEnvFileContent(
+	content: string,
+	stackName?: string,
+	options?: { expand?: boolean }
+): Record<string, string> {
+	// Expanding is for a DEPLOY, which needs the values a service will see. A caller
+	// showing the file to somebody wants their own text back, references and all -
+	// resolving it there would turn ${DIRECTORY} into a path in front of them, and an
+	// edit saved from that view would flatten the variable for good.
+	const expand = options?.expand !== false;
 	const logPrefix = stackName ? `[Stack:${stackName}]` : '[Git]';
 	const result: Record<string, string> = {};
 	const skippedLines: string[] = [];
@@ -2168,7 +2178,9 @@ export function parseEnvFileContent(content: string, stackName?: string): Record
 
 		// Only add if key is valid env var name
 		if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) {
-			result[key] = value;
+			// Quotes are the file's syntax, and a value may refer to an earlier line -
+			// both of which compose resolves before a service ever sees the value.
+			result[key] = expand ? expandValue(value, result) : value;
 		} else {
 			invalidKeys.push(`Line ${i + 1}: "${key}" (invalid key format)`);
 		}
@@ -2218,7 +2230,9 @@ export async function readGitStackEnvFile(
 
 	try {
 		const content = readFileSync(fullPath, 'utf-8');
-		const vars = parseEnvFileContent(content);
+		// A view of the user's own file: their text, not what a deploy would resolve it
+		// to. This is also the diff base the editor decides overrides against.
+		const vars = parseEnvFileContent(content, undefined, { expand: false });
 		return { vars };
 	} catch (error: any) {
 		return { vars: {}, error: error.message };
@@ -2324,7 +2338,7 @@ export async function previewRepoEnvFiles(options: PreviewEnvOptions): Promise<P
 		if (existsSync(baseEnvPath)) {
 			console.log(`${logPrefix} Reading .env from: ${baseEnvPath}`);
 			const content = readFileSync(baseEnvPath, 'utf-8');
-			const baseVars = parseEnvFileContent(content, 'preview');
+			const baseVars = parseEnvFileContent(content, 'preview', { expand: false });
 			for (const [key, value] of Object.entries(baseVars)) {
 				vars[key] = value;
 				sources[key] = '.env';
@@ -2341,7 +2355,7 @@ export async function previewRepoEnvFiles(options: PreviewEnvOptions): Promise<P
 			if (existsSync(additionalEnvPath)) {
 				console.log(`${logPrefix} Reading additional env file: ${additionalEnvPath}`);
 				const content = readFileSync(additionalEnvPath, 'utf-8');
-				const additionalVars = parseEnvFileContent(content, 'preview');
+				const additionalVars = parseEnvFileContent(content, 'preview', { expand: false });
 				for (const [key, value] of Object.entries(additionalVars)) {
 					vars[key] = value;
 					sources[key] = 'envFile';

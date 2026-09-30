@@ -7,7 +7,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { TogglePill } from '$lib/components/ui/toggle-pill';
 	import CronEditor from '$lib/components/cron-editor.svelte';
-	import { Save, Play, Pause, RefreshCw, CheckCircle, XCircle, ChevronDown, Loader2, Plus, Trash2, Pencil, X, Check, HardDrive, Box, Layers, FileText, FolderOpen, AlertTriangle } from 'lucide-svelte';
+	import { Save, Play, Pause, RefreshCw, CheckCircle, XCircle, ChevronDown, Loader2, Plus, Trash2, Pencil, Copy, X, Check, HardDrive, Box, Layers, FileText, FolderOpen, AlertTriangle } from 'lucide-svelte';
 	import RotateCwFadingClock from '$lib/components/icons/RotateCwFadingClock.svelte';
 	import VolumePicker from '$lib/components/backup/VolumePicker.svelte';
 	import StackFilesPicker from '$lib/components/backup/StackFilesPicker.svelte';
@@ -24,7 +24,7 @@
 	import { watchJob } from '$lib/utils/sse-fetch';
 	import ConfirmPopover from '$lib/components/ConfirmPopover.svelte';
 	import { Checkbox } from '$lib/components/ui/checkbox';
-	import { getRepoTypeIcon, parseRetention, parseOptions, retentionSummary as getRetentionSummary, formatCron, runBackupAction, classifyJobResult, tagLogLine, fetchBackupExecutions, type BackupAction, type BackupFormState } from '$lib/utils/backup';
+	import { getRepoTypeIcon, parseRetention, parseOptions, retentionSummary as getRetentionSummary, formatCron, runBackupAction, classifyJobResult, tagLogLine, fetchBackupExecutions, pickDuplicateDestinationId, duplicateStartsEnabled, type BackupAction, type BackupFormState } from '$lib/utils/backup';
 	import { reconcileSelectedVolumeKeys } from '$lib/utils/mounts';
 
 	interface Props {
@@ -121,6 +121,12 @@
 	// button and show the right spinner. The form itself is unified — only
 	// the post-submit behavior differs.
 	let submitAction = $state<'save' | 'save-run' | 'run-once' | null>(null);
+	/**
+	 * The form was opened by "duplicate". A run-once from here would look up the
+	 * config by destination and overwrite the very schedule being copied, so that
+	 * action is not offered: copying a schedule means saving one.
+	 */
+	let duplicating = $state(false);
 	let showAdvanced = $state(false);
 
 	// Live restic progress for a manual backup run (Run once / Save & run now, and
@@ -211,6 +217,7 @@
 	function startNewConfig() {
 		editingConfig = null;
 		isNew = true;
+		duplicating = false;
 		editDestinationId = destinations[0]?.id || 0;
 		editEnabled = true;
 		editSchedule = '0 2 * * *';
@@ -252,9 +259,24 @@
 		showAdvanced = false;
 	}
 
+	/** Open a NEW-schedule form prefilled from an existing config (#1578). */
+	function startDuplicateConfig(cfg: BackupConfig) {
+		startEditConfig(cfg);
+		editingConfig = null;
+		isNew = true;
+		duplicating = true;
+		editEnabled = duplicateStartsEnabled(cfg);
+		editDestinationId = pickDuplicateDestinationId(
+			cfg.destinationId,
+			destinations.map((d) => d.id),
+			configs.map((c) => c.destinationId)
+		);
+	}
+
 	function cancelEdit() {
 		editingConfig = null;
 		isNew = false;
+		duplicating = false;
 	}
 
 	/**
@@ -383,7 +405,7 @@
 			if (runsBackup) progressStatus = 'success';
 			if (action === 'save') toast.success(isNew ? 'Backup schedule added' : 'Backup schedule updated');
 			else toast.success(`Backup completed for ${containerName}`);
-			editingConfig = null; isNew = false;
+			editingConfig = null; isNew = false; duplicating = false;
 			fetchConfigs();
 			// 'save-run'/'run-once' just wrote a snapshot — reload the list so it appears
 			// without a manual refresh. A plain 'save' writes none, so skip it.
@@ -618,6 +640,9 @@
 					<button type="button" class="p-1 rounded hover:bg-muted" onclick={() => startEditConfig(cfg)} title="Edit">
 						<Pencil class="w-3 h-3 text-muted-foreground" />
 					</button>
+					<button type="button" class="p-1 rounded hover:bg-muted" onclick={() => startDuplicateConfig(cfg)} title="Duplicate">
+						<Copy class="w-3 h-3 text-muted-foreground" />
+					</button>
 					<ConfirmPopover
 						open={confirmDeleteId === cfg.id}
 						action="Delete"
@@ -802,10 +827,12 @@
 							Save
 						</Button>
 					{:else}
-						<Button size="sm" variant="outline" onclick={() => submitForm('run-once')} disabled={saving || !editDestinationId} title="Run a backup now, don't save a schedule">
-							{#if saving && submitAction === 'run-once'}<Loader2 class="w-3.5 h-3.5 mr-1 animate-spin" />{:else}<Play class="w-3.5 h-3.5 mr-1" />{/if}
-							Run once
-						</Button>
+						{#if !duplicating}
+							<Button size="sm" variant="outline" onclick={() => submitForm('run-once')} disabled={saving || !editDestinationId} title="Run a backup now, don't save a schedule">
+								{#if saving && submitAction === 'run-once'}<Loader2 class="w-3.5 h-3.5 mr-1 animate-spin" />{:else}<Play class="w-3.5 h-3.5 mr-1" />{/if}
+								Run once
+							</Button>
+						{/if}
 						<Button size="sm" variant="outline" onclick={() => submitForm('save')} disabled={saving || editScheduleInvalid || !editDestinationId}>
 							{#if saving && submitAction === 'save'}<Loader2 class="w-3.5 h-3.5 mr-1 animate-spin" />{:else}<Save class="w-3.5 h-3.5 mr-1" />{/if}
 							Save schedule

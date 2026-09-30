@@ -174,6 +174,9 @@
 	type SecretProviderOption = { id: number; name: string; type: string };
 	let secretProviders = $state<SecretProviderOption[]>([]);
 	let formSecretProviderId = $state<number | null>(null);
+	// Whether the user has picked a provider themselves this open - "None" is null
+	// too, so the value alone cannot tell an untouched form from a deliberate none.
+	let secretProviderTouched = $state(false);
 	// Provider-injected key NAMES from the last deploy (banner)
 	let injectedSecretKeys = $state<string[]>([]);
 	// Provider type/name for the injected-secrets banner in the env panel.
@@ -374,7 +377,17 @@
 		if (!opts.silent) validateLoading = true;
 		validateError = null;
 		validatePanelOpen = true;
+		// Claimed before the probe below, so reopening the modal (which bumps the counter)
+		// still cancels a run parked on a slow provider.
 		const seq = ++validateSeq;
+		// A deliberate Validate re-reads the provider first: the probe otherwise only runs
+		// on the env-edit debounce, so a key removed in the vault since then would still
+		// count as present. A silent re-validate skips this - it follows a local quick fix,
+		// and the provider cannot have changed in between.
+		if (!opts.silent) {
+			await runProbe();
+			if (seq !== validateSeq) return; // modal reopened, or a newer validate started
+		}
 		try {
 			const envId = $currentEnvironment?.id ?? null;
 			const name = (mode === 'edit' ? stackName : newStackName) || 'stack';
@@ -393,6 +406,10 @@
 					body: JSON.stringify({
 							compose: composeContent,
 							envVars: validateEnvVars,
+							// Key NAMES the bound provider currently supplies - the same probe set
+							// behind the IN VAULT markers. The server fills them with a placeholder
+							// so config stops calling them missing; no value is sent (#1621).
+							providerKeys: [...providerKeySet],
 							// Only an EDIT of an existing stack has "own" containers to exclude from
 							// collision checks. A NEW stack with a name that clashes with a running
 							// stack must still be flagged, so never self-exclude in create mode.
@@ -1269,6 +1286,31 @@
 		}
 	}
 
+	/**
+	 * Preselect the configured default on a NEW stack only, and only while the user
+	 * has not picked one - an existing stack keeps its own binding, including none.
+	 *
+	 * The guard is the touched flag, not the value: "None" is also null, so a user
+	 * who picks it while this request is in flight must not have it overwritten.
+	 */
+	async function applyDefaultSecretProvider() {
+		if (mode !== 'create' || secretProviderTouched) return;
+		try {
+			const response = await fetch('/api/secret-providers/default');
+			if (!response.ok) return;
+			const data = await response.json();
+			const id = data?.providerId ?? null;
+			if (id === null || mode !== 'create' || secretProviderTouched) return;
+			formSecretProviderId = id;
+			// The probe in the open effect ran before this resolved, so without these
+			// the IN VAULT markers stay empty until some later edit triggers a refresh.
+			runProbe();
+			validateEnvVars();
+		} catch (e) {
+			console.warn('Failed to load the default secret provider:', e);
+		}
+	}
+
 	onDestroy(() => {
 		window.removeEventListener('mousemove', handleMouseMove);
 		window.removeEventListener('mouseup', handleMouseUp);
@@ -2016,6 +2058,8 @@
 			validateLoading = false;
 			validateActiveLine = null;
 			validateSeq++;
+			// Same reasoning: a pick from a previous open must not count as one here.
+			secretProviderTouched = false;
 			// Same reasoning for the docked deploy output: without this, reopening the
 			// modal for a *different* stack would still show the previous stack's title,
 			// lines and status ("Redeploying A" / "Succeeded" while looking at stack B).
@@ -2047,6 +2091,10 @@
 				}
 				isDirty = false; // Reset dirty flag for new modal
 				loading = false;
+				// The modal stays mounted, so a binding from a previous open would
+				// otherwise carry into the new stack.
+				formSecretProviderId = null;
+				applyDefaultSecretProvider();
 				// Auto-validate default compose
 				validateEnvVars();
 				runProbe();
@@ -2580,7 +2628,7 @@
 									bind:secretProviderId={formSecretProviderId}
 									bind:envVars
 									providers={secretProviders}
-									onchange={() => { markDirty(); debouncedValidate(); }}
+									onchange={() => { secretProviderTouched = true; markDirty(); debouncedValidate(); }}
 								/>
 								<StackEnvVarsPanel
 									bind:this={envVarsPanelRef}

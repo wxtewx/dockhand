@@ -97,13 +97,18 @@ export function matchesTagFilter(
 		: filterTagIds.every((id) => have.has(id));
 }
 
+/** Case-insensitive name order, tie-broken by id so it is total and stable. #1625 */
+export function compareTagNames(a: Tag, b: Tag): number {
+	return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) || a.id - b.id;
+}
+
 /**
  * Build a DataGrid group descriptor for an item's unique tag COMBINATION (used by
  * the containers/stacks "group by tag" mode). Returns null for an untagged item so
- * it falls into the trailing "Untagged" bucket. The combination key is the sorted
- * tag ids joined with '+', so a container tagged prod+infra forms its own group,
- * distinct from just prod. Order weight puts fewer-tag groups first, tie-broken by
- * first tag id, so ordering is stable.
+ * it falls into the trailing "Untagged" bucket. The key is the numerically sorted
+ * tag ids joined with '+' (stable across renames, so collapsed state survives); the
+ * label, colour and icons follow tag-name order. Order weight puts fewer-tag groups
+ * first; groupData breaks ties by label, so groups read alphabetically.
  */
 export function tagGroupDescriptor(tags: Tag[]): {
 	key: string;
@@ -113,12 +118,12 @@ export function tagGroupDescriptor(tags: Tag[]): {
 	order: number;
 } | null {
 	if (!tags.length) return null;
-	const sorted = tags.slice().sort((a, b) => a.id - b.id);
+	const byName = tags.slice().sort(compareTagNames);
 	return {
-		key: sorted.map((t) => t.id).join('+'),
-		label: sorted.map((t) => t.name).join(' + '),
-		color: tagHex(sorted[0].color),
-		icons: sorted.map((t) => t.icon ?? null),
-		order: sorted.length * 1e6 + sorted[0].id
+		key: tags.map((t) => t.id).sort((a, b) => a - b).join('+'),
+		label: byName.map((t) => t.name).join(' + '),
+		color: tagHex(byName[0].color),
+		icons: byName.map((t) => t.icon ?? null),
+		order: tags.length
 	};
 }

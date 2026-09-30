@@ -13,6 +13,7 @@
 		PlugZap,
 		RefreshCw,
 		Check,
+		Star,
 	} from 'lucide-svelte';
 	import { scale } from 'svelte/transition';
 	import { backOut, cubicIn } from 'svelte/easing';
@@ -39,6 +40,9 @@
 	// Brief green tick on the tile's Test button right after a successful test.
 	let testOkId = $state<number | null>(null);
 	let testOkTimer: ReturnType<typeof setTimeout> | undefined;
+	// Preselected on new stacks. Null = none, so every stack picks its own (#1609).
+	let defaultProviderId = $state<number | null>(null);
+	let savingDefaultId = $state<number | null>(null);
 
 	async function fetchProviders() {
 		loading = true;
@@ -50,6 +54,45 @@
 			toast.error('Failed to fetch secret providers');
 		} finally {
 			loading = false;
+		}
+	}
+
+	async function fetchDefaultProvider() {
+		try {
+			const response = await fetch('/api/secret-providers/default');
+			if (!response.ok) return;
+			const data = await response.json();
+			defaultProviderId = data.providerId ?? null;
+		} catch (e) {
+			console.warn('Failed to load the default secret provider:', e);
+		}
+	}
+
+	// Star the provider, or un-star it to go back to no default.
+	async function toggleDefault(provider: SecretProvider) {
+		const next = defaultProviderId === provider.id ? null : provider.id;
+		savingDefaultId = provider.id;
+		try {
+			const response = await fetch('/api/secret-providers/default', {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ providerId: next }),
+			});
+			const data = await response.json();
+			if (!response.ok) {
+				toast.error(data.error || 'Failed to save the default secret provider');
+				return;
+			}
+			defaultProviderId = data.providerId ?? null;
+			toast.success(
+				next === null
+					? 'No default secret provider'
+					: `${provider.name} is now the default for new stacks`,
+			);
+		} catch {
+			toast.error('Failed to save the default secret provider');
+		} finally {
+			savingDefaultId = null;
 		}
 	}
 
@@ -81,6 +124,9 @@
 			});
 			if (response.ok) {
 				await fetchProviders();
+				// Deleting the default leaves the stored id dangling; the API resolves
+				// it against the live list, so re-read rather than assuming.
+				if (defaultProviderId === id) await fetchDefaultProvider();
 				toast.success('Secret provider deleted');
 			} else {
 				const data = await response.json();
@@ -118,6 +164,7 @@
 
 	onMount(() => {
 		fetchProviders();
+		fetchDefaultProvider();
 	});
 </script>
 
@@ -162,6 +209,15 @@
 									<Card.Title class="text-base"
 										>{provider.name}</Card.Title
 									>
+									{#if defaultProviderId === provider.id}
+										<Badge
+											variant="outline"
+											class="text-xs gap-1 border-amber-500/50 text-amber-600 dark:text-amber-400"
+										>
+											<Star class="w-3 h-3 fill-current" />
+											Default
+										</Badge>
+									{/if}
 								</div>
 								<Badge variant="secondary" class="text-xs"
 									>{providerTypeLabel(provider.type)}</Badge
@@ -198,6 +254,23 @@
 									</Button>
 								{/if}
 								{#if $canAccess("secrets", "edit")}
+									<Button
+										variant="outline"
+										size="sm"
+										onclick={() => toggleDefault(provider)}
+										disabled={savingDefaultId === provider.id}
+										title={defaultProviderId === provider.id
+											? 'Stop preselecting this provider on new stacks'
+											: 'Preselect this provider on new stacks'}
+										class={defaultProviderId === provider.id
+											? 'border-amber-500/50 text-amber-600 dark:text-amber-400'
+											: ''}
+									>
+										<Star
+											class="w-3 h-3 mr-1 {defaultProviderId === provider.id ? 'fill-current' : ''}"
+										/>
+										{defaultProviderId === provider.id ? 'Default' : 'Make default'}
+									</Button>
 									<Button
 										variant="outline"
 										size="sm"

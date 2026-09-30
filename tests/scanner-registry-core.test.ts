@@ -2,6 +2,7 @@ import { describe, test, expect } from 'bun:test';
 import {
 	isDaemonExportFailure,
 	toRegistryScanCmd,
+	toRegistryRef,
 	registryAuthEnv,
 	imageRegistryAuthority,
 	RegistryFallbackMemory,
@@ -64,6 +65,140 @@ describe('toRegistryScanCmd', () => {
 		expect(out.filter((t) => t.startsWith('registry:')).length).toBe(1);
 		expect(out[0]).toBe('-o');
 		expect(out[1]).toBe('json');
+	});
+});
+
+describe('toRegistryRef', () => {
+	// An auto-update scans repo:tag-dockhand-pending, a tag that exists only on this
+	// host. Carrying it into the registry fallback asks for something never pushed, and
+	// the registry answers MANIFEST_UNKNOWN - so both scanners fail and the update is
+	// blocked on an image that is in fact fine.
+	test('strips the pending suffix the auto-update scan added', () => {
+		expect(toRegistryRef('docker.io/gotenberg/gotenberg:latest-dockhand-pending')).toBe(
+			'docker.io/gotenberg/gotenberg:latest'
+		);
+	});
+
+	test('strips the update suffix too', () => {
+		expect(toRegistryRef('nginx:1.27-dockhand-update')).toBe('nginx:1.27');
+	});
+
+	test('round-trips whatever getTempImageTag produces for a bare name', () => {
+		// getTempImageTag('nginx') -> 'nginx:latest-dockhand-pending'
+		expect(toRegistryRef('nginx:latest-dockhand-pending')).toBe('nginx:latest');
+	});
+
+	test('a real tag is returned unchanged', () => {
+		expect(toRegistryRef('docker.io/gotenberg/gotenberg:latest')).toBe(
+			'docker.io/gotenberg/gotenberg:latest'
+		);
+		expect(toRegistryRef('nginx')).toBe('nginx');
+	});
+
+	test('a digest ref is left alone', () => {
+		// getTempImageTag returns a digest ref unchanged, so one never carries a suffix.
+		const d = 'nginx@sha256:' + 'a'.repeat(64);
+		expect(toRegistryRef(d)).toBe(d);
+	});
+
+	test('a registry port is not mistaken for a tag', () => {
+		expect(toRegistryRef('registry.bor6.pl:5000/team/app')).toBe('registry.bor6.pl:5000/team/app');
+		expect(toRegistryRef('registry.bor6.pl:5000/team/app:v2-dockhand-pending')).toBe(
+			'registry.bor6.pl:5000/team/app:v2'
+		);
+	});
+
+	test('the words only count as a suffix of the final tag', () => {
+		// A repository legitimately named after the suffix must survive intact, and so
+		// must a tag that merely contains the words in the middle.
+		expect(toRegistryRef('docker.io/acme/dockhand-pending-tools:v1')).toBe(
+			'docker.io/acme/dockhand-pending-tools:v1'
+		);
+		expect(toRegistryRef('acme/app:-dockhand-pending-rc1')).toBe('acme/app:-dockhand-pending-rc1');
+	});
+
+	test('a tag that is nothing but the suffix is left alone', () => {
+		// Stripping would leave an empty tag, which is not a ref the registry can answer.
+		expect(toRegistryRef('acme/app:-dockhand-pending')).toBe('acme/app:-dockhand-pending');
+	});
+});
+
+describe('toRegistryRef for the bare image ID the auto-update scans with', () => {
+	// The per-container auto-update scans by image ID, because that ID keys the scan
+	// cache. A registry cannot answer an ID - it carries no repository - so the real
+	// tag has to come from the image inspect.
+	const ID = 'sha256:' + 'b'.repeat(64);
+
+	test('resolves to the real tag from the inspect', () => {
+		expect(toRegistryRef(ID, ['docker.io/gotenberg/gotenberg:latest'])).toBe(
+			'docker.io/gotenberg/gotenberg:latest'
+		);
+	});
+
+	test('a short digest with no sha256 prefix resolves too', () => {
+		expect(toRegistryRef('b'.repeat(64), ['nginx:1.27'])).toBe('nginx:1.27');
+	});
+
+	test('prefers a real tag over the temp tag sitting beside it', () => {
+		// Mid-update the image carries both, and the temp one is exactly what the
+		// registry cannot answer.
+		expect(
+			toRegistryRef(ID, ['nginx:1.27-dockhand-pending', 'nginx:1.27'])
+		).toBe('nginx:1.27');
+	});
+
+	test('a temp tag is still cleaned when it is the only one', () => {
+		// Nothing better exists, and the stripped form is what was pulled.
+		expect(toRegistryRef(ID, ['nginx:1.27-dockhand-pending'])).toBe(ID);
+	});
+
+	test('stays the ID when the inspect offers nothing usable', () => {
+		// Better an unresolvable ref and the registry's own error than a guess.
+		expect(toRegistryRef(ID, [])).toBe(ID);
+		expect(toRegistryRef(ID, undefined)).toBe(ID);
+		expect(toRegistryRef(ID, ['<none>:<none>'])).toBe(ID);
+	});
+
+	test('repoTags are ignored for a ref that is already resolvable', () => {
+		// A real ref is what the caller asked about; a RepoTag must not redirect it.
+		expect(toRegistryRef('nginx:1.27', ['other/image:v9'])).toBe('nginx:1.27');
+		expect(toRegistryRef('nginx:1.27-dockhand-pending', ['other/image:v9'])).toBe('nginx:1.27');
+	});
+
+	test('a 64-hex string is an ID, a shorter hex tag is not', () => {
+		// 'repo:abc123' is a legitimate tag, not a digest, and must be left alone.
+		expect(toRegistryRef('repo:abc123', ['other:v1'])).toBe('repo:abc123');
+	});
+});
+
+describe('toRegistryScanCmd with a distinct registry ref', () => {
+	const LOCAL = 'docker.io/gotenberg/gotenberg:latest-dockhand-pending';
+	const REAL = 'docker.io/gotenberg/gotenberg:latest';
+
+	test('grype asks the registry for the real tag, not the local one', () => {
+		const daemon = ['-o', 'json', '-v', LOCAL];
+		expect(toRegistryScanCmd('grype', daemon, LOCAL, REAL)).toEqual([
+			'-o',
+			'json',
+			'-v',
+			`registry:${REAL}`
+		]);
+	});
+
+	test('trivy asks the registry for the real tag, not the local one', () => {
+		const daemon = ['image', '--format', 'json', LOCAL];
+		expect(toRegistryScanCmd('trivy', daemon, LOCAL, REAL)).toEqual([
+			'image',
+			'--format',
+			'json',
+			REAL
+		]);
+	});
+
+	test('the token is still matched on the ref the daemon was given', () => {
+		// The command carries the local tag; matching on the real one would rewrite nothing.
+		const daemon = ['-o', 'json', LOCAL];
+		expect(toRegistryScanCmd('grype', daemon, LOCAL, REAL)).not.toContain(LOCAL);
 	});
 });
 

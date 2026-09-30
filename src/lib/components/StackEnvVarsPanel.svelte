@@ -9,6 +9,7 @@
 	import { getProviderIcon } from '$lib/components/provider-icons';
 	import { providerTypeLabel } from '../../routes/settings/secrets/ProviderModal.svelte';
 	import { effectiveMissing } from '$lib/utils/invault-markers';
+	import { parseRawContent, generateRawContent, keysInRawContent, mergeParsedIntoVariables, textEditorContent as deriveTextEditorContent } from '$lib/utils/env-panel-core';
 
 	interface Props {
 		variables: EnvVar[]; // Bindable - ALL variables (secrets + non-secrets)
@@ -106,16 +107,9 @@
 		})
 	);
 
-	// Generate text representation from variables (non-secrets only)
-	// This is used for text view display
-	const generatedRawContent = $derived.by(() => {
-		const nonSecrets = variables.filter(v => v.key.trim() && !v.isSecret);
-		if (nonSecrets.length === 0) return '';
-		return nonSecrets.map(v => `${v.key.trim()}=${v.value}`).join('\n') + '\n';
-	});
-
-	// Text editor content - either from file (rawContent prop) or generated from variables
-	const textEditorContent = $derived(rawContent.trim() ? rawContent : generatedRawContent);
+	// What text view shows: the .env file, or the non-secret rows rendered as text when
+	// there is no file yet.
+	const textEditorContent = $derived(deriveTextEditorContent(rawContent, variables));
 
 	/**
 	 * Sync variables with rawContent after initial load.
@@ -124,7 +118,7 @@
 	 */
 	export function syncAfterLoad(loadedVars: EnvVar[], loadedRaw: string) {
 		if (!loadedRaw.trim()) {
-			// No raw content from file - just set variables, text view will use generatedRawContent
+			// No raw content from file - just set variables; text view renders them as text
 			variables = loadedVars;
 			rawContent = '';
 			return;
@@ -144,39 +138,6 @@
 		rawContent = loadedRaw;
 	}
 
-	/**
-	 * Parse raw content to extract non-secret variables.
-	 */
-	function parseRawContent(content: string): { vars: EnvVar[], warnings: string[] } {
-		const result: EnvVar[] = [];
-		const warnings: string[] = [];
-		let lineNum = 0;
-
-		for (const line of content.split('\n')) {
-			lineNum++;
-			const trimmed = line.trim();
-			if (!trimmed || trimmed.startsWith('#')) continue;
-
-			const eqIndex = trimmed.indexOf('=');
-			if (eqIndex === -1) {
-				warnings.push(`Line ${lineNum}: "${trimmed.slice(0, 30)}${trimmed.length > 30 ? '...' : ''}" (no = found)`);
-				continue;
-			}
-
-			const key = trimmed.slice(0, eqIndex).trim();
-			const value = trimmed.slice(eqIndex + 1);
-
-			if (key) {
-				if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(key)) {
-					warnings.push(`Line ${lineNum}: "${key}" (invalid variable name)`);
-					continue;
-				}
-				result.push({ key, value, isSecret: false });
-			}
-		}
-
-		return { vars: result, warnings };
-	}
 
 	/**
 	 * Sync variables (non-secrets) TO rawContent.
@@ -188,7 +149,7 @@
 		// If no raw content exists, generate fresh
 		if (!rawContent.trim()) {
 			if (nonSecretVars.length > 0) {
-				rawContent = nonSecretVars.map(v => `${v.key.trim()}=${v.value}`).join('\n') + '\n';
+				rawContent = generateRawContent(nonSecretVars);
 			}
 			return;
 		}
@@ -242,18 +203,17 @@
 	}
 
 	/**
-	 * Sync rawContent TO variables.
-	 * Parses raw content for non-secrets, preserves existing secrets.
+	 * Parse editor text back into variables.
+	 *
+	 * `shownBefore` is what the editor was displaying before this text arrived. Rows
+	 * outside it were never on screen - a selector written straight into variables by
+	 * the provider picker, say - so they are kept rather than wiped (#1620). Rows that
+	 * WERE on screen and are absent from the new text were deleted by the user.
 	 */
-	function syncRawToVariables(content?: string) {
+	function syncRawToVariables(content?: string, shownBefore?: Set<string>) {
 		const { vars, warnings } = parseRawContent(content ?? rawContent);
 		parseWarnings = warnings;
-
-		// Preserve existing secrets (they're not in rawContent)
-		const existingSecrets = variables.filter(v => v.isSecret);
-
-		// Merge: non-secrets from raw + existing secrets
-		variables = [...vars, ...existingSecrets];
+		variables = mergeParsedIntoVariables(vars, variables, shownBefore ?? keysInRawContent(textEditorContent));
 	}
 
 	/**
@@ -261,9 +221,11 @@
 	 * Always syncs variables→raw to get proper .env content for disk.
 	 */
 	export function prepareForSave(): { rawContent: string; variables: EnvVar[] } {
-		// If in text view, first sync raw→variables to capture edits
+		// If in text view, first sync raw->variables to capture edits. Parse what the
+		// editor SHOWS: with an empty .env that is the rows rendered as text, and reading
+		// rawContent instead would drop every visible non-secret row (#1620).
 		if (viewMode === 'text') {
-			syncRawToVariables();
+			syncRawToVariables(textEditorContent);
 		}
 		// Then sync variables→raw to ensure rawContent is up to date
 		syncVariablesToRaw();
@@ -275,8 +237,11 @@
 	}
 
 	function handleTextChange(value: string) {
+		// Capture what was on screen BEFORE the edit, so a row the user just deleted is
+		// not mistaken for one the editor never showed.
+		const shownBefore = keysInRawContent(textEditorContent);
 		rawContent = value;
-		syncRawToVariables(); // Sync to variables so parent's envVars updates (for compose decorations)
+		syncRawToVariables(value, shownBefore); // keeps parent's envVars live for compose decorations
 		onchange?.();
 	}
 
@@ -285,8 +250,8 @@
 			// Form → Text: sync variables to raw (preserves comments)
 			syncVariablesToRaw();
 		} else if (newMode === 'form' && viewMode === 'text') {
-			// Text → Form: use textEditorContent which falls back to generatedRawContent
-			// when rawContent is empty (fixes vars lost on view switch for git stacks)
+			// Text -> Form: parse what the editor shows, which is the rows rendered as text
+			// when there is no .env file (keeps vars that only exist as rows)
 			syncRawToVariables(textEditorContent);
 		}
 

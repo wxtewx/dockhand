@@ -177,6 +177,30 @@ export interface BackupFormState {
  */
 export type BackupAction = 'save' | 'save-run' | 'run-once';
 
+/**
+ * Whether a duplicated config should start enabled.
+ *
+ * A manual config is stored disabled because it has no schedule; its copy exists to
+ * be given one, so it starts enabled. A copy of a scheduled config keeps whatever
+ * the original was, so duplicating a paused schedule does not quietly resume it.
+ */
+export function duplicateStartsEnabled(source: { schedule?: string | null; enabled?: boolean }): boolean {
+	if (!source.schedule) return true;
+	return source.enabled !== false;
+}
+
+/**
+ * Destination for a duplicated schedule: the first repository this target has no
+ * schedule for yet, so the copy lands elsewhere by default; else the source's own.
+ */
+export function pickDuplicateDestinationId(
+	sourceDestinationId: number,
+	destinationIds: number[],
+	usedDestinationIds: number[]
+): number {
+	return destinationIds.find((id) => !usedDestinationIds.includes(id)) ?? sourceDestinationId;
+}
+
 export interface BuildBodyOptions {
 	enabled: boolean;
 	/** Set to null to explicitly clear the schedule (run-once needs this). */

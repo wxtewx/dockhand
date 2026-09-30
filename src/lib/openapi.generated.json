@@ -1605,6 +1605,9 @@
                   "properties": {
                     "success": {
                       "type": "boolean"
+                    },
+                    "logoutUrl": {
+                      "type": "string"
                     }
                   },
                   "required": [
@@ -1621,7 +1624,8 @@
             "description": "Unexpected error while destroying the session"
           }
         },
-        "security": []
+        "security": [],
+        "description": "When the session came from an OIDC provider that publishes an end-session endpoint, the response carries a logoutUrl the caller should navigate to so the provider ends its own session too. Never present when the instance sets OIDC_END_SESSION=false."
       }
     },
     "/api/auth/oidc": {
@@ -2132,16 +2136,10 @@
             "description": "Successful response"
           },
           "302": {
-            "description": "Redirect to the IdP's authorization URL"
+            "description": "Redirect to the IdP's authorization URL, or back to /login?local=1&error=... when the provider is unknown, disabled or unreachable"
           },
           "400": {
             "description": "Authentication is not enabled, or the configuration id is invalid"
-          },
-          "404": {
-            "description": "OIDC provider not found or disabled"
-          },
-          "500": {
-            "description": "Failed to build the authorization URL / initiate SSO"
           }
         },
         "security": []
@@ -2317,7 +2315,7 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Successful response",
+            "description": "autoLoginUrl is present only when OIDC_AUTOLOGIN is set and exactly one OIDC provider is enabled; the login page then goes straight there",
             "content": {
               "application/json": {
                 "schema": {
@@ -2349,6 +2347,9 @@
                       }
                     },
                     "defaultProvider": {
+                      "type": "string"
+                    },
+                    "autoLoginUrl": {
                       "type": "string"
                     }
                   }
@@ -2844,6 +2845,9 @@
               }
             }
           },
+          "403": {
+            "description": "Permission denied (needs schedules:view, and access to the environment)"
+          },
           "500": {
             "description": "Failed to get auto-update settings"
           }
@@ -2920,6 +2924,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Permission denied, or no access to the environment"
           },
           "500": {
             "description": "Failed to get auto-update setting"
@@ -3003,6 +3010,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Permission denied, or no access to the environment"
           },
           "500": {
             "description": "Failed to save auto-update setting"
@@ -3096,6 +3106,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Permission denied, or no access to the environment"
           },
           "500": {
             "description": "Failed to delete auto-update setting"
@@ -10720,9 +10733,19 @@
                 ]
               }
             }
+          },
+          "401": {
+            "description": "Not authenticated"
           }
         },
-        "security": []
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/docs": {
@@ -11314,6 +11337,12 @@
                     },
                     "thresholdGb": {
                       "type": "integer"
+                    },
+                    "percentageSupported": {
+                      "type": "boolean"
+                    },
+                    "storageDriver": {
+                      "type": "string"
                     }
                   },
                   "required": [
@@ -11327,7 +11356,9 @@
                   "enabled": true,
                   "mode": "percentage",
                   "threshold": 80,
-                  "thresholdGb": 50
+                  "thresholdGb": 50,
+                  "percentageSupported": false,
+                  "storageDriver": "overlay2"
                 }
               }
             }
@@ -11349,7 +11380,8 @@
           {
             "bearerAuth": []
           }
-        ]
+        ],
+        "description": "percentageSupported and storageDriver are null when the host could not be reached, which means unknown rather than unsupported - only false says the host reports no storage pool size and so percentage warnings would never fire there."
       },
       "post": {
         "operationId": "post_api_environments_id_disk-warning",
@@ -12975,6 +13007,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Permission denied (needs environments:create or environments:edit)"
           }
         },
         "security": [
@@ -13144,6 +13179,9 @@
         "responses": {
           "200": {
             "description": "text/event-stream SSE stream (\"connected\", \"heartbeat\" every 5s, \"docker\" events with {type,action,actor,time,timeNano}, or an \"error\"/\"info\" event for edge environments, missing/unknown environment, or a lost Docker connection)"
+          },
+          "403": {
+            "description": "Permission denied, or no access to the environment"
           }
         },
         "security": [
@@ -15631,6 +15669,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "403": {
+            "description": "Permission denied (missing environments:view)"
           }
         },
         "security": [
@@ -15640,7 +15684,8 @@
           {
             "bearerAuth": []
           }
-        ]
+        ],
+        "description": "Requires environments:view. Each entry names a remote host and the Docker and agent versions running on it, so the listing is limited to the environments the caller can reach."
       },
       "post": {
         "operationId": "post_api_hawser_connect",
@@ -16455,7 +16500,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Image ID or name to export (from GET /api/images)"
+            "description": "Image ID to export (from GET /api/images); a name containing a slash cannot be used here, since it would split the route"
           },
           {
             "name": "env",
@@ -16465,6 +16510,15 @@
               "type": "integer"
             },
             "description": "ID of the environment the image belongs to (from GET /api/environments)"
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Which of the image's tags to name the download after (defaults to its first tag)"
           },
           {
             "name": "compress",
@@ -17573,7 +17627,8 @@
             "description": "Failed to read the license status"
           }
         },
-        "security": []
+        "security": [],
+        "description": "Any authenticated caller sees whether a license is active and who it is issued to, because the UI decides what to offer from that. The key itself is included only for a caller holding license:manage."
       },
       "post": {
         "operationId": "post_api_license",
@@ -18184,7 +18239,7 @@
             "description": "Container ID is required"
           },
           "403": {
-            "description": "Permission denied"
+            "description": "Permission denied (needs networks:connect; the Dockhand container's own networks are admin-only)"
           },
           "500": {
             "description": "Failed to connect container to network"
@@ -18279,7 +18334,7 @@
             "description": "Container ID is required"
           },
           "403": {
-            "description": "Permission denied"
+            "description": "Permission denied (needs networks:disconnect; the Dockhand container's own networks are admin-only)"
           },
           "500": {
             "description": "Failed to disconnect container from network"
@@ -19426,6 +19481,12 @@
           "400": {
             "description": "eventType required, payload with title and message required, unknown event type, or environmentId missing for a non-system event"
           },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "403": {
+            "description": "Permission denied (missing notifications:test, or no access to the environment)"
+          },
           "500": {
             "description": "Unknown error while sending the notification"
           }
@@ -19438,7 +19499,7 @@
             "bearerAuth": []
           }
         ],
-        "description": "environmentId from GET /api/environments.",
+        "description": "Delivers to the configured channels for real, so it requires notifications:test and access to the environment. environmentId from GET /api/environments.",
         "requestBody": {
           "required": true,
           "content": {
@@ -22086,7 +22147,7 @@
         "tags": [
           "roles"
         ],
-        "summary": "List all roles (built-in and custom); available in setup mode or with an enterprise license",
+        "summary": "List all roles (built-in and custom); needs admin or users:view, plus an enterprise license",
         "parameters": [],
         "responses": {
           "200": {
@@ -22135,7 +22196,7 @@
             }
           },
           "403": {
-            "description": "Enterprise license required"
+            "description": "Enterprise license required, or the account may not view users"
           },
           "500": {
             "description": "Failed to read the roles"
@@ -22237,7 +22298,7 @@
         "tags": [
           "roles"
         ],
-        "summary": "Get a single role by id; available in setup mode or with an enterprise license",
+        "summary": "Get a single role by id; needs admin or users:view, plus an enterprise license",
         "parameters": [
           {
             "name": "id",
@@ -22294,7 +22355,7 @@
             "description": "Role id is required"
           },
           "403": {
-            "description": "Enterprise license required"
+            "description": "Enterprise license required, or the account may not view users"
           },
           "404": {
             "description": "Role not found"
@@ -22539,6 +22600,9 @@
               }
             }
           },
+          "403": {
+            "description": "Permission denied (missing schedules:view)"
+          },
           "500": {
             "description": "Unexpected error while assembling the schedule list"
           }
@@ -22604,6 +22668,9 @@
           },
           "400": {
             "description": "Invalid schedule id, invalid/unsupported type, or system_cleanup (cannot be removed)"
+          },
+          "403": {
+            "description": "Permission denied"
           },
           "404": {
             "description": "Schedule (or backup destination, for repo_* types) not found"
@@ -22679,6 +22746,9 @@
           "400": {
             "description": "Invalid schedule id/type, or the triggered task itself reported failure"
           },
+          "403": {
+            "description": "Permission denied"
+          },
           "404": {
             "description": "Schedule, backup config, or backup destination not found (or backup feature disabled)"
           },
@@ -22752,6 +22822,9 @@
           },
           "400": {
             "description": "Invalid schedule id, unsupported type, or system_cleanup/deploy_log_reconcile (cannot be paused)"
+          },
+          "403": {
+            "description": "Permission denied"
           },
           "404": {
             "description": "Schedule, backup config, or backup destination not found"
@@ -23913,6 +23986,115 @@
         }
       }
     },
+    "/api/secret-providers/default": {
+      "get": {
+        "operationId": "get_api_secret-providers_default",
+        "tags": [
+          "secret-providers"
+        ],
+        "summary": "Get the global default secret provider preselected for new stacks",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "providerId": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "example": {
+                  "providerId": 0
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Permission denied (needs secrets:view)"
+          },
+          "500": {
+            "description": "Failed to read the default secret provider"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Returns null when no default is set, or when the stored provider no longer exists."
+      },
+      "put": {
+        "operationId": "put_api_secret-providers_default",
+        "tags": [
+          "secret-providers"
+        ],
+        "summary": "Set or clear the global default secret provider",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "providerId": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "example": {
+                  "providerId": 0
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid provider id, or the provider does not exist"
+          },
+          "403": {
+            "description": "Permission denied (needs secrets:edit)"
+          },
+          "500": {
+            "description": "Failed to save the default secret provider"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Pass a provider id to make it the default, or null to clear it.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "providerId": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "example": {
+                "providerId": 0
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/secret-providers/test": {
       "post": {
         "operationId": "post_api_secret-providers_test",
@@ -24223,7 +24405,8 @@
           {
             "bearerAuth": []
           }
-        ]
+        ],
+        "description": "A caller without settings:view receives only the values the interface needs to render itself. The operational settings are omitted from the body rather than returned empty, so an absent field says nothing about whether it is configured."
       },
       "post": {
         "operationId": "post_api_settings_general",
@@ -25023,6 +25206,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Permission denied (needs settings:view)"
           }
         },
         "security": [
@@ -27654,6 +27840,12 @@
                   "envVars": {
                     "type": "object",
                     "properties": {}
+                  },
+                  "providerKeys": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 },
                 "required": [
@@ -27829,6 +28021,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Permission denied (needs stacks:view, and access to the environment)"
           }
         },
         "security": [
@@ -27916,6 +28111,9 @@
           },
           "400": {
             "description": "Stack name is required"
+          },
+          "403": {
+            "description": "Permission denied (needs stacks:view, and access to the environment)"
           }
         },
         "security": [
@@ -29444,7 +29642,7 @@
         "tags": [
           "users"
         ],
-        "summary": "List all local/SSO users (any authenticated user may view — only mutations are RBAC-gated)",
+        "summary": "List all local/SSO users",
         "parameters": [],
         "responses": {
           "200": {
@@ -29509,6 +29707,9 @@
           "401": {
             "description": "Not authenticated"
           },
+          "403": {
+            "description": "Permission denied (missing users:view)"
+          },
           "500": {
             "description": "Unexpected error while loading users"
           }
@@ -29520,7 +29721,8 @@
           {
             "bearerAuth": []
           }
-        ]
+        ],
+        "description": "Requires users:view. The list carries every account's email address and says which ones are administrators."
       },
       "post": {
         "operationId": "post_api_users",
@@ -29713,6 +29915,9 @@
           "401": {
             "description": "Authentication required (auth is enabled and the caller is not authenticated)"
           },
+          "403": {
+            "description": "Permission denied (missing users:view, reading another user's record)"
+          },
           "404": {
             "description": "User not found"
           },
@@ -29727,7 +29932,8 @@
           {
             "bearerAuth": []
           }
-        ]
+        ],
+        "description": "Requires users:view, except for one's own record. The payload names the account, its email, whether it holds the Admin role and whether MFA is set up."
       },
       "put": {
         "operationId": "put_api_users_id",
@@ -30129,8 +30335,11 @@
           "400": {
             "description": "User id is required"
           },
+          "401": {
+            "description": "Not authenticated"
+          },
           "403": {
-            "description": "Enterprise license required"
+            "description": "Enterprise license required, or permission denied (missing users:view)"
           },
           "404": {
             "description": "User not found"
@@ -30146,7 +30355,8 @@
           {
             "bearerAuth": []
           }
-        ]
+        ],
+        "description": "Requires users:view, except for one's own assignments. Which roles an account holds says what it can reach, so it is read like the account itself."
       },
       "post": {
         "operationId": "post_api_users_id_roles",

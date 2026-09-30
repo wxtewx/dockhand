@@ -66,25 +66,44 @@ if (useHttps) {
 		process.exit(1);
 	}
 
-	// Parse cert metadata so operators can confirm they mounted the right file.
+	// Keep in sync with src/lib/server/x509-display-core.ts (this file runs against
+	// ./build and cannot import from src). Node leaves subject/issuer undefined when
+	// the cert has an empty distinguished name, as newer Let's Encrypt profiles do.
+	const formatCertName = (name) => {
+		if (typeof name !== 'string') return '(none)';
+		const trimmed = name.trim();
+		return trimmed === '' ? '(none)' : trimmed.replace(/\n/g, ', ');
+	};
+	const daysUntilExpiry = (validTo, now) => {
+		if (typeof validTo !== 'string') return null;
+		const expiresAt = new Date(validTo).getTime();
+		if (Number.isNaN(expiresAt)) return null;
+		return Math.floor((expiresAt - now) / 86400000);
+	};
+	const expiryLine = (daysLeft) => {
+		if (daysLeft === null) return { text: 'cert expiry:  (unknown)', warn: false };
+		if (daysLeft < 0) {
+			return { text: `WARNING: certificate expired ${-daysLeft} day(s) ago`, warn: true };
+		}
+		if (daysLeft < 30) {
+			return { text: `WARNING: certificate expires in ${daysLeft} day(s)`, warn: true };
+		}
+		return { text: `cert expires in ${daysLeft} day(s)`, warn: false };
+	};
+
+	// Cert metadata is logged so operators can confirm they mounted the right file.
+	// It is diagnostics only, so a cert TLS itself accepts must still start the
+	// server - hence the log failure is reported and swallowed, not fatal.
 	try {
 		const x509 = new X509Certificate(certPem);
-		console.log(`[HTTPS] cert subject: ${x509.subject.replace(/\n/g, ', ')}`);
-		console.log(`[HTTPS] cert issuer:  ${x509.issuer.replace(/\n/g, ', ')}`);
+		console.log(`[HTTPS] cert subject: ${formatCertName(x509.subject)}`);
+		console.log(`[HTTPS] cert issuer:  ${formatCertName(x509.issuer)}`);
 		console.log(`[HTTPS] cert SAN:     ${x509.subjectAltName || '(none)'}`);
-		console.log(`[HTTPS] cert valid:   ${x509.validFrom} → ${x509.validTo}`);
-		const expiresAt = new Date(x509.validTo).getTime();
-		const daysLeft = Math.floor((expiresAt - Date.now()) / 86400000);
-		if (daysLeft < 0) {
-			console.warn(`[HTTPS] WARNING: certificate expired ${-daysLeft} day(s) ago`);
-		} else if (daysLeft < 30) {
-			console.warn(`[HTTPS] WARNING: certificate expires in ${daysLeft} day(s)`);
-		} else {
-			console.log(`[HTTPS] cert expires in ${daysLeft} day(s)`);
-		}
+		console.log(`[HTTPS] cert valid:   ${x509.validFrom} -> ${x509.validTo}`);
+		const expiry = expiryLine(daysUntilExpiry(x509.validTo, Date.now()));
+		(expiry.warn ? console.warn : console.log)(`[HTTPS] ${expiry.text}`);
 	} catch (e) {
-		console.error(`[HTTPS] Failed to parse certificate: ${e.message}`);
-		process.exit(1);
+		console.warn(`[HTTPS] Could not read certificate metadata: ${e.message}`);
 	}
 
 	const tlsOptions = { cert: certPem, key: keyPem };
@@ -182,6 +201,11 @@ globalThis.__terminalHandleExecMessage = (msg) => {
 
 // Handle WebSocket upgrade
 server.on('upgrade', async (req, socket, head) => {
+	// The socket is bare until ws adopts it in handleUpgrade below, and authentication
+	// awaits a database lookup first. A peer that resets during that window makes the
+	// write of our own 401/500 throw ECONNRESET with no listener, which is fatal.
+	socket.on('error', () => {});
+
 	const url = new URL(req.url || '/', `http://${req.headers.host}`);
 
 	// Only handle our specific WebSocket paths
@@ -379,6 +403,14 @@ function processDockerStreamChunk(data, state) {
 }
 
 async function handleTerminalConnection(ws, url, connId) {
+	// Registered before the first await: this runs unawaited, so every await below is a
+	// window in which a closed tab emits 'error' on a socket with no listener, which is
+	// fatal rather than a dropped connection.
+	ws.on('error', (err) => {
+		console.error('[Terminal WS] Connection error:', err.message);
+		wsConnections.delete(connId);
+	});
+
 	const pathParts = url.pathname.split('/');
 	const containerIdIndex = pathParts.indexOf('containers') + 1;
 	const containerId = pathParts[containerIdIndex];
@@ -595,13 +627,6 @@ async function handleTerminalConnection(ws, url, connId) {
 	}
 
 	ws.on('close', () => {
-		wsConnections.delete(connId);
-	});
-
-	// Without an 'error' listener, an emitted socket error (abrupt disconnect,
-	// ECONNRESET) is re-thrown as an uncaught exception and crashes the process.
-	ws.on('error', (err) => {
-		console.error('[Terminal WS] Connection error:', err.message);
 		wsConnections.delete(connId);
 	});
 }

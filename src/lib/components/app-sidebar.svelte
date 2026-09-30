@@ -81,8 +81,10 @@
 		sidebar.setOpenMobile(false);
 		// Per-user layout must not leak to the next user on this browser
 		sidebarPreferencesStore.clearLocal();
-		await authStore.logout();
-		goto('/login');
+		// The store navigates away itself when the provider has a session to end, and
+		// that destination is already this same login page.
+		const { logoutUrl, next } = await authStore.logout();
+		if (!logoutUrl) goto(next);
 	}
 
 	/**

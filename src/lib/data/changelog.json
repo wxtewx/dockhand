@@ -1,8 +1,39 @@
 [
   {
+    "version": "1.0.50",
+    "date": "2026-09-30",
+    "changes": [
+      { "type": "feature", "text": "update a container straight from its details view when a newer image is available (#1588)" },
+      { "type": "feature", "text": "duplicate a backup schedule to reuse its settings for another destination (#1578)" },
+      { "type": "feature", "text": "mark a secret provider as default so new stacks start with it selected (#1609)" },
+      { "type": "feature", "text": "optionally skip the login form, and sign out at the identity provider (#563, #562, #1318)" },
+      { "type": "feature", "text": "dashboard disk usage segments link straight to images, volumes or containers (#1314)" },
+      { "type": "feature", "text": "the container file browser opens at the container's working directory (#1285)" },
+      { "type": "feature", "text": "mattermost notifications arrive as colour-coded cards, like the discord ones (#1607)" },
+      { "type": "feature", "text": "container icons fall back to the image namespace when the name has none (#1624)" },
+      { "type": "feature", "text": "tag groups are ordered alphabetically by tag name (#1625)" },
+      { "type": "fix", "text": "oidc sign-in survives a restart and works across multiple replicas (#1601)" },
+      { "type": "fix", "text": "cleaner image scan logs, and the real registry error (#1486, #1628, #1629)" },
+      { "type": "fix", "text": "compose validate no longer flags variables a secret provider supplies (#1621)" },
+      { "type": "fix", "text": "updating a container through the API keeps its secondary networks and their aliases" },
+      { "type": "fix", "text": "recreating a container no longer reuses its old auto-assigned MAC address (#1618)" },
+      { "type": "fix", "text": "podman's default bridge is no longer shown as an extra network on containers (#1619)" },
+      { "type": "fix", "text": "a scheduled container update clears its pending row, so update all no longer fails on it (#1632)" },
+      { "type": "fix", "text": "image prune no longer times out after 30s when filters are set (#1630)" },
+      { "type": "fix", "text": "exporting an image whose name contains a slash no longer fails (#1635)" },
+      { "type": "fix", "text": "percentage disk warnings are marked as unusable on hosts that report no total (#1631)" },
+      { "type": "fix", "text": "https now starts with certificates that have no subject, like newer let's encrypt ones (#1622)" },
+      { "type": "fix", "text": "dashboard keeps its top containers and recent events after a container event (#1608)" },
+      { "type": "fix", "text": "the secret provider selector is no longer lost on save in the env text view (#1620)" },
+      { "type": "fix", "text": "a git stack .env value can be quoted and refer to another variable (#1018)" },
+      { "type": "fix", "text": "update docker-compose 5.5.1-r1, devalue 5.9.2 and nodemailer 9.1.1 for security fixes" }
+    ],
+    "imageTag": "fnsys/dockhand:v1.0.50"
+  },
+  {
     "version": "1.0.49",
-    "date": "2026-09-22",
-    "comingSoon": true,
+    "date": "2026-09-23",
+    "comingSoon": false,
     "changes": [
       { "type": "fix", "text": "select-all checkbox shows a partial state, not a full tick, for a partial selection (#1605)" },
       { "type": "fix", "text": "a long backup no longer crashes the app when its log stream goes quiet (#1610)" },

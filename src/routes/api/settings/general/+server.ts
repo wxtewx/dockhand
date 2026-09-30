@@ -36,6 +36,7 @@ import {
 	setPrimaryStackLocation
 } from '$lib/server/db';
 import { authorize } from '$lib/server/authorize';
+import { visibleGeneralSettings } from '$lib/server/general-settings-visibility';
 import { refreshSystemJobs } from '$lib/server/scheduler';
 import { sendToEventSubprocess, sendToMetricsSubprocess } from '$lib/server/subprocess-manager';
 import { DEFAULT_GRYPE_IMAGE, DEFAULT_TRIVY_IMAGE } from '$lib/server/scanner';
@@ -234,13 +235,14 @@ function parseScannerDnsStorage(raw: string | null | undefined): string[] {
 /**
  * @openapi
  * summary: Get global (instance-wide) general settings
+ * description: A caller without settings:view receives only the values the interface needs to render itself. The operational settings are omitted from the body rather than returned empty, so an absent field says nothing about whether it is configured.
  * resp-401: Not authenticated
  * resp-500: Failed to load settings
  */
 export const GET: RequestHandler = async ({ cookies }) => {
 	const auth = await authorize(cookies);
-	// UI preferences (time format, date format) should be available to all authenticated users
-	// This doesn't expose sensitive data and is needed for proper UI rendering
+	// Every signed-in user gets the presentation half of this table, which the UI needs
+	// to render at all; the operational half is filtered out below.
 	if (auth.authEnabled && !auth.isAuthenticated) {
 		return json({ error: 'Authentication required' }, { status: 401 });
 	}
@@ -421,7 +423,10 @@ export const GET: RequestHandler = async ({ cookies }) => {
 			stackLogOperations: parseStackLogOperationsStorage(stackLogOperationsRaw)
 		};
 
-		return json(settings);
+		// Everybody needs the values that decide how a date or a log line is drawn.
+		// The rest describes how this installation is built and run, so it is held to
+		// the same permission as the settings page itself.
+		return json(visibleGeneralSettings(settings, await auth.can('settings', 'view')));
 	} catch (error) {
 		console.error('Failed to get general settings:', error);
 		return json({ error: 'Failed to get general settings' }, { status: 500 });

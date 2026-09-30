@@ -302,6 +302,11 @@
 	let formHighlightChanges = $state(true);
 	let formDiskWarningEnabled = $state(true);
 	let formDiskWarningMode = $state<'percentage' | 'absolute'>('percentage');
+	/** Whether this host reports a total for percentage warnings; null = not asked yet. */
+	let formPercentageSupported = $state<boolean | null>(null);
+	let formStorageDriver = $state<string | null>(null);
+	/** The mode the server has, kept apart from the form so edits cannot lock it out. */
+	let storedDiskWarningMode = $state<'percentage' | 'absolute' | null>(null);
 	let formDiskWarningThreshold = $state(80);
 	let formDiskWarningThresholdGb = $state(50);
 	let formConnectionType = $state<ConnectionType>('socket');
@@ -608,6 +613,11 @@
 			formLabels = parseLabels(environment.labels);
 			newLabelInput = '';
 			formPublicIp = environment.publicIp || '';
+			// Unknown until this environment's own host answers: the previous one's
+			// verdict must not be shown against a different host.
+			formPercentageSupported = null;
+			formStorageDriver = null;
+			storedDiskWarningMode = null;
 			modalTab = 'general';
 			// Reset icon state
 			pendingIconData = null;
@@ -648,6 +658,9 @@
 			formHighlightChanges = true;
 			formDiskWarningEnabled = true;
 			formDiskWarningMode = 'percentage';
+			formPercentageSupported = null;
+			formStorageDriver = null;
+			storedDiskWarningMode = null;
 			formDiskWarningThreshold = 80;
 			formDiskWarningThresholdGb = 50;
 			formConnectionType = 'socket';
@@ -1079,8 +1092,11 @@
 				const data = await response.json();
 				formDiskWarningEnabled = data.enabled ?? true;
 				formDiskWarningMode = data.mode ?? 'percentage';
+				storedDiskWarningMode = formDiskWarningMode;
 				formDiskWarningThreshold = data.threshold ?? 80;
 				formDiskWarningThresholdGb = data.thresholdGb ?? 50;
+				formPercentageSupported = data.percentageSupported ?? null;
+				formStorageDriver = data.storageDriver ?? null;
 			}
 		} catch (error) {
 			console.error('Failed to load disk warning settings:', error);
@@ -2629,6 +2645,9 @@
 						bind:diskWarningMode={formDiskWarningMode}
 						bind:diskWarningThreshold={formDiskWarningThreshold}
 						bind:diskWarningThresholdGb={formDiskWarningThresholdGb}
+						percentageSupported={formPercentageSupported}
+						storageDriver={formStorageDriver}
+						{storedDiskWarningMode}
 					/>
 				</Tabs.Content>
 

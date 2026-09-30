@@ -70,7 +70,11 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 			return json({ error: 'Container not found' }, { status: 404 });
 		}
 
-		// Get stats for each running container (in parallel with timeout)
+		// All at once, deliberately. The daemon samples CPU twice per call, so each
+		// one costs about two seconds no matter what; anything narrower than "every
+		// container" multiplies that into the caller's wait. The collection worker
+		// paces its own fan-out because it runs in the background, where waiting
+		// is free.
 		const statsPromises = runningContainers.map(async (container) => {
 			try {
 				const stats = await withTimeout(

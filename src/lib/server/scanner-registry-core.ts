@@ -28,17 +28,78 @@ export function isDaemonExportFailure(output: string | null | undefined): boolea
 	);
 }
 
+/** A bare image ID: `sha256:<64 hex>` or the digest alone, as the auto-update passes. */
+function isBareImageId(ref: string): boolean {
+	return /^(sha256:)?[0-9a-f]{64}$/.test(ref);
+}
+
+/** A tag Dockhand applies to itself while judging a pending update. */
+function isTempTag(tag: string): boolean {
+	return /-dockhand-(pending|update)$/.test(tag);
+}
+
+/**
+ * The ref to ask a registry for, given the ref the daemon was asked for.
+ *
+ * Neither of the refs an auto-update scans with means anything to a registry. One path
+ * scans a temporary local tag (`repo:tag-dockhand-pending`) so the new image can be
+ * judged before it takes the real tag; another scans the bare image ID, which keys the
+ * scan cache. Sending either one asks for something that was never pushed, and the
+ * registry answers MANIFEST_UNKNOWN.
+ *
+ * A temp tag is resolved by removing the suffix, which getTempImageTag appends verbatim
+ * and only to the final tag component - a repository or registry port containing the
+ * same words is left alone. A bare ID carries no repository at all, so it is resolved
+ * from `repoTags` (an image inspect), preferring a real tag over a temp one.
+ *
+ * Returns the ref unchanged when it is already something a registry can answer, or when
+ * nothing better is known.
+ */
+export function toRegistryRef(image: string, repoTags?: string[] | null): string {
+	if (isBareImageId(image)) {
+		const tags = (repoTags || []).filter(
+			(t) => typeof t === 'string' && t && t !== '<none>:<none>'
+		);
+		// A temp tag is no better than the ID here, so take a real one or nothing.
+		const real = tags.find((t) => !isTempTag(t));
+		return real ? toRegistryRef(real) : image;
+	}
+
+	// A digest pins the content and resolves in the registry as-is.
+	if (image.includes('@')) return image;
+
+	const lastColon = image.lastIndexOf(':');
+	if (lastColon === -1) return image;
+
+	const tag = image.slice(lastColon + 1);
+	// A colon before a slash is a port, not a tag separator (registry:5000/repo).
+	if (tag.includes('/')) return image;
+
+	for (const suffix of ['-dockhand-pending', '-dockhand-update']) {
+		if (tag.endsWith(suffix) && tag.length > suffix.length) {
+			return `${image.slice(0, lastColon)}:${tag.slice(0, -suffix.length)}`;
+		}
+	}
+	return image;
+}
+
 /**
  * Rewrite a daemon-mode scanner command into a registry-mode one for the same image.
- * grype needs the source prefix `registry:<image>`; trivy scans the registry ref
- * as-is once the docker socket is absent, so only the image token needs to be the
- * plain ref (it already is). The image token is identified by exact match against
- * `image` (parseCliArgs substitutes {image} with the ref verbatim).
+ * grype needs the source prefix `registry:<ref>`; trivy scans the registry ref as-is
+ * once the docker socket is absent. The image token is identified by exact match
+ * against `image` (parseCliArgs substitutes {image} with the ref verbatim), while
+ * `registryRef` is what the registry is actually asked for - they differ when the
+ * daemon was scanning a temporary local tag.
  */
-export function toRegistryScanCmd(scannerType: ScannerType, cmd: string[], image: string): string[] {
+export function toRegistryScanCmd(
+	scannerType: ScannerType,
+	cmd: string[],
+	image: string,
+	registryRef: string = image
+): string[] {
 	return cmd.map((tok) => {
 		if (tok !== image) return tok;
-		return scannerType === 'grype' ? `registry:${image}` : image;
+		return scannerType === 'grype' ? `registry:${registryRef}` : registryRef;
 	});
 }
 

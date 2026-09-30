@@ -786,8 +786,12 @@
 		}
 	}
 
-	// Load directory contents
-	async function loadDirectory(path: string) {
+	// Bumped on every load so a late fallback can tell the user navigated since
+	let loadSeq = 0;
+
+	// Load directory contents; resolves false when the listing failed
+	async function loadDirectory(path: string): Promise<boolean> {
+		loadSeq++;
 		loading = true;
 		error = null;
 
@@ -860,9 +864,11 @@
 			} else {
 				entries = data.entries || [];
 			}
+			return true;
 		} catch (err: any) {
 			error = err.message;
 			entries = [];
+			return false;
 		} finally {
 			loading = false;
 		}
@@ -982,7 +988,16 @@
 		currentPath = _path;
 		entries = [];
 		error = null;
-		loadDirectory(_path);
+		let stale = false;
+		const firstLoad = loadDirectory(_path);
+		const seq = loadSeq;
+		firstLoad.then((ok) => {
+			// A WORKDIR that is missing or unreadable opens root instead of an error (#1285)
+			if (!ok && !stale && seq === loadSeq && _mode === 'container' && _path !== '/') loadDirectory('/');
+		});
+		return () => {
+			stale = true;
+		};
 	});
 </script>
 

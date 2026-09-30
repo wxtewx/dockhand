@@ -69,6 +69,11 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 				);
 				const runningContainers = containers.filter(c => c.state === 'running');
 
+				// All at once, deliberately. The daemon samples CPU twice per call, so
+				// each one costs about two seconds no matter what; anything narrower
+				// than "every container" multiplies that into the wait for a table the
+				// user is watching. The collection worker paces its own fan-out because
+				// it runs in the background, where waiting is free.
 				const statsPromises = runningContainers.map(async (container) => {
 					try {
 						const stats = await withTimeout(

@@ -3,6 +3,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Pencil, Check, Loader2, X, Layers, Settings, Archive } from 'lucide-svelte';
 	import { currentEnvironment, appendEnvParam } from '$lib/stores/environment';
+	import { containerStore } from '$lib/stores/containers';
 	import ContainerTagsSection from '$lib/components/ContainerTagsSection.svelte';
 	import { page } from '$app/stores'; // BETA GATE: backups feature flag
 	import { focusFirstInput } from '$lib/utils';
@@ -10,6 +11,7 @@
 	import IconPickerModal from '../stacks/IconPickerModal.svelte';
 	import { Box } from 'lucide-svelte';
 	import ContainerSettingsTab from './ContainerSettingsTab.svelte';
+	import { additionalNetworkNames } from '$lib/utils/network-identity';
 	import BackupPanel from './BackupPanel.svelte';
 	import { volumeInfoFromBind } from '$lib/utils/mounts';
 	import { fetchBackupExecutions } from '$lib/utils/backup';
@@ -79,6 +81,18 @@
 
 	// Guard to prevent reloading data while user is editing
 	let hasLoadedData = $state(false);
+
+	/** Network list for id-based primary matching; empty on failure (name matching then). */
+	async function fetchKnownNetworks(): Promise<Array<{ name: string; id?: string | null }>> {
+		try {
+			const envParam = $currentEnvironment ? `?env=${$currentEnvironment.id}` : '';
+			const response = await fetch(`/api/networks${envParam}`);
+			if (!response.ok) return [];
+			return await response.json();
+		} catch {
+			return [];
+		}
+	}
 
 	async function fetchConfigSets() {
 		try {
@@ -470,7 +484,14 @@
 			// Parse connected networks. selectedNetworks holds ADDITIONAL networks only —
 			// the primary lives in networkMode, never in this list (Portainer-style).
 			const networks = data.NetworkSettings?.Networks || {};
-			selectedNetworks = Object.keys(networks).filter(n => n !== networkMode);
+			// Match on network id where both sides report one: Podman names the default
+			// bridge "podman" in the inspect but "bridge" everywhere else, and a name-only
+			// comparison then lists the primary as an extra and re-attaches it (#1619).
+			selectedNetworks = additionalNetworkNames(
+				Object.entries(networks).map(([name, cfg]) => ({ name, id: (cfg as any)?.NetworkID ?? null })),
+				networkMode,
+				await fetchKnownNetworks()
+			);
 
 			// Parse per-network IP/alias config from NetworkSettings
 			const parsedNetConfigs: Record<string, { ipv4Address: string; ipv6Address: string; aliases: string }> = {};
@@ -1293,6 +1314,7 @@
 					envId={$currentEnvironment?.id ?? undefined}
 					bind:name
 					bind:image
+					hasImageUpdate={$containerStore.pendingUpdateIds.includes(containerId)}
 					bind:command
 					bind:entrypoint
 					bind:restartPolicy

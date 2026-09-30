@@ -2222,6 +2222,12 @@
 									{/if}
 								{/if}
 							</div>
+						{:else if !$canAccess('schedules', 'view')}
+							<!-- The schedules are withheld from this account, so the cell says
+							     that rather than the "-" that claims nothing is scheduled. -->
+							<span
+								class="text-gray-400 dark:text-gray-600 text-xs text-center block cursor-default"
+								title="You do not have permission to view schedules">?</span>
 						{:else}
 							<span class="text-gray-400 dark:text-gray-600 text-xs text-center block">-</span>
 						{/if}
@@ -2685,6 +2691,9 @@
 	onRestart={$canAccess('containers', 'restart') ? (id) => restartContainer(id) : undefined}
 	onRemove={$canAccess('containers', 'remove') ? (id) => removeContainer(id) : undefined}
 	onEdit={$canAccess('containers', 'edit') ? (id) => editContainer(id) : undefined}
+	onUpdate={$canAccess('containers', 'create')
+		? (id, name) => updateSingleContainer(id, name)
+		: undefined}
 />
 
 <FileBrowserModal

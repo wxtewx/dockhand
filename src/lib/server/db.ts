@@ -3598,40 +3598,6 @@ export async function getCombinedScanForImage(
 	return combined;
 }
 
-export async function getAllLatestScans(environmentId?: number | null): Promise<VulnerabilityScanData[]> {
-	// This complex query requires raw SQL or multiple queries
-	// For simplicity, we'll fetch all and filter in JS
-	let results;
-	if (environmentId !== undefined) {
-		if (environmentId === null) {
-			results = await db.select().from(vulnerabilityScans)
-				.where(isNull(vulnerabilityScans.environmentId))
-				.orderBy(desc(vulnerabilityScans.scannedAt));
-		} else {
-			results = await db.select().from(vulnerabilityScans)
-				.where(eq(vulnerabilityScans.environmentId, environmentId))
-				.orderBy(desc(vulnerabilityScans.scannedAt));
-		}
-	} else {
-		results = await db.select().from(vulnerabilityScans)
-			.orderBy(desc(vulnerabilityScans.scannedAt));
-	}
-
-	// Group by imageId + scanner and take latest
-	const latestMap = new Map<string, typeof results[0]>();
-	for (const row of results) {
-		const key = `${row.imageId}:${row.scanner}`;
-		if (!latestMap.has(key)) {
-			latestMap.set(key, row);
-		}
-	}
-
-	return Array.from(latestMap.values()).map(row => ({
-		...row,
-		vulnerabilities: row.vulnerabilities ? JSON.parse(row.vulnerabilities) : []
-	})) as VulnerabilityScanData[];
-}
-
 /**
  * Scan freshness for the metrics endpoint: how stale the OLDEST scan is
  * (surfaces environments whose scans have gone stale) and the average scan
@@ -5893,6 +5859,24 @@ export async function removePendingContainerUpdate(environmentId: number, contai
 		.where(and(
 			eq(pendingContainerUpdates.environmentId, environmentId),
 			eq(pendingContainerUpdates.containerId, containerId)
+		));
+}
+
+/**
+ * Clear a pending update by container NAME.
+ *
+ * An update recreates the container under a new id, so a caller that ran the update
+ * no longer holds the id the row was written with. The name survives the recreate,
+ * which is what the auto-update schedule identifies a container by anyway.
+ */
+export async function removePendingContainerUpdateByName(
+	environmentId: number,
+	containerName: string
+): Promise<void> {
+	await db.delete(pendingContainerUpdates)
+		.where(and(
+			eq(pendingContainerUpdates.environmentId, environmentId),
+			eq(pendingContainerUpdates.containerName, containerName)
 		));
 }
 

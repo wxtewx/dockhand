@@ -480,7 +480,7 @@ async function getEnvironmentStatsProgressive(
 
 			onPartialUpdate({
 				id: env.id,
-				topContainers: [...envStats.topContainers],
+				topContainers: [...envStats.topContainers!],
 				loading: { ...envStats.loading! }
 			});
 

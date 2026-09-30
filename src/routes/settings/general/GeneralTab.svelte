@@ -335,8 +335,15 @@ services:
 				semverMatchFlavor = c.matchFlavor ?? true;
 				semverIncludePrerelease = c.includePrerelease ?? false;
 			}
-		} catch { /* keep defaults */ }
-		semverLoaded = true;
+			// A refusal means the values on screen are the built-in defaults, never the
+			// configuration, so the save effect stays disarmed rather than writing a
+			// guess over it. Any other failure still arms it: the controls are visible
+			// and edits have to reach the server rather than vanish.
+			semverLoaded = res.status !== 401 && res.status !== 403;
+		} catch {
+			// The request never landed, so nothing says this account may not save.
+			semverLoaded = true;
+		}
 
 		try {
 			const res = await fetch('/api/settings/general');
@@ -864,6 +871,10 @@ services:
 
 		<!-- Right column -->
 		<div class="space-y-4">
+			<!-- Held to settings:view: these describe how this installation is built
+			     and run, and showing the built-in defaults to somebody who may not read
+			     them would present a guess as the configuration. -->
+			{#if $canAccess('settings', 'view')}
 			<Card.Root>
 				<Card.Header>
 					<Card.Title class="text-sm font-medium flex items-center gap-2">
@@ -983,7 +994,12 @@ services:
 					</div>
 				</Card.Content>
 			</Card.Root>
+			{/if}
 
+			<!-- Held to settings:view with the rest: it decides how every update check
+			     compares versions, and the defaults shown to somebody who may not read
+			     it would be saved over the real configuration on the first change. -->
+			{#if $canAccess('settings', 'view')}
 			<Card.Root>
 				<Card.Header>
 					<Card.Title class="text-sm font-medium flex items-center gap-2">
@@ -1005,7 +1021,12 @@ services:
 					/>
 				</Card.Content>
 			</Card.Root>
+			{/if}
 
+			<!-- Held to settings:view: these describe how this installation is built
+			     and run, and showing the built-in defaults to somebody who may not read
+			     them would present a guess as the configuration. -->
+			{#if $canAccess('settings', 'view')}
 			<Card.Root>
 				<Card.Header>
 					<Card.Title class="text-sm font-medium flex items-center gap-2">
@@ -1266,6 +1287,7 @@ services:
 					</div>
 				</Card.Content>
 			</Card.Root>
+			{/if}
 
 			<Card.Root>
 				<Card.Header>

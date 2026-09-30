@@ -19,6 +19,7 @@ import {
 import {
 	isDaemonExportFailure,
 	toRegistryScanCmd,
+	toRegistryRef,
 	registryAuthEnv,
 	imageRegistryAuthority,
 	RegistryFallbackMemory
@@ -836,7 +837,26 @@ async function runScannerContainerCore(
 	// and was previously reachable only via the daemon, the registry scan can't reach
 	// it. Surface that so a split-network user knows why.
 	if (registryMode) {
-		cmd = toRegistryScanCmd(scannerType, cmd, imageName);
+		// An auto-update scans either a temporary local tag or the bare image ID, and a
+		// registry knows neither. A tag resolves by itself; an ID needs the inspect's
+		// RepoTags to name a repository at all, and that inspect is only worth paying
+		// for on this path.
+		let repoTags: string[] | undefined;
+		if (/^(sha256:)?[0-9a-f]{64}$/.test(imageName)) {
+			try {
+				repoTags = ((await inspectImage(imageName, envId)) as any)?.RepoTags ?? undefined;
+			} catch {
+				// Leave it unresolved; the scan fails with the registry's own message
+				// rather than an inspect error that says nothing about the scan.
+			}
+		}
+		const registryRef = toRegistryRef(imageName, repoTags);
+		if (registryRef !== imageName) {
+			console.log(`[Scanner] Registry mode - scanning ${registryRef} (${imageName} is local)`);
+		} else if (repoTags !== undefined) {
+			console.warn(`[Scanner] Registry mode - no pushed tag known for ${imageName}; the registry cannot resolve it`);
+		}
+		cmd = toRegistryScanCmd(scannerType, cmd, imageName, registryRef);
 		if (isHawser) {
 			console.warn(`[Scanner] Registry-mode fallback on a remote (hawser) env - the scanner container must be able to reach the registry from the remote host's default network.`);
 		}

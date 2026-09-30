@@ -373,11 +373,17 @@
 	// Export state
 	let exportingId = $state<string | null>(null);
 
-	async function exportImage(imageRef: string, imageName: string) {
+	// Addressed by image id, not by name: an encoded slash in "repo/image" is decoded
+	// before the route is matched, so a name splits into two path segments and nothing
+	// matches. The id has no slash, and the endpoint names the download from its inspect.
+	async function exportImage(imageRef: string, imageId: string, imageName: string) {
 		exportingId = imageRef;
 		try {
 			const compress = $appSettings.downloadFormat === 'tar.gz';
-			const url = appendEnvParam(`/api/images/${encodeURIComponent(imageName)}/export?compress=${compress}`, envId);
+			const url = appendEnvParam(
+				`/api/images/${encodeURIComponent(imageId)}/export?compress=${compress}&tag=${encodeURIComponent(imageName)}`,
+				envId
+			);
 
 			const link = document.createElement('a');
 			link.href = url;
@@ -1484,7 +1490,7 @@
 									{#if $canAccess('images', 'inspect')}
 									<button
 										type="button"
-										onclick={() => exportImage(tagInfo.fullRef, tagInfo.fullRef)}
+										onclick={() => exportImage(tagInfo.fullRef, tagInfo.imageId, tagInfo.fullRef)}
 										title="Export image as {$appSettings.downloadFormat}"
 										class="p-1 rounded hover:bg-muted transition-colors cursor-pointer {exportingId === tagInfo.fullRef ? 'animate-pulse' : ''}"
 										disabled={exportingId === tagInfo.fullRef}

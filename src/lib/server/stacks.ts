@@ -57,6 +57,7 @@ import { sendEventNotification } from './notifications';
 import { deleteGitStackFiles, parseEnvFileContent } from './git';
 import { isDeletableStackDir } from './stack-delete-guard';
 import { cleanPem } from '$lib/utils/pem';
+import { quoteForEnvFile } from '$lib/utils/env-file-values';
 import { rewriteComposeVolumePaths, getHostDataDir } from './host-path';
 import { getOrderValue } from './container-labels';
 import { pendingRowsToClear } from './pending-updates-core';
@@ -1666,8 +1667,11 @@ async function executeComposeViaHawser(
 				console.log(`${logPrefix} Preserving existing .env from stackFiles (${files['.env'].length} chars), envVars passed separately for substitution`);
 			} else {
 				// No .env in stackFiles - generate one from NON-SECRET envVars only
+				// Compose interpolates this file when it reads it. Quoting the whole value
+				// carries it through intact - unquoted, a hash after a space becomes a
+				// comment, surrounding spaces are trimmed and a dollar is eaten.
 				const envContent = Object.entries(envVars)
-					.map(([key, value]) => `${key}=${value}`)
+					.map(([key, value]) => `${key}=${quoteForEnvFile(value)}`)
 					.join('\n');
 				files['.env'] = envContent;
 				console.log(`${logPrefix} Generated .env file with ${Object.keys(envVars).length} non-secret variables`);

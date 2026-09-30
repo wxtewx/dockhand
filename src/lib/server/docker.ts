@@ -17,12 +17,17 @@ import { pumpWebStreamToWritable } from './stream-pump';
 import { toWebReadableStream } from './node-readable-stream';
 import { buildImagePruneFilters } from './image-prune-core';
 import { demuxDockerStream } from './docker-demux-core';
-import { computeRequestTimeoutMs } from './backups/request-timeout';
+import { computeRequestTimeoutMs, isPrunePath } from './backups/request-timeout';
 import { helperWaitDeadline, helperExitFromState } from './helper-wait-core';
+import { cancelReaderOnAbort } from './reader-abort-core';
+import { configuredMacAddress, endpointWithoutGeneratedMac } from './endpoint-mac-core';
+import { rescopeForPrimarySwitch } from './primary-network-switch-core';
+import { mapContainerNetworks } from '$lib/utils/network-identity';
 import type { Environment } from './db';
 import { getSetting } from './db';
 import { getAdditionalVolumeBinds, dedupeVolumesForRecreate } from './mount-dedupe';
 import { resolveNanoCpusConflict, resolvePodmanUsernsMode } from './hostconfig-recreate';
+import { isUnknownNetworkKeyError, retryEndpointKey } from './podman-network-key';
 import { expectedEvents, EXPECTED_EVENT_TTL_MS } from './expected-events-core';
 import { decideRespawnOutcome, isExactNameMatch } from './systemd-recreate-core';
 // Import-light image parsing shared with the semver layer; re-exported below for callers.
@@ -30,6 +35,7 @@ import { parseImageReference } from './registry/image-ref';
 export { parseImageReference } from './registry/image-ref';
 import { rebaseEnvOntoImage, rebaseLabelsOntoImage, rebaseCommand, describeEnvRebase, describeLabelRebase, type ImageEnvLabels } from './container-env-merge';
 import { encodeRegistryAuth, fetchRegistryToken, isSafeRegistryHost } from './registry-auth';
+import { describeRegistryFailure } from './registry-failure-core';
 import { resolveRegistryScheme, type StoredRegistryScheme } from './registry-scheme-core';
 import { classifyManifest, type ArtifactKind } from './semver/manifest-artifact';
 import { isSystemContainer, classifyEmptyDigestImage, localDigestIsIndexChild, indexChildDigests } from './scheduler/tasks/update-utils';
@@ -644,7 +650,9 @@ function buildResponse(body: Buffer | ReadableStream, status: number, statusText
 	if (NULL_BODY_STATUSES.has(status)) {
 		return new Response(null, { status, statusText, headers });
 	}
-	return new Response(body, { status, statusText, headers });
+	// A Node Buffer and a Node stream are both valid runtime bodies; the DOM lib's
+	// BodyInit does not describe either, so the cast is the narrowest way to say so.
+	return new Response(body as BodyInit, { status, statusText, headers });
 }
 
 /**
@@ -856,7 +864,7 @@ export async function dockerFetch(
 				body,
 				headers,
 				streaming || false,
-				(streaming || path === '/_hawser/compose' || path.endsWith('/prune')) ? 300000 : 30000, // 5 min for streaming/compose/prune, 30s for normal
+				(streaming || path === '/_hawser/compose' || isPrunePath(path)) ? 300000 : 30000, // 5 min for streaming/compose/prune, 30s for normal
 				isBinary,
 				fetchOptions.signal ?? undefined,
 				onLine
@@ -933,7 +941,7 @@ export async function dockerFetch(
 		if (!streaming && !finalOptions.signal) {
 			const isComposeOperation = path === '/_hawser/compose';
 			const composeTimeoutMs = parseInt(process.env.COMPOSE_TIMEOUT || '900') * 1000;
-			const isPrune = path.endsWith('/prune');
+			const isPrune = isPrunePath(path);
 			finalOptions.signal = AbortSignal.timeout(isComposeOperation ? composeTimeoutMs : isPrune ? 300000 : 30000);
 		}
 
@@ -1512,6 +1520,8 @@ export async function createContainer(options: CreateContainerOptions, envId?: n
 	// Backward-compat: callers (and the auto-update inspect path) may still pass
 	// the legacy "networks" array which conflated primary + extras. Normalize to
 	// the new model: anything that isn't the primary becomes an additional network.
+	// Names are all this array carries, so a Podman alias of the primary cannot be
+	// recognised here; callers that know the ids send additionalNetworks instead.
 	if (options.networks && !options.additionalNetworks) {
 		const primary = options.networkMode || '';
 		options.additionalNetworks = options.networks.filter(n => n !== primary);
@@ -1835,14 +1845,49 @@ export async function createContainer(options: CreateContainerOptions, envId?: n
 		}
 	}
 
-	const result = await dockerJsonRequest<{ Id: string }>(
-		`/containers/create?name=${encodeURIComponent(options.name)}`,
-		{
-			method: 'POST',
-			body: JSON.stringify(containerConfig)
-		},
-		envId
-	);
+	let result: { Id: string };
+	try {
+		result = await dockerJsonRequest<{ Id: string }>(
+			`/containers/create?name=${encodeURIComponent(options.name)}`,
+			{
+				method: 'POST',
+				body: JSON.stringify(containerConfig)
+			},
+			envId
+		);
+	} catch (err: any) {
+		// Podman refuses an EndpointsConfig keyed by the network NAME even though
+		// it accepts that same name in NetworkMode and lists it under that name
+		// (#1619). Its id works on both engines, so retry by id - but only here,
+		// where the name has already proven unusable, since Docker echoes the id
+		// back as the inspect key and would leave ids in the UI.
+		const key = primaryMode && !isSharedMode ? primaryMode : '';
+		const endpoints = containerConfig.NetworkingConfig?.EndpointsConfig;
+		if (!key || !endpoints?.[key] || !isUnknownNetworkKeyError(err?.message)) throw err;
+
+		// The lookup is what tells the aliased bridge apart from a name that is
+		// simply wrong: it resolves for the former and 404s for the latter, where
+		// rethrowing keeps the daemon's own "network not found" for the user.
+		const net = await inspectNetwork(key, envId).catch(() => null);
+		const retryKey = retryEndpointKey({
+			message: err?.message,
+			endpoints,
+			key,
+			networkId: (net as { Id?: string } | null)?.Id
+		});
+		if (!retryKey) throw err;
+
+		console.warn(`[create] "${key}" rejected as an endpoint key, retrying by id (Podman)`);
+		containerConfig.NetworkingConfig.EndpointsConfig = { [retryKey]: endpoints[key] };
+		result = await dockerJsonRequest<{ Id: string }>(
+			`/containers/create?name=${encodeURIComponent(options.name)}`,
+			{
+				method: 'POST',
+				body: JSON.stringify(containerConfig)
+			},
+			envId
+		);
+	}
 
 	// Attach additional networks now that the container exists. Docker only allows
 	// a single network at create time, so anything beyond the primary is connected here.
@@ -2255,16 +2300,18 @@ export async function recreateContainerFromInspect(
 	// from the old container's settings to avoid getting a random bridge IP.
 	// Skip for shared network modes — EndpointsConfig conflicts with container:/host/none modes.
 	if (!isSharedNetwork && initialNetworkName && initialNetworkConfig) {
-		const endpointConfig = { ...initialNetworkConfig };
+		// An auto-assigned MAC must not follow the container: on daemons that derive it
+		// from the IP, the replacement gets a new address and the carried MAC then
+		// collides with whoever inherits the old one (#1618). Only a configured MAC
+		// survives; otherwise Docker derives a fresh one.
+		const endpointConfig = endpointWithoutGeneratedMac({ ...initialNetworkConfig });
 		createConfig.NetworkingConfig = {
 			EndpointsConfig: {
 				[initialNetworkName]: endpointConfig
 			}
 		};
-		// Container-level MacAddress conflicts with endpoint-level MacAddress.
-		// Docker requires them to match or the top-level one to be empty.
-		// The MAC is preserved in the endpoint config (correct location per API v1.44+),
-		// so clear the top-level one to avoid the conflict error.
+		// Container-level MacAddress conflicts with the endpoint-level one; Docker wants
+		// them equal or the top-level empty, so the endpoint config is the only carrier.
 		delete createConfig.MacAddress;
 	}
 
@@ -2296,7 +2343,9 @@ export async function recreateContainerFromInspect(
 			const nc = netConfig as any;
 			if (nc.NetworkID) {
 				try {
-					await connectContainerToNetworkRaw(nc.NetworkID, newContainerId, nc, envId);
+					// Same rule as the creation endpoint above: never carry a generated MAC.
+					const settings = endpointWithoutGeneratedMac({ ...nc });
+					await connectContainerToNetworkRaw(nc.NetworkID, newContainerId, settings, envId);
 				} catch (netError: any) {
 					log?.(`Warning: Failed to connect to network "${netName}": ${netError.message}`);
 				}
@@ -2581,56 +2630,18 @@ export function extractContainerOptions(inspectData: any): CreateContainerOption
 	const networkSettings = inspectData.NetworkSettings?.Networks || {};
 	const primaryNetwork = hostConfig.NetworkMode || 'bridge';
 
-	// Extract primary network aliases, static IP, and gateway priority
-	let networkAliases: string[] | undefined;
-	let networkIpv4Address: string | undefined;
-	let networkIpv6Address: string | undefined;
-	let macAddress: string | undefined;
-	let networkGwPriority: number | undefined;
-
 	const containerId = inspectData.Id || '';
-	const shortContainerId = containerId.substring(0, 12);
 
-	// Extract compose labels for alias reconstruction
-	const composeProject = config.Labels?.['com.docker.compose.project'];
-	const composeService = config.Labels?.['com.docker.compose.service'];
-
-	for (const [netName, netConfig] of Object.entries(networkSettings)) {
-		const netConf = netConfig as any;
-		const isPrimary = netName === primaryNetwork ||
-			(primaryNetwork === 'bridge' && (netName === 'bridge' || netName === 'default'));
-
-		if (isPrimary) {
-			// Filter out auto-generated container IDs
-			const allAliases = (netConf.Aliases?.length > 0 ? netConf.Aliases : netConf.DNSNames) || [];
-			networkAliases = allAliases.filter((a: string) =>
-				a !== containerId && a !== shortContainerId
-			);
-
-			// For compose containers, ensure service name and project-service aliases
-			if (composeProject && composeService) {
-				if (!networkAliases) networkAliases = [];
-				if (!networkAliases.includes(composeService)) {
-					networkAliases.push(composeService);
-				}
-				const projectService = `${composeProject}-${composeService}`;
-				if (!networkAliases.includes(projectService)) {
-					networkAliases.push(projectService);
-				}
-			}
-
-			if (!networkAliases || networkAliases.length === 0) {
-				networkAliases = undefined;
-			}
-
-			networkIpv4Address = netConf.IPAMConfig?.IPv4Address || undefined;
-			networkIpv6Address = netConf.IPAMConfig?.IPv6Address || undefined;
-			macAddress = netConf.MacAddress || undefined;
-			networkGwPriority = netConf.GwPriority !== undefined && netConf.GwPriority !== 0
-				? netConf.GwPriority : undefined;
-			break;
-		}
-	}
+	const mapped = mapContainerNetworks(networkSettings, primaryNetwork, containerId, {
+		project: config.Labels?.['com.docker.compose.project'],
+		service: config.Labels?.['com.docker.compose.service']
+	});
+	const { primaryAliases: networkAliases, primaryIpv4Address: networkIpv4Address,
+		primaryIpv6Address: networkIpv6Address, primaryGwPriority: networkGwPriority,
+		additionalNetworks, networkConfigs } = mapped;
+	// The live endpoint MAC is Docker's own, not the user's; surfacing it here would save
+	// it back as an explicit setting and pin the container to it (#1618).
+	const macAddress = configuredMacAddress(inspectData, mapped.primaryEndpoint as any) ?? undefined;
 
 	// Device requests (GPU, etc.)
 	const deviceRequests = hostConfig.DeviceRequests?.length > 0
@@ -2672,6 +2683,8 @@ export function extractContainerOptions(inspectData: any): CreateContainerOption
 		networkIpv4Address,
 		networkIpv6Address,
 		networkGwPriority,
+		additionalNetworks: additionalNetworks.length > 0 ? additionalNetworks : undefined,
+		networkConfigs: Object.keys(networkConfigs).length > 0 ? networkConfigs : undefined,
 
 		// User and hostname
 		user: config.User || undefined,
@@ -2797,17 +2810,17 @@ export async function updateContainer(id: string, options: Partial<CreateContain
 	// Extract ALL existing container options
 	const existingOptions = extractContainerOptions(oldContainerInfo);
 
-	// Per-network fields (aliases, static IPs, MAC, gateway priority) are scoped to
-	// a single network. When the user switches the primary network, the values
-	// extracted from the old network must NOT follow the container — e.g. compose
-	// service aliases from "anton" applied to the default bridge fail with
-	// "invalid endpoint settings" because the default bridge doesn't accept aliases.
+	// Per-network fields (aliases, static IPs, MAC, gateway priority) are scoped to a
+	// single network, so switching the primary re-scopes them: the old network's values
+	// must not follow the container - compose service aliases from "anton" applied to the
+	// default bridge fail with "invalid endpoint settings" - while a network the container
+	// is already on brings its own settings with it, taken from the request's own
+	// networkConfigs when it has one so an edit made in the same save is not overwritten.
 	if (options.networkMode && options.networkMode !== networkMode) {
-		existingOptions.networkAliases = undefined;
-		existingOptions.networkIpv4Address = undefined;
-		existingOptions.networkIpv6Address = undefined;
-		existingOptions.networkGwPriority = undefined;
-		existingOptions.macAddress = undefined;
+		Object.assign(
+			existingOptions,
+			rescopeForPrimarySwitch(existingOptions, options.networkMode, options)
+		);
 	}
 
 	// Merge user-provided options on top of existing options.
@@ -3753,9 +3766,21 @@ export async function harborSearchRepositories(
  * Docker stores the manifest list digest in RepoDigests, so we compare that directly.
  */
 export async function getRegistryManifestDigest(imageName: string): Promise<string | null> {
+	return (await getRegistryManifestDigestDetailed(imageName)).digest;
+}
+
+/** Like getRegistryManifestDigest, but a null digest carries the specific reason (#1486). */
+export async function getRegistryManifestDigestDetailed(
+	imageName: string
+): Promise<{ digest: string | null; reason?: string }> {
+	let registry = '';
 	try {
-		const { registry, repo, tag } = parseImageReference(imageName);
-		if (!isSafeRegistryHost(registry).ok) return null;
+		const parsed = parseImageReference(imageName);
+		registry = parsed.registry;
+		const { repo, tag } = parsed;
+		if (!isSafeRegistryHost(registry).ok) {
+			return { digest: null, reason: describeRegistryFailure({ kind: 'blocked-host', registry }) };
+		}
 		const token = await getRegistryBearerToken(registry, repo);
 		// Honour the stored registry scheme for the manifest fetch too (#1580), not just
 		// the token challenge - otherwise a plain-HTTP registry still gets an HTTPS request.
@@ -3777,18 +3802,22 @@ export async function getRegistryManifestDigest(imageName: string): Promise<stri
 
 		if (!response.ok) {
 			await drainResponse(response);
+			const retryAfter = response.headers.get('Retry-After');
 			if (response.status === 429) {
-				const retryAfter = response.headers.get('Retry-After');
 				console.warn(`[Registry] ${imageName}: rate limited (429)${retryAfter ? `, retry after ${retryAfter}s` : ''}`);
 			} else {
 				console.error(`[Registry] ${imageName}: ${response.status}`);
 			}
-			return null;
+			return {
+				digest: null,
+				reason: describeRegistryFailure({ kind: 'http', status: response.status, retryAfter })
+			};
 		}
 
 		const digest = response.headers.get('Docker-Content-Digest');
 		await drainResponse(response);
-		return digest;
+		if (!digest) return { digest: null, reason: describeRegistryFailure({ kind: 'no-digest' }) };
+		return { digest };
 	} catch (e) {
 		const causeStr = String((e as any)?.cause ?? e);
 		if (causeStr.includes('EAI_AGAIN') || causeStr.includes('ENOTFOUND')) {
@@ -3796,7 +3825,10 @@ export async function getRegistryManifestDigest(imageName: string): Promise<stri
 		} else {
 			console.error(`[Registry] ${imageName}: ${e}`);
 		}
-		return null;
+		return {
+			digest: null,
+			reason: describeRegistryFailure({ kind: 'error', registry: registry || imageName, error: e })
+		};
 	}
 }
 
@@ -3988,7 +4020,7 @@ export async function checkImageUpdateAvailable(
 		}
 
 		// Query registry for current manifest digest
-		const registryDigest = await getRegistryManifestDigest(imageName);
+		const { digest: registryDigest, reason: registryFailure } = await getRegistryManifestDigestDetailed(imageName);
 
 		if (!registryDigest) {
 			// Registry unreachable or image not found - can't determine update status.
@@ -3998,7 +4030,7 @@ export async function checkImageUpdateAvailable(
 				hasUpdate: false,
 				currentDigest: currentRepoDigests[0],
 				localDigests,
-				error: 'Could not query registry'
+				error: registryFailure ?? 'Could not query registry'
 			};
 		}
 
@@ -4179,12 +4211,21 @@ export async function exportImage(id: string, envId?: number | null): Promise<Re
 }
 
 // System information
+/** The `/info` fields callers read; the daemon returns many more. */
+export type DockerInfo = {
+	Driver?: string;
+	DriverStatus?: [string, string][];
+	DockerRootDir?: string;
+	ServerVersion?: string;
+	[key: string]: unknown;
+};
+
 export async function getDockerInfo(envId?: number | null) {
-	return dockerJsonRequest('/info', {}, envId);
+	return dockerJsonRequest<DockerInfo>('/info', {}, envId);
 }
 
 export async function getDockerVersion(envId?: number | null) {
-	return dockerJsonRequest('/version', {}, envId);
+	return dockerJsonRequest<{ ApiVersion?: string; Version?: string }>('/version', {}, envId);
 }
 
 /**
@@ -4209,10 +4250,11 @@ export async function getNegotiatedApiVersion(envId: number): Promise<string | n
  * Used by the circuit breaker to probe offline environments.
  */
 export async function dockerPing(envId: number): Promise<boolean> {
+	// Edge connections go WebSocket -> agent -> Docker daemon, which adds latency on slow
+	// hosts. Use a longer timeout for edge to avoid false negatives on overloaded NAS/VPS
+	// devices. Declared out here so the catch below can name the host in its warning.
+	const config = await getDockerConfig(envId).catch(() => null);
 	try {
-		// Edge connections go WebSocket → agent → Docker daemon, which adds latency on slow hosts.
-		// Use a longer timeout for edge to avoid false negatives on overloaded NAS/VPS devices.
-		const config = await getDockerConfig(envId).catch(() => null);
 		const timeoutMs = config?.connectionType === 'hawser-edge' ? 20000 : 5000;
 		const response = await dockerFetch('/_ping', {
 			signal: AbortSignal.timeout(timeoutMs)
@@ -5497,12 +5539,13 @@ async function streamLocalStderr(
 	onStdout?: (data: string) => void
 ): Promise<void> {
 	const wantStdout = onStdout ? 'true' : 'false';
-	// Pass the caller's abort signal to the fetch itself, not only to the reader below:
-	// with no body timeout on the streaming dispatcher, a fetch that stalls BEFORE the
-	// response arrives has no other bound, so container-exit must be able to cancel it.
+	// The abort signal cancels the READER on container exit (below), NOT the fetch itself:
+	// aborting the fetch surfaces as a thrown "operation aborted" that a caller without a
+	// .catch (restore redeploy) reads as a real failure. A pre-header stall is already
+	// bounded by undici's default headersTimeout, so the fetch needs no signal.
 	const response = await dockerFetch(
 		`/containers/${containerId}/logs?stdout=${wantStdout}&stderr=true&follow=true`,
-		{ streaming: true, signal },
+		{ streaming: true },
 		envId
 	);
 
@@ -5512,7 +5555,7 @@ async function streamLocalStderr(
 	if (!reader) return;
 
 	// Cancel reader when abort signal fires (container exited)
-	signal?.addEventListener('abort', () => reader.cancel(), { once: true });
+	cancelReaderOnAbort(reader, signal);
 
 	try {
 		let buffer: Buffer<ArrayBufferLike> = Buffer.alloc(0);
