@@ -355,15 +355,15 @@ export async function ensureHelperImage(envId?: number | null): Promise<string> 
 	let exists = true;
 	try {
 		await withTimeout(inspectImage(image, envId ?? undefined), HELPER_INSPECT_TIMEOUT_MS,
-			`timed out inspecting helper image "${image}"`);
+			`检测辅助镜像 "${image}" 操作超时`);
 	} catch (err: any) {
 		if (err?.statusCode === 404) exists = false;
 		else throw err;
 	}
 	if (!exists) {
-		console.log(`[Backups] Pulling helper image: ${image}`);
+		console.log(`[备份] 正在拉取辅助镜像: ${image}`);
 		await withTimeout(pullImage(image, undefined, envId ?? undefined), HELPER_PULL_TIMEOUT_MS,
-			`timed out pulling helper image "${image}" - check that it is available and the registry is reachable`);
+			`拉取辅助镜像 "${image}" 超时，请确认镜像存在且镜像仓库可正常访问`);
 	}
 	helperImagePresentUntil.set(memoKey, Date.now() + HELPER_IMAGE_MEMO_MS);
 	return image;

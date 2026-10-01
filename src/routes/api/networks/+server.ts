@@ -22,12 +22,12 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('networks', 'view', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Environment access check (enterprise only)
 	if (envIdNum && auth.isEnterprise && !await auth.canAccessEnvironment(envIdNum)) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问此环境' }, { status: 403 });
 	}
 
 	// Early return if no environment specified
@@ -40,12 +40,12 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 		return json(networks);
 	} catch (error) {
 		if (error instanceof EnvironmentNotFoundError) {
-			return json({ error: 'Environment not found' }, { status: 404 });
+			return json({ error: '环境不存在' }, { status: 404 });
 		}
 		if (!(error instanceof DockerConnectionError)) {
-			console.error('Failed to list networks:', error);
+			console.error('获取网络列表失败:', error);
 		}
-		return json({ error: 'Failed to list networks' }, { status: 500 });
+		return json({ error: '获取网络列表失败' }, { status: 500 });
 	}
 };
 
@@ -70,12 +70,12 @@ export const POST: RequestHandler = async (event) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('networks', 'create', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Environment access check (enterprise only)
 	if (envIdNum && auth.isEnterprise && !await auth.canAccessEnvironment(envIdNum)) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问此环境' }, { status: 403 });
 	}
 
 	try {
@@ -83,7 +83,7 @@ export const POST: RequestHandler = async (event) => {
 
 		// Validate required fields
 		if (!body.name) {
-			return json({ error: 'Network name is required' }, { status: 400 });
+			return json({ error: '网络名称为必填项' }, { status: 400 });
 		}
 
 		const options: CreateNetworkOptions = {
@@ -113,9 +113,9 @@ export const POST: RequestHandler = async (event) => {
 
 		return json({ success: true, id: network.Id });
 	} catch (error: any) {
-		console.error('Failed to create network:', error);
+		console.error('创建网络失败:', error);
 		return json({
-			error: 'Failed to create network',
+			error: '创建网络失败',
 			details: error.message || String(error)
 		}, { status: 500 });
 	}

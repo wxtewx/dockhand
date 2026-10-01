@@ -67,7 +67,7 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 	// in but lacking the permission", and not some later error from touching the
 	// database without a user.
 	if (auth.authEnabled && !auth.isAuthenticated) {
-		return json({ error: 'Authentication required' }, { status: 401 });
+		return json({ error: '需要进行身份验证' }, { status: 401 });
 	}
 
 	// env is resolved to a definite id -- a real integer, or `null` for the
@@ -88,7 +88,7 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 		const parsed = parseInt(envIdParam, 10);
 		if (isNaN(parsed)) {
 			return json(
-				{ error: 'env query parameter must be an integer, or omitted/"null" for the local environment' },
+				{ error: 'env 查询参数必须为整数，或者省略该参数/传入 "null" 以使用本地环境' },
 				{ status: 400 }
 			);
 		}
@@ -102,7 +102,7 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 	// per-environment role to scope against for a run that was never
 	// attributed to one.
 	if (auth.authEnabled && !(await auth.can('stacks', 'view', envIdNum ?? undefined))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// The local environment has no environment record to check access
@@ -110,7 +110,7 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 	// throw or misbehave on null/undefined, and there is nothing to be denied
 	// access TO for a run that isn't attributed to any environment.
 	if (envIdNum !== null && auth.isEnterprise && !(await auth.canAccessEnvironment(envIdNum))) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问此环境' }, { status: 403 });
 	}
 
 	const stackName = decodeURIComponent(params.name);

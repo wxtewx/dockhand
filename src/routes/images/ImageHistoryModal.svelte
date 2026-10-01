@@ -18,7 +18,7 @@
 		<Dialog.Header>
 			<Dialog.Title class="flex items-center gap-2">
 				<Layers class="w-5 h-5" />
-				Image layers: <span class="text-muted-foreground font-normal">{imageName || imageId.slice(7, 19)}</span>
+				镜像堆栈：<span class="text-muted-foreground font-normal">{imageName || imageId.slice(7, 19)}</span>
 			</Dialog.Title>
 		</Dialog.Header>
 
@@ -31,7 +31,7 @@
 		</div>
 
 		<Dialog.Footer>
-			<Button variant="outline" onclick={() => (open = false)}>Close</Button>
+			<Button variant="outline" onclick={() => (open = false)}>关闭</Button>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>

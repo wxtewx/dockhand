@@ -13,15 +13,15 @@
 set -e
 
 echo "========================================"
-echo "  Dockhand - Reset User MFA (SQLite)"
+echo "  Dockhand - 重置用户多因素认证 (SQLite)"
 echo "========================================"
 echo ""
 
 # Check arguments
 if [ -z "$1" ]; then
-    echo "Usage: $0 <username>"
+    echo "用法: $0 <用户名>"
     echo ""
-    echo "Example:"
+    echo "示例:"
     echo "  $0 admin"
     exit 1
 fi
@@ -37,8 +37,8 @@ if [ ! -f "$DB_PATH" ] && [ -f "./data/db/dockhand.db" ]; then
 fi
 
 if [ ! -f "$DB_PATH" ]; then
-    echo "Error: Database not found at $DB_PATH"
-    echo "Set DOCKHAND_DB environment variable to specify the database path"
+    echo "错误：在 $DB_PATH 未找到数据库"
+    echo "请设置 DOCKHAND_DB 环境变量以指定数据库路径"
     exit 1
 fi
 
@@ -46,9 +46,9 @@ fi
 EXISTING=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM users WHERE username='$USERNAME';")
 
 if [ "$EXISTING" -eq "0" ]; then
-    echo "Error: User '$USERNAME' not found"
+    echo "错误：未找到用户 '$USERNAME'"
     echo ""
-    echo "Available users:"
+    echo "可用用户列表："
     sqlite3 "$DB_PATH" "SELECT username FROM users;" | while read user; do
         echo "  - $user"
     done
@@ -58,19 +58,19 @@ fi
 # Show current MFA state
 MFA_ENABLED=$(sqlite3 "$DB_PATH" "SELECT mfa_enabled FROM users WHERE username='$USERNAME';")
 if [ "$MFA_ENABLED" = "1" ] || [ "$MFA_ENABLED" = "true" ]; then
-    STATUS="enabled"
+    STATUS="已启用"
 else
-    STATUS="already disabled"
+    STATUS="已关闭"
 fi
 
-echo "This script will disable MFA (TOTP) for user '$USERNAME'."
-echo "Backup codes will also be wiped — they cannot be reused."
+echo "本脚本将关闭用户 '$USERNAME' 的多因素认证（TOTP）。"
+echo "备用验证码也会被清除，无法再次使用。"
 echo ""
-echo "Database: $DB_PATH"
-echo "Username: $USERNAME"
-echo "Current MFA: $STATUS"
+echo "数据库: $DB_PATH"
+echo "用户名: $USERNAME"
+echo "当前多因素认证状态: $STATUS"
 echo ""
-printf "Continue? [y/N]: "
+printf "是否继续？[y/N]: "
 read CONFIRM
 
 case "$CONFIRM" in
@@ -83,14 +83,14 @@ case "$CONFIRM" in
 esac
 
 echo ""
-echo "Disabling MFA for user '$USERNAME'..."
+echo "正在关闭用户 '$USERNAME' 的多因素认证..."
 sqlite3 "$DB_PATH" "UPDATE users SET mfa_enabled=0, mfa_secret=NULL, updated_at=datetime('now') WHERE username='$USERNAME';"
 
 if [ $? -eq 0 ]; then
     echo ""
-    echo "MFA disabled successfully for user '$USERNAME'."
-    echo "The user can now log in with just their password and can re-enable MFA from their profile."
+    echo "已成功关闭用户 '$USERNAME' 的多因素认证。"
+    echo "该用户现在可仅使用密码登录，并可在个人资料页面重新开启多因素认证。"
 else
-    echo "Error: Failed to disable MFA"
+    echo "错误：关闭多因素认证失败"
     exit 1
 fi

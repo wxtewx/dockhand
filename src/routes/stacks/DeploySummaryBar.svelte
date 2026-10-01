@@ -21,13 +21,13 @@
 {#if show}
 	<div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-normal text-muted-foreground {className}">
 		{#if s.containersRecreated > 0}
-			<span class="inline-flex items-center gap-1"><RefreshCw class="h-3 w-3" />{s.containersRecreated} recreated</span>
+			<span class="inline-flex items-center gap-1"><RefreshCw class="h-3 w-3" />{s.containersRecreated} 已重建</span>
 		{/if}
 		{#if s.containersCreated > 0}
-			<span class="inline-flex items-center gap-1"><Plus class="h-3 w-3" />{s.containersCreated} created</span>
+			<span class="inline-flex items-center gap-1"><Plus class="h-3 w-3" />{s.containersCreated} 已创建</span>
 		{/if}
 		{#if s.containersStarted > 0}
-			<span class="inline-flex items-center gap-1"><Play class="h-3 w-3" />{s.containersStarted} started</span>
+			<span class="inline-flex items-center gap-1"><Play class="h-3 w-3" />{s.containersStarted} 已启动</span>
 		{/if}
 		{#if s.imagesPulled.length > 0}
 			<span class="inline-flex items-center gap-1.5">

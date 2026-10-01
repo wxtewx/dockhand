@@ -23,7 +23,7 @@
 	<div class="pt-2 border-t border-border/50">
 		<div class="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
 			<Box class="w-3 h-3" />
-			<span class="font-medium">Top containers by CPU</span>
+			<span class="font-medium">CPU 占用最高的容器</span>
 			<Loader2 class="w-3 h-3 animate-spin" />
 		</div>
 		<!-- Skeleton rows -->
@@ -45,7 +45,7 @@
 	<div class="pt-2 border-t border-border/50">
 		<div class="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
 			<Box class="w-3 h-3" />
-			<span class="font-medium">Top containers by CPU</span>
+			<span class="font-medium">CPU 占用最高的容器</span>
 		</div>
 		<!-- Grid layout with fixed columns: container name, CPU, Memory -->
 		<div class="grid grid-cols-[1fr_auto_auto] gap-x-3 gap-y-1.5 text-xs items-center">
@@ -60,7 +60,7 @@
 					<span class="tabular-nums">{container.cpuPercent.toFixed(1)}%</span>
 				</span>
 				<!-- Memory -->
-				<span class="flex items-center gap-0.5 text-muted-foreground whitespace-nowrap" title="Memory">
+				<span class="flex items-center gap-0.5 text-muted-foreground whitespace-nowrap" title="内存">
 					<MemoryStick class="w-3 h-3 shrink-0" />
 					<span class="tabular-nums">{container.memoryPercent.toFixed(1)}%</span>
 				</span>
@@ -69,7 +69,7 @@
 	</div>
 {:else}
 	<div class="text-xs text-muted-foreground">
-		No running containers
+		暂无运行中的容器
 	</div>
 {/if}
 

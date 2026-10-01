@@ -10,6 +10,7 @@
 	import { appendEnvParam } from '$lib/stores/environment';
 	import { formatBytes } from '$lib/utils/format';
 	import { watchJob } from '$lib/utils/sse-fetch';
+	import { getLabelText } from '$lib/types';
 
 	interface LayerProgress {
 		id: string;
@@ -151,7 +152,7 @@
 		status = 'pulling';
 		startTime = Date.now();
 
-		addOutputLine(`[pull] Starting pull for ${image}`);
+		addOutputLine(`[pull] 开始拉取镜像 ${image}`);
 
 		try {
 			const response = await fetch(appendEnvParam('/api/images/pull', envId), {
@@ -161,7 +162,7 @@
 			});
 
 			if (!response.ok) {
-				throw new Error('Failed to start pull');
+				throw new Error('开始拉取失败');
 			}
 
 			const { jobId } = await response.json();
@@ -172,13 +173,13 @@
 			if (status === 'pulling') {
 				duration = Date.now() - startTime;
 				status = 'complete';
-				addOutputLine(`[pull] Pull completed in ${formatDuration(duration)}`);
+				addOutputLine(`[pull] 拉取完成，耗时 ${formatDuration(duration)}`);
 				onComplete?.();
 			}
 		} catch (error: any) {
 			duration = Date.now() - startTime;
 			status = 'error';
-			errorMessage = error.message || 'Failed to pull image';
+			errorMessage = error.message || '拉取镜像失败';
 			addOutputLine(`[error] ${errorMessage}`);
 			onError?.(errorMessage);
 		}
@@ -193,12 +194,12 @@
 		if (data.status === 'complete') {
 			duration = Date.now() - startTime;
 			status = 'complete';
-			addOutputLine(`[pull] Pull completed in ${formatDuration(duration)}`);
+			addOutputLine(`[pull] 拉取完成，耗时 ${formatDuration(duration)}`);
 			onComplete?.();
 		} else if (data.status === 'error') {
 			duration = Date.now() - startTime;
 			status = 'error';
-			errorMessage = data.error || 'Unknown error occurred';
+			errorMessage = data.error || '发生未知错误';
 			addOutputLine(`[error] ${errorMessage}`);
 			onError?.(errorMessage);
 		} else if (data.id) {
@@ -294,7 +295,7 @@
 	<!-- Image Input -->
 	{#if showImageInput}
 		<div class="space-y-2 shrink-0">
-			<Label for="pull-image" class="text-sm font-medium">Image name</Label>
+			<Label for="pull-image" class="text-sm font-medium">镜像名称</Label>
 			<div class="flex gap-2">
 				<Input
 					id="pull-image"
@@ -310,10 +311,10 @@
 				>
 					{#if isPulling}
 						<Download class="w-4 h-4 mr-2 animate-spin" />
-						Pulling...
+						拉取镜像中...
 					{:else}
 						<Download class="w-4 h-4" />
-						Pull
+						拉取
 					{/if}
 				</Button>
 			</div>
@@ -328,20 +329,20 @@
 				<div class="flex items-center gap-2">
 					{#if status === 'pulling'}
 						<Download class="w-4 h-4 animate-spin text-blue-600" />
-						<span class="text-sm">Pulling layers...</span>
+						<span class="text-sm">正在拉取分层镜像...</span>
 					{:else if status === 'complete'}
 						<CheckCircle2 class="w-4 h-4 text-green-600" />
-						<span class="text-sm text-green-600">Pull completed!</span>
+						<span class="text-sm text-green-600">拉取完成！</span>
 					{:else if status === 'error'}
 						<XCircle class="w-4 h-4 text-red-600" />
-						<span class="text-sm text-red-600">Failed</span>
+						<span class="text-sm text-red-600">拉取失败</span>
 					{/if}
 				</div>
 				<div class="flex items-center gap-3">
 					{#if status === 'pulling' || status === 'complete'}
 						<Badge variant="secondary" class="text-xs min-w-20 text-center">
 							{#if totalLayers > 0}
-								{completedLayers} / {totalLayers} layers
+								{completedLayers} / {totalLayers} 层
 							{:else}
 								...
 							{/if}
@@ -359,7 +360,7 @@
 					<Progress value={overallProgress} class="h-2" />
 					<div class="text-xs text-muted-foreground h-4">
 						{#if downloadStats.totalBytes > 0}
-							Downloaded: {formatBytes(downloadStats.downloadedBytes)} / {formatBytes(downloadStats.totalBytes)}
+							已下载： {formatBytes(downloadStats.downloadedBytes)} / {formatBytes(downloadStats.totalBytes)}
 						{/if}
 					</div>
 				</div>
@@ -382,9 +383,9 @@
 				<table class="w-full text-xs">
 					<thead class="bg-muted sticky top-0">
 						<tr>
-							<th class="text-left py-1.5 px-3 font-medium w-28">Layer ID</th>
-							<th class="text-left py-1.5 px-3 font-medium">Status</th>
-							<th class="text-right py-1.5 px-3 font-medium w-24">Progress</th>
+							<th class="text-left py-1.5 px-3 font-medium w-28">层 ID</th>
+							<th class="text-left py-1.5 px-3 font-medium">状态</th>
+							<th class="text-right py-1.5 px-3 font-medium w-24">进度</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -408,7 +409,7 @@
 											<Loader2 class="w-3 h-3 text-muted-foreground animate-spin shrink-0" />
 										{/if}
 										<span class={isComplete ? 'text-green-600' : isDownloading ? 'text-blue-600' : isExtracting ? 'text-amber-600' : 'text-muted-foreground'}>
-											{layer.status}
+											{getLabelText(layer.status)}
 										</span>
 									</div>
 								</td>
@@ -424,7 +425,7 @@
 											<span class="text-muted-foreground w-8">{percentage}%</span>
 										</div>
 									{:else if isComplete}
-										<span class="text-green-600">Done</span>
+										<span class="text-green-600">完成</span>
 									{:else}
 										<span class="text-muted-foreground">-</span>
 									{/if}
@@ -441,9 +442,9 @@
 			<div class="flex items-center justify-between text-xs text-muted-foreground mb-2 shrink-0">
 				<div class="flex items-center gap-2">
 					<Terminal class="w-3.5 h-3.5" />
-					<span>Output ({outputLines.length} lines)</span>
+					<span>输出 ({outputLines.length} 行)</span>
 				</div>
-				<button type="button" onclick={toggleLogTheme} class="p-1 rounded hover:bg-muted transition-colors cursor-pointer" title="Toggle log theme">
+				<button type="button" onclick={toggleLogTheme} class="p-1 rounded hover:bg-muted transition-colors cursor-pointer" title="切换日志主题">
 					{#if logDarkMode}
 						<Sun class="w-3.5 h-3.5" />
 					{:else}
@@ -458,14 +459,14 @@
 				{#each outputLines as line}
 					<div class="whitespace-pre-wrap break-all leading-relaxed flex items-start gap-1.5">
 						{#if line.startsWith('[pull]')}
-							<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-blue-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">pull</span>
-							<span>{line.slice(7)}</span>
+							<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-blue-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">拉取</span>
+							<span>{getLabelText(line.slice(7))}</span>
 						{:else if line.startsWith('[layer]')}
-							<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-green-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">layer</span>
-							<span>{line.slice(8)}</span>
+							<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-green-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">分层</span>
+							<span>{getLabelText(line.slice(8))}</span>
 						{:else if line.startsWith('[error]')}
-							<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-red-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">error</span>
-							<span class="text-red-400">{line.slice(8)}</span>
+							<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-red-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">错误</span>
+							<span class="text-red-400">{getLabelText(line.slice(8))}</span>
 						{:else}
 							<span>{line}</span>
 						{/if}
@@ -478,7 +479,7 @@
 	<!-- Idle state -->
 	{#if status === 'idle' && !showImageInput}
 		<div class="flex-1 flex items-center justify-center text-muted-foreground">
-			<p class="text-sm">Enter an image name to start pulling</p>
+			<p class="text-sm">请输入镜像名称以开始拉取</p>
 		</div>
 	{/if}
 </div>

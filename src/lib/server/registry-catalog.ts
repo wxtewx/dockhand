@@ -37,4 +37,4 @@ export function classifyCatalogFailure(
 
 /** User-facing message for a registry that won't allow catalog listing (#873). */
 export const CATALOG_NOT_SUPPORTED_MSG =
-	'This registry does not allow listing all images (GitLab and Harbor restrict it to admins). Search for an image by its full path instead.';
+	'该仓库不允许列出全部镜像 (GitLab 和 Harbor 仅管理员可执行此操作)，请通过完整路径搜索镜像。';

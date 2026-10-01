@@ -83,7 +83,7 @@ export async function stageStackDirOnRemote(
 			const tar = buildTarStream(sources);
 			const { streamed } = await putContainerArchiveStreaming(containerId, remoteDir, tar, envId);
 			// direct always streams; a false here would mean a transport we don't stage on.
-			if (!streamed) throw new Error(`remote staging: transport for env ${envId} cannot stream the stack dir`);
+			if (!streamed) throw new Error(`远程暂存失败：环境 ${envId} 的传输通道不支持堆栈目录流式上传`);
 		},
 	});
 

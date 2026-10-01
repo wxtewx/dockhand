@@ -11,7 +11,7 @@
 export function truncateForLog(output: string, keep = 2048): string {
 	if (output.length <= keep * 2) return output;
 	const elided = output.length - keep * 2;
-	return `${output.slice(0, keep)}\n...[${elided} bytes elided]...\n${output.slice(-keep)}`;
+	return `${output.slice(0, keep)}\n...[已省略 ${elided} 字节]...\n${output.slice(-keep)}`;
 }
 
 /**

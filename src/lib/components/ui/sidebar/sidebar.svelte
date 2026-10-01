@@ -47,8 +47,8 @@
 			{side}
 		>
 			<Sheet.Header class="sr-only">
-				<Sheet.Title>Sidebar</Sheet.Title>
-				<Sheet.Description>Displays the mobile sidebar.</Sheet.Description>
+				<Sheet.Title>侧边栏</Sheet.Title>
+				<Sheet.Description>显示移动端侧边栏。</Sheet.Description>
 			</Sheet.Header>
 			<div class="flex h-full w-full flex-col">
 				{@render children?.()}

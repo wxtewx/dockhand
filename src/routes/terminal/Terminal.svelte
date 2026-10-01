@@ -77,7 +77,7 @@
 			ws = null;
 		}
 		connected = false;
-		terminal?.writeln('\x1b[90m\r\nReconnecting...\x1b[0m');
+		terminal?.writeln('\x1b[90m\r\n正在重新连接...\x1b[0m');
 		connect();
 	}
 
@@ -192,11 +192,11 @@
 			wsUrl += `&envId=${envId}`;
 		}
 
-		terminal.writeln(`\x1b[90m${mode === 'attach' ? 'Attaching to' : 'Connecting to'} ${containerName}...\x1b[0m`);
+		terminal.writeln(`\x1b[90m${mode === 'attach' ? '正在附加到' : '正在连接到'} ${containerName}...\x1b[0m`);
 		if (mode === 'attach') {
-			terminal.writeln('\x1b[90mDocker attach: container main process\x1b[0m');
+			terminal.writeln('\x1b[90mDocker attach: 容器主进程\x1b[0m');
 		} else {
-			terminal.writeln(`\x1b[90mShell: ${shell}, User: ${user || 'default'}\x1b[0m`);
+			terminal.writeln(`\x1b[90mShell: ${shell}, 用户: ${user || '默认'}\x1b[0m`);
 		}
 		terminal.writeln('');
 
@@ -220,9 +220,9 @@
 					terminal?.write(msg.data);
 				} else if (msg.type === 'error') {
 					error = msg.message;
-					terminal?.writeln(`\x1b[31mError: ${msg.message}\x1b[0m`);
+					terminal?.writeln(`\x1b[31m错误：${msg.message}\x1b[0m`);
 				} else if (msg.type === 'exit') {
-					terminal?.writeln('\x1b[90m\r\nSession ended.\x1b[0m');
+					terminal?.writeln('\x1b[90m\r\n会话已结束。\x1b[0m');
 					connected = false;
 				}
 			} catch {
@@ -231,13 +231,13 @@
 		};
 
 		ws.onerror = () => {
-			error = 'Connection error';
-			terminal?.writeln('\x1b[31mConnection error\x1b[0m');
+			error = '连接错误';
+			terminal?.writeln('\x1b[31m连接错误\x1b[0m');
 		};
 
 		ws.onclose = () => {
 			connected = false;
-			terminal?.writeln('\x1b[90mDisconnected.\x1b[0m');
+			terminal?.writeln('\x1b[90m已断开连接。\x1b[0m');
 		};
 	}
 

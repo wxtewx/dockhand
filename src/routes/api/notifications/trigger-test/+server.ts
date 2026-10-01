@@ -24,7 +24,7 @@ import { authorize } from '$lib/server/authorize';
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !auth.isAuthenticated) {
-		return json({ error: 'Authentication required' }, { status: 401 });
+		return json({ error: '需要身份验证' }, { status: 401 });
 	}
 	// Anyone who reaches this can send mail, chat messages and phone alerts from this
 	// instance to addresses they cannot see, so it asks for the same permission that
@@ -37,11 +37,11 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		const { eventType, environmentId, payload } = body;
 
 		if (!eventType) {
-			return json({ error: 'eventType is required' }, { status: 400 });
+			return json({ error: 'eventType 为必填项' }, { status: 400 });
 		}
 
 		if (!payload || !payload.title || !payload.message) {
-			return json({ error: 'payload with title and message is required' }, { status: 400 });
+			return json({ error: '必须提供包含 title 和 message 的 payload' }, { status: 400 });
 		}
 
 		// The environment arrives in the body, so it is checked here rather than beside
@@ -51,7 +51,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		// truthy value - "5" would slip the check and still deliver.
 		if (environmentId !== undefined && environmentId !== null) {
 			if (!Number.isInteger(environmentId)) {
-				return json({ error: 'environmentId must be a number' }, { status: 400 });
+				return json({ error: 'environmentId 必须是数字' }, { status: 400 });
 			}
 			const noAccess = await auth.requireEnvAccess(environmentId);
 			if (noAccess) return noAccess;
@@ -61,7 +61,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		const validEventIds = NOTIFICATION_EVENT_TYPES.map(e => e.id);
 		if (!validEventIds.includes(eventType)) {
 			return json({
-				error: `Invalid event type: ${eventType}`,
+				error: `无效的事件类型：${eventType}`,
 				validTypes: validEventIds
 			}, { status: 400 });
 		}
@@ -94,7 +94,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			);
 		} else {
 			return json({
-				error: 'environmentId is required for non-system events'
+				error: '非系统事件必须提供 environmentId'
 			}, { status: 400 });
 		}
 
@@ -105,9 +105,9 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			environmentId: isSystemEvent ? null : environmentId
 		});
 	} catch (error) {
-		console.error('[Notification Test] Error:', error);
+		console.error('[通知测试] 错误:', error);
 		return json({
-			error: error instanceof Error ? error.message : 'Unknown error'
+			error: error instanceof Error ? error.message : '未知错误'
 		}, { status: 500 });
 	}
 };
@@ -123,7 +123,7 @@ export const GET: RequestHandler = async () => {
 	return json({
 		eventTypes: NOTIFICATION_EVENT_TYPES,
 		categories: {
-			container: [
+			容器: [
 				'container_started',
 				'container_stopped',
 				'container_restarted',
@@ -133,28 +133,28 @@ export const GET: RequestHandler = async () => {
 				'container_updated',
 				'image_pulled',
 			],
-			autoUpdate: [
+			自动更新: [
 				'auto_update_success',
 				'auto_update_failed',
 				'auto_update_blocked',
 			],
-			gitStack: [
+			"Git 栈": [
 				'git_sync_success',
 				'git_sync_failed',
 				'git_sync_skipped',
 			],
-			stack: [
+			栈: [
 				'stack_started',
 				'stack_stopped',
 				'stack_deployed',
 				'stack_deploy_failed',
 			],
-			security: [
+			安全: [
 				'vulnerability_critical',
 				'vulnerability_high',
 				'vulnerability_any',
 			],
-			system: [
+			系统: [
 				'environment_offline',
 				'environment_online',
 				'disk_space_warning',

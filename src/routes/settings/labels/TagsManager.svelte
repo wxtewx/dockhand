@@ -57,7 +57,7 @@
 				method: 'POST', headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ name, color: newColor, icon: newIcon })
 			});
-			if (!res.ok) { toast.error('Failed to create tag'); return; }
+			if (!res.ok) { toast.error('创建标签失败'); return; }
 			newName = ''; newColor = 'blue'; newIcon = null;
 			await load();
 		} finally { creating = false; }
@@ -87,21 +87,21 @@
 			});
 			if (!res.ok) {
 				const msg = await res.json().then((d) => d?.error).catch(() => null);
-				toast.error(msg || 'Failed to update tag');
+				toast.error(msg || '更新标签失败');
 				return false;
 			}
 			await load();
 			return true;
-		} catch { toast.error('Failed to update tag'); return false; }
+		} catch { toast.error('更新标签失败'); return false; }
 	}
 
 	async function remove(tag: Tag) {
 		try {
 			const res = await fetch(`/api/tags/${tag.id}`, { method: 'DELETE' });
-			if (!res.ok) { toast.error('Failed to delete tag'); return; }
-			toast.success(`Deleted "${tag.name}"`);
+			if (!res.ok) { toast.error('删除标签失败'); return; }
+			toast.success(`已删除 "${tag.name}"`);
 			await load();
-		} catch { toast.error('Failed to delete tag'); }
+		} catch { toast.error('删除标签失败'); }
 	}
 </script>
 
@@ -111,10 +111,10 @@
 			<div class="flex items-center gap-2">
 				<TagsIcon class="w-4 h-4 text-muted-foreground" />
 				<div>
-					<Card.Title class="text-base">Tags</Card.Title>
+					<Card.Title class="text-base">标签</Card.Title>
 					<Card.Description>
-						Organize containers and stacks with your own tags. Tags are shared across all environments; which containers and stacks carry a tag is set per environment.
-						{#if !canEdit} Only an administrator can create or edit tags.{/if}
+						使用自定义标签整理容器和堆栈。标签在所有环境之间共享；在各个环境中分别设置哪些容器和堆栈使用该标签。
+						{#if !canEdit} 只有管理员可以创建或编辑标签。{/if}
 					</Card.Description>
 				</div>
 			</div>
@@ -124,12 +124,12 @@
 		{#if canEdit}
 			<!-- Create -->
 			<div class="flex items-center gap-2">
-				<Input bind:value={newName} placeholder="New tag name" class="h-9 max-w-xs"
+				<Input bind:value={newName} placeholder="新建标签名称" class="h-9 max-w-xs"
 					onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter') create(); }} />
 				<Popover.Root>
 					<Popover.Trigger>
 						{#snippet child({ props })}
-							<button {...props} type="button" title="Pick colour"
+							<button {...props} type="button" title="选择颜色"
 								class="h-9 w-9 shrink-0 rounded-md border flex items-center justify-center">
 								<span class="h-4 w-4 rounded-full" style="background-color: {tagHex(newColor)};"></span>
 							</button>
@@ -147,15 +147,15 @@
 				</Popover.Root>
 				<TagIconPicker icon={newIcon} hex={tagHex(newColor)} onSelect={(i) => (newIcon = i)} />
 				<Button size="sm" onclick={create} disabled={creating || !normalizeTag(newName)}>
-					<Plus class="w-4 h-4" /> Add tag
+					<Plus class="w-4 h-4" /> 添加标签
 				</Button>
 			</div>
 		{/if}
 
 		{#if loading}
-			<p class="text-sm text-muted-foreground">Loading...</p>
+			<p class="text-sm text-muted-foreground">正在加载...</p>
 		{:else if tags.length === 0}
-			<div class="py-6 text-center text-sm text-muted-foreground">No tags yet</div>
+			<div class="py-6 text-center text-sm text-muted-foreground">尚未创建任何标签</div>
 		{:else}
 			<div class="flex flex-wrap gap-2">
 				{#each tags as tag (tag.id)}
@@ -176,7 +176,7 @@
 								<Popover.Root open={colorPopoverId === tag.id} onOpenChange={(o) => colorPopoverId = o ? tag.id : null}>
 									<Popover.Trigger>
 										{#snippet child({ props })}
-											<button {...props} type="button" title="Change colour" class="text-muted-foreground hover:text-foreground">
+											<button {...props} type="button" title="修改颜色" class="text-muted-foreground hover:text-foreground">
 												<span class="h-3 w-3 rounded-full block" style="background-color: {hex};"></span>
 											</button>
 										{/snippet}
@@ -194,14 +194,14 @@
 								<!-- Change icon -->
 								<TagIconPicker icon={tag.icon ?? null} hex={hex} triggerClass="h-5 w-5 border-0"
 									onSelect={(i) => setIcon(tag, i)} />
-								<button type="button" title="Rename" class="text-muted-foreground hover:text-foreground"
+								<button type="button" title="重命名" class="text-muted-foreground hover:text-foreground"
 									onclick={() => startRename(tag)}><Pencil class="w-3 h-3" /></button>
 								<ConfirmPopover
-									action="Delete"
-									itemType="tag"
+									action="删除"
+									itemType="标签"
 									itemName={tag.name}
-									title="Delete this tag from every container and stack?"
-									confirmText="Delete"
+									title="是否从所有容器和堆栈中删除此标签？"
+									confirmText="删除"
 									variant="destructive"
 									onConfirm={() => remove(tag)}
 								>

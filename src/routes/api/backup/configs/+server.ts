@@ -75,30 +75,30 @@ export const POST: RequestHandler = async (event) => {
 	const body = await request.json();
 
 	if (!body.destinationId || !body.targetName) {
-		return json({ error: 'Missing required fields: destinationId, targetName' }, { status: 400 });
+		return json({ error: '缺少必填参数：destinationId、targetName' }, { status: 400 });
 	}
 
 	// Light allowlist on targetName — it flows into paths/restic tags. Complements
 	// the stack-path traversal guard (audit #43).
 	if (typeof body.targetName !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(body.targetName)) {
-		return json({ error: 'Invalid targetName' }, { status: 400 });
+		return json({ error: '目标名称格式非法' }, { status: 400 });
 	}
 
 	// Validate cron schedule if provided (audit #7)
 	if (typeof body.schedule === 'string' && body.schedule.trim() && !isValidCron(body.schedule.trim())) {
-		return json({ error: `Invalid cron expression: ${body.schedule}` }, { status: 400 });
+		return json({ error: `Cron 表达式无效: ${body.schedule}` }, { status: 400 });
 	}
 
 	// Validate retention keep-* values before persisting (audit medium #13) — reject
 	// negative/fractional/string/out-of-range so corrupt retention can't reach restic.
 	const retentionCheck = validateRetention(body.retention);
 	if (!retentionCheck.ok) {
-		return json({ error: `Invalid retention: ${retentionCheck.reason}` }, { status: 400 });
+		return json({ error: `保留策略配置无效: ${retentionCheck.reason}` }, { status: 400 });
 	}
 
 	// Environment access check (enterprise RBAC)
 	if (body.environmentId && auth.isEnterprise && !await auth.canAccessEnvironment(body.environmentId)) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问该环境' }, { status: 403 });
 	}
 
 	// A local-path repo is allowed on any env; if the target daemon can't see the

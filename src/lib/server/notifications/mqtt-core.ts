@@ -28,35 +28,35 @@ export function parseMqttUrl(raw: string): { ok: true; target: MqttTarget } | { 
 	try {
 		u = new URL(raw);
 	} catch {
-		return { ok: false, reason: 'not a valid URL' };
+		return { ok: false, reason: '不是有效的 URL' };
 	}
 	if (u.protocol !== 'mqtt:' && u.protocol !== 'mqtts:') {
-		return { ok: false, reason: `scheme ${u.protocol} not allowed (use mqtt or mqtts)` };
+		return { ok: false, reason: `不支持协议 ${u.protocol} (请使用 mqtt 或 mqtts)` };
 	}
 	const secure = u.protocol === 'mqtts:';
 	const host = u.hostname.toLowerCase().replace(/^\[|\]$/g, '');
-	if (!host) return { ok: false, reason: 'missing broker host' };
-	if (host === 'localhost' || host.endsWith('.localhost')) return { ok: false, reason: 'localhost blocked' };
+	if (!host) return { ok: false, reason: '缺少 Broker 主机地址' };
+	if (host === 'localhost' || host.endsWith('.localhost')) return { ok: false, reason: '已禁止 localhost' };
 	const hostReason = dangerousHostReason(host);
 	if (hostReason) return { ok: false, reason: hostReason };
 
 	const port = u.port ? Number(u.port) : secure ? 8883 : 1883;
 	if (!Number.isInteger(port) || port < 1 || port > 65535) {
-		return { ok: false, reason: `invalid port ${u.port}` };
+		return { ok: false, reason: `端口 ${u.port} 无效` };
 	}
 
 	const topic = decodeURIComponent(u.pathname.replace(/^\/+/, ''));
-	if (!topic) return { ok: false, reason: 'missing topic (add a path, e.g. mqtt://host/dockhand)' };
+	if (!topic) return { ok: false, reason: '缺少主题 (添加路径，例如 mqtt://host/dockhand)' };
 	// A PUBLISH topic must not contain subscription wildcards.
 	if (topic.includes('+') || topic.includes('#')) {
-		return { ok: false, reason: 'publish topic must not contain wildcards (+ or #)' };
+		return { ok: false, reason: '发布主题不能包含通配符 (+ 或 #)' };
 	}
 
 	const qosRaw = u.searchParams.get('qos');
 	let qos: 0 | 1 | 2 = 0;
 	if (qosRaw !== null) {
 		if (qosRaw === '0' || qosRaw === '1' || qosRaw === '2') qos = Number(qosRaw) as 0 | 1 | 2;
-		else return { ok: false, reason: `invalid qos ${qosRaw} (use 0, 1 or 2)` };
+		else return { ok: false, reason: `qos ${qosRaw} 无效 (请使用 0、1 或 2)` };
 	}
 	const retain = u.searchParams.get('retain') === 'true';
 

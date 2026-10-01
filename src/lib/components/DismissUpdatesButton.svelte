@@ -24,7 +24,7 @@
 		variant="outline"
 		onclick={onDismiss}
 		class="gap-1.5 border-amber-500/40 text-amber-600 hover:bg-amber-500/10 hover:border-amber-500"
-		title="Dismiss all update indicators"
+		title="清除全部更新指示器"
 	>
 		{#if digestCount > 0}
 			<span class="flex items-center gap-0.5">

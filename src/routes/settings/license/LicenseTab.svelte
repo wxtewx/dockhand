@@ -44,8 +44,8 @@
 			const response = await fetch('/api/license');
 			licenseInfo = await response.json();
 		} catch (error) {
-			console.error('Failed to fetch license info:', error);
-			licenseInfo = { valid: false, active: false, error: 'Failed to fetch license info' };
+			console.error('获取许可证信息失败:', error);
+			licenseInfo = { valid: false, active: false, error: '获取许可证信息失败' };
 		} finally {
 			licenseLoading = false;
 		}
@@ -53,7 +53,7 @@
 
 	async function activateLicense() {
 		if (!licenseFormName.trim() || !licenseFormKey.trim()) {
-			licenseFormError = 'Name and license key are required';
+			licenseFormError = '名称和许可证密钥为必填项';
 			return;
 		}
 
@@ -73,21 +73,21 @@
 			const result = await response.json();
 
 			if (!response.ok || result.error) {
-				licenseFormError = result.error || 'Failed to activate license';
+				licenseFormError = result.error || '激活许可证失败';
 				return;
 			}
 
 			// Refresh license info and update global store
 			await fetchLicenseInfo();
 			await licenseStore.check();
-			toast.success('License activated successfully');
+			toast.success('许可证激活成功');
 
 			// Clear form
 			licenseFormName = '';
 			licenseFormKey = '';
 		} catch (error) {
-			licenseFormError = 'Failed to activate license';
-			toast.error('Failed to activate license');
+			licenseFormError = '激活许可证失败';
+			toast.error('激活许可证失败');
 		} finally {
 			licenseFormSaving = false;
 		}
@@ -98,10 +98,10 @@
 			await fetch('/api/license', { method: 'DELETE' });
 			await fetchLicenseInfo();
 			await licenseStore.check();
-			toast.success('License deactivated');
+			toast.success('许可证已注销');
 		} catch (error) {
-			console.error('Failed to deactivate license:', error);
-			toast.error('Failed to deactivate license');
+			console.error('注销许可证失败:', error);
+			toast.error('注销许可证失败');
 		}
 	}
 
@@ -116,9 +116,9 @@
 			<div class="flex items-start gap-3">
 				<Crown class="w-5 h-5 text-amber-500 mt-0.5" />
 				<div>
-					<p class="text-sm font-medium">License management</p>
+					<p class="text-sm font-medium">许可证管理</p>
 					<p class="text-xs text-muted-foreground">
-						Activate your license to validate commercial use. <span class="font-medium">Enterprise</span> licenses unlock premium features including RBAC, LDAP and audit logs.
+						激活许可证以验证商业使用权限。<span class="font-medium">企业版</span> 许可证解锁高级功能，包括 RBAC、LDAP 和审计日志。
 					</p>
 				</div>
 			</div>
@@ -129,7 +129,7 @@
 		<Card.Root>
 			<Card.Content class="py-8 text-center">
 				<RefreshCw class="w-6 h-6 mx-auto mb-2 animate-spin text-muted-foreground" />
-				<p class="text-sm text-muted-foreground">Loading license information...</p>
+				<p class="text-sm text-muted-foreground">正在加载许可证信息...</p>
 			</Card.Content>
 		</Card.Root>
 	{:else if licenseInfo?.valid && licenseInfo?.active}
@@ -140,69 +140,68 @@
 				<Card.Title class="text-sm font-medium flex items-center gap-2">
 					{#if isEnterprise}
 						<Crown class="w-4 h-4 text-amber-500" />
-						Active Enterprise license
+						企业版许可证已激活
 					{:else}
 						<Building2 class="w-4 h-4 text-blue-500" />
-						Active SMB license
+						中小企业版许可证已激活
 					{/if}
 				</Card.Title>
 			</Card.Header>
 			<Card.Content class="space-y-4">
 				<div class="grid grid-cols-2 gap-4 text-sm">
 					<div>
-						<p class="text-muted-foreground">Licensed to</p>
+						<p class="text-muted-foreground">授权对象</p>
 						<p class="font-medium">{licenseInfo.payload?.name}</p>
 					</div>
 					<div>
-						<p class="text-muted-foreground">License type</p>
+						<p class="text-muted-foreground">许可证类型</p>
 						<p class="font-medium flex items-center gap-1">
 							{#if isEnterprise}
 								<Crown class="w-3.5 h-3.5 text-amber-500" />
-								<span class="text-amber-600 dark:text-amber-400">Enterprise</span>
+								<span class="text-amber-600 dark:text-amber-400">企业版</span>
 							{:else}
 								<Building2 class="w-3.5 h-3.5 text-blue-500" />
-								<span class="text-blue-600 dark:text-blue-400">SMB</span>
+								<span class="text-blue-600 dark:text-blue-400">中小企业版</span>
 							{/if}
 						</p>
 					</div>
 					<div>
-						<p class="text-muted-foreground">Licensed host</p>
+						<p class="text-muted-foreground">授权主机</p>
 						<p class="font-medium font-mono text-xs">{licenseInfo.payload?.host}</p>
 					</div>
 					<div>
-						<p class="text-muted-foreground">Issued</p>
+						<p class="text-muted-foreground">签发时间</p>
 						<p class="font-medium">{formatDate(licenseInfo.payload?.issued || '')}</p>
 					</div>
 					<div>
-						<p class="text-muted-foreground">Expires</p>
-						<p class="font-medium">{licenseInfo.payload?.expires ? formatDate(licenseInfo.payload.expires) : 'Never (Perpetual)'}</p>
+						<p class="text-muted-foreground">到期时间</p>
+						<p class="font-medium">{licenseInfo.payload?.expires ? formatDate(licenseInfo.payload.expires) : '永久有效'}</p>
 					</div>
 				</div>
 				<div class="pt-2 border-t">
-					<p class="text-xs text-muted-foreground mb-2">Current hostname</p>
+					<p class="text-xs text-muted-foreground mb-2">当前主机名</p>
 					<code class="text-xs bg-muted px-2 py-1 rounded">{licenseInfo.hostname}</code>
 				</div>
 				{#if $canAccess('settings', 'edit')}
 				<div class="flex justify-end">
 					<ConfirmPopover
-						action="Deactivate"
+						action="停用"
 						itemType="license"
 						itemName={licenseInfo.payload?.name || 'this license'}
-						title="Deactivate"
+						title="停用"
 						position="left"
-						confirmText="Deactivate license"
+						confirmText="停用许可证"
 						onConfirm={deactivateLicense}
 					>
 						{#snippet children({ open })}
 							<span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md border transition-colors {open ? 'border-destructive text-destructive' : 'hover:bg-muted'}">
 								<XCircle class="w-4 h-4" />
-								Deactivate license
+								停用许可证
 							</span>
 						{/snippet}
 						{#snippet extraContent()}
 							<p class="text-xs text-muted-foreground">
-								Roles stop being enforced, so everyone who can sign in gets full access
-								until a valid license is installed.
+								角色权限将不再生效。在安装有效的许可证之前，所有可以登录的用户都将获得完全访问权限。
 							</p>
 						{/snippet}
 					</ConfirmPopover>
@@ -216,7 +215,7 @@
 			<Card.Header>
 				<Card.Title class="text-sm font-medium flex items-center gap-2">
 					<Key class="w-4 h-4" />
-					Activate license
+					激活许可证
 				</Card.Title>
 			</Card.Header>
 			<Card.Content class="space-y-4">
@@ -233,30 +232,30 @@
 				{/if}
 
 				<div class="space-y-2">
-					<Label for="license-name">License name</Label>
+					<Label for="license-name">许可证名称</Label>
 					<Input
 						id="license-name"
 						bind:value={licenseFormName}
-						placeholder="Your Company Name"
+						placeholder="您的公司名称"
 						disabled={!$canAccess('settings', 'edit')}
 					/>
-					<p class="text-xs text-muted-foreground">Enter the name exactly as provided with your license</p>
+					<p class="text-xs text-muted-foreground">请输入与许可证提供的名称完全一致的内容</p>
 				</div>
 
 				<div class="space-y-2">
-					<Label for="license-key">License key</Label>
+					<Label for="license-key">许可证密钥</Label>
 					<textarea
 						id="license-key"
 						bind:value={licenseFormKey}
-						placeholder="Paste your license key here..."
+						placeholder="请在此粘贴您的许可证密钥..."
 						class="flex min-h-[100px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-mono"
 						disabled={!$canAccess('settings', 'edit')}
 					></textarea>
 				</div>
 
 				<div class="pt-2 border-t">
-					<p class="text-xs text-muted-foreground mb-2">Current hostname (for license validation)</p>
-					<code class="text-xs bg-muted px-2 py-1 rounded">{licenseInfo?.hostname || 'Unknown'}</code>
+					<p class="text-xs text-muted-foreground mb-2">当前主机名 (用于许可证验证)</p>
+					<code class="text-xs bg-muted px-2 py-1 rounded">{licenseInfo?.hostname || '未知'}</code>
 				</div>
 
 				{#if $canAccess('settings', 'edit')}
@@ -267,7 +266,7 @@
 						{:else}
 							<ShieldCheck class="w-4 h-4" />
 						{/if}
-						Activate license
+						激活许可证
 					</Button>
 				</div>
 				{/if}

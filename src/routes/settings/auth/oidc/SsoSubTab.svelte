@@ -72,8 +72,8 @@
 				oidcConfigs = await response.json();
 			}
 		} catch (error) {
-			console.error('Failed to fetch OIDC configs:', error);
-			toast.error('Failed to fetch OIDC configurations');
+			console.error('获取 OIDC 配置失败:', error);
+			toast.error('获取 OIDC 配置失败');
 		} finally {
 			oidcLoading = false;
 		}
@@ -100,13 +100,13 @@
 			const response = await fetch(`/api/auth/oidc/${configId}`, { method: 'DELETE' });
 			if (response.ok) {
 				await fetchOidcConfigs();
-				toast.success('OIDC provider deleted');
+				toast.success('OIDC 提供商已删除');
 			} else {
-				toast.error('Failed to delete OIDC provider');
+				toast.error('删除 OIDC 提供商失败');
 			}
 		} catch (error) {
-			console.error('Failed to delete OIDC config:', error);
-			toast.error('Failed to delete OIDC provider');
+			console.error('删除 OIDC 配置失败:', error);
+			toast.error('删除 OIDC 提供商失败');
 		} finally {
 			confirmDeleteOidcId = null;
 		}
@@ -120,13 +120,13 @@
 			const data = await response.json();
 			oidcTestResult = data;
 			if (data.success) {
-				toast.success('OIDC connection successful');
+				toast.success('OIDC 连接成功');
 			} else {
-				toast.error(`OIDC connection failed: ${data.error}`);
+				toast.error(`OID C连接失败: ${data.error}`);
 			}
 		} catch (error) {
-			oidcTestResult = { success: false, error: 'Failed to test connection' };
-			toast.error('Failed to test OIDC connection');
+			oidcTestResult = { success: false, error: '连接测试失败' };
+			toast.error('OIDC 连接测试失败');
 		} finally {
 			oidcTesting = null;
 		}
@@ -141,13 +141,13 @@
 			});
 			if (response.ok) {
 				await fetchOidcConfigs();
-				toast.success(`OIDC provider ${config.enabled ? 'disabled' : 'enabled'}`);
+				toast.success(`OIDC 提供商已${config.enabled ? '禁用' : '启用'}`);
 			} else {
-				toast.error('Failed to toggle OIDC provider');
+				toast.error('切换 OIDC 提供商状态失败');
 			}
 		} catch (error) {
-			console.error('Failed to toggle OIDC config:', error);
-			toast.error('Failed to toggle OIDC provider');
+			console.error('切换 OIDC 配置状态失败:', error);
+			toast.error('切换 OIDC 提供商状态失败');
 		}
 	}
 
@@ -163,14 +163,14 @@
 				<div>
 					<Card.Title class="text-sm font-medium flex items-center gap-2">
 						<LogIn class="w-4 h-4" />
-						SSO providers
+						SSO 身份提供商
 					</Card.Title>
-					<p class="text-xs text-muted-foreground mt-1">Enable SSO using OpenID Connect providers like Okta, Auth0, Azure AD, or Google Workspace.</p>
+					<p class="text-xs text-muted-foreground mt-1">使用 OpenID Connect 提供商启用单点登录，如 Okta、Auth0、Azure AD 或 Google Workspace。</p>
 				</div>
 				{#if $canAccess('settings', 'edit')}
 					<Button size="sm" onclick={() => openOidcModal(null)}>
 						<Plus class="w-4 h-4" />
-						Add provider
+						添加提供商
 					</Button>
 				{/if}
 			</div>
@@ -183,8 +183,8 @@
 			{:else if oidcConfigs.length === 0}
 				<EmptyState
 					icon={LogIn}
-					title="No SSO providers configured"
-					description="Add an OIDC provider to enable single sign-on"
+					title="未配置任何 SSO 提供商"
+					description="添加 OIDC 提供商以启用单点登录"
 					class="py-8"
 				/>
 			{:else}
@@ -195,9 +195,9 @@
 								<div class="flex items-center gap-2">
 									<span class="font-medium text-sm">{config.name}</span>
 									{#if config.enabled}
-										<Badge variant="default" class="text-xs">Enabled</Badge>
+										<Badge variant="default" class="text-xs">已启用</Badge>
 									{:else}
-										<Badge variant="outline" class="text-xs">Disabled</Badge>
+										<Badge variant="outline" class="text-xs">已禁用</Badge>
 									{/if}
 								</div>
 								<span class="text-xs text-muted-foreground truncate block">{config.issuerUrl}</span>
@@ -206,7 +206,7 @@
 								<Button
 									variant="ghost"
 									size="sm"
-									title="Test connection"
+									title="测试连接"
 									onclick={() => testOidcConnection(config.id)}
 									disabled={oidcTesting === config.id}
 								>
@@ -220,7 +220,7 @@
 									<Button
 										variant="ghost"
 										size="sm"
-										title={config.enabled ? 'Disable provider' : 'Enable provider'}
+										title={config.enabled ? '禁用提供商' : '启用提供商'}
 										onclick={() => toggleOidcEnabled(config)}
 									>
 										{#if config.enabled}
@@ -232,17 +232,17 @@
 									<Button
 										variant="ghost"
 										size="sm"
-										title="Edit provider"
+										title="编辑提供商"
 										onclick={() => openOidcModal(config)}
 									>
 										<Pencil class="w-4 h-4" />
 									</Button>
 									<ConfirmPopover
 										open={confirmDeleteOidcId === config.id}
-										action="Delete"
-										itemType="OIDC provider"
+										action="删除"
+										itemType="OIDC 提供商"
 										itemName={config.name}
-										title="Delete"
+										title="删除"
 										onConfirm={() => deleteOidcConfig(config.id)}
 										onOpenChange={(open) => confirmDeleteOidcId = open ? config.id : null}
 									>
@@ -262,15 +262,15 @@
 					{#if oidcTestResult.success}
 						<div class="flex items-center gap-2 text-green-600">
 							<Check class="w-4 h-4" />
-							<p class="text-sm font-medium">Connection successful</p>
+							<p class="text-sm font-medium">连接成功</p>
 						</div>
 						{#if oidcTestResult.issuer}
-							<p class="text-xs text-muted-foreground mt-1">Issuer: {oidcTestResult.issuer}</p>
+							<p class="text-xs text-muted-foreground mt-1">I发行方: {oidcTestResult.issuer}</p>
 						{/if}
 					{:else}
 						<div class="flex items-center gap-2 text-destructive">
 							<XCircle class="w-4 h-4" />
-							<p class="text-sm">Connection failed: {oidcTestResult.error}</p>
+							<p class="text-sm">连接失败：{oidcTestResult.error}</p>
 						</div>
 					{/if}
 				</div>

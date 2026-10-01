@@ -11,7 +11,7 @@
 		/** Shown when the container has no tags (assign affordance). */
 		emptyHint?: string;
 	}
-	let { containerName, envId, emptyHint = 'No tags - click the tag icon to add one' }: Props = $props();
+	let { containerName, envId, emptyHint = '暂无标签‑点击标签图标以添加' }: Props = $props();
 
 	let catalog = $state<Tag[]>([]);
 	let assigned = $state<number[]>([]);

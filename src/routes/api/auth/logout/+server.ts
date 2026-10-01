@@ -33,14 +33,14 @@ export const POST: RequestHandler = async (event) => {
 		// Back to the form, not to auto-login: a page that sends somebody who just
 		// signed out straight to a provider with a live session signs them back in.
 		const logoutUrl = await getOidcLogoutRedirect(providerName, `${url.origin}/login?local=1`);
-		console.log(`[Auth] Logout: user=${username} ip=${clientIp}`);
+		console.log(`[认证] 退出登录: 用户=${username} ip=${clientIp}`);
 
 		// Audit log
 		await auditAuth(event, 'logout', username);
 
 		return json(logoutUrl ? { success: true, logoutUrl } : { success: true });
 	} catch (error) {
-		console.error('Logout error:', error);
-		return json({ error: 'Logout failed' }, { status: 500 });
+		console.error('退出登录错误:', error);
+		return json({ error: '退出登录失败' }, { status: 500 });
 	}
 };

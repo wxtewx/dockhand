@@ -2,6 +2,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import { TogglePill } from '$lib/components/ui/toggle-pill';
 	import { Tag, Info } from 'lucide-svelte';
+	import { getLabelText } from '$lib/types';
 
 	type Bump = 'patch' | 'minor' | 'major';
 
@@ -38,10 +39,9 @@
 	<div class="flex items-start gap-2" class:opacity-55={isFloating}>
 		<Tag class="w-4 h-4 text-green-500 glow-green mt-0.5 shrink-0" />
 		<div class="flex-1">
-			<Label>Check for newer version tags</Label>
+			<Label>检查新版本标签</Label>
 			<p class="text-xs text-muted-foreground mt-0.5">
-				For a container pinned to a version tag (e.g. <code>16.2</code>, <code>v3.0</code>), also detect
-				when a newer version is published. Advisory only.
+				对于已锁定版本标签的容器 (例如：<code>16.2</code>、<code>v3.0</code>)，检测是否发布了更新版本。仅作提示用途。
 			</p>
 		</div>
 		<TogglePill bind:checked={enabled} disabled={isFloating} />
@@ -50,7 +50,7 @@
 	{#if isFloating}
 		<div class="ml-6 flex items-start gap-2 rounded-md bg-muted/50 p-2 text-xs text-muted-foreground">
 			<Info class="w-3.5 h-3.5 mt-0.5 shrink-0" />
-			<span><code>{floatingTag}</code> is a floating tag — pin a version tag (e.g. <code>1.26</code>) to enable newer-version detection.</span>
+			<span><code>{floatingTag}</code> 属于浮动标签，请锁定版本标签 (例如：<code>1.26</code>) 后才可启用新版本检测功能。</span>
 		</div>
 	{:else if enabled}
 		<!-- Indented under the header so it reads as "all this belongs to the toggle
@@ -59,7 +59,7 @@
 			<!-- max bump -->
 			<div class="space-y-2">
 				<div class="flex items-center gap-4">
-					<Label class="flex-1">Which updates to show</Label>
+					<Label class="flex-1">显示哪些更新</Label>
 					<div class="inline-flex shrink-0 gap-0.5 rounded-lg border border-border bg-muted/60 p-0.5">
 						{#each bumps as bump}
 							<button
@@ -70,16 +70,16 @@
 										? 'bg-green-500/15 text-green-500 shadow-[inset_0_0_0_1px_rgba(34,197,94,0.3)]'
 										: 'text-muted-foreground hover:text-foreground'}"
 							>
-								{bump}
+								{getLabelText(bump)}
 							</button>
 						{/each}
 					</div>
 				</div>
 				<div class="rounded-md border border-border bg-muted/40 p-2.5 text-[11.5px] leading-relaxed text-muted-foreground">
-					Running <code>1.4.2</code>, you'll be told about:<br />
-					<span class="font-bold text-foreground">Patch</span> bug-fix only → <code>1.4.3</code><br />
-					<span class="font-bold text-foreground">Minor</span> new features too → <code>1.4.3</code>, <code>1.5.0</code><br />
-					<span class="font-bold text-foreground">Major</span> everything, incl. breaking → <code>1.4.3</code>, <code>1.5.0</code>, <code>2.0.0</code>
+					当前版本为 <code>1.4.2</code>，你将收到如下更新提示:<br />
+					<span class="font-bold text-foreground">补丁版本</span> 仅漏洞与问题修复 → <code>1.4.3</code><br />
+					<span class="font-bold text-foreground">次版本</span> 包含新增功能 → <code>1.4.3</code>, <code>1.5.0</code><br />
+					<span class="font-bold text-foreground">主版本</span> 全部更新，包含不兼容变更 → <code>1.4.3</code>, <code>1.5.0</code>, <code>2.0.0</code>
 				</div>
 			</div>
 
@@ -87,27 +87,26 @@
 			<div class="space-y-2 border-t border-border/60 pt-3">
 				<div class="flex items-start gap-4">
 					<div class="flex-1">
-						<Label>Match the tag flavor</Label>
+						<Label>匹配标签变体后缀</Label>
 						<p class="text-xs text-muted-foreground mt-0.5">
-							Only suggest tags with the same suffix as the one you run — the flavor, like
-							<code>-alpine</code> or <code>-ls123</code>.
+							仅推荐与当前运行标签拥有相同后缀的版本，即变体后缀，例如
+							<code>-alpine</code> 或 <code>-ls123</code>.
 						</p>
 					</div>
 					<div class="shrink-0"><TogglePill bind:checked={matchFlavor} /></div>
 				</div>
 				<div class="rounded-md border border-border bg-muted/40 p-2.5 text-[11.5px] leading-relaxed text-muted-foreground">
-					<span class="font-bold text-foreground">On</span> <code>1.2-alpine</code> → <code>1.5-alpine</code>, never bare <code>1.5</code><br />
-					<span class="font-bold text-foreground">Off</span> any newer version, even a different flavor — noisier
+					<span class="font-bold text-foreground">开启</span> <code>1.2-alpine</code> → 仅匹配 <code>1.5-alpine</code>，不会匹配无后缀的 <code>1.5</code><br />
+					<span class="font-bold text-foreground">关闭</span> 匹配任意新版本，允许不同变体后缀，提示会变多
 				</div>
 			</div>
 
 			<!-- include prereleases -->
 			<div class="flex items-start gap-4 border-t border-border/60 pt-3">
 				<div class="flex-1">
-					<Label>Include prereleases</Label>
+					<Label>包含预发布版本</Label>
 					<p class="text-xs text-muted-foreground mt-0.5">
-						Consider <code>-rc</code> / <code>-beta</code> tags. Off keeps a stable deployment on
-						stable releases.
+						识别 <code>-rc</code> / <code>‑beta</code> 标签。关闭时仅接收稳定版本更新，保障部署稳定性。
 					</p>
 				</div>
 				<div class="shrink-0"><TogglePill bind:checked={includePrerelease} /></div>
@@ -118,7 +117,7 @@
 	{#if enabled && !isFloating}
 		<div class="ml-6 flex items-start gap-2 rounded-md bg-muted/50 p-2 text-xs text-muted-foreground">
 			<Info class="w-3.5 h-3.5 mt-0.5 shrink-0" />
-			<span>A newer version shows as a badge on the container — it is <strong class="text-foreground font-semibold">never auto-applied</strong>.</span>
+			<span>新版本将在容器上以徽章形式展示，<strong class="text-foreground font-semibold">不会自动执行更新</strong>。</span>
 		</div>
 	{/if}
 </div>

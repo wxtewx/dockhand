@@ -9,7 +9,7 @@
 		onchange?: (checked: boolean) => void;
 	}
 
-	let { checked = $bindable(), disabled = false, onLabel = 'ON', offLabel = 'OFF', onchange }: Props = $props();
+	let { checked = $bindable(), disabled = false, onLabel = '开启', offLabel = '关闭', onchange }: Props = $props();
 
 	function toggle() {
 		if (disabled) return;

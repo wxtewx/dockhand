@@ -86,7 +86,7 @@
 
 {#if !activated}
 	<!-- Cheap placeholder: no Popover.Root until the user opens this row's editor. -->
-	<button type="button" title="Edit tags" onclick={activate}
+	<button type="button" title="编辑标签" onclick={activate}
 		class="inline-flex h-4 w-4 items-center justify-center rounded text-muted-foreground/60 hover:text-foreground">
 		<TagIcon class="h-3 w-3" />
 	</button>
@@ -94,20 +94,20 @@
 <Popover.Root bind:open>
 	<Popover.Trigger>
 		{#snippet child({ props })}
-			<button {...props} type="button" title="Edit tags"
+			<button {...props} type="button" title="编辑标签"
 				class="inline-flex h-4 w-4 items-center justify-center rounded text-muted-foreground/60 hover:text-foreground">
 				<TagIcon class="h-3 w-3" />
 			</button>
 		{/snippet}
 	</Popover.Trigger>
 	<Popover.Content class="w-64 p-2" align="start">
-		<Input bind:value={query} placeholder={allowCreate ? 'Search or create a tag...' : 'Search tags...'} class="h-8 text-sm"
+		<Input bind:value={query} placeholder={allowCreate ? '搜索或新建标签...' : '搜索标签...'} class="h-8 text-sm"
 			onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter' && canCreate) create(); }} />
 
 		{#if canCreate}
 			{@const hex = tagHex(newColor)}
 			<div class="mt-2 rounded-md border p-2">
-				<div class="text-2xs text-muted-foreground">Create new tag</div>
+				<div class="text-2xs text-muted-foreground">新建标签</div>
 				<!-- Live preview of the pill. -->
 				<div class="my-1.5">
 					<span class="inline-flex items-center gap-1 rounded-full border px-1.5 py-0 text-2xs font-medium"
@@ -125,9 +125,9 @@
 				</div>
 				<!-- Icon picker: default tag icon, or a lucide icon. -->
 				<div class="mt-2">
-					<Input bind:value={iconSearch} placeholder="Icon (optional)..." class="h-7 text-2xs" />
+					<Input bind:value={iconSearch} placeholder="图标 (可选)..." class="h-7 text-2xs" />
 					<div class="mt-1 grid grid-cols-8 gap-0.5 max-h-24 overflow-y-auto p-0.5">
-						<button type="button" title="Default tag icon" onclick={() => (newIcon = null)}
+						<button type="button" title="默认标签图标" onclick={() => (newIcon = null)}
 							class="flex aspect-square items-center justify-center rounded hover:bg-muted {newIcon === null ? 'bg-primary/15 ring-1 ring-inset ring-primary' : ''}">
 							<TagIcon class="h-3.5 w-3.5" style="color: {hex};" />
 						</button>
@@ -140,13 +140,13 @@
 					</div>
 				</div>
 				<button type="button" onclick={create} disabled={creating}
-					class="mt-2 w-full rounded bg-primary px-2 py-1 text-2xs font-medium text-primary-foreground disabled:opacity-50">Create</button>
+					class="mt-2 w-full rounded bg-primary px-2 py-1 text-2xs font-medium text-primary-foreground disabled:opacity-50">创建</button>
 			</div>
 		{/if}
 
 		<div class="mt-2 max-h-56 overflow-y-auto">
 			{#if filtered.length === 0 && !canCreate}
-				<div class="px-2 py-3 text-center text-xs text-muted-foreground">No tags</div>
+				<div class="px-2 py-3 text-center text-xs text-muted-foreground">暂无标签</div>
 			{/if}
 			{#each filtered as tag (tag.id)}
 				{@const isSel = selected.includes(tag.id)}

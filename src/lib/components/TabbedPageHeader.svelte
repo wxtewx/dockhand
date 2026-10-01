@@ -61,7 +61,7 @@
 		if (tab.count === undefined) return null;
 		const countStr = typeof tab.count === 'number' ? tab.count.toLocaleString() : tab.count;
 		if (tab.total !== undefined) {
-			return `${countStr} of ${tab.total.toLocaleString()}`;
+			return `${countStr} 共 ${tab.total.toLocaleString()}`;
 		}
 		return countStr;
 	}
@@ -93,7 +93,7 @@
 					</Badge>
 				{/if}
 				{#if tab.showConnection}
-					<span title={$sseConnected ? 'Live updates active - grid will auto-refresh' : 'Connecting to live updates...'}>
+					<span title={$sseConnected ? '实时更新已启用 — 表格将自动刷新' : '正在连接实时更新服务...'}>
 						<Wifi class="w-3.5 h-3.5 {$sseConnected ? 'text-emerald-500' : 'text-muted-foreground'}" />
 					</span>
 				{/if}

@@ -29,20 +29,20 @@ export const GET: RequestHandler = async ({ cookies }) => {
 		!(await auth.can('environments', 'create')) &&
 		!(await auth.can('environments', 'edit'))
 	) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const home = homedir();
 
 	// Common socket paths to check
 	const socketPaths: { path: string; name: string }[] = [
-		{ path: '/var/run/docker.sock', name: 'Docker (default)' },
+		{ path: '/var/run/docker.sock', name: 'Docker (默认)' },
 		{ path: `${home}/.docker/run/docker.sock`, name: 'Docker Desktop' },
 		{ path: `${home}/.orbstack/run/docker.sock`, name: 'OrbStack' },
-		{ path: '/run/docker.sock', name: 'Docker (alternate)' },
+		{ path: '/run/docker.sock', name: 'Docker (备用)' },
 		{ path: `${home}/.colima/default/docker.sock`, name: 'Colima' },
 		{ path: `${home}/.rd/docker.sock`, name: 'Rancher Desktop' },
-		{ path: '/run/user/1000/podman/podman.sock', name: 'Podman (user 1000)' },
+		{ path: '/run/user/1000/podman/podman.sock', name: 'Podman (用户 1000)' },
 		{ path: `${home}/.local/share/containers/podman/machine/podman.sock`, name: 'Podman Machine' },
 	];
 

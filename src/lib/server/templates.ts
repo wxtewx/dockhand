@@ -21,12 +21,12 @@ export interface TemplateSource {
 
 export const DEFAULT_TEMPLATE_SOURCES: Omit<TemplateSource, 'id'>[] = [
 	// Large collections
-	{ sourceId: 'portainer-lissy93', name: 'Portainer templates (Lissy93)', url: 'https://raw.githubusercontent.com/Lissy93/portainer-templates/main/templates.json', enabled: true, builtin: true, sortOrder: 0 },
-	{ sourceId: 'ntv-one', name: 'NTV-One (consolidated)', url: 'https://raw.githubusercontent.com/ntv-one/portainer/main/template.json', enabled: false, builtin: true, sortOrder: 1 },
+	{ sourceId: 'portainer-lissy93', name: 'Portainer 模板库 (Lissy93)', url: 'https://raw.githubusercontent.com/Lissy93/portainer-templates/main/templates.json', enabled: true, builtin: true, sortOrder: 0 },
+	{ sourceId: 'ntv-one', name: 'NTV-One (整合合集)', url: 'https://raw.githubusercontent.com/ntv-one/portainer/main/template.json', enabled: false, builtin: true, sortOrder: 1 },
 	{ sourceId: 'mlva', name: 'MLVA (TheLustriVA)', url: 'https://raw.githubusercontent.com/TheLustriVA/portainer-templates-Nov-2022-collection/main/templates_2_2_rc_2_2.json', enabled: false, builtin: true, sortOrder: 2 },
 	{ sourceId: 'selfhostedpro', name: 'SelfHostedPro', url: 'https://raw.githubusercontent.com/SelfhostedPro/selfhosted_templates/master/Template/portainer-v2.json', enabled: false, builtin: true, sortOrder: 3 },
 	// Homelab / self-hosted
-	{ sourceId: 'portainer-qballjos', name: 'Qballjos (homelab)', url: 'https://raw.githubusercontent.com/Qballjos/portainer_templates/master/Template/template.json', enabled: false, builtin: true, sortOrder: 4 },
+	{ sourceId: 'portainer-qballjos', name: 'Qballjos (家庭服务器)', url: 'https://raw.githubusercontent.com/Qballjos/portainer_templates/master/Template/template.json', enabled: false, builtin: true, sortOrder: 4 },
 	{ sourceId: 'lsio-technorabilia', name: 'LinuxServer.io (Technorabilia)', url: 'https://raw.githubusercontent.com/technorabilia/portainer-templates/main/lsio/templates/templates.json', enabled: true, builtin: true, sortOrder: 5 },
 	{ sourceId: 'mikestraney', name: 'MikeStraney', url: 'https://raw.githubusercontent.com/mikestraney/portainer-templates/master/templates.json', enabled: false, builtin: true, sortOrder: 6 },
 	// ARM / Raspberry Pi
