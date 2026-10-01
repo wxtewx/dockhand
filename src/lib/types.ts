@@ -718,6 +718,7 @@ const composeLogRules: [RegExp, string][] = [
 ];
 
 const resticRegexRules: [RegExp, string][] = [
+  [/read (\d+\.?\d*)% of packfiles/gi, "已读取 $1% 的数据包文件"],
   [/searching used packs\.\.\./gi, "检索正在使用的数据包..."],
   [/collecting packs for deletion and repacking/gi, "收集待删除/重新打包的数据包"],
   [/totally used packs:/gi, "完全占用数据包："],

@@ -193,11 +193,11 @@
 	let runningTask = $state<{ destId: number; task: string } | null>(null);
 
 	const REPO_TASK_TITLES: Record<string, string> = {
-		unlock: 'Unlock repository',
-		prune: 'Prune unused data',
-		check: 'Check integrity',
-		'repair-index': 'Repair index',
-		'repair-snapshots': 'Repair snapshots'
+		unlock: '解除仓库锁定',
+		prune: '清理未使用的数据',
+		check: '检查完整性',
+		'repair-index': '修复索引',
+		'repair-snapshots': '修复快照'
 	};
 
 	async function runRepoTask(destId: number, task: string) {
@@ -215,10 +215,10 @@
 					m.set(destId, data.stats);
 					repoStats = m;
 				} else if (!data.success) {
-					toast.error(data.error || '统计信息获取失败');
+					toast.error(getResticText(data.error) || '统计信息获取失败');
 				}
 			} catch (err: any) {
-				toast.error(err.message || '统计信息获取失败');
+				toast.error(getResticText(err.message) || '统计信息获取失败');
 			} finally {
 				runningTask = null;
 			}
@@ -257,27 +257,27 @@
 				const result = await watchJob(data.jobId, (line) => {
 					const d = line.data as any;
 					if (line.event === 'progress' && d?.message) {
-						actionLogLogs = [...actionLogLogs, d.message];
+						actionLogLogs = [...actionLogLogs, getResticText(d.message)];
 					}
 				}) as any;
 				if (result?.success === false) {
 					actionLogStatus = 'error';
-					actionLogError = result.error || '操作执行失败';
+					actionLogError = getResticText(result.error) || '操作执行失败';
 				} else {
 					actionLogStatus = 'success';
 				}
 			} else if (data.error) {
 				actionLogStatus = 'error';
-				actionLogError = data.error;
+				actionLogError = getResticText(data.error) || '操作执行失败';
 			} else {
 				// Backward-compat JSON path (Accept negotiated to one-shot): show result.
 				actionLogStatus = data.success ? 'success' : 'error';
-				if (!data.success) actionLogError = data.error || '操作执行失败';
+				if (!data.success) actionLogError = getResticText(data.error) || '操作执行失败';
 			}
 		} catch (err: any) {
 			actionLogStatus = 'error';
-			actionLogError = err.message || '操作执行失败';
-		}
+			actionLogError = getResticText(err.message) || '操作执行失败';
+		 }
 	}
 
 	// Browse repository snapshots
