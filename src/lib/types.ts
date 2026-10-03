@@ -574,6 +574,11 @@ const composeLogRules: [RegExp, string][] = [
   // 【修复】网络警告规则，兼容字面量 \n 和真实换行
   [/a network with name ([^"]+) exists but was not created for project \\"([^\\"]*)\\"\.?(?:\\n|\\\\n|\n)?Set `external: true` to use an existing network/gi, '名为 "$1" 的网络已存在，但并非由项目 "$2" 创建。\n请设置 `external: true` 以使用现有网络'],
   // ========== 长文本优先：Compose / Docker 错误规则 ==========
+  [/failed to populate volume/gi, "填充数据卷失败"],
+  [/failed to mount local volume/gi, "挂载本地数据卷失败"],
+  [/while mounting volume/gi, "在挂载数据卷时"],
+  [/no such file or directory/gi, "没有该文件或目录"],
+  [/bind mount/gi, "绑定挂载"],
   [/Are you trying to mount a directory onto a file \(or vice-versa\)\?/gi, "你可能将目录挂载到了文件，或文件挂载到了目录 (格式不匹配)？"],
   [/Check if the specified host path exists and is the expected type/gi, "请检查主机路径是否存在，且类型正确"],
   [/mapping values are not allowed in this context/gi, "此位置不允许使用映射格式 (YAML 语法错误)"],
