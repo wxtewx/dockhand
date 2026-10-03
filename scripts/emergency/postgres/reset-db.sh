@@ -12,27 +12,27 @@
 set -e
 
 echo "========================================"
-echo "  Dockhand - Factory Reset Database (PostgreSQL)"
+echo "  Dockhand - 数据库恢复出厂设置 (PostgreSQL)"
 echo "========================================"
 echo ""
-echo "WARNING: This will DELETE ALL DATA!"
+echo "警告：此操作将删除所有数据！"
 echo ""
-echo "This includes:"
-echo "  - All users and their settings"
-echo "  - All sessions"
-echo "  - Authentication settings"
-echo "  - Activity logs"
-echo "  - Environment configurations"
-echo "  - OIDC/SSO settings"
+echo "删除内容包括："
+echo "  - 所有用户及其配置"
+echo "  - 所有会话"
+echo "  - 身份认证配置"
+echo "  - 操作日志"
+echo "  - 环境配置"
+echo "  - OIDC/SSO 配置"
 echo ""
-echo "The database tables will be truncated."
+echo "数据库表将被清空。"
 echo ""
 
 # Check DATABASE_URL
 if [ -z "$DATABASE_URL" ]; then
-    echo "Error: DATABASE_URL environment variable not set"
+    echo "错误：未设置 DATABASE_URL 环境变量"
     echo ""
-    echo "Example: DATABASE_URL=postgres://user:pass@host:5432/dockhand"
+    echo "示例：DATABASE_URL=postgres://user:pass@host:5432/dockhand"
     exit 1
 fi
 
@@ -53,33 +53,33 @@ DB_NAME="${DB_NAME%%\?*}"
 
 export PGPASSWORD="$DB_PASS"
 
-echo "Database: $DB_HOST:$DB_PORT/$DB_NAME"
+echo "数据库：$DB_HOST:$DB_PORT/$DB_NAME"
 echo ""
-printf "Continue? [y/N]: "
+printf "是否继续？[y/N]："
 read CONFIRM
 
 case "$CONFIRM" in
     [yY]|[yY][eE][sS])
         ;;
     *)
-        echo "Aborted."
+        echo "已取消。"
         exit 0
         ;;
 esac
 
 echo ""
-echo "Creating backup before reset..."
+echo "正在重置前创建备份..."
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 BACKUP_FILE="/app/data/dockhand_backup_pre_reset_$TIMESTAMP.sql"
 if command -v pg_dump >/dev/null 2>&1; then
     pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -F p -f "$BACKUP_FILE" 2>/dev/null || true
     if [ -f "$BACKUP_FILE" ]; then
-        echo "Backup saved to: $BACKUP_FILE"
+        echo "备份已保存至：$BACKUP_FILE"
     fi
 fi
 
 echo ""
-echo "Truncating all tables..."
+echo "正在清空所有表..."
 
 # Truncate all tables in the correct order (respecting foreign keys)
 psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" <<EOF
@@ -112,7 +112,7 @@ CASCADE;
 EOF
 
 echo ""
-echo "Database reset successfully."
+echo "数据库重置成功。"
 echo ""
-echo "Restart Dockhand to recreate default data:"
+echo "重启 Dockhand 以重新创建默认数据："
 echo "  docker restart dockhand"

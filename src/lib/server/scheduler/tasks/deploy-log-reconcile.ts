@@ -181,7 +181,7 @@ export async function runDeployLogReconcileJob(
 	});
 
 	const log = async (message: string) => {
-		console.log(`[Deploy Log Reconcile] ${message}`);
+		console.log(`[部署日志对账] ${message}`);
 		await appendScheduleExecutionLog(execution.id, `[${new Date().toISOString()}] ${message}`);
 	};
 
@@ -228,7 +228,7 @@ export async function runDeployLogReconcileJob(
 				// outputs (e.g. an unrelated file or a hand-created directory) is not an
 				// environment this job knows how to reconcile -- skipped defensively
 				// rather than crashing the whole run over it.
-				await log(`Skipping unrecognized deploy-logs entry: ${envKey}`);
+				await log(`跳过无法识别的部署日志目录项: ${envKey}`);
 				continue;
 			}
 
@@ -255,7 +255,7 @@ export async function runDeployLogReconcileJob(
 					deletedCount++;
 				} catch (error: any) {
 					failedCount++;
-					await log(`Failed to delete orphan file for run ${fileId} (environment ${envKey}): ${error.message}`);
+					await log(`删除运行记录 ${fileId} 的孤立文件失败 (环境 ${envKey}): ${error.message}`);
 				}
 			}
 
@@ -276,19 +276,19 @@ export async function runDeployLogReconcileJob(
 					markedCount++;
 				} catch (error: any) {
 					failedCount++;
-					await log(`Failed to mark record ${recordId} as logMissing (environment ${envKey}): ${error.message}`);
+					await log(`标记记录 ${recordId} 为日志缺失失败 (环境 ${envKey}): ${error.message}`);
 				}
 			}
 		}
 
 		await log(
-			`Found ${filesFoundTotal} deploy-log file(s) across ${envKeys.size} environment(s) and ${records.length} stack_deploy record(s)`
+			`在 ${envKeys.size} 个环境中找到 ${filesFoundTotal} 个部署日志文件以及 ${records.length} 条堆栈部署记录`
 		);
 		await log(
-			`Reconcile complete: ${deletedCount} orphan file(s) deleted, ${markedCount} record(s) marked logMissing` +
-				(skippedInProgress > 0 ? `, ${skippedInProgress} still-running record(s) skipped` : '') +
-				(skippedRecent > 0 ? `, ${skippedRecent} recently-modified file(s) skipped (possible in-flight deploy)` : '') +
-				(failedCount > 0 ? `, ${failedCount} element(s) failed` : '')
+			`对账完成：已删除 ${deletedCount} 个孤立文件，标记 ${markedCount} 条记录为日志缺失` +
+				(skippedInProgress > 0 ? `，跳过 ${skippedInProgress} 条仍在运行的记录` : '') +
+				(skippedRecent > 0 ? `，跳过 ${skippedRecent} 个近期修改的文件 (可能为正在执行的部署)` : '') +
+				(failedCount > 0 ? `，${failedCount} 个项目执行失败` : '')
 		);
 		await updateScheduleExecution(execution.id, {
 			// A run that hit per-element failures did complete, but not cleanly -- it
@@ -310,7 +310,7 @@ export async function runDeployLogReconcileJob(
 			}
 		});
 	} catch (error: any) {
-		await log(`Error: ${error.message}`);
+		await log(`错误: ${error.message}`);
 		await updateScheduleExecution(execution.id, {
 			status: 'failed',
 			completedAt: new Date().toISOString(),

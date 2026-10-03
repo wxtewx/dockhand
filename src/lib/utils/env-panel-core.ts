@@ -31,7 +31,7 @@ export function parseRawContent(content: string): ParsedRawContent<EnvVarLike & 
 		const eqIndex = trimmed.indexOf('=');
 		if (eqIndex === -1) {
 			warnings.push(
-				`Line ${lineNum}: "${trimmed.slice(0, 30)}${trimmed.length > 30 ? '...' : ''}" (no = found)`
+				`第 ${lineNum} 行: "${trimmed.slice(0, 30)}${trimmed.length > 30 ? '...' : ''}" (未找到=符号)`
 			);
 			continue;
 		}
@@ -41,7 +41,7 @@ export function parseRawContent(content: string): ParsedRawContent<EnvVarLike & 
 		if (!key) continue;
 
 		if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(key)) {
-			warnings.push(`Line ${lineNum}: "${key}" (invalid variable name)`);
+			warnings.push(`第 ${lineNum} 行: "${key}" (无效的变量名称)`);
 			continue;
 		}
 		vars.push({ key, value, isSecret: false });

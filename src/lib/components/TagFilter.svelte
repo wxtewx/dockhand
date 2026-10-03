@@ -65,7 +65,7 @@
 		selected = selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id];
 	}
 	const label = $derived(
-		selected.length === 0 ? 'All tags' : selected.length === 1 ? (tags.find((t) => t.id === selected[0])?.name ?? '1 tag') : `${selected.length} tags`
+		selected.length === 0 ? '全部标签' : selected.length === 1 ? (tags.find((t) => t.id === selected[0])?.name ?? '1 个标签') : `${selected.length} 个标签`
 	);
 </script>
 
@@ -91,7 +91,7 @@
 				onclick={() => (settingsExpanded = !settingsExpanded)}
 			>
 				<Settings2 class="h-3.5 w-3.5 shrink-0" />
-				<span class="text-xs flex-1 text-left">Settings</span>
+				<span class="text-xs flex-1 text-left">设置</span>
 				{#if settingsExpanded}
 					<ChevronDown class="h-3.5 w-3.5 shrink-0" />
 				{:else}
@@ -102,7 +102,7 @@
 				{#if groupBy !== undefined}
 					<div class="flex items-center gap-2 px-2 py-1.5">
 						<Rows3 class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-						<span class="text-xs flex-1">Group by tag</span>
+						<span class="text-xs flex-1">按标签分组</span>
 						<TogglePill bind:checked={groupBy} />
 					</div>
 					{#if showBands !== undefined && groupBy}
@@ -110,7 +110,7 @@
 						     the icon column lines up on the left and the toggle on the right. -->
 						<div class="flex items-center gap-2 px-2 py-1.5">
 							<Paintbrush class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-							<span class="text-xs flex-1 whitespace-nowrap">Color group bands</span>
+							<span class="text-xs flex-1 whitespace-nowrap">彩色分组条带</span>
 							<TogglePill bind:checked={showBands} />
 						</div>
 					{/if}
@@ -118,21 +118,21 @@
 				{#if showTags !== undefined}
 					<div class="flex items-center gap-2 px-2 py-1.5">
 						<TagIcon class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-						<span class="text-xs flex-1">Show tags</span>
+						<span class="text-xs flex-1">显示标签</span>
 						<TogglePill bind:checked={showTags} />
 					</div>
 				{/if}
 				{#if inlineEditing !== undefined}
 					<div class="flex items-center gap-2 px-2 py-1.5">
 						<Pencil class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-						<span class="text-xs flex-1 whitespace-nowrap">Inline tag editing</span>
+						<span class="text-xs flex-1 whitespace-nowrap">行内标签编辑</span>
 						<TogglePill bind:checked={inlineEditing} />
 					</div>
 				{/if}
 				{#if inheritStackTags !== undefined}
 					<div class="flex items-center gap-2 px-2 py-1.5">
 						<Layers class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-						<span class="text-xs flex-1 whitespace-nowrap">Show tags from stacks</span>
+						<span class="text-xs flex-1 whitespace-nowrap">显示来自堆栈的标签</span>
 						<TogglePill bind:checked={inheritStackTags} />
 					</div>
 				{/if}
@@ -140,11 +140,11 @@
 			<div class="my-1 h-px bg-border"></div>
 		{/if}
 		{#if tags.length === 0}
-			<div class="px-2 py-3 text-center text-xs text-muted-foreground">No tags yet</div>
+			<div class="px-2 py-3 text-center text-xs text-muted-foreground">尚未创建任何标签</div>
 		{:else}
 			<!-- ANY / ALL match mode (same pill as the dashboard env label filter) -->
 			<div class="flex items-center gap-2 px-1 pb-1">
-				<span class="text-2xs text-muted-foreground mr-auto">Match</span>
+				<span class="text-2xs text-muted-foreground mr-auto">匹配</span>
 				<ToggleSwitch value={mode} leftValue="any" rightValue="all" onchange={(m) => (mode = m as TagFilterMode)} />
 			</div>
 			<div
@@ -183,7 +183,7 @@
 			</div>
 			{#if selected.length > 0 && !reorderMode}
 				<button type="button" class="mt-1 w-full rounded px-2 py-1 text-2xs text-muted-foreground hover:bg-muted" onclick={() => (selected = [])}>
-					Clear
+					清除
 				</button>
 			{/if}
 			{#if tags.length > 1}
@@ -192,7 +192,7 @@
 						<button
 							type="button"
 							class="flex items-center gap-1 font-medium text-muted-foreground hover:text-foreground"
-							title="List tags by name again"
+							title="按名称重新列出标签"
 							onclick={() => {
 								tagOrder.reset();
 								dragList = null;
@@ -200,7 +200,7 @@
 							}}
 						>
 							<RotateCcw class="h-3 w-3 shrink-0 text-red-400" />
-							Reset
+							重置
 						</button>
 						<button
 							type="button"
@@ -208,17 +208,17 @@
 							onclick={() => (reorderMode = false)}
 						>
 							<Check class="h-3 w-3 shrink-0 text-emerald-500" />
-							Apply
+							应用
 						</button>
 					{:else}
 						<button
 							type="button"
 							class="flex items-center gap-1 font-medium text-muted-foreground hover:text-foreground"
-							title="Drag tags into the order you want them listed and grouped in"
+							title="拖动标签，调整标签的展示与分组顺序"
 							onclick={() => (reorderMode = true)}
 						>
 							<ArrowUpDown class="h-3 w-3 shrink-0" />
-							Reorder
+							调整顺序
 						</button>
 					{/if}
 				</div>

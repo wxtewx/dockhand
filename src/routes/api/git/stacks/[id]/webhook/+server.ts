@@ -30,16 +30,16 @@ export const POST: RequestHandler = async (event) => {
 	try {
 		const id = parseInt(params.id);
 		if (isNaN(id)) {
-			return json({ error: 'Invalid stack ID' }, { status: 400 });
+			return json({ error: '无效的堆栈 ID' }, { status: 400 });
 		}
 
 		const gitStack = await getGitStack(id);
 		if (!gitStack) {
-			return json({ error: 'Git stack not found' }, { status: 404 });
+			return json({ error: 'Git 堆栈不存在' }, { status: 404 });
 		}
 
 		if (!gitStack.webhookEnabled) {
-			return json({ error: 'Webhook is not enabled for this stack' }, { status: 403 });
+			return json({ error: '此堆栈未启用 Webhook' }, { status: 403 });
 		}
 
 		const source = detectSource(request);
@@ -49,7 +49,7 @@ export const POST: RequestHandler = async (event) => {
 			await auditGitStack(event, 'webhook', id, gitStack.stackName, gitStack.environmentId, {
 				method: 'POST', source, error: 'no_secret_configured'
 			});
-			return json({ error: 'Webhook secret is not configured for this stack' }, { status: 401 });
+			return json({ error: '该堆栈尚未配置 Webhook 密钥' }, { status: 401 });
 		}
 		if (policy.action === 'deploy-unverified') {
 			// ALLOW_WEBHOOKS_WITHOUT_SECRET opt-in (isolated network): deploy without
@@ -73,7 +73,7 @@ export const POST: RequestHandler = async (event) => {
 			await auditGitStack(event, 'webhook', id, gitStack.stackName, gitStack.environmentId, {
 				method: 'POST', source, error: 'invalid_signature'
 			});
-			return json({ error: 'Invalid webhook signature' }, { status: 401 });
+			return json({ error: 'Webhook 签名无效' }, { status: 401 });
 		}
 
 		// Deploy the git stack (syncs and deploys only if there are changes)
@@ -83,7 +83,7 @@ export const POST: RequestHandler = async (event) => {
 		});
 		return json(result);
 	} catch (error: any) {
-		console.error('Webhook error:', error);
+		console.error('Webhook 错误:', error);
 		return json({ success: false, error: error.message }, { status: 500 });
 	}
 };
@@ -107,16 +107,16 @@ export const GET: RequestHandler = async (event) => {
 	try {
 		const id = parseInt(params.id);
 		if (isNaN(id)) {
-			return json({ error: 'Invalid stack ID' }, { status: 400 });
+			return json({ error: '无效的堆栈 ID' }, { status: 400 });
 		}
 
 		const gitStack = await getGitStack(id);
 		if (!gitStack) {
-			return json({ error: 'Git stack not found' }, { status: 404 });
+			return json({ error: 'Git 堆栈不存在' }, { status: 404 });
 		}
 
 		if (!gitStack.webhookEnabled) {
-			return json({ error: 'Webhook is not enabled for this stack' }, { status: 403 });
+			return json({ error: '此堆栈未启用 Webhook' }, { status: 403 });
 		}
 
 		const policy = decideWebhookSecretPolicy(!!gitStack.webhookSecret, allowSecretlessWebhook());
@@ -124,7 +124,7 @@ export const GET: RequestHandler = async (event) => {
 			await auditGitStack(event, 'webhook', id, gitStack.stackName, gitStack.environmentId, {
 				method: 'GET', source: 'get', error: 'no_secret_configured'
 			});
-			return json({ error: 'Webhook secret is not configured for this stack' }, { status: 401 });
+			return json({ error: '该堆栈尚未配置 Webhook 密钥' }, { status: 401 });
 		}
 		if (policy.action === 'deploy-unverified') {
 			// ALLOW_WEBHOOKS_WITHOUT_SECRET opt-in: deploy without verification, audited.
@@ -141,7 +141,7 @@ export const GET: RequestHandler = async (event) => {
 			await auditGitStack(event, 'webhook', id, gitStack.stackName, gitStack.environmentId, {
 				method: 'GET', source: 'get', error: 'invalid_secret'
 			});
-			return json({ error: 'Invalid webhook secret' }, { status: 401 });
+			return json({ error: '无效的 Webhook 密钥' }, { status: 401 });
 		}
 
 		// Deploy the git stack (syncs and deploys only if there are changes)
@@ -151,7 +151,7 @@ export const GET: RequestHandler = async (event) => {
 		});
 		return json(result);
 	} catch (error: any) {
-		console.error('Webhook GET error:', error);
+		console.error('Webhook GET 错误:', error);
 		return json({ success: false, error: error.message }, { status: 500 });
 	}
 };

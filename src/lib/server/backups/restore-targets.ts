@@ -97,7 +97,7 @@ export function resolveRestoreTargets(input: {
 				// `${targetPath}:${targetPath}` (NOT the /volumes/<key> template) - mirror that shape.
 				volumes.push({ key, type: 'bind', target: job.targetPath, include: `/volumes/${key}`, bind: `${job.targetPath}:${job.targetPath}`, origin: 'loose-files' });
 			} else {
-				unresolved.push({ key, reason: 'no destination mapping and no target path to extract to' });
+				unresolved.push({ key, reason: '无目标映射且无目标路径可用于提取' });
 			}
 		}
 	} else {

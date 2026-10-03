@@ -68,7 +68,7 @@
 		// space, other producers don't) so it lines up with the text, not the edge.
 		const lastReal = [...logLines].reverse().find((l) => l.trim().length > 0);
 		const indent = lastReal ? (lastReal.match(/^\s*/)?.[0] ?? '') : '';
-		const [color, label] = overallStatus === 'complete' ? [ANSI.green, 'Succeeded'] : [ANSI.red, 'Failed'];
+		const [color, label] = overallStatus === 'complete' ? [ANSI.green, '已成功'] : [ANSI.red, '已失败'];
 		return base + (base ? '\n' : '') + indent + color + label + ANSI.reset;
 	});
 
@@ -99,7 +99,7 @@
 
 			if (!response.ok) {
 				const data = await response.json();
-				throw new Error(data.error || 'Failed to start deployment');
+				throw new Error(data.error || '启动部署失败');
 			}
 
 			const { jobId } = await response.json();
@@ -122,7 +122,7 @@
 						deployFinished = true;
 					} else if (data.status === 'error') {
 						overallStatus = 'error';
-						errorMessage = data.error || 'Unknown error occurred';
+						errorMessage = data.error || '发生未知错误';
 						// Put the reason in the log too (as plain, uniconed lines) so a
 						// failure that happens mid-stream shows WHY, not just "Failed".
 						for (const l of errorMessage.split('\n')) {
@@ -136,7 +136,7 @@
 						logLines = [...logLines, (isGitStage ? GIT_LINE_MARKER : '') + data.message];
 					}
 				} catch (e) {
-					console.error('Failed to process job line:', e);
+					console.error('处理任务日志失败:', e);
 				}
 			});
 
@@ -145,9 +145,9 @@
 				deployFinished = true;
 			}
 		} catch (error: any) {
-			console.error('Failed to deploy git stack:', error);
+			console.error('部署 Git 堆栈失败:', error);
 			overallStatus = 'error';
-			errorMessage = error.message || 'Failed to deploy';
+			errorMessage = error.message || '部署失败';
 			deployFinished = true;
 		}
 	}
@@ -194,9 +194,9 @@
 			: 'idle'
 	);
 	const headerStatusLine = $derived(
-		overallStatus === 'complete' ? 'Succeeded'
-			: overallStatus === 'error' ? 'Failed'
-			: isDeploying ? 'Deploying...'
+		overallStatus === 'complete' ? '已成功'
+			: overallStatus === 'error' ? '已失败'
+			: isDeploying ? '部署中...'
 			: ''
 	);
 
@@ -225,7 +225,7 @@
 		<!-- Header -->
 		<div class="px-6 py-4 border-b shrink-0">
 			<DeployOutputHeader
-				verb="Git deploy"
+				verb="Git 部署"
 				{stackName}
 				{stackIcon}
 				{envId}
@@ -240,17 +240,17 @@
 				<div class="flex items-start gap-3 py-2 px-2">
 					<AlertTriangle class="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
 					<div class="space-y-1">
-						<p class="font-medium">Sync from git?</p>
+						<p class="font-medium">从 Git 同步？</p>
 						<p class="text-sm text-muted-foreground">
-							This will pull the latest changes for <strong class="text-foreground">{stackName}</strong>.
-							Containers will only restart if the configuration changed.
+							此操作将拉取<strong class="text-foreground">{stackName}</strong>的最新更改。
+							仅当配置发生变更时，容器才会重启。
 						</p>
 					</div>
 				</div>
 			{:else if logLines.length === 0 && isDeploying}
 				<div class="flex items-center gap-3 text-muted-foreground py-2 px-2">
 					<Loader2 class="w-4 h-4 animate-spin shrink-0" />
-					<span class="text-sm">Initializing...</span>
+					<span class="text-sm">初始化中...</span>
 				</div>
 			{/if}
 
@@ -284,7 +284,7 @@
 			<!-- Left: cancel (confirm step only). The log has its own copy button. -->
 			<div>
 				{#if overallStatus === 'confirming'}
-					<Button variant="outline" onclick={handleCancelConfirm}>Cancel</Button>
+					<Button variant="outline" onclick={handleCancelConfirm}>取消</Button>
 				{/if}
 			</div>
 
@@ -293,7 +293,7 @@
 				{#if overallStatus === 'confirming'}
 					<Button onclick={handleConfirmDeploy}>
 						<Rocket class="w-4 h-4" />
-						Deploy
+						部署
 					</Button>
 				{:else}
 					<Button
@@ -303,9 +303,9 @@
 					>
 						{#if isDeploying}
 							<Loader2 class="w-4 h-4 animate-spin" />
-							Deploying...
+							部署中...
 						{:else}
-							Close
+							关闭
 						{/if}
 					</Button>
 				{/if}

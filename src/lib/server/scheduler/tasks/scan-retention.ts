@@ -52,15 +52,15 @@ async function collectLiveImages(): Promise<{
 		try {
 			const images = await listImages(env.id);
 			if (!answerIsUsable(images)) {
-				skipped.push(`${env.name} (reported no images)`);
+				skipped.push(`${env.name} (未返回镜像列表)`);
 				continue;
 			}
 			for (const image of images) liveImageIds.add(image.id);
 			reachableEnvIds.add(env.id);
 		} catch (error: unknown) {
-			skipped.push(`${env.name} (did not answer)`);
+			skipped.push(`${env.name} (无响应)`);
 			if (!(error instanceof DockerConnectionError) && !(error instanceof EnvironmentNotFoundError)) {
-				console.error(`[Scan Retention] Error listing images for ${env.name}:`, error);
+				console.error(`[漏洞扫描保留策略] 获取 ${env.name} 的镜像列表时出错:`, error);
 			}
 		}
 	}
@@ -76,7 +76,7 @@ export async function runScanRetentionJob(triggeredBy: ScheduleTrigger = 'cron')
 		scheduleType: 'system_cleanup',
 		scheduleId: SYSTEM_SCAN_RETENTION_ID,
 		environmentId: null,
-		entityName: 'Vulnerability scan retention',
+		entityName: '漏洞扫描结果保留策略',
 		triggeredBy,
 		status: 'running'
 	});
@@ -84,7 +84,7 @@ export async function runScanRetentionJob(triggeredBy: ScheduleTrigger = 'cron')
 	await updateScheduleExecution(execution.id, { startedAt: new Date().toISOString() });
 
 	const log = async (message: string) => {
-		console.log(`[Scan Retention] ${message}`);
+		console.log(`[漏洞扫描保留策略] ${message}`);
 		await appendScheduleExecutionLog(execution.id, `[${new Date().toISOString()}] ${message}`);
 	};
 
@@ -96,7 +96,7 @@ export async function runScanRetentionJob(triggeredBy: ScheduleTrigger = 'cron')
 
 		const { liveImageIds, reachableEnvIds, skipped } = await collectLiveImages();
 		if (skipped.length > 0) {
-			await log(`Leaving scans alone for: ${skipped.join(', ')}`);
+			await log(`保留以下环境的扫描记录不作清理: ${skipped.join(', ')}`);
 		}
 
 		const scans = await listScanRecords();
@@ -106,19 +106,19 @@ export async function runScanRetentionJob(triggeredBy: ScheduleTrigger = 'cron')
 		});
 
 		await log(
-			`${scans.length} scans, keeping ${keepPerImage} per image and scanner, ` +
-			`${graceDays} day grace for removed images`
+			`共 ${scans.length} 条扫描记录，每个镜像与扫描器保留 ${keepPerImage} 条记录，` +
+			`已移除镜像设置 ${graceDays} 天宽限期`
 		);
 
 		if (plan.deleteIds.length === 0) {
-			await log('Nothing to remove');
+			await log('无需删除任何记录');
 		} else {
 			await deleteScans(plan.deleteIds);
 			// The dashboard caches findings; a delete makes that stale.
 			invalidateVulnerabilitiesCache();
 			await log(
-				`Removed ${plan.deleteIds.length} scans: ${plan.supersededCount} superseded, ` +
-				`${plan.goneImageCount} for images no longer present`
+				`已清理 ${plan.deleteIds.length} 条扫描记录：其中 ${plan.supersededCount} 条为被新记录取代，` +
+				`${plan.goneImageCount} 条对应已消失的镜像`
 			);
 		}
 
@@ -136,7 +136,7 @@ export async function runScanRetentionJob(triggeredBy: ScheduleTrigger = 'cron')
 		});
 	} catch (error: unknown) {
 		const message = error instanceof Error ? error.message : String(error);
-		await log(`Error: ${message}`);
+		await log(`错误: ${message}`);
 		await updateScheduleExecution(execution.id, {
 			status: 'failed',
 			completedAt: new Date().toISOString(),

@@ -13,10 +13,10 @@
 			return '—';
 		}
 		if (typeof value === 'boolean') {
-			return value ? 'Yes' : 'No';
+			return value ? '是' : '否';
 		}
 		if (Array.isArray(value)) {
-			if (value.length === 0) return '(empty)';
+			if (value.length === 0) return '(空)';
 			if (value.every(v => typeof v === 'string' || typeof v === 'number')) {
 				return value.join(', ');
 			}
@@ -71,5 +71,5 @@
 		{/each}
 	</div>
 {:else}
-	<p class="text-sm text-muted-foreground italic">No changes recorded</p>
+	<p class="text-sm text-muted-foreground italic">未记录任何更改</p>
 {/if}

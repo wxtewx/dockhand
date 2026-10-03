@@ -82,18 +82,18 @@
 	let loading = $state(false);
 
 	const navigationItems: NavItem[] = [
-		{ name: 'Dashboard', href: '/', icon: LayoutDashboard, keywords: ['home', 'overview'] },
-		{ name: 'Containers', href: '/containers', icon: Box, keywords: ['docker', 'running'] },
-		{ name: 'Logs', href: '/logs', icon: ScrollText, keywords: ['output', 'debug'] },
-		{ name: 'Shell', href: '/terminal', icon: Terminal, keywords: ['exec', 'bash', 'sh'] },
-		{ name: 'Stacks', href: '/stacks', icon: Layers, keywords: ['compose', 'docker-compose'] },
-		{ name: 'Images', href: '/images', icon: Images, keywords: ['pull', 'build'] },
-		{ name: 'Volumes', href: '/volumes', icon: HardDrive, keywords: ['storage', 'data'] },
-		{ name: 'Networks', href: '/networks', icon: Network, keywords: ['bridge', 'host'] },
-		{ name: 'Registry', href: '/registry', icon: Download, keywords: ['hub', 'pull'] },
-		{ name: 'Activity', href: '/activity', icon: Eye, keywords: ['events', 'history'] },
-		{ name: 'Schedules', href: '/schedules', icon: Timer, keywords: ['cron', 'auto'] },
-		{ name: 'Settings', href: '/settings', icon: Settings, keywords: ['config', 'preferences'] }
+		{ name: '仪表盘', href: '/', icon: LayoutDashboard, keywords: ['home', 'overview'] },
+		{ name: '容器', href: '/containers', icon: Box, keywords: ['docker', 'running'] },
+		{ name: '日志', href: '/logs', icon: ScrollText, keywords: ['output', 'debug'] },
+		{ name: '终端', href: '/terminal', icon: Terminal, keywords: ['exec', 'bash', 'sh'] },
+		{ name: '堆栈', href: '/stacks', icon: Layers, keywords: ['compose', 'docker-compose'] },
+		{ name: '镜像', href: '/images', icon: Images, keywords: ['pull', 'build'] },
+		{ name: '数据卷', href: '/volumes', icon: HardDrive, keywords: ['storage', 'data'] },
+		{ name: '网络', href: '/networks', icon: Network, keywords: ['bridge', 'host'] },
+		{ name: '仓库', href: '/registry', icon: Download, keywords: ['hub', 'pull'] },
+		{ name: '活动', href: '/activity', icon: Eye, keywords: ['events', 'history'] },
+		{ name: '计划任务', href: '/schedules', icon: Timer, keywords: ['cron', 'auto'] },
+		{ name: '设置', href: '/settings', icon: Settings, keywords: ['config', 'preferences'] }
 	];
 
 	// Group headings (source order drives render order).
@@ -137,44 +137,44 @@
 
 		if ($licenseStore.isEnterprise && $authStore.authEnabled) {
 			add(
-				{ id: 'ent:audit', group: G_ENT, label: 'Audit log', keywords: 'compliance audit' },
+				{ id: 'ent:audit', group: G_ENT, label: '审计日志', keywords: '合规审计' },
 				{ icon: ClipboardList, run: () => select('/audit') }
 			);
 		}
 
 		for (const t of lightThemes) {
 			add(
-				{ id: `light:${t.id}`, group: G_LIGHT, label: t.name, keywords: 'light theme', active: $themeStore.lightTheme === t.id },
+				{ id: `light:${t.id}`, group: G_LIGHT, label: t.name, keywords: '浅色主题', active: $themeStore.lightTheme === t.id },
 				{ icon: Sun, preview: t.preview, run: () => applyLightTheme(t.id) }
 			);
 		}
 		for (const t of darkThemes) {
 			add(
-				{ id: `dark:${t.id}`, group: G_DARK, label: t.name, keywords: 'dark theme', active: $themeStore.darkTheme === t.id },
+				{ id: `dark:${t.id}`, group: G_DARK, label: t.name, keywords: '深色主题', active: $themeStore.darkTheme === t.id },
 				{ icon: Moon, preview: t.preview, run: () => applyDarkTheme(t.id) }
 			);
 		}
 		for (const f of fonts) {
 			add(
-				{ id: `font:${f.id}`, group: G_FONT, label: f.name, keywords: 'font', active: $themeStore.font === f.id },
+				{ id: `font:${f.id}`, group: G_FONT, label: f.name, keywords: '字体', active: $themeStore.font === f.id },
 				{ icon: Type, run: () => applyFont(f.id) }
 			);
 		}
 		for (const t of EDITOR_THEMES) {
 			add(
-				{ id: `editor:${t.id}`, group: G_EDITOR, label: t.label, keywords: 'editor theme code', active: $themeStore.editorTheme === t.id },
+				{ id: `editor:${t.id}`, group: G_EDITOR, label: t.label, keywords: '编辑器主题代码', active: $themeStore.editorTheme === t.id },
 				{ icon: Palette, run: () => applyEditorTheme(t.id) }
 			);
 		}
 		for (const env of environments) {
 			add(
-				{ id: `env:${env.id}`, group: G_ENV, label: env.name, keywords: 'environment', active: $currentEnvironment?.id === env.id },
+				{ id: `env:${env.id}`, group: G_ENV, label: env.name, keywords: '环境', active: $currentEnvironment?.id === env.id },
 				{ icon: Server, run: () => selectEnv(env), env }
 			);
 		}
 		for (const s of stacks) {
 			add(
-				{ id: `stack:${s.envId}:${s.name}`, group: G_STACK, label: s.name, keywords: `stack compose ${s.envName}`.toLowerCase() },
+				{ id: `stack:${s.envId}:${s.name}`, group: G_STACK, label: s.name, keywords: `堆栈 compose ${s.envName}`.toLowerCase() },
 				{ icon: Layers, run: () => selectStack(s), stack: s }
 			);
 		}
@@ -182,7 +182,7 @@
 			add(
 				// Env-scoped id: the same container id can arrive from several environments
 				// that share a daemon, and each must stay a distinct, correctly-labelled row.
-				{ id: `cont:${c.envId}:${c.id}`, group: G_CONT, label: c.name, keywords: `container ${c.image} ${c.envName}`.toLowerCase() },
+				{ id: `cont:${c.envId}:${c.id}`, group: G_CONT, label: c.name, keywords: `容器 ${c.image} ${c.envName}`.toLowerCase() },
 				{ icon: Box, run: () => containerAction(c, 'logs'), container: c }
 			);
 		}
@@ -343,7 +343,7 @@
 			stacks = stackResults.flat();
 			lastLoadedAt = Date.now();
 		} catch (e) {
-			console.error('Failed to load command palette data:', e);
+			console.error('加载命令面板数据失败:', e);
 		} finally {
 			loading = false;
 		}
@@ -405,7 +405,7 @@
 			try {
 				await fetch(`/api/containers/${containerId}/${action}${container.envId ? `?env=${container.envId}` : ''}`, { method: 'POST' });
 			} catch (e) {
-				console.error(`Failed to ${action} container:`, e);
+				console.error(`${action === 'start' ? '启动' : action === 'stop' ? '停止' : '重启'}容器失败:`, e);
 			}
 		}
 	}
@@ -441,8 +441,8 @@
 		class="p-0 gap-0 max-w-2xl overflow-hidden"
 		showCloseButton={false}
 	>
-		<Dialog.Title class="sr-only">Command palette</Dialog.Title>
-		<Dialog.Description class="sr-only">Search for pages, themes, environments, stacks and containers</Dialog.Description>
+		<Dialog.Title class="sr-only">命令面板</Dialog.Title>
+		<Dialog.Description class="sr-only">搜索页面、主题、环境、堆栈以及容器</Dialog.Description>
 
 		<div class="flex items-center gap-2 border-b px-3">
 			<Search class="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -450,7 +450,7 @@
 				bind:this={inputEl}
 				bind:value={query}
 				onkeydown={onListKeydown}
-				placeholder="Search..."
+				placeholder="搜索..."
 				role="combobox"
 				aria-expanded="true"
 				aria-controls="palette-list"
@@ -460,7 +460,7 @@
 		</div>
 
 		{#if rows.length === 0}
-			<div class="py-6 text-center text-sm text-muted-foreground">No results found.</div>
+			<div class="py-6 text-center text-sm text-muted-foreground">未找到结果。</div>
 		{:else}
 			<div
 				id="palette-list"
@@ -510,12 +510,12 @@
 									{#if isActive}
 										<div class="ml-auto flex items-center gap-1">
 											{#if c.state === 'running'}
-												<button class="rounded p-1 hover:bg-muted" title="View logs" onclick={(e) => { e.stopPropagation(); containerAction(c, 'logs'); }}><FileText class="h-3 w-3" /></button>
-												<button class="rounded p-1 hover:bg-muted" title="Open terminal" onclick={(e) => { e.stopPropagation(); containerAction(c, 'terminal'); }}><Terminal class="h-3 w-3" /></button>
-												<button class="rounded p-1 hover:bg-muted" title="Restart" onclick={(e) => { e.stopPropagation(); containerAction(c, 'restart'); }}><RotateCcw class="h-3 w-3" /></button>
-												<button class="rounded p-1 text-destructive hover:bg-muted" title="Stop" onclick={(e) => { e.stopPropagation(); containerAction(c, 'stop'); }}><Square class="h-3 w-3" /></button>
+												<button class="rounded p-1 hover:bg-muted" title="查看日志" onclick={(e) => { e.stopPropagation(); containerAction(c, 'logs'); }}><FileText class="h-3 w-3" /></button>
+												<button class="rounded p-1 hover:bg-muted" title="打开终端" onclick={(e) => { e.stopPropagation(); containerAction(c, 'terminal'); }}><Terminal class="h-3 w-3" /></button>
+												<button class="rounded p-1 hover:bg-muted" title="重启" onclick={(e) => { e.stopPropagation(); containerAction(c, 'restart'); }}><RotateCcw class="h-3 w-3" /></button>
+												<button class="rounded p-1 text-destructive hover:bg-muted" title="停止" onclick={(e) => { e.stopPropagation(); containerAction(c, 'stop'); }}><Square class="h-3 w-3" /></button>
 											{:else}
-												<button class="rounded p-1 text-green-500 hover:bg-muted" title="Start" onclick={(e) => { e.stopPropagation(); containerAction(c, 'start'); }}><Play class="h-3 w-3" /></button>
+												<button class="rounded p-1 text-green-500 hover:bg-muted" title="启动" onclick={(e) => { e.stopPropagation(); containerAction(c, 'start'); }}><Play class="h-3 w-3" /></button>
 											{/if}
 										</div>
 									{/if}

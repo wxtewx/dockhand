@@ -36,7 +36,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 	if (envDenied) return envDenied;
 
 	if (!stackName) {
-		return json({ error: 'Stack name is required' }, { status: 400 });
+		return json({ error: '堆栈名称为必填项' }, { status: 400 });
 	}
 
 	let stackDir: string;

@@ -16,7 +16,7 @@ import { parseRegistryUrl, DOCKER_HUB_HOSTS } from '$lib/server/docker';
 export const GET: RequestHandler = async ({ cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('registries', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -28,8 +28,8 @@ export const GET: RequestHandler = async ({ cookies }) => {
 		}));
 		return json(safeRegistries);
 	} catch (error) {
-		console.error('Error fetching registries:', error);
-		return json({ error: 'Failed to fetch registries' }, { status: 500 });
+		console.error('获取镜像仓库列表失败:', error);
+		return json({ error: '获取镜像仓库列表失败' }, { status: 500 });
 	}
 };
 
@@ -48,14 +48,14 @@ export const POST: RequestHandler = async (event) => {
 	const { request, cookies } = event;
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('registries', 'create')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const data = await request.json();
 
 		if (!data.name || !data.url) {
-			return json({ error: 'Name and URL are required' }, { status: 400 });
+			return json({ error: '名称和地址为必填项' }, { status: 400 });
 		}
 
 		// Trim username/password to prevent stray whitespace from copy-paste corrupting
@@ -66,7 +66,7 @@ export const POST: RequestHandler = async (event) => {
 		// Diagnostic logging (#1105) — never logs the plaintext credential
 		const { host: normalizedHost } = parseRegistryUrl(data.url);
 		const hubTag = DOCKER_HUB_HOSTS.has(normalizedHost) ? ' (docker-hub)' : '';
-		console.log(`[Registry] create: url=${data.url} normalized=${normalizedHost}${hubTag} user(len=${trimmedUsername?.length ?? 0}) pw(len=${trimmedPassword?.length ?? 0})`);
+		console.log(`[镜像仓库] 创建: 地址=${data.url} 标准化主机=${normalizedHost}${hubTag} 用户名(长度=${trimmedUsername?.length ?? 0}) 密码(长度=${trimmedPassword?.length ?? 0})`);
 
 		const registry = await createRegistry({
 			name: data.name,
@@ -88,10 +88,10 @@ export const POST: RequestHandler = async (event) => {
 		const { password, ...safeRegistry } = registry;
 		return json({ ...safeRegistry, hasCredentials: !!password }, { status: 201 });
 	} catch (error: any) {
-		console.error('Error creating registry:', error);
+		console.error('创建镜像仓库失败:', error);
 		if (error.message?.includes('UNIQUE constraint failed')) {
-			return json({ error: 'A registry with this name already exists' }, { status: 400 });
+			return json({ error: '同名镜像仓库已存在' }, { status: 400 });
 		}
-		return json({ error: 'Failed to create registry' }, { status: 500 });
+		return json({ error: '创建镜像仓库失败' }, { status: 500 });
 	}
 };

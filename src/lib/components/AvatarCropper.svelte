@@ -25,8 +25,8 @@
 		outputSize = 256,
 		outputFormat = 'image/jpeg',
 		outputQuality = 0.9,
-		title = 'Crop avatar',
-		saveLabel = 'Save avatar'
+		title = '裁剪头像',
+		saveLabel = '保存头像'
 	}: Props = $props();
 
 	// Cropper state
@@ -145,7 +145,7 @@
 		}
 
 		if (!cropData) {
-			throw new Error('No crop data available');
+			throw new Error('无可用裁剪数据');
 		}
 
 		return new Promise((resolve, reject) => {
@@ -157,7 +157,7 @@
 				const ctx = canvas.getContext('2d');
 
 				if (!ctx) {
-					reject(new Error('Failed to get canvas context'));
+					reject(new Error('获取画布上下文失败'));
 					return;
 				}
 
@@ -190,7 +190,7 @@
 			};
 
 			image.onerror = () => {
-				reject(new Error('Failed to load image'));
+				reject(new Error('加载图片失败'));
 			};
 		});
 	}
@@ -201,7 +201,7 @@
 			const dataUrl = await getCroppedImage();
 			onSave(dataUrl);
 		} catch (err) {
-			console.error('Failed to crop image:', err);
+			console.error('裁剪图片失败:', err);
 		} finally {
 			saving = false;
 		}
@@ -234,7 +234,7 @@
 			<div class="p-4 border-b">
 				<h3 class="text-lg font-semibold">{title}</h3>
 				<p class="text-sm text-muted-foreground mt-1">
-					Drag to reposition. Use the slider to zoom.
+					拖动调整位置，滑动条缩放。
 				</p>
 			</div>
 
@@ -278,7 +278,7 @@
 					disabled={saving}
 				>
 					<X class="w-4 h-4" />
-					Cancel
+					取消
 				</Button>
 				<Button
 					class="flex-1"
@@ -286,7 +286,7 @@
 					disabled={saving || !imageLoaded}
 				>
 					<Check class="w-4 h-4" />
-					{saving ? 'Uploading...' : !imageLoaded ? 'Loading...' : saveLabel}
+					{saving ? '上传中...' : !imageLoaded ? '加载中...' : saveLabel}
 				</Button>
 			</div>
 		</div>

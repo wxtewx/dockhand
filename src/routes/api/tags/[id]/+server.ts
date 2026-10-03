@@ -19,21 +19,21 @@ export const PUT: RequestHandler = async ({ params, request, cookies }) => {
 	const auth = await authorize(cookies);
 	// The tag catalog is global; only admins may rename/recolour a tag.
 	if (auth.authEnabled && !auth.isAdmin) {
-		return json({ error: 'Only an administrator can manage the tag catalog' }, { status: 403 });
+		return json({ error: '仅管理员可以管理标签目录' }, { status: 403 });
 	}
 	const tagId = Number.parseInt(params.id, 10);
-	if (Number.isNaN(tagId)) return json({ error: 'Invalid tag id' }, { status: 400 });
+	if (Number.isNaN(tagId)) return json({ error: '无效的标签 ID' }, { status: 400 });
 
 	const body = await request.json().catch(() => ({}));
 	const patch: { name?: string; color?: string; icon?: string | null } = {};
 	if (body.name !== undefined) {
 		const name = normalizeTag(body.name);
-		if (!name) return json({ error: 'A valid tag name is required' }, { status: 400 });
+		if (!name) return json({ error: '请提供有效的标签名称' }, { status: 400 });
 		// Reject a rename that would collide with another tag (unique on name).
 		const clash = (await getTags()).some(
 			(t) => t.id !== tagId && t.name.toLowerCase() === name.toLowerCase()
 		);
-		if (clash) return json({ error: `A tag named "${name}" already exists` }, { status: 409 });
+		if (clash) return json({ error: `名称为 "${name}" 的标签已存在` }, { status: 409 });
 		patch.name = name;
 	}
 	if (body.color !== undefined && (TAG_COLORS as readonly string[]).includes(body.color)) {
@@ -59,10 +59,10 @@ export const DELETE: RequestHandler = async ({ params, cookies }) => {
 	const auth = await authorize(cookies);
 	// The tag catalog is global; only admins may delete a tag (cascades to all envs).
 	if (auth.authEnabled && !auth.isAdmin) {
-		return json({ error: 'Only an administrator can manage the tag catalog' }, { status: 403 });
+		return json({ error: '仅管理员可以管理标签目录' }, { status: 403 });
 	}
 	const tagId = Number.parseInt(params.id, 10);
-	if (Number.isNaN(tagId)) return json({ error: 'Invalid tag id' }, { status: 400 });
+	if (Number.isNaN(tagId)) return json({ error: '无效的标签 ID' }, { status: 400 });
 	await deleteTag(tagId);
 	return json({ success: true });
 };

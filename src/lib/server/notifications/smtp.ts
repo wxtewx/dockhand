@@ -28,7 +28,7 @@ export async function sendSmtpNotification(config: SmtpConfig, payload: Notifica
 				<h2 style="margin: 0 0 10px 0;">${payload.title}${envBadge}</h2>
 				<p style="margin: 0; white-space: pre-wrap;">${payload.message}</p>
 				<hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
-				<p style="margin: 0; font-size: 12px; color: #666;">Sent by Dockhand</p>
+				<p style="margin: 0; font-size: 12px; color: #666;">由 Dockhand 发送</p>
 			</div>
 		`;
 
@@ -43,6 +43,6 @@ export async function sendSmtpNotification(config: SmtpConfig, payload: Notifica
 		return { success: true };
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		return { success: false, error: `SMTP error: ${errorMsg}` };
+		return { success: false, error: `SMTP 发送异常: ${errorMsg}` };
 	}
 }

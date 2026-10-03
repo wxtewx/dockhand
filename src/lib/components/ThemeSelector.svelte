@@ -12,19 +12,19 @@
 
 	// Font size options
 	const fontSizes: { id: FontSize; name: string }[] = [
-		{ id: 'xsmall', name: 'Extra Small' },
-		{ id: 'small', name: 'Small' },
-		{ id: 'normal', name: 'Normal' },
-		{ id: 'medium', name: 'Medium' },
-		{ id: 'large', name: 'Large' },
-		{ id: 'xlarge', name: 'Extra Large' }
+		{ id: 'xsmall', name: '超小' },
+		{ id: 'small', name: '小' },
+		{ id: 'normal', name: '标准' },
+		{ id: 'medium', name: '中' },
+		{ id: 'large', name: '大' },
+		{ id: 'xlarge', name: '超大' }
 	];
 
 	const actionIconSizes: { id: ActionIconSize; name: string }[] = [
-		{ id: 'small', name: 'Small' },
-		{ id: 'normal', name: 'Normal' },
-		{ id: 'large', name: 'Large' },
-		{ id: 'xlarge', name: 'Extra Large' }
+		{ id: 'small', name: '小' },
+		{ id: 'normal', name: '标准' },
+		{ id: 'large', name: '大' },
+		{ id: 'xlarge', name: '超大' }
 	];
 
 	interface Props {
@@ -169,7 +169,7 @@
 	<div class="flex items-center justify-between">
 		<div class="flex items-center gap-2">
 			<Sun class="w-4 h-4 text-muted-foreground" />
-			<Label>Light theme</Label>
+			<Label>浅色主题</Label>
 		</div>
 		<Select.Root type="single" value={selectedLightTheme} onValueChange={handleLightThemeChange}>
 			<Select.Trigger class="w-56">
@@ -205,7 +205,7 @@
 	<div class="flex items-center justify-between">
 		<div class="flex items-center gap-2">
 			<Moon class="w-4 h-4 text-muted-foreground" />
-			<Label>Dark theme</Label>
+			<Label>深色主题</Label>
 		</div>
 		<Select.Root type="single" value={selectedDarkTheme} onValueChange={handleDarkThemeChange}>
 			<Select.Trigger class="w-56">
@@ -241,7 +241,7 @@
 	<div class="flex items-center justify-between">
 		<div class="flex items-center gap-2">
 			<Type class="w-4 h-4 text-muted-foreground" />
-			<Label>Font</Label>
+			<Label>字体</Label>
 		</div>
 		<Select.Root type="single" value={selectedFont} onValueChange={handleFontChange}>
 			<Select.Trigger class="w-56">
@@ -265,7 +265,7 @@
 	<div class="flex items-center justify-between">
 		<div class="flex items-center gap-2">
 			<AArrowUp class="w-4 h-4 text-muted-foreground" />
-			<Label>Font size</Label>
+			<Label>字体大小</Label>
 		</div>
 		<Select.Root type="single" value={selectedFontSize} onValueChange={handleFontSizeChange}>
 			<Select.Trigger class="w-56">
@@ -289,7 +289,7 @@
 	<div class="flex items-center justify-between">
 		<div class="flex items-center gap-2">
 			<Table class="w-4 h-4 text-muted-foreground" />
-			<Label>Grid font size</Label>
+			<Label>表格字体大小</Label>
 		</div>
 		<Select.Root type="single" value={selectedGridFontSize} onValueChange={handleGridFontSizeChange}>
 			<Select.Trigger class="w-56">
@@ -313,7 +313,7 @@
 	<div class="flex items-center justify-between">
 		<div class="flex items-center gap-2">
 			<MousePointerClick class="w-4 h-4 text-muted-foreground" />
-			<Label>Grid buttons</Label>
+			<Label>表格操作按钮</Label>
 		</div>
 		<Select.Root type="single" value={selectedActionIconSize} onValueChange={handleActionIconSizeChange}>
 			<Select.Trigger class="w-56">
@@ -337,7 +337,7 @@
 	<div class="flex items-center justify-between">
 		<div class="flex items-center gap-2">
 			<Terminal class="w-4 h-4 text-muted-foreground" />
-			<Label>Terminal font</Label>
+			<Label>终端字体</Label>
 		</div>
 		<Select.Root type="single" value={selectedTerminalFont} onValueChange={handleTerminalFontChange}>
 			<Select.Trigger class="w-56">

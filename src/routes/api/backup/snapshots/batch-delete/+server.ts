@@ -31,11 +31,11 @@ export const POST: RequestHandler = async (event) => {
 	const body = await request.json().catch(() => ({})) as { destinationId?: number; snapshotIds?: string[] };
 	const destinationId = Number(body.destinationId);
 	if (!Number.isInteger(destinationId) || destinationId <= 0) {
-		return json({ error: 'destinationId is required' }, { status: 400 });
+		return json({ error: '必须提供 destinationId' }, { status: 400 });
 	}
 	const snapshotIds = Array.isArray(body.snapshotIds) ? body.snapshotIds : [];
 	if (snapshotIds.length === 0) {
-		return json({ error: 'snapshotIds must be a non-empty array' }, { status: 400 });
+		return json({ error: 'snapshotIds 必须为非空数组' }, { status: 400 });
 	}
 	for (const id of snapshotIds) {
 		const invalid = validateSnapshotId(id);

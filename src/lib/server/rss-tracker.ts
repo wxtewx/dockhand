@@ -143,7 +143,7 @@ function logPeriodSummary(): void {
 	const rssGrowthTotal = mem.rss - startupRss;
 	const rssPerHour = uptimeHours > 0.01 ? rssGrowthTotal / uptimeHours : 0;
 
-	let summary = `[RSS] #${periodNumber} rss=${fmtMB(mem.rss)}(${fmtDelta(rssDelta)}) total=${fmtDelta(rssGrowthTotal)} rate=${fmtBytes(Math.round(rssPerHour))}/h`;
+	let summary = `[内存监控] #${periodNumber} 物理内存=${fmtMB(mem.rss)}(${fmtDelta(rssDelta)}) 总增长=${fmtDelta(rssGrowthTotal)} 速率=${fmtBytes(Math.round(rssPerHour))}/小时`;
 
 	// Sort categories by absolute totalDelta descending
 	const sorted = [...categories.entries()]
@@ -153,13 +153,13 @@ function logPeriodSummary(): void {
 	let accountedDelta = 0;
 	for (const [cat, stats] of sorted) {
 		const avg = stats.count > 0 ? Math.round(stats.totalDelta / stats.count) : 0;
-		summary += `\n  ${cat.padEnd(14)} n=${String(stats.count).padStart(4)}  avg=${fmtDelta(avg).padStart(7)}  max=${fmtDelta(stats.maxDelta).padStart(7)}  total=${fmtDelta(stats.totalDelta).padStart(7)}`;
+		summary += `\n  ${cat.padEnd(14)} 次数=${String(stats.count).padStart(4)}  平均=${fmtDelta(avg).padStart(7)}  最大=${fmtDelta(stats.maxDelta).padStart(7)}  总计=${fmtDelta(stats.totalDelta).padStart(7)}`;
 		accountedDelta += stats.totalDelta;
 	}
 
 	const unaccounted = rssDelta - accountedDelta;
 	if (sorted.length > 0) {
-		summary += `\n  ${'unaccounted'.padEnd(14)} ${fmtDelta(unaccounted).padStart(7)}`;
+		summary += `\n  ${'未统计'.padEnd(14)} ${fmtDelta(unaccounted).padStart(7)}`;
 	}
 
 	console.log(summary);
@@ -224,10 +224,10 @@ export function dumpHeapSnapshot(): string | null {
 
 	try {
 		v8.writeHeapSnapshot(filepath);
-		console.log(`[RSS] Heap snapshot saved: ${filepath}`);
+		console.log(`[内存监控] 堆快照已保存：${filepath}`);
 		return filename;
 	} catch (err) {
-		console.error(`[RSS] Failed to write heap snapshot:`, err instanceof Error ? err.message : String(err));
+		console.error(`[内存监控] 写入堆快照失败：`, err instanceof Error ? err.message : String(err));
 		return null;
 	}
 }
@@ -283,7 +283,7 @@ export function startRssTracker(): void {
 	if (!enabled) return;
 
 	periodStartRss = process.memoryUsage().rss;
-	console.log(`[RSS] Tracker started. Initial RSS: ${fmtMB(periodStartRss)}. Logging every 60s.`);
+	console.log(`[内存监控] 监控已启动。初始物理内存：${fmtMB(periodStartRss)}。每 60 秒记录一次。`);
 
 	intervalHandle = setInterval(logPeriodSummary, 60_000);
 

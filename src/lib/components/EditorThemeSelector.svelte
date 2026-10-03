@@ -105,14 +105,14 @@ volumes:
 <div class="space-y-3">
 	<div class="flex items-center gap-2">
 		<Palette class="w-4 h-4 text-muted-foreground" />
-		<Label class="text-sm font-medium">Editor theme</Label>
+		<Label class="text-sm font-medium">编辑器主题</Label>
 	</div>
 
 	<!-- Font + theme on one row; editor font moved here from Appearance. -->
 	<div class="flex flex-wrap items-center gap-x-6 gap-y-3">
 		<div class="flex items-center gap-2">
 			<CodeXml class="w-4 h-4 text-muted-foreground" />
-			<Label>Font</Label>
+			<Label>字体</Label>
 			{#if awaitingGlobal}
 				<div class="h-10 w-52 animate-pulse rounded-md bg-muted/50"></div>
 			{:else}
@@ -132,7 +132,7 @@ volumes:
 		</div>
 
 		<div class="flex items-center gap-2">
-			<Label>Theme</Label>
+			<Label>主题</Label>
 			{#if awaitingGlobal}
 				<div class="h-10 w-64 animate-pulse rounded-md bg-muted/50"></div>
 			{:else}
@@ -141,15 +141,15 @@ volumes:
 						<span>{currentLabel}</span>
 					</Select.Trigger>
 					<Select.Content class="max-h-72">
-						<Select.Item value="default">Default (follows app theme)</Select.Item>
+						<Select.Item value="default">默认 (跟随应用主题)</Select.Item>
 						<Select.Group>
-							<Select.GroupHeading>Dark</Select.GroupHeading>
+							<Select.GroupHeading>深色</Select.GroupHeading>
 							{#each darkThemes as t}
 								<Select.Item value={t.id}>{t.label}</Select.Item>
 							{/each}
 						</Select.Group>
 						<Select.Group>
-							<Select.GroupHeading>Light</Select.GroupHeading>
+							<Select.GroupHeading>浅色</Select.GroupHeading>
 							{#each lightThemes as t}
 								<Select.Item value={t.id}>{t.label}</Select.Item>
 							{/each}
@@ -169,5 +169,5 @@ volumes:
 	>
 		<CodeEditor value={PREVIEW_COMPOSE} language="yaml" readonly editorThemeOverride={selected} />
 	</div>
-	<p class="text-xs text-muted-foreground">Applies to all code editors (compose files, env, config). Follows this theme regardless of the light/dark app setting.</p>
+	<p class="text-xs text-muted-foreground">适用于所有代码编辑器 (编排文件、环境变量、配置)。无论应用的浅色/深色设置如何，都将沿用此主题。</p>
 </div>

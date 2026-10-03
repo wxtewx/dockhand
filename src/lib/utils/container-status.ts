@@ -22,14 +22,32 @@ const UP_RE = /Up\s+(.+?)(?:\s+\(|$)/i;
  */
 const STOPPED_RE = /(?:Exited|Restarting)\s*(?:\([^)]*\))?\s+(.+?)\s+ago/i;
 
+function translateDuration(rawDuration: string): string {
+    let t = rawDuration.trim();
+    t = t
+        .replace(/^Less than an?\s+/i, '不足 1 ')
+        .replace(/^Less than\s+/i, '不足 ')
+        .replace(/^About\s+/i, '约 ')
+        .replace(/\ban\b/gi, '1')
+        .replace(/\ba\b/gi, '1');
+
+    t = t
+        .replace(/seconds?/g, '秒')
+        .replace(/minutes?/g, '分钟')
+        .replace(/hours?/g, '小时')
+        .replace(/days?/g, '天')
+        .replace(/weeks?/g, '周');
+    return t;
+}
+
 /** The uptime text for the grid's Uptime column, or "-" when the status carries none. */
 export function formatUptime(status: string): string {
-	if (!status) return '-';
-	const up = status.match(UP_RE);
-	if (up) return up[1].trim();
-	const stopped = status.match(STOPPED_RE);
-	if (stopped) return `${stopped[1]} ago`;
-	return '-';
+    if (!status) return '-';
+    const up = status.match(UP_RE);
+    if (up) return translateDuration(up[1].trim());
+    const stopped = status.match(STOPPED_RE);
+    if (stopped) return `${translateDuration(stopped[1])} 前`;
+    return '-';
 }
 
 /**

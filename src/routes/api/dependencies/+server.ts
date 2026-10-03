@@ -27,7 +27,7 @@ const externalTools = scannerToolInventory(DEFAULT_GRYPE_IMAGE, DEFAULT_TRIVY_IM
 export const GET: RequestHandler = async ({ cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !auth.isAuthenticated) {
-		return json({ error: 'Authentication required' }, { status: 401 });
+		return json({ error: '需要身份验证' }, { status: 401 });
 	}
 
 	// Combine npm dependencies with external tools, exclude dockhand itself

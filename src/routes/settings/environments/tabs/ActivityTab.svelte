@@ -45,22 +45,22 @@
 
 <div class="flex items-start gap-3">
 	<div class="flex-1">
-		<Label>Collect container activity</Label>
-		<p class="text-xs text-muted-foreground">Track container events (start, stop, restart, etc.) from this environment in real-time</p>
+		<Label>收集容器活动</Label>
+		<p class="text-xs text-muted-foreground">实时跟踪该环境中的容器事件 (启动、停止、重启等)</p>
 	</div>
 	<TogglePill bind:checked={collectActivity} />
 </div>
 <div class="flex items-start gap-3">
 	<div class="flex-1">
-		<Label>Collect system metrics</Label>
-		<p class="text-xs text-muted-foreground">Collect CPU and memory history for the dashboard tiles and charts. The live per-container stats on the containers page are always shown and are not affected by this.</p>
+		<Label>采集系统指标</Label>
+		<p class="text-xs text-muted-foreground">为仪表盘卡片与图表采集CPU和内存历史数据。容器页面上的实时单容器统计数据始终显示，不受此项影响。</p>
 	</div>
 	<TogglePill bind:checked={collectMetrics} />
 </div>
 <div class="flex items-start gap-3">
 	<div class="flex-1">
-		<Label>Highlight value changes</Label>
-		<p class="text-xs text-muted-foreground">Flash an amber glow on a container's stat cell when its value changes. The numbers keep updating either way - this only controls the highlight animation.</p>
+		<Label>高亮数值变动</Label>
+		<p class="text-xs text-muted-foreground">当容器统计单元格内数值发生变化时闪烁琥珀色光晕。无论该项是否开启，数字都会持续更新；此选项仅控制高亮动画。</p>
 	</div>
 	<TogglePill bind:checked={highlightChanges} />
 </div>
@@ -68,8 +68,8 @@
 <div class="border-t pt-4 mt-2 space-y-3">
 	<div class="flex items-start gap-3">
 		<div class="flex-1">
-			<Label>Disk space warnings</Label>
-			<p class="text-xs text-muted-foreground">Send notifications when Docker disk usage exceeds the threshold</p>
+			<Label>磁盘空间警告</Label>
+			<p class="text-xs text-muted-foreground">当 Docker 磁盘使用率超过阈值时发送通知</p>
 		</div>
 		<TogglePill bind:checked={diskWarningEnabled} />
 	</div>
@@ -85,10 +85,10 @@
 							{:else}
 								<Percent class="w-3.5 h-3.5" />
 							{/if}
-							<span>Percentage</span>
+							<span>百分比</span>
 						{:else}
 							<HardDrive class="w-3.5 h-3.5" />
-							<span>Absolute (GB)</span>
+							<span>绝对值 (GB)</span>
 						{/if}
 					</div>
 				</Select.Trigger>
@@ -100,17 +100,17 @@
 						<div class="flex flex-col gap-0.5">
 							<div class="flex items-center gap-2">
 								<Percent class="w-3.5 h-3.5" />
-								Percentage
+								百分比
 							</div>
 							{#if percentageDead}
-								<span class="text-xs text-muted-foreground">does not work on this host</span>
+								<span class="text-xs text-muted-foreground">在此主机上无法生效</span>
 							{/if}
 						</div>
 					</Select.Item>
 					<Select.Item value="absolute">
 						<div class="flex items-center gap-2">
 							<HardDrive class="w-3.5 h-3.5" />
-							Absolute (GB)
+							绝对值 (GB)
 						</div>
 					</Select.Item>
 				</Select.Content>
@@ -149,7 +149,7 @@
 						class="mt-1 underline underline-offset-2 text-muted-foreground hover:text-foreground"
 						onclick={() => (diskWarningMode = 'absolute')}
 					>
-						Switch to Absolute (GB)
+						切换至绝对值 (GB)
 					</button>
 				</div>
 			</div>

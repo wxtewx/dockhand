@@ -30,19 +30,19 @@ export function moveStackFilePathCrossDevice(
 ): void {
 	try {
 		rename(sourcePath, destPath);
-		console.log(`[Stack] Moved ${label}: ${sourcePath} -> ${destPath}`);
+		console.log(`[堆栈] 已移动 ${label}: ${sourcePath} -> ${destPath}`);
 	} catch (renameError: any) {
 		if (renameError.code !== 'EXDEV') {
-			console.warn(`[Stack] Failed to move ${label}: ${renameError.message}`);
+			console.warn(`[堆栈] 移动 ${label} 失败: ${renameError.message}`);
 			return;
 		}
 
 		try {
 			writeFileSync(destPath, readFileSync(sourcePath));
 			unlinkSync(sourcePath);
-			console.log(`[Stack] Copied ${label} (cross-fs): ${sourcePath} -> ${destPath}`);
+			console.log(`[堆栈] 已复制 ${label} (跨文件系统): ${sourcePath} -> ${destPath}`);
 		} catch (error: any) {
-			console.warn(`[Stack] Failed to copy ${label}: ${error.message}`);
+			console.warn(`[堆栈] 复制 ${label} 失败: ${error.message}`);
 		}
 	}
 }

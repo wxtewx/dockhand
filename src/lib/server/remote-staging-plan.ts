@@ -31,12 +31,12 @@ export function planRemoteStaging(input: {
 	composeContent: string;
 	hasStackFiles: boolean;
 }): RemoteStagingPlan {
-	if (input.operation !== 'up') return { stage: false, reason: `operation ${input.operation} does not stage` };
-	if (!input.hasStackFiles) return { stage: false, reason: 'no stack files to stage' };
+	if (input.operation !== 'up') return { stage: false, reason: `操作 ${input.operation} 不支持暂存` };
+	if (!input.hasStackFiles) return { stage: false, reason: '没有堆栈文件可供暂存' };
 	const base = typeof input.remoteStacksDir === 'string' ? normalizeBaseDir(input.remoteStacksDir) : '';
-	if (!base) return { stage: false, reason: 'no remote_stacks_dir configured on the env' };
+	if (!base) return { stage: false, reason: '该环境未配置 remote_stacks_dir' };
 	// SAME formula the backup resolver reads from (stackDirIn) - deploy COPIES here, backup READS here.
-	return { stage: true, hostDir: stackDirIn(base, input.stackName), reason: 'direct env with remote_stacks_dir' };
+	return { stage: true, hostDir: stackDirIn(base, input.stackName), reason: '带有 remote_stacks_dir 的直连环境' };
 }
 
 export interface BindRewriteResult {
