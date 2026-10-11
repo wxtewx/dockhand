@@ -4,7 +4,7 @@
 
 import {
 	listImages,
-	pullImage,
+	pullInternalImage,
 	createVolume,
 	listVolumes,
 	removeVolume,
@@ -140,13 +140,15 @@ export function getScannerStats(): { inProgress: number; locked: number } {
 	return { inProgress: inProgressScans.size, locked: scannerLocks.size };
 }
 
-// Default CLI arguments for scanners (image name is substituted for {image})
-export const DEFAULT_GRYPE_ARGS = '-o json -v {image}';
-export const DEFAULT_TRIVY_ARGS = 'image --format json {image}';
-
 // Pinned scanner images — avoid :latest after the March 2026 Trivy supply chain attack
-import { DEFAULT_GRYPE_IMAGE, DEFAULT_TRIVY_IMAGE } from '$lib/utils/scanner-images';
-// Re-exported because existing importers take them from here.
+import {
+	DEFAULT_GRYPE_IMAGE,
+	DEFAULT_TRIVY_IMAGE,
+	DEFAULT_GRYPE_ARGS,
+	DEFAULT_TRIVY_ARGS
+} from '$lib/utils/scanner-images';
+// The images are re-exported because docker.ts imports them from here; the args
+// have no such consumer, so they stay where they are defined.
 export { DEFAULT_GRYPE_IMAGE, DEFAULT_TRIVY_IMAGE };
 
 export interface VulnerabilitySeverity {
@@ -368,7 +370,7 @@ async function ensureScannerImage(
 	});
 
 	try {
-		await pullImage(scannerImage, undefined, envId);
+		await pullInternalImage(scannerImage, envId);
 		return true;
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);

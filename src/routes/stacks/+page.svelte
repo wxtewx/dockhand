@@ -3,6 +3,7 @@
 </svelte:head>
 
 <script lang="ts">
+	import { matchesStackFilter } from '$lib/utils/grid-filters';
 	import { onMount, onDestroy } from 'svelte';
 	import { goto, afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
@@ -18,6 +19,7 @@
 	import { formatPorts } from '$lib/utils/port-format';
 	import { formatUptime } from '$lib/utils/container-status';
 	import { parseCustomUrl } from '$lib/utils/custom-url';
+	import { containerDisplayName } from '$lib/utils/container-display-name';
 	import { extractTraefikUrls } from '$lib/utils/traefik-urls';
 	import { resolveChangelogUrl } from '$lib/utils/changelog-url';
 	import { extractPangolinUrls } from '$lib/utils/pangolin-urls';
@@ -38,6 +40,7 @@
 	import BatchOperationModal from '$lib/components/BatchOperationModal.svelte';
 	import type { ComposeStackInfo, ContainerStats, StackContainer } from '$lib/types';
 	import { showsManagementActions } from '$lib/utils/stack-actions';
+	import { sumStackStats, type StackStats } from '$lib/utils/stack-stats';
 	import StackModal from './StackModal.svelte';
 	import DeleteStackModal from './DeleteStackModal.svelte';
 	import ComposeOutputModal from './ComposeOutputModal.svelte';
@@ -460,49 +463,8 @@
 	}
 
 	// Aggregate stats for a stack (sum of all running containers)
-	interface StackStats {
-		cpuPercent: number;
-		memoryUsage: number;
-		memoryLimit: number;
-		networkRx: number;
-		networkTx: number;
-		blockRead: number;
-		blockWrite: number;
-		runningCount: number;
-	}
-
 	function getStackStats(stack: ComposeStackInfo): StackStats | null {
-		if (!stack.containerDetails || stack.containerDetails.length === 0) return null;
-
-		let cpuPercent = 0;
-		let memoryUsage = 0;
-		let memoryLimit = 0;
-		let networkRx = 0;
-		let networkTx = 0;
-		let blockRead = 0;
-		let blockWrite = 0;
-		let runningCount = 0;
-
-		for (const container of stack.containerDetails) {
-			// Only aggregate stats from running containers
-			if (container.state !== 'running') continue;
-
-			const stats = containerStats.get(container.id);
-			if (stats) {
-				cpuPercent += stats.cpuPercent;
-				memoryUsage += stats.memoryUsage;
-				memoryLimit = Math.max(memoryLimit, stats.memoryLimit);
-				networkRx += stats.networkRx;
-				networkTx += stats.networkTx;
-				blockRead += stats.blockRead;
-				blockWrite += stats.blockWrite;
-				runningCount++;
-			}
-		}
-
-		if (runningCount === 0) return null;
-
-		return { cpuPercent, memoryUsage, memoryLimit, networkRx, networkTx, blockRead, blockWrite, runningCount };
+		return sumStackStats(stack.containerDetails ?? [], (id) => containerStats.get(id));
 	}
 
 	// Search and sort state - initialize from URL for persistence across navigation
@@ -524,6 +486,16 @@
 		{ value: 'stopped', label: 'Stopped', icon: Square, color: 'text-rose-500' },
 		{ value: 'created', label: 'Created', icon: CircleDashed, color: 'text-slate-500' },
 		{ value: 'not deployed', label: 'Not deployed', icon: Rocket, color: 'text-violet-500' }
+	];
+
+	// Health rides the status filter as synthetic 'health:*' entries rather than a
+	// second dropdown. Always offered, unlike update-available: the question "is
+	// anything unhealthy" is asked precisely when the answer is no.
+	const filterOptions = [
+		...stackStatusTypes,
+		{ value: 'health:unhealthy', label: 'Unhealthy', icon: HeartOff, color: 'text-red-500', colorLabel: true },
+		{ value: 'health:starting', label: 'Starting up', icon: Heart, color: 'text-amber-500' },
+		{ value: 'health:healthy', label: 'Healthy', icon: HeartPulse, color: 'text-emerald-500' }
 	];
 
 	function getStackStatusIcon(status: string) {
@@ -787,7 +759,7 @@
 
 		// Filter by status (uses display status so git "created" matches "not deployed")
 		if (statusFilter.length > 0) {
-			result = result.filter(stack => statusFilter.includes(getDisplayStatus(stack).toLowerCase()));
+			result = result.filter(stack => matchesStackFilter(stack, statusFilter, getDisplayStatus(stack)));
 		}
 
 		// Filter by user-defined tags.
@@ -1025,12 +997,16 @@
 	// True when any stack container shows an update-available (amber) or
 	// check-failed (red) indicator — gates the "dismiss indicators" button.
 	const hasUpdateIndicators = $derived(
-		stacks.some((s) => s.updatesAvailable || (s.newerVersionCount ?? 0) > 0) ||
+		stacks.some((s) => s.updatesAvailable || (s.newerVersionCount ?? 0) > 0 || (s.coolingDownCount ?? 0) > 0) ||
 			failedUpdateCheckIds.size > 0
 	);
 	// Counts for the compact dismiss: stacks with a digest update, and total containers
 	// with a newer version tag - each shown with its icon, mirroring the containers page.
 	const stackDigestCount = $derived(stacks.filter((s) => s.updatesAvailable).length);
+	// Containers waiting out the minimum image age, across every stack.
+	const stackCoolingDownCount = $derived(
+		stacks.reduce((sum, s) => sum + (s.coolingDownCount ?? 0), 0)
+	);
 	const stackNewerVersionCount = $derived(
 		stacks.reduce((sum, s) => sum + (s.newerVersionCount ?? 0), 0)
 	);
@@ -1753,10 +1729,10 @@
 			<SearchInput bind:value={searchInput} placeholder="Search stacks..." class="h-8 w-48 text-sm" />
 			<MultiSelectFilter
 				bind:value={statusFilter}
-				options={stackStatusTypes}
+				options={filterOptions}
 				placeholder="All statuses"
 				pluralLabel="statuses"
-				width="w-44"
+				width="w-48"
 				defaultIcon={Layers}
 			/>
 			<TagFilter tags={filterTags} bind:selected={tagFilter} bind:mode={tagFilterMode} bind:groupBy={groupByTag} bind:showTags={showTags} bind:showBands={showBands} bind:inlineEditing={inlineTagEditing} bind:settingsExpanded={tagSettingsExpanded} />
@@ -1780,6 +1756,7 @@
 				show={hasUpdateIndicators}
 				digestCount={stackDigestCount}
 				newerVersionCount={stackNewerVersionCount}
+				coolingDownCount={stackCoolingDownCount}
 				onDismiss={dismissStackUpdates}
 			/>
 			<Button
@@ -2090,6 +2067,17 @@
 							</Tooltip.Content>
 						</Tooltip.Root>
 					{/if}
+					{#if (stack.coolingDownCount ?? 0) > 0}
+						<Tooltip.Root>
+							<Tooltip.Trigger class="inline-flex items-center gap-0.5 self-center shrink-0 text-muted-foreground">
+								<Clock class="w-3.5 h-3.5" />
+								<span class="text-2xs font-medium leading-none">{stack.coolingDownCount}</span>
+							</Tooltip.Trigger>
+							<Tooltip.Content>
+								{stack.coolingDownCount} container{(stack.coolingDownCount ?? 0) > 1 ? 's are' : ' is'} waiting out the minimum image age.
+							</Tooltip.Content>
+						</Tooltip.Root>
+					{/if}
 					{#if showTags}<TagChips tags={tagsFor(stack)} />{/if}
 					{#if inlineTagEditing && $canAccess('stacks', 'edit')}
 						<span onclick={(e) => e.stopPropagation()} role="presentation">
@@ -2305,9 +2293,25 @@
 				{:else if column.id === 'status'}
 					{@const displayStatus = getDisplayStatus(stack)}
 					{@const StatusIcon = getStackStatusIcon(displayStatus)}
-					<span class={getStatusClasses(displayStatus)}>
-						<StatusIcon class="w-3 h-3" />
-						{displayStatus}
+					{@const stackHealth = stack.health}
+					<span class="inline-flex items-center gap-1.5 min-w-0 max-w-full">
+						<span class={getStatusClasses(displayStatus)}>
+							<StatusIcon class="w-3 h-3" />
+							{displayStatus}
+						</span>
+						{#if stackHealth === 'unhealthy'}
+							<span class="inline-flex shrink-0" title="One or more containers are unhealthy">
+								<HeartOff class="w-3.5 h-3.5 text-red-500" />
+							</span>
+						{:else if stackHealth === 'starting'}
+							<span class="inline-flex shrink-0" title="A healthcheck has not settled yet">
+								<Heart class="w-3.5 h-3.5 text-amber-500" />
+							</span>
+						{:else if stackHealth === 'healthy'}
+							<span class="inline-flex shrink-0" title="All checked containers are healthy">
+								<HeartPulse class="w-3.5 h-3.5 text-emerald-500" />
+							</span>
+						{/if}
 					</span>
 				{:else if column.id === 'actions'}
 					<div class="relative flex gap-1 justify-end">
@@ -2536,7 +2540,7 @@
 										{:else}
 											<Box class="w-4 h-4 shrink-0 {container.state === 'running' ? 'text-emerald-500' : 'text-muted-foreground'}" />
 										{/if}
-										<span class="font-medium truncate" title={container.name}>{container.service}</span>
+										<span class="font-medium truncate" title={container.name}>{containerDisplayName({ name: container.service || container.name, labels: container.labels })}</span>
 										{#if container.updateAvailable && $appSettings.highlightUpdates}
 											<!-- Update arrow + changelog link read as one pair — keep them tight. -->
 											<span class="inline-flex items-center gap-0.5 shrink-0">

@@ -23,6 +23,7 @@
 		ShieldCheck,
 		Activity,
 		Bell,
+		FileText,
 		Download,
 		Play,
 		Square,
@@ -92,6 +93,7 @@
 	import EventTypesEditor from './EventTypesEditor.svelte';
 	import UpdatesTab from './tabs/UpdatesTab.svelte';
 	import ActivityTab from './tabs/ActivityTab.svelte';
+	import ReportsTab from './tabs/ReportsTab.svelte';
 
 	// Scanner options for ToggleGroup
 	const scannerOptions = [
@@ -552,9 +554,25 @@
 	}
 
 	// Update check settings state
+	// Only an administrator configures the scheduled report: the mail leaves the
+	// installation unattended, carrying the full inventory and its vulnerabilities.
+	const isAdmin = $derived($authStore.user?.isAdmin === true || $authStore.authEnabled === false);
+	const tabCount = $derived(($page.data.backupsEnabled ? 6 : 5) + (isAdmin ? 1 : 0));
+
+	// Scheduled state report (admin only; the mail leaves the installation unattended)
+	let reportLoading = $state(false);
+	let reportEnabled = $state(false);
+	let reportCron = $state('0 6 1 * *'); // Default: 06:00 on the 1st
+	let reportFormat = $state<'pdf' | 'csv'>('pdf');
+	let reportNotificationId = $state<number | null>(null);
+	let smtpChannels = $state<Array<{ id: number; name: string }>>([]);
+
 	let updateCheckEnabled = $state(false);
 	let updateCheckCron = $state('0 4 * * *'); // Default: 4 AM daily
 	let updateCheckAutoUpdate = $state(false);
+	let minimumReleaseAgeHours = $state(0);
+	let minimumReleaseAgeOverridden = $state(false);
+	let minimumReleaseAgeOverride = $state(false);
 	let updateCheckVulnerabilityCriteria = $state<VulnerabilityCriteria>('never');
 	let updateCheckLoading = $state(false);
 
@@ -637,6 +655,7 @@
 			loadScannerSettings(environment.id);
 			loadEnvNotifications(environment.id);
 			loadUpdateCheckSettings(environment.id);
+			if (isAdmin) loadReportSettings(environment.id);
 			loadImagePruneSettings(environment.id);
 			loadTimezone(environment.id);
 			loadDiskWarningSettings(environment.id);
@@ -690,12 +709,19 @@
 			updateCheckEnabled = false;
 			updateCheckCron = '0 4 * * *';
 			updateCheckAutoUpdate = false;
+			minimumReleaseAgeHours = 0;
+			minimumReleaseAgeOverridden = false;
+			minimumReleaseAgeOverride = false;
 			// Reset image prune settings
 			imagePruneEnabled = false;
 			imagePruneCron = '0 3 * * 0';
 			imagePruneMode = 'dangling';
 			imagePruneLastPruned = undefined;
 			imagePruneLastResult = undefined;
+			// Reset the scheduled report; the tab is live while adding, so it needs its
+			// channels even though there is no environment id yet.
+			resetReportSettings();
+			if (isAdmin) loadSmtpChannels();
 			// Load default timezone from global settings
 			loadDefaultTimezone();
 		}
@@ -830,6 +856,10 @@
 
 	// === Environment CRUD ===
 	async function createEnvironment() {
+		if (minimumReleaseAgeOverride && (!Number.isInteger(minimumReleaseAgeHours) || minimumReleaseAgeHours < 0 || minimumReleaseAgeHours > 720)) {
+			formError = 'Minimum image age must be a whole number from 0 to 720 hours';
+			return;
+		}
 		// Validation based on connection type
 		formErrors = {};
 		let hasErrors = false;
@@ -926,9 +956,21 @@
 						})
 					});
 				}
-				// Save update check settings if enabled
-				if (updateCheckEnabled && newEnv?.id) {
+				// Save update check settings and the optional release-age override
+				if (newEnv?.id) {
 					await saveUpdateCheckSettings(newEnv.id);
+				}
+				// The Reports tab is live while adding, so its schedule has to be saved here
+				// too. The environment itself is created either way, so a rejected schedule
+				// is reported rather than aborting; saveReportSettings has already shown the
+				// reason, and this says what it cost.
+				if (newEnv?.id && isAdmin) {
+					const reportSaved = await saveReportSettings(newEnv.id);
+					if (!reportSaved) {
+						toast.warning(
+							`Environment "${formName}" was created, but its scheduled report was not saved`
+						);
+					}
 				}
 				// Save image prune settings if enabled
 				if (imagePruneEnabled && newEnv?.id) {
@@ -947,7 +989,7 @@
 				formError = data.error || 'Failed to create environment';
 			}
 		} catch (error) {
-			formError = 'Failed to create environment';
+			formError = error instanceof Error ? error.message : 'Failed to create environment';
 		} finally {
 			formSaving = false;
 		}
@@ -955,6 +997,10 @@
 
 	async function updateEnvironment() {
 		if (!environment) return;
+		if (minimumReleaseAgeOverride && (!Number.isInteger(minimumReleaseAgeHours) || minimumReleaseAgeHours < 0 || minimumReleaseAgeHours > 720)) {
+			formError = 'Minimum image age must be a whole number from 0 to 720 hours';
+			return;
+		}
 
 		formErrors = {};
 		let hasErrors = false;
@@ -1072,11 +1118,14 @@
 			if (response.ok) {
 				await saveScannerSettings(environment.id);
 				await saveUpdateCheckSettings(environment.id);
+				const reportSaved = isAdmin ? await saveReportSettings(environment.id) : true;
 				await saveImagePruneSettings(environment.id);
 				await saveTimezone(environment.id);
 				await saveDiskWarningSettings(environment.id);
 				if (usesStackPath(formConnectionType)) await saveRemoteStacksDir(environment.id);
-				toast.success(`Updated environment: ${formName}`);
+				// The environment itself saved; only claim so when the report schedule did too,
+				// otherwise the rejection toast is contradicted by a success beside it.
+				if (reportSaved) toast.success(`Updated environment: ${formName}`);
 				onSaved();
 				onClose();
 			} else {
@@ -1084,7 +1133,7 @@
 				formError = data.error || 'Failed to update environment';
 			}
 		} catch (error) {
-			formError = 'Failed to update environment';
+			formError = error instanceof Error ? error.message : 'Failed to update environment';
 		} finally {
 			formSaving = false;
 		}
@@ -1259,6 +1308,92 @@
 		}
 	}
 
+	// === Scheduled report (admin only) ===
+	/** The channels the report can be sent to. Needed while adding too, where there is no envId yet. */
+	async function loadSmtpChannels() {
+		smtpChannels = [];
+		try {
+			const response = await fetch('/api/notifications');
+			if (!response.ok) return;
+			const all = await response.json();
+			const rows = Array.isArray(all) ? all : (all.settings ?? all.notifications ?? []);
+			// Only SMTP: no other channel type can carry the attachment.
+			smtpChannels = rows
+				.filter((c: { type?: string; enabled?: boolean }) => c.type === 'smtp' && c.enabled !== false)
+				.map((c: { id: number; name: string }) => ({ id: c.id, name: c.name }));
+		} catch (error) {
+			console.error('Failed to load notification channels:', error);
+		}
+	}
+
+	/** The schedule's defaults, also what a failed load falls back to. */
+	function resetReportSettings() {
+		reportEnabled = false;
+		reportCron = '0 6 1 * *';
+		reportFormat = 'pdf';
+		reportNotificationId = null;
+	}
+
+	async function loadReportSettings(envId: number) {
+		reportLoading = true;
+		// Reset first: the modal is reused across environments, so a failed load must not
+		// leave the previous environment's schedule on screen, where saving would apply it
+		// to this one.
+		resetReportSettings();
+		try {
+			const [settingsRes] = await Promise.all([
+				fetch(`/api/environments/${envId}/report`),
+				loadSmtpChannels()
+			]);
+			if (settingsRes.ok) {
+				const data = await settingsRes.json();
+				reportEnabled = data.settings?.enabled ?? false;
+				reportCron = data.settings?.cron || '0 6 1 * *';
+				reportFormat = data.settings?.format === 'csv' ? 'csv' : 'pdf';
+				reportNotificationId = data.settings?.notificationId ?? null;
+				// A channel that has since been disabled, deleted or switched away from SMTP
+				// is no longer offered, and the server refuses a save that still names it.
+				// Clear it so the form shows the choice that has to be made.
+				if (
+					reportNotificationId !== null &&
+					!smtpChannels.some((c) => c.id === reportNotificationId)
+				) {
+					reportNotificationId = null;
+				}
+			}
+		} catch (error) {
+			console.error('Failed to load report settings:', error);
+		} finally {
+			reportLoading = false;
+		}
+	}
+
+	/** Returns false when the schedule was rejected, so the caller does not claim success. */
+	async function saveReportSettings(envId: number): Promise<boolean> {
+		try {
+			const response = await fetch(`/api/environments/${envId}/report`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					enabled: reportEnabled,
+					cron: reportCron,
+					format: reportFormat,
+					notificationId: reportNotificationId
+				})
+			});
+			if (!response.ok) {
+				const body = await response.json().catch(() => null);
+				toast.error(body?.error || 'Failed to save the report schedule');
+				return false;
+			}
+			return true;
+		} catch (error) {
+			console.error('Failed to save report settings:', error);
+			toast.error('Failed to save the report schedule');
+			return false;
+		}
+	}
+
 	// === Update Check Settings Functions ===
 	async function loadUpdateCheckSettings(envId: number) {
 		updateCheckLoading = true;
@@ -1271,12 +1406,18 @@
 					updateCheckCron = data.settings.cron || '0 4 * * *';
 					updateCheckAutoUpdate = data.settings.autoUpdate ?? false;
 					updateCheckVulnerabilityCriteria = data.settings.vulnerabilityCriteria || 'never';
+					minimumReleaseAgeHours = data.settings.minimumReleaseAgeHours ?? 0;
+					minimumReleaseAgeOverridden = data.settings.minimumReleaseAgeOverridden ?? false;
+					minimumReleaseAgeOverride = data.settings.minimumReleaseAgeOverride ?? false;
 				} else {
 					// No settings found - use defaults
 					updateCheckEnabled = false;
 					updateCheckCron = '0 4 * * *';
 					updateCheckAutoUpdate = false;
 					updateCheckVulnerabilityCriteria = 'never';
+					minimumReleaseAgeHours = 0;
+					minimumReleaseAgeOverridden = false;
+					minimumReleaseAgeOverride = false;
 				}
 			}
 		} catch (error) {
@@ -1287,19 +1428,21 @@
 	}
 
 	async function saveUpdateCheckSettings(envId: number) {
-		try {
-			await fetch(`/api/environments/${envId}/update-check`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					enabled: updateCheckEnabled,
-					cron: updateCheckCron,
-					autoUpdate: updateCheckAutoUpdate,
-					vulnerabilityCriteria: updateCheckVulnerabilityCriteria
-				})
-			});
-		} catch (error) {
-			console.error('Failed to save update check settings:', error);
+		const response = await fetch(`/api/environments/${envId}/update-check`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				enabled: updateCheckEnabled,
+				cron: updateCheckCron,
+				autoUpdate: updateCheckAutoUpdate,
+				vulnerabilityCriteria: updateCheckVulnerabilityCriteria,
+				minimumReleaseAgeHours,
+				minimumReleaseAgeOverride
+			})
+		});
+		if (!response.ok) {
+			const data = await response.json().catch(() => ({}));
+			throw new Error(data.error || 'Failed to save update check settings');
 		}
 	}
 
@@ -1711,7 +1854,7 @@
 		{/if}
 
 		<Tabs.Root bind:value={modalTab} class="flex-1 flex flex-col overflow-hidden mt-4">
-			<Tabs.List class="flex-shrink-0 mb-0 w-full grid grid-cols-6">
+			<Tabs.List class="flex-shrink-0 mb-0 w-full grid" style="grid-template-columns: repeat({tabCount}, minmax(0, 1fr));">
 				<Tabs.Trigger value="general" class="flex items-center justify-center gap-1.5">
 					<Globe class="w-3.5 h-3.5" />
 					General
@@ -1739,6 +1882,12 @@
 					<Bell class="w-3.5 h-3.5" />
 					Notifications
 				</Tabs.Trigger>
+				{#if isAdmin}
+					<Tabs.Trigger value="reports" class="flex items-center justify-center gap-1.5">
+						<FileText class="w-3.5 h-3.5" />
+						Reports
+					</Tabs.Trigger>
+				{/if}
 			</Tabs.List>
 
 			<div class="overflow-y-auto py-4 h-[520px] [scrollbar-gutter:stable] pr-5">
@@ -2680,6 +2829,9 @@
 						bind:updateCheckCron={updateCheckCron}
 						bind:updateCheckAutoUpdate={updateCheckAutoUpdate}
 						bind:updateCheckVulnerabilityCriteria={updateCheckVulnerabilityCriteria}
+						bind:minimumReleaseAgeHours={minimumReleaseAgeHours}
+						minimumReleaseAgeOverridden={minimumReleaseAgeOverridden}
+						bind:minimumReleaseAgeOverride={minimumReleaseAgeOverride}
 						scannerEnabled={scannerEnabled}
 						imagePruneLoading={imagePruneLoading}
 						bind:imagePruneEnabled={imagePruneEnabled}
@@ -3160,6 +3312,23 @@
 						{/if}
 					{/if}
 				</Tabs.Content>
+
+				<!-- Scheduled state report. Admin only - the mail carries the full inventory
+				     and its vulnerabilities out of the installation, unattended. -->
+				{#if isAdmin}
+					<Tabs.Content value="reports" class="mt-0 h-full">
+						<ReportsTab
+							environmentId={environment?.id ?? null}
+							{reportLoading}
+							bind:reportEnabled
+							bind:reportCron
+							bind:reportFormat
+							bind:reportNotificationId
+							{smtpChannels}
+							licensed={$licenseStore.licenseType === 'smb' || $licenseStore.licenseType === 'enterprise'}
+						/>
+					</Tabs.Content>
+				{/if}
 			</div>
 		</Tabs.Root>
 

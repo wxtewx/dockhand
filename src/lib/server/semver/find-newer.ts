@@ -7,6 +7,7 @@
  * compose, which we don't own. We just tell them "a newer version is out".
  */
 
+import { applyTagFilter, type TagFilter } from './tag-filter-labels';
 import {
 	parseTag,
 	prefixMatches,
@@ -31,6 +32,12 @@ export interface FindNewerOptions {
 	 * image with a non-standard tag scheme can still be compared. Absent = default.
 	 */
 	versionPattern?: RegExp | null;
+	/**
+	 * The container's own tag filters, from its labels. Applied BEFORE the version
+	 * comparison, and only ever narrowing: a label names an exception the global
+	 * settings cannot express, it does not widen what the instance offers.
+	 */
+	tagFilter?: TagFilter;
 }
 
 export interface NewerVersion {
@@ -65,6 +72,27 @@ export function isRedundantNewerVersion(
 	if (local.size === 0) return false;
 	if (candidateDigest && local.has(candidateDigest)) return true;
 	return candidateChildDigests.some((d) => !!d && local.has(d));
+}
+
+/**
+ * A candidate is STALE when its image was built before the one already running.
+ * A version tag names what a maintainer called a build, not when it was made, so a
+ * repository that still carries old tags whose names sort high offers them as
+ * upgrades: `lidarr:8.1.2135` is really `0.8.1.2135` from 2021, above a running
+ * `3.1.0` from 2026 on name alone.
+ *
+ * Returns false whenever either timestamp is missing or unparseable, so a registry
+ * that does not answer can never hide a real update.
+ */
+export function isStaleCandidate(
+	candidateCreatedAt: string | null | undefined,
+	currentCreatedAt: string | null | undefined
+): boolean {
+	if (!candidateCreatedAt || !currentCreatedAt) return false;
+	const candidate = Date.parse(candidateCreatedAt);
+	const current = Date.parse(currentCreatedAt);
+	if (!Number.isFinite(candidate) || !Number.isFinite(current)) return false;
+	return candidate < current;
 }
 
 /** Which segment first differs decides the bump: [0]=major, [1]=minor, else patch. */
@@ -104,7 +132,11 @@ export function findNewerVersionTag(
 	const maxRank = BUMP_RANK[maxBump];
 	const currentIsPrerelease = isPrerelease(current);
 
-	const candidates = allTags
+	// The container's own filters run first, so everything below compares only the
+	// tags it is willing to be offered.
+	const pool = options.tagFilter ? applyTagFilter(allTags, options.tagFilter) : allTags;
+
+	const candidates = pool
 		.map((tag) => ({ tag, parsed: parseTag(tag, versionPattern) }))
 		.filter((c): c is { tag: string; parsed: ParsedTag } => c.parsed !== null)
 		.filter((c) => prefixMatches(c.parsed.prefix, current.prefix))

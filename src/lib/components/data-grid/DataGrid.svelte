@@ -12,6 +12,7 @@
 	import type { DataGridSortState, DataGridRowState } from './types';
 	import { setDataGridContext } from './context';
 	import { groupData, type GroupDescriptor, type DataGridGroup } from './grouping-core';
+	import { m } from '$lib/paraglide/messages.js';
 
 	// Props
 	interface Props {
@@ -116,7 +117,7 @@
 		onVisibleRangeChange,
 		groupBy,
 		collapsedGroups = $bindable(new Set<string>()),
-		ungroupedLabel = 'Untagged',
+		ungroupedLabel = undefined,
 		showGroupBands = true,
 		groupHeaderLabel,
 		onRowClick,
@@ -477,7 +478,7 @@
 	// Grouping (standard mode only). Empty when `groupBy` is not supplied, so the
 	// ungrouped body is chosen and nothing here runs.
 	const groups = $derived.by<DataGridGroup<T>[]>(() =>
-		groupBy ? groupData(data, groupBy, ungroupedLabel) : []
+		groupBy ? groupData(data, groupBy, ungroupedLabel ?? m.grid_untagged()) : []
 	);
 	function toggleGroup(key: string) {
 		const collapsed = collapsedGroups.has(key);
@@ -752,7 +753,7 @@
 					<th class="text-right py-2 px-2 font-medium actions-col" style="width: {getDisplayWidth(colId)}px">
 						{#if colId === 'actions'}
 							<div class="flex items-center justify-end gap-1">
-								<span>Actions</span>
+								<span>{m.grid_actions()}</span>
 								<ColumnSettingsPopover {gridId} />
 							</div>
 						{/if}
@@ -805,7 +806,7 @@
 							type="button"
 							onclick={toggleSelectAll}
 							class="flex items-center justify-center transition-colors opacity-40 hover:opacity-100 cursor-pointer"
-							title={allSelected ? 'Deselect all' : 'Select all'}
+							title={allSelected ? m.grid_deselect_all() : m.grid_select_all()}
 						>
 							{#if allSelected}
 								<CheckSquare class="w-3.5 h-3.5 text-muted-foreground" />
@@ -830,9 +831,9 @@
 				{@const colConfig = columnConfigMap.get(colId)}
 				{#if colConfig}
 					<th
-						class="{colConfig.align === 'right' ? 'text-right' : colConfig.align === 'center' ? 'text-center' : 'text-left'} py-2 px-2 font-medium"
+						class="{colConfig.align === 'right' ? 'text-right' : colConfig.align === 'center' ? 'text-center' : 'text-left'} py-2 px-2 font-medium overflow-hidden"
 						style="width: {getDisplayWidth(colId)}px"
-						title={colConfig.hint || ''}
+						title={colConfig.hint || colConfig.label}
 					>
 						{#if headerCell}
 							{@render headerCell(colConfig, sortState)}
@@ -841,32 +842,32 @@
 							<button
 								type="button"
 								onclick={() => toggleSort(colId)}
-								class="flex items-center gap-1 hover:text-foreground transition-colors w-full {colConfig.align === 'right' ? 'justify-end' : colConfig.align === 'center' ? 'justify-center' : ''}"
+								class="flex items-center gap-1 hover:text-foreground transition-colors w-full min-w-0 {colConfig.align === 'right' ? 'justify-end' : colConfig.align === 'center' ? 'justify-center' : ''}"
 							>
-								{colConfig.label}
+								<span class="min-w-0 truncate">{colConfig.label}</span>
 								{#if colConfig.sortCycle}
 									{#if cycleActive}
 										<span class="text-xs font-semibold {ioMetricColor(sortState!.field)}">{ioMetricLabel(sortState!.field)}</span>
 										{#if sortState!.direction === 'asc'}
-											<ArrowUp class="w-3 h-3" />
+											<ArrowUp class="w-3 h-3 shrink-0" />
 										{:else}
-											<ArrowDown class="w-3 h-3" />
+											<ArrowDown class="w-3 h-3 shrink-0" />
 										{/if}
 									{:else}
-										<ArrowUpDown class="w-3 h-3 opacity-30" />
+										<ArrowUpDown class="w-3 h-3 opacity-30 shrink-0" />
 									{/if}
 								{:else if sortState?.field === getSortField(colId)}
 									{#if sortState.direction === 'asc'}
-										<ArrowUp class="w-3 h-3" />
+										<ArrowUp class="w-3 h-3 shrink-0" />
 									{:else}
-										<ArrowDown class="w-3 h-3" />
+										<ArrowDown class="w-3 h-3 shrink-0" />
 									{/if}
 								{:else}
-									<ArrowUpDown class="w-3 h-3 opacity-30" />
+									<ArrowUpDown class="w-3 h-3 opacity-30 shrink-0" />
 								{/if}
 							</button>
 						{:else}
-							{colConfig.label}
+							<span class="block truncate">{colConfig.label}</span>
 						{/if}
 
 						<!-- Resize handle -->
@@ -890,7 +891,7 @@
 				<th class="text-right py-2 px-2 font-medium actions-col" style="width: {getDisplayWidth(colId)}px">
 					{#if colId === 'actions'}
 						<div class="flex items-center justify-end gap-1">
-							<span>Actions</span>
+							<span>{m.grid_actions()}</span>
 							<ColumnSettingsPopover {gridId} />
 						</div>
 					{:else if headerCell}
@@ -956,7 +957,7 @@
 							toggleExpand(item[keyField]);
 						}}
 						class="flex items-center justify-center transition-colors cursor-pointer opacity-50 hover:opacity-100"
-						title={rowState.isExpanded ? 'Collapse' : 'Expand'}
+						title={rowState.isExpanded ? m.grid_collapse_row() : m.grid_expand_row()}
 					>
 						{#if rowState.isExpanded}
 							<ChevronDown class="w-4 h-4 text-muted-foreground" />

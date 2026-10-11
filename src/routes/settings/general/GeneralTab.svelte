@@ -21,7 +21,13 @@
 	import EditorThemeSelector from '$lib/components/EditorThemeSelector.svelte';
 	import ColoredActionsToggle from '$lib/components/ColoredActionsToggle.svelte';
 	import SemverCheckConfig from '$lib/components/SemverCheckConfig.svelte';
-	import { DEFAULT_GRYPE_IMAGE, DEFAULT_TRIVY_IMAGE, imageRepo } from '$lib/utils/scanner-images';
+	import {
+		DEFAULT_GRYPE_IMAGE,
+		DEFAULT_TRIVY_IMAGE,
+		DEFAULT_GRYPE_ARGS,
+		DEFAULT_TRIVY_ARGS,
+		imageRepo
+	} from '$lib/utils/scanner-images';
 	import { onMount } from 'svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 
@@ -380,12 +386,32 @@ services:
 		}
 	}
 
-	// Global newer-version-tag (semver) detection - one setting every update check
-	// (scheduled and manual) reads.
+	let releaseAgeHours = $state(0);
+	let releaseAgeOverridden = $state(false);
+	let releaseAgeSaving = $state(false);
+
+	async function saveReleaseAge() {
+		releaseAgeSaving = true;
+		try {
+			const res = await fetch('/api/settings/minimum-release-age', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ hours: releaseAgeHours })
+			});
+			const data = await res.json();
+			if (!res.ok) throw new Error(data.error || 'Failed to save minimum image age');
+			toast.success('Minimum image age updated');
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Failed to save minimum image age');
+		} finally { releaseAgeSaving = false; }
+	}
+
+	// Global newer-version-tag (semver) detection.
 	let semverEnabled = $state(false);
 	let semverMaxBump = $state<'patch' | 'minor' | 'major'>('major');
 	let semverMatchFlavor = $state(true);
 	let semverIncludePrerelease = $state(false);
+	let semverRejectOlderImages = $state(true);
 	let semverLoaded = $state(false);
 
 	// The global theme defaults (what a new user starts with). With auth on the theme
@@ -399,6 +425,14 @@ services:
 
 	onMount(async () => {
 		try {
+			const res = await fetch('/api/settings/minimum-release-age');
+			if (res.ok) {
+				const config = await res.json();
+				releaseAgeHours = config.hours;
+				releaseAgeOverridden = config.overridden;
+			}
+		} catch { /* keep default */ }
+		try {
 			const res = await fetch('/api/settings/semver');
 			if (res.ok) {
 				const c = await res.json();
@@ -406,6 +440,7 @@ services:
 				semverMaxBump = c.maxBump ?? 'major';
 				semverMatchFlavor = c.matchFlavor ?? true;
 				semverIncludePrerelease = c.includePrerelease ?? false;
+				semverRejectOlderImages = c.rejectOlderImages ?? true;
 			}
 			// A refusal means the values on screen are the built-in defaults, never the
 			// configuration, so the save effect stays disarmed rather than writing a
@@ -438,7 +473,8 @@ services:
 					enabled: semverEnabled,
 					maxBump: semverMaxBump,
 					matchFlavor: semverMatchFlavor,
-					includePrerelease: semverIncludePrerelease
+					includePrerelease: semverIncludePrerelease,
+					rejectOlderImages: semverRejectOlderImages
 				})
 			});
 		} catch {
@@ -1017,7 +1053,7 @@ services:
 							value={defaultGrypeArgs}
 							onblur={handleGrypeArgsBlur}
 							disabled={!$canAccess('settings', 'edit')}
-							placeholder={"-o json -v {image}"}
+							placeholder={DEFAULT_GRYPE_ARGS}
 						/>
 						<p class="text-xs text-muted-foreground">Use <code class="bg-muted px-1 rounded">{'{image}'}</code> as placeholder for the image name</p>
 					</div>
@@ -1028,7 +1064,7 @@ services:
 							value={defaultTrivyArgs}
 							onblur={handleTrivyArgsBlur}
 							disabled={!$canAccess('settings', 'edit')}
-							placeholder={"image --format json {image}"}
+							placeholder={DEFAULT_TRIVY_ARGS}
 						/>
 						<p class="text-xs text-muted-foreground">Use <code class="bg-muted px-1 rounded">{'{image}'}</code> as placeholder for the image name</p>
 					</div>
@@ -1108,6 +1144,42 @@ services:
 			<Card.Root>
 				<Card.Header>
 					<Card.Title class="text-sm font-medium flex items-center gap-2">
+						<Clock class="w-4 h-4" />
+						Minimum image age
+						<Tooltip.Provider delayDuration={100}>
+							<Tooltip.Root>
+								<Tooltip.Trigger>
+									<HelpCircle class="w-4 h-4 text-muted-foreground cursor-help" />
+								</Tooltip.Trigger>
+								<Tooltip.Portal>
+									<Tooltip.Content side="right" sideOffset={8} class="!w-96 space-y-2">
+										<p>The age comes from the image's creation time in the registry, which records the build rather than the publication. When the registry gives no usable time, Dockhand counts from when it first saw that digest.</p>
+										<p>An environment can override this value. Manual pulls warn and proceed; stack deployments, including scheduled Git ones, are exempt.</p>
+										<p>A newer image restarts the wait on itself, so a project publishing faster than this age never updates automatically.</p>
+									</Tooltip.Content>
+								</Tooltip.Portal>
+							</Tooltip.Root>
+						</Tooltip.Provider>
+					</Card.Title>
+					<Card.Description>
+						Hold automatic container updates until a new image has been out for a while.
+					</Card.Description>
+				</Card.Header>
+				<Card.Content class="flex items-end gap-3">
+					<div class="space-y-2 flex-1">
+						<Label for="minimum-release-age">Hours (0–720)</Label>
+						<Input id="minimum-release-age" type="number" min="0" max="720" step="1" bind:value={releaseAgeHours} disabled={releaseAgeOverridden || !$canAccess('settings', 'edit')} />
+					</div>
+					<Button onclick={saveReleaseAge} disabled={releaseAgeSaving || releaseAgeOverridden || !$canAccess('settings', 'edit')}>Save</Button>
+				</Card.Content>
+				{#if releaseAgeOverridden}
+					<p class="px-6 pb-4 text-xs text-muted-foreground">Set by MINIMUM_RELEASE_AGE_HOURS.</p>
+				{/if}
+			</Card.Root>
+
+			<Card.Root>
+				<Card.Header>
+					<Card.Title class="text-sm font-medium flex items-center gap-2">
 						<Tags class="w-4 h-4" />
 						Newer version tags
 					</Card.Title>
@@ -1123,6 +1195,7 @@ services:
 						bind:maxBump={semverMaxBump}
 						bind:matchFlavor={semverMatchFlavor}
 						bind:includePrerelease={semverIncludePrerelease}
+						bind:rejectOlderImages={semverRejectOlderImages}
 					/>
 				</Card.Content>
 			</Card.Root>

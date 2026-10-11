@@ -18,25 +18,35 @@ import { toWebReadableStream } from './node-readable-stream';
 import { buildImagePruneFilters } from './image-prune-core';
 import { demuxDockerStream } from './docker-demux-core';
 import { computeRequestTimeoutMs, isPrunePath } from './backups/request-timeout';
-import { helperWaitDeadline, helperExitFromState } from './helper-wait-core';
+import { helperWaitDeadline, helperExitFromState, helperFailureDetail, needsDaemonErrorLookup } from './helper-wait-core';
 import { cancelReaderOnAbort } from './reader-abort-core';
 import { configuredMacAddress, endpointWithoutGeneratedMac } from './endpoint-mac-core';
 import { rescopeForPrimarySwitch } from './primary-network-switch-core';
 import { mapContainerNetworks } from '$lib/utils/network-identity';
 import type { Environment } from './db';
 import { getSetting } from './db';
+import { releaseAgeAdvisory } from './release-age-advisory';
+import { portableImageReference, trackedImageLabels, trackedImageReference } from '../utils/tracked-image';
+import { getMinimumReleaseAgeConfig, imageReleaseAgeRemainingMs, imageReleaseAgeStatus, type ImageCreationMetadata } from './minimum-release-age';
+import { manualPullAgeWarning, verifiedImagePullPlan } from './minimum-release-age-core';
 import { getAdditionalVolumeBinds, dedupeVolumesForRecreate } from './mount-dedupe';
 import { resolveNanoCpusConflict, resolvePodmanUsernsMode } from './hostconfig-recreate';
 import { isUnknownNetworkKeyError, retryEndpointKey } from './podman-network-key';
 import { expectedEvents, EXPECTED_EVENT_TTL_MS } from './expected-events-core';
-import { decideRespawnOutcome, isExactNameMatch } from './systemd-recreate-core';
+import { decideRespawnOutcome, isExactNameMatch, isSystemdManagedUnit } from './systemd-recreate-core';
 // Import-light image parsing shared with the semver layer; re-exported below for callers.
 import { parseImageReference } from './registry/image-ref';
+import { fetchImageCreatedAt, imagePlatform } from './registry/image-age';
 export { parseImageReference } from './registry/image-ref';
-import { rebaseEnvOntoImage, rebaseLabelsOntoImage, rebaseCommand, describeEnvRebase, describeLabelRebase, type ImageEnvLabels } from './container-env-merge';
+import { rebaseEnvOntoImage, rebaseLabelsOntoImage, rebaseCommand, describeEnvRebase, describeLabelRebase, composeImageLabelForRecreate, composeImageLabelForm, COMPOSE_IMAGE_LABEL, type ImageEnvLabels } from './container-env-merge';
 import { encodeRegistryAuth, fetchRegistryToken, isSafeRegistryHost } from './registry-auth';
 import { describeRegistryFailure } from './registry-failure-core';
-import { resolveRegistryScheme, type StoredRegistryScheme } from './registry-scheme-core';
+import {
+	getRegistryBearerToken as registryBearerToken,
+	getRegistryManifestDigestDirectDetailed as manifestDigestDirect,
+	getRegistrySchemeForHost as registrySchemeForHost,
+	type RegistryPorts
+} from './registry/manifest-digest';
 import { classifyManifest, type ArtifactKind } from './semver/manifest-artifact';
 import { isSystemContainer, classifyEmptyDigestImage, localDigestIsIndexChild, indexChildDigests } from './scheduler/tasks/update-utils';
 import { deepDiff } from '../utils/diff.js';
@@ -106,6 +116,7 @@ export class DockerConnectionError extends Error {
  */
 export interface ContainerInspectResult {
 	Id: string;
+	Image: string;
 	Name: string;
 	RestartCount: number;
 	State: {
@@ -1162,7 +1173,7 @@ export async function listContainers(all = true, envId?: number | null): Promise
 		return {
 			id: container.Id,
 			name: container.Names[0]?.replace(/^\//, '') || 'unnamed',
-			image: container.Image,
+			image: trackedImageReference(container.Image, container.Labels),
 			imageId: container.ImageID || '',
 			state: container.State,
 			status: container.Status,
@@ -1911,12 +1922,18 @@ export async function createContainer(options: CreateContainerOptions, envId?: n
  * The unit's ExecStop removes the container and its Restart= policy respawns it from
  * `podman run --replace` on the CURRENT tag (the image already pulled), so a single stop
  * is the whole recreate. We then poll for the respawned container to come back under the
- * same name, RUNNING, with a new id, and return that id. If it never reaches running
+ * same name, RUNNING, with a new id, and return that id. Automatic updates also verify
+ * its image ID and attempt to restore the previous image if verification fails.
+ * If it never reaches running
  * (no Restart= policy, or a crash-loop on the new image), throw an actionable error
  * rather than the misleading rename failure - and never report a broken update as success.
  */
 async function recreateSystemdManagedContainer(
-	opts: { name: string; oldContainerId: string; wasRunning: boolean; unit: string },
+	opts: {
+		name: string; oldContainerId: string; wasRunning: boolean; unit: string;
+		verifiedImageId?: string;
+		rollback?: { imageId: string; repo: string; tag: string };
+	},
 	envId: number | null | undefined,
 	log?: (msg: string) => void
 ): Promise<{ Id: string }> {
@@ -1957,6 +1974,31 @@ async function recreateSystemdManagedContainer(
 			const outcome = decideRespawnOutcome(found, oldContainerId, Date.now() >= deadline);
 			if (!outcome.done) continue;
 			if (outcome.ok) {
+				if (opts.verifiedImageId) {
+					try {
+						const replacement = await inspectContainer(outcome.id, envId);
+						if (replacement.Image !== opts.verifiedImageId) {
+							throw new Error(`systemd unit ${unit} started ${name} with image ${replacement.Image}, instead of the approved image ${opts.verifiedImageId}`);
+						}
+					} catch (error) {
+						const reason = error instanceof Error ? error.message : String(error);
+						let recovery = 'Check the unit image and pull policy before retrying.';
+						if (opts.rollback) {
+							try {
+								log?.('Could not verify the systemd replacement; restoring the previous image...');
+								await tagImage(opts.rollback.imageId, opts.rollback.repo, opts.rollback.tag, envId);
+								await recreateSystemdManagedContainer({
+									name, oldContainerId: outcome.id, wasRunning: true, unit,
+									verifiedImageId: opts.rollback.imageId
+								}, envId, log);
+								recovery = 'The previous image was restored. Check the unit image and pull policy before retrying.';
+							} catch (rollbackError) {
+								recovery = `Rollback failed: ${rollbackError instanceof Error ? rollbackError.message : String(rollbackError)}. Check systemd unit ${unit} immediately.`;
+							}
+						}
+						throw new Error(`Could not verify the approved image for ${name}: ${reason}. ${recovery}`);
+					}
+				}
 				log?.(`systemd recreated ${name} (new container ${outcome.id.slice(0, 12)})`);
 				return { Id: outcome.id };
 			}
@@ -2027,7 +2069,9 @@ export async function recreateContainerFromInspect(
 	 * it cannot be re-fetched here. When omitted, the rebase falls back to a
 	 * best-effort inspect of the old image id and, failing that, verbatim.
 	 */
-	oldImageConfig?: ImageEnvLabels | null
+	oldImageConfig?: ImageEnvLabels | null,
+	verifiedImageId?: string,
+	verifiedImageReference?: string
 ): Promise<{ Id: string }> {
 	const config = inspectData.Config || {};
 	const hostConfig = inspectData.HostConfig || {};
@@ -2044,10 +2088,31 @@ export async function recreateContainerFromInspect(
 	// already-removed id ("Failed to rename old container"), and creating our own
 	// container would collide with systemd's respawn. So hand the recreate to systemd:
 	// stop, then wait for the unit to bring the container back on the new image.
-	const systemdUnit = config.Labels?.['PODMAN_SYSTEMD_UNIT'];
+	// Only a unit that actually owns the lifecycle; podman-compose sets the same label
+	// for a template it never installs, and that container recreates normally.
+	const labelUnit = config.Labels?.['PODMAN_SYSTEMD_UNIT'];
+	const systemdUnit = isSystemdManagedUnit(labelUnit, config.Labels) ? labelUnit : undefined;
+	if (verifiedImageId) {
+		// Validate before stopping anything.
+		trackedImageLabels({}, newImage, verifiedImageId, verifiedImageReference);
+	}
 	if (systemdUnit) {
+		let rollback: { imageId: string; repo: string; tag: string } | undefined;
+		if (verifiedImageId) {
+			// The unit uses a mutable tag. Detect an intervening pull before stopping
+			// the old container, then verify the actual replacement after respawn.
+			const selectedImage = await inspectImage(newImage, envId);
+			if (selectedImage.Id !== verifiedImageId) {
+				throw new Error(`Image ${newImage} changed before the systemd restart; update deferred, original container left running`);
+			}
+			const colon = newImage.lastIndexOf(':');
+			const hasTag = colon > newImage.lastIndexOf('/');
+			if (!newImage.includes('@') && /^sha256:[a-f0-9]{64}$/.test(inspectData.Image)) {
+				rollback = { imageId: inspectData.Image, repo: hasTag ? newImage.slice(0, colon) : newImage, tag: hasTag ? newImage.slice(colon + 1) : 'latest' };
+			}
+		}
 		return await recreateSystemdManagedContainer(
-			{ name, oldContainerId, wasRunning, unit: systemdUnit },
+			{ name, oldContainerId, wasRunning, unit: systemdUnit, verifiedImageId, rollback },
 			envId,
 			log
 		);
@@ -2143,7 +2208,7 @@ export async function recreateContainerFromInspect(
 	// 4. Build create config - pass Config and HostConfig directly from inspect
 	const createConfig: any = {
 		...config,
-		Image: newImage,
+		Image: verifiedImageId ?? newImage,
 		HostConfig: hostConfig
 	};
 
@@ -2170,7 +2235,7 @@ export async function recreateContainerFromInspect(
 				Entrypoint: (oldInspect as any)?.Config?.Entrypoint ?? null,
 			};
 		}
-		const newImg = await inspectImage(newImage, envId);
+		const newImg = await inspectImage(verifiedImageId ?? newImage, envId);
 		const oldEnv = oldImg?.Env || [];
 		const newEnv = (newImg as any)?.Config?.Env || [];
 		const oldLabels = oldImg?.Labels || {};
@@ -2207,6 +2272,32 @@ export async function recreateContainerFromInspect(
 		log?.(`Label rebase — ${labelParts.length ? labelParts.join('; ') : 'no changes'}`);
 	} catch (e: any) {
 		log?.(`Rebase skipped (image inspect failed), keeping env/labels verbatim: ${e?.message || e}`);
+	}
+
+	// Keep the tracked tag separately; creation and rebasing use the verified ID.
+	if (verifiedImageId) createConfig.Labels = trackedImageLabels(createConfig.Labels, newImage, verifiedImageId, verifiedImageReference);
+
+	// Compose records which image it created a container from, and recreates the container
+	// whenever that disagrees with the image behind the service's tag. Carried over verbatim it
+	// still names the OLD image, so the next `docker compose up` restarts a container that
+	// already runs the right one - unplanned downtime, on a database as readily as anything
+	// else. Outside the try above so the verbatim-labels fallback is corrected too (#1687).
+	if (createConfig.Labels?.[COMPOSE_IMAGE_LABEL]) {
+		// Resolve the id ONCE and address the image by it from here on: a tag can be repointed
+		// between the pull and this read, and a digest fetched by tag would then describe an
+		// image the container is not created from.
+		const newId: string | undefined = verifiedImageId ?? ((await inspectImage(newImage, envId).catch(() => null)) as any)?.Id;
+		// Only fetched for the digest form, which a containerd image store uses.
+		const needsDigest = composeImageLabelForm(createConfig.Labels[COMPOSE_IMAGE_LABEL], inspectData.Image) === 'digest';
+		const composeImage = composeImageLabelForRecreate(
+			createConfig.Labels[COMPOSE_IMAGE_LABEL],
+			inspectData.Image,
+			{ imageId: newId, manifestDigest: needsDigest && newId ? await imageManifestDigest(newId, envId) : null }
+		);
+		if (composeImage) {
+			createConfig.Labels[COMPOSE_IMAGE_LABEL] = composeImage;
+			log?.(`Compose image label updated to the new image (${composeImage.slice(0, 19)})`);
+		}
 	}
 
 	// Strip default MemorySwappiness — Podman + cgroupv2 rejects it.
@@ -2404,8 +2495,34 @@ async function ensureImagePresent(image: string, envId?: number | null, log?: (m
 	if (res.ok) { await drainResponse(res); return; }
 	await drainResponse(res);
 	log?.(`Image ${image} not present — pulling…`);
-	await pullImage(image, undefined, envId);
+	await pullImage(image, (progress) => {
+		if (progress.status === 'warning') log?.(`[warning] ${progress.message}`);
+	}, envId);
 	log?.(`Pulled ${image}`);
+}
+
+/** Enrich older cooldown metadata while the source host still has the image.
+ * Never resolve the mutable tag: only RepoDigests of the actual image qualify. */
+export async function getPortableContainerConfig<T extends { Image?: string; Labels?: Record<string, string> | null }>(
+	config: T, envId?: number | null
+): Promise<T> {
+	const image = config.Image;
+	if (!image || trackedImageReference(image, config.Labels) === image || portableImageReference(image, config.Labels) !== image) return config;
+	try {
+		const source = trackedImageReference(image, config.Labels);
+		const { registry, repo } = parseImageReference(source);
+		const imageData = await inspectImage(image, envId) as { RepoDigests?: string[] };
+		for (const candidate of imageData.RepoDigests ?? []) {
+			const digest = candidate.slice(candidate.lastIndexOf('@') + 1);
+			if (!candidate.includes('@') || !/^sha256:[a-f0-9]{64}$/.test(digest)) continue;
+			const parsed = parseImageReference(candidate);
+			const sameRegistry = parsed.registry === registry || (DOCKER_HUB_HOSTS.has(parsed.registry) && DOCKER_HUB_HOSTS.has(registry));
+			if (!sameRegistry || parsed.repo !== repo) continue;
+			const registryReference = verifiedImagePullPlan(source, digest).reference;
+			return { ...config, Labels: trackedImageLabels(config.Labels ?? undefined, source, image, registryReference) };
+		}
+	} catch { /* An unavailable image cannot supply a missing immutable reference. */ }
+	return config;
 }
 
 /**
@@ -2426,7 +2543,7 @@ export async function createContainerFromMetadata(
 	envId?: number | null,
 	log?: (msg: string) => void
 ): Promise<{ Id: string }> {
-	const config = { ...metadata.config };
+	const config = await getPortableContainerConfig({ ...metadata.config, Image: image }, envId);
 	const hostConfig = { ...metadata.hostConfig };
 	const networks: Record<string, any> = metadata.networkSettings?.Networks || {};
 
@@ -2508,7 +2625,15 @@ export async function createContainerFromMetadata(
 	// Pull the image first if the target env doesn't have it — a cross-env clone
 	// restore lands on a host that may never have seen this image, and create
 	// (unlike run) won't pull it.
-	await ensureImagePresent(image, envId, log);
+	const registryReference = portableImageReference(image, config.Labels);
+	await ensureImagePresent(registryReference, envId, log);
+	if (registryReference !== image) {
+		// The destination may select another platform from the approved manifest.
+		// Pin its local ID and refresh tracking so future updates still follow the tag.
+		const restoredImage = await inspectImage(registryReference, envId) as { Id: string };
+		createConfig.Labels = trackedImageLabels(config.Labels, trackedImageReference(image, config.Labels), restoredImage.Id, registryReference);
+		createConfig.Image = restoredImage.Id;
+	}
 
 	// Create container
 	log?.(`Creating container ${containerName}...`);
@@ -2656,7 +2781,7 @@ export function extractContainerOptions(inspectData: any): CreateContainerOption
 
 	return {
 		name,
-		image: config.Image,
+		image: trackedImageReference(config.Image, config.Labels),
 
 		// Command and entrypoint
 		cmd: config.Cmd || undefined,
@@ -3014,7 +3139,70 @@ export async function buildRegistryAuthHeader(imageName: string): Promise<Record
 	return headers;
 }
 
-export async function pullImage(imageName: string, onProgress?: (data: any) => void, envId?: number | null) {
+export async function verifyImageReleaseAge(imageName: string, envId?: number | null): Promise<string | null> {
+	const { hours } = await getMinimumReleaseAgeConfig(envId);
+	if (hours > 0) {
+		const digest = await getRegistryManifestDigest(imageName, envId);
+		if (!digest) throw new Error(`Cannot verify the update cooldown for ${imageName}: registry digest unavailable. Check registry access and credentials; pull deferred.`);
+		const remaining = await imageReleaseAgeRemainingMs(imageName, digest, hours, persisted => getRegistryImageCreatedAt(imageName, digest, envId, undefined, persisted), envId);
+		if (remaining > 0) {
+			throw new Error(`${imageName} is in its image update cooldown (${Math.ceil(remaining / 3600000)} hours remaining)`);
+		}
+		return digest;
+	}
+	return null;
+}
+
+/** Advisory for user-requested pulls. A failed cooldown lookup must not prevent an install. */
+export async function getImageReleaseAgeWarning(imageName: string, envId?: number | null): Promise<string | null> {
+	try {
+		return await releaseAgeAdvisory(async (signal) => {
+			const { hours } = await getMinimumReleaseAgeConfig(envId);
+			signal.throwIfAborted();
+			if (hours <= 0) return null;
+			const digest = await getRegistryManifestDigest(imageName, envId, signal);
+			signal.throwIfAborted();
+			if (!digest) return manualPullAgeWarning(imageName, hours, null);
+			return manualPullAgeWarning(imageName, hours, await imageReleaseAgeStatus(imageName, digest, hours, persisted => getRegistryImageCreatedAt(imageName, digest, envId, signal, persisted), envId));
+		});
+	} catch (error) {
+		console.warn(`[Pull] Could not determine update cooldown for ${imageName}:`, error);
+		return `Update cooldown for ${imageName} could not be determined. Pulling it anyway because this was requested manually.`;
+	}
+}
+
+/** Scheduled pulls enforce the cooldown; explicit pulls only report an advisory. */
+export async function pullImage(imageName: string, onProgress?: (data: any) => void, envId?: number | null, enforceReleaseAge = false): Promise<{ imageId: string; digest: string; reference: string } | undefined> {
+	if (!enforceReleaseAge) {
+		const warning = await getImageReleaseAgeWarning(imageName, envId);
+		if (warning) {
+			console.warn(`[Pull] ${warning}`);
+			onProgress?.({ status: 'warning', message: warning });
+		}
+		await pullImageFromRegistry(imageName, onProgress, envId);
+		return undefined;
+	}
+
+	const digest = await verifyImageReleaseAge(imageName, envId);
+	if (!digest) {
+		await pullImageFromRegistry(imageName, onProgress, envId);
+		return undefined;
+	}
+
+	const plan = verifiedImagePullPlan(imageName, digest);
+	await pullImageFromRegistry(plan.reference, onProgress, envId);
+	const image = await inspectImage(plan.reference, envId) as { Id: string };
+	if (!/^sha256:[a-f0-9]{64}$/.test(image.Id)) throw new Error('Invalid verified image ID');
+	if (plan.tag) await tagImage(image.Id, plan.tag.repo, plan.tag.tag, envId);
+	return { imageId: image.Id, digest, reference: plan.reference };
+}
+
+/** Pull an image needed by Dockhand's own scanner or backup helper. */
+export async function pullInternalImage(imageName: string, envId?: number | null) {
+	return pullImageFromRegistry(imageName, undefined, envId);
+}
+
+async function pullImageFromRegistry(imageName: string, onProgress?: (data: any) => void, envId?: number | null) {
 	// Parse image name and tag to avoid pulling all tags
 	// Docker API: if tag is empty, it pulls ALL tags for the image
 	// Format can be: repo:tag, repo@digest, or just repo (defaults to :latest)
@@ -3121,6 +3309,24 @@ export async function inspectImage(id: string, envId?: number | null) {
 	return dockerJsonRequest(`/images/${encodeURIComponent(id)}/json`, {}, envId);
 }
 
+/**
+ * The digest of an image's platform manifest, which a containerd image store reports and Compose
+ * records as `com.docker.compose.image` there. Needs `?manifests=true` (API 1.48+); older daemons
+ * and the classic image store answer without it, and get null. Never throws - the caller treats
+ * an unavailable digest as "leave the label alone".
+ */
+export async function imageManifestDigest(id: string, envId?: number | null): Promise<string | null> {
+	try {
+		const data = await dockerJsonRequest<{ Manifests?: Array<{ Kind?: string; Available?: boolean; Descriptor?: { digest?: string } }> }>(
+			`/images/${encodeURIComponent(id)}/json?manifests=true`, {}, envId
+		);
+		const image = (data?.Manifests ?? [])[0];
+		return image?.Descriptor?.digest || null;
+	} catch {
+		return null;
+	}
+}
+
 
 /**
  * Parse a registry URL into host and path components.
@@ -3214,151 +3420,22 @@ export async function findRegistryCredentials(registryHost: string): Promise<{ u
 	}
 }
 
-/**
- * Resolve http vs https for a registry host from the stored registries, so the
- * challenge/token request honours a plain-HTTP registry (#1580). Defaults to https.
- */
-async function getRegistrySchemeForHost(registryHost: string): Promise<'http' | 'https'> {
-	try {
-		const { getRegistries } = await import('./db.js');
-		const registries = await getRegistries();
-		const stored: StoredRegistryScheme[] = registries.map((reg) => {
-			const parsed = parseRegistryUrl(reg.url);
-			return { host: parsed.host, protocol: parsed.protocol, isHub: DOCKER_HUB_HOSTS.has(parsed.host) };
-		});
-		const requested = parseRegistryUrl(registryHost);
-		return resolveRegistryScheme(requested.host, stored, DOCKER_HUB_HOSTS.has(requested.host));
-	} catch {
-		return 'https';
-	}
+/** What registry/manifest-digest.ts cannot work out on its own. */
+function registryPorts(): RegistryPorts {
+	return {
+		parseRegistryUrl,
+		hubHosts: DOCKER_HUB_HOSTS,
+		listRegistries: async () => (await import('./db.js')).getRegistries(),
+		findCredentials: findRegistryCredentials
+	};
 }
 
-/**
- * Get bearer token from registry using challenge-response flow.
- * This follows the Docker Registry v2 authentication spec:
- * 1. Make request to /v2/ to get WWW-Authenticate challenge
- * 2. Parse realm, service, scope from challenge
- * 3. Request token from realm URL (with credentials if available)
- */
-async function getRegistryBearerToken(registry: string, repo: string): Promise<string | null> {
-	try {
-		const hostSafety = isSafeRegistryHost(registry);
-		if (!hostSafety.ok) {
-			console.error(`[Registry] Refusing token request for ${registry}: ${hostSafety.reason}`);
-			return null;
-		}
-		// Honour the scheme the registry was configured with (#1580): a plain-HTTP local
-		// registry must not get an HTTPS challenge. Defaults to https when unconfigured.
-		const scheme = await getRegistrySchemeForHost(registry);
-		const registryUrl = `${scheme}://${registry}`;
+async function getRegistrySchemeForHost(registryHost: string): Promise<'http' | 'https'> {
+	return registrySchemeForHost(registryHost, registryPorts());
+}
 
-		// Look up stored credentials for this registry
-		const credentials = await findRegistryCredentials(registry);
-
-		// Step 1: Challenge request to /v2/
-		// Do not follow redirects on the challenge; a 3xx is treated as a non-401 below.
-		const challengeResponse = await fetch(`${registryUrl}/v2/`, {
-			method: 'GET',
-			headers: { 'User-Agent': 'Dockhand/1.0' },
-			redirect: 'manual'
-		});
-
-		// If 200, no auth needed
-		if (challengeResponse.ok) {
-			await drainResponse(challengeResponse);
-			return null;
-		}
-
-		// If not 401, something else is wrong
-		if (challengeResponse.status !== 401) {
-			await drainResponse(challengeResponse);
-			console.error(`Registry challenge failed: ${challengeResponse.status}`);
-			return null;
-		}
-
-		// Step 2: Parse WWW-Authenticate header
-		const wwwAuth = challengeResponse.headers.get('WWW-Authenticate') || '';
-		const challenge = wwwAuth.toLowerCase();
-
-		if (challenge.startsWith('basic')) {
-			// Basic auth - use credentials if we have them
-			await drainResponse(challengeResponse);
-			if (credentials) {
-				const basicAuth = Buffer.from(`${credentials.username}:${credentials.password}`).toString('base64');
-				return `Basic ${basicAuth}`;
-			}
-			return null;
-		}
-
-		if (!challenge.startsWith('bearer')) {
-			await drainResponse(challengeResponse);
-			console.error(`Unsupported auth type: ${wwwAuth}`);
-			return null;
-		}
-
-		// Drain 401 response body before bearer token fetch (required by Node.js/Undici for connection reuse)
-		await drainResponse(challengeResponse);
-
-		// Parse bearer challenge: Bearer realm="...",service="...",scope="..."
-		const realmMatch = wwwAuth.match(/realm="([^"]+)"/i);
-		const serviceMatch = wwwAuth.match(/service="([^"]+)"/i);
-
-		if (!realmMatch) {
-			console.error('No realm in WWW-Authenticate header');
-			return null;
-		}
-
-		const realm = realmMatch[1];
-		const service = serviceMatch ? serviceMatch[1] : '';
-		const scope = `repository:${repo}:pull`;
-
-		// Step 3: Request token from realm (with credentials if available).
-		// Empty scope is allowed — means "no specific resource permission".
-		// Useful for credential validation: some registries (Docker Hub)
-		// reject privileged scopes like registry:catalog:* even for valid
-		// users, so omitting scope is the only reliable login check.
-		const tokenUrl = new URL(realm);
-		if (service) tokenUrl.searchParams.set('service', service);
-		if (scope) tokenUrl.searchParams.set('scope', scope);
-
-		const authHeader = credentials
-			? `Basic ${Buffer.from(`${credentials.username}:${credentials.password}`).toString('base64')}`
-			: null;
-		const tokenResponse = await fetchRegistryToken(tokenUrl.toString(), authHeader);
-
-		if (!tokenResponse.ok) {
-			// Surface enough to diagnose without leaking the secret: the response
-			// body (truncated), the final URL, and the identity (username only).
-			const errBody = (await tokenResponse.text()).slice(0, 300).replace(/\s+/g, ' ').trim();
-			const finalNote = tokenResponse.url && tokenResponse.url !== tokenUrl.toString()
-				? ` (final ${new URL(tokenResponse.url).origin})`
-				: '';
-			const identity = credentials
-				? ` as ${credentials.username.slice(0, 4)}...(len=${credentials.username.length})`
-				: ' anonymously';
-			console.error(
-				`[Registry] Token request failed: ${tokenResponse.status} at ${tokenUrl.origin}${finalNote}, sent${identity}` +
-					(errBody ? ` - response: ${errBody}` : '')
-			);
-			return null;
-		}
-
-		const tokenData = await tokenResponse.json() as { token?: string; access_token?: string };
-		const token = tokenData.token || tokenData.access_token || null;
-
-		return token ? `Bearer ${token}` : null;
-
-	} catch (e) {
-		const errorMsg = e instanceof Error ? e.message : String(e);
-		const cause = (e as any)?.cause;
-		const causeMsg = cause ? ` (cause: ${cause})` : '';
-		console.error('[Registry] Failed to get bearer token:', errorMsg + causeMsg);
-		const causeStr = String(cause ?? errorMsg);
-		if (causeStr.includes('EAI_AGAIN') || causeStr.includes('ENOTFOUND')) {
-			console.error('[Registry] DNS resolution failed. If you are on a NAS (Synology, uGreen, QNAP), try adding --dns=8.8.8.8 to your docker run command or set {"dns": ["8.8.8.8"]} in /etc/docker/daemon.json');
-		}
-		return null;
-	}
+async function getRegistryBearerToken(registry: string, repo: string, signal?: AbortSignal): Promise<string | null> {
+	return registryBearerToken(registry, repo, registryPorts(), signal);
 }
 
 /**
@@ -3765,71 +3842,104 @@ export async function harborSearchRepositories(
  * Simple HEAD request to get Docker-Content-Digest header.
  * Docker stores the manifest list digest in RepoDigests, so we compare that directly.
  */
-export async function getRegistryManifestDigest(imageName: string): Promise<string | null> {
-	return (await getRegistryManifestDigestDetailed(imageName)).digest;
+/** Direct registry request with upstream diagnostic details. */
+async function getRegistryManifestDigestDirectDetailed(
+	imageName: string, signal?: AbortSignal
+): Promise<{ digest: string | null; reason?: string }> {
+	return manifestDigestDirect(imageName, registryPorts(), signal);
 }
 
-/** Like getRegistryManifestDigest, but a null digest carries the specific reason (#1486). */
-export async function getRegistryManifestDigestDetailed(
-	imageName: string
-): Promise<{ digest: string | null; reason?: string }> {
-	let registry = '';
+/** The target daemon can resolve private registries that Dockhand itself cannot
+ * reach (especially through Hawser). This endpoint reads metadata, not layers. */
+async function getDockerDistributionDigest(imageName: string, envId?: number | null, signal?: AbortSignal): Promise<string | null> {
 	try {
-		const parsed = parseImageReference(imageName);
-		registry = parsed.registry;
-		const { repo, tag } = parsed;
-		if (!isSafeRegistryHost(registry).ok) {
-			return { digest: null, reason: describeRegistryFailure({ kind: 'blocked-host', registry }) };
-		}
-		const token = await getRegistryBearerToken(registry, repo);
-		// Honour the stored registry scheme for the manifest fetch too (#1580), not just
-		// the token challenge - otherwise a plain-HTTP registry still gets an HTTPS request.
-		const scheme = await getRegistrySchemeForHost(registry);
-		const manifestUrl = `${scheme}://${registry}/v2/${repo}/manifests/${tag}`;
-
-		const headers: Record<string, string> = {
-			'User-Agent': 'Dockhand/1.0',
-			'Accept': [
-				'application/vnd.docker.distribution.manifest.list.v2+json',
-				'application/vnd.oci.image.index.v1+json',
-				'application/vnd.docker.distribution.manifest.v2+json',
-				'application/vnd.oci.image.manifest.v1+json'
-			].join(', ')
-		};
-		if (token) headers['Authorization'] = token;
-
-		const response = await fetch(manifestUrl, { method: 'HEAD', headers });
-
+		const headers = await buildRegistryAuthHeader(imageName);
+		const response = await dockerFetch(`/distribution/${encodeURIComponent(imageName)}/json`, { headers, signal }, envId);
 		if (!response.ok) {
+			console.warn(`[Registry] Docker distribution inspect for ${imageName} returned HTTP ${response.status}`);
 			await drainResponse(response);
-			const retryAfter = response.headers.get('Retry-After');
-			if (response.status === 429) {
-				console.warn(`[Registry] ${imageName}: rate limited (429)${retryAfter ? `, retry after ${retryAfter}s` : ''}`);
-			} else {
-				console.error(`[Registry] ${imageName}: ${response.status}`);
-			}
-			return {
-				digest: null,
-				reason: describeRegistryFailure({ kind: 'http', status: response.status, retryAfter })
-			};
+			return null;
 		}
-
-		const digest = response.headers.get('Docker-Content-Digest');
-		await drainResponse(response);
-		if (!digest) return { digest: null, reason: describeRegistryFailure({ kind: 'no-digest' }) };
-		return { digest };
-	} catch (e) {
-		const causeStr = String((e as any)?.cause ?? e);
-		if (causeStr.includes('EAI_AGAIN') || causeStr.includes('ENOTFOUND')) {
-			console.error(`[Registry] ${imageName}: DNS resolution failed. If you are on a NAS (Synology, uGreen, QNAP), add --dns=8.8.8.8 to your docker run command.`);
-		} else {
-			console.error(`[Registry] ${imageName}: ${e}`);
-		}
-		return {
-			digest: null,
-			reason: describeRegistryFailure({ kind: 'error', registry: registry || imageName, error: e })
-		};
+		const data = await response.json() as { Descriptor?: { digest?: unknown } };
+		const digest = data.Descriptor?.digest;
+		return typeof digest === 'string' && /^sha256:[a-f0-9]{64}$/i.test(digest) ? digest : null;
+	} catch (error) {
+		console.warn(`[Registry] Docker distribution inspect failed for ${imageName}:`, error);
+		return null;
 	}
+}
+
+/** With a cooldown enabled, resolve the digest on the target environment first.
+ * Otherwise retain the direct registry HEAD without an extra daemon request. */
+export async function getRegistryManifestDigest(imageName: string, envId?: number | null, signal?: AbortSignal): Promise<string | null> {
+	return (await getRegistryManifestDigestDetailed(imageName, envId, signal)).digest;
+}
+
+export async function getRegistryManifestDigestDetailed(imageName: string, envId?: number | null, signal?: AbortSignal): Promise<{ digest: string | null; reason?: string }> {
+	const { registry } = parseImageReference(imageName);
+	if (!isSafeRegistryHost(registry).ok) return { digest: null, reason: describeRegistryFailure({ kind: 'blocked-host', registry }) };
+	signal?.throwIfAborted();
+	if ((await getMinimumReleaseAgeConfig(envId)).hours > 0) {
+		const daemonDigest = await getDockerDistributionDigest(imageName, envId, signal);
+		signal?.throwIfAborted();
+		if (daemonDigest) return { digest: daemonDigest };
+	}
+	return getRegistryManifestDigestDirectDetailed(imageName, signal);
+}
+
+// Cache only verified creation dates, keyed by immutable digest and target platform.
+// Failed lookups are retried on the next check; the durable fallback lives in settings.
+const imageCreationTimes = new Map<string, string>();
+
+async function getRegistryImageCreatedAt(imageName: string, digest: string, envId?: number | null, parentSignal?: AbortSignal, persisted: Readonly<Record<string, string>> = {}): Promise<ImageCreationMetadata | null> {
+	try {
+		const { registry, repo } = parseImageReference(imageName);
+		if (!isSafeRegistryHost(registry).ok) return null;
+		const signal = parentSignal ?? AbortSignal.timeout(8000);
+		signal.throwIfAborted();
+		const info = await dockerJsonRequest('/info', { signal }, envId) as { OSType?: string; Architecture?: string };
+		const platform = imagePlatform(info?.OSType, info?.Architecture);
+		if (!platform) return null;
+		const key = `${registry}/${repo}@${digest}/${platform.os}/${platform.architecture}/${platform.variant ?? ''}`;
+		const platformKey = `${platform.os}/${platform.architecture}/${platform.variant ?? ''}`;
+		const cached = persisted[platformKey] ?? imageCreationTimes.get(key);
+		if (cached) return { createdAt: cached, platform: platformKey };
+		signal.throwIfAborted();
+		const [authorization, scheme] = await Promise.all([
+			getRegistryBearerToken(registry, repo, signal), getRegistrySchemeForHost(registry)
+		]);
+		const created = await fetchImageCreatedAt({ registry, repo, digest, platform, scheme, authorization, signal });
+		if (created) {
+			if (imageCreationTimes.size >= 256) imageCreationTimes.delete(imageCreationTimes.keys().next().value!);
+			imageCreationTimes.set(key, created);
+		}
+		return { createdAt: created, platform: platformKey };
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * When a candidate tag's image was built, for the semver check's stale-candidate
+ * rule. Takes the candidate's already-known manifest digest, so only the single
+ * chosen candidate is looked up - never a sweep over the tag list.
+ *
+ * `envId` selects the daemon whose os/arch decides which per-arch manifest to read;
+ * without it a remote environment would be judged by Dockhand's own platform.
+ * Dates are cached per digest+platform, so a repeat check costs nothing. The
+ * cooldown feature's persisted fallback is deliberately NOT used: it records when
+ * Dockhand first SAW a digest, which for an old tag is today - the opposite of the
+ * build date this rule needs.
+ * Returns null on any failure, which keeps the candidate (fail-open).
+ */
+export async function getRegistryTagCreatedAt(
+	registry: string,
+	repo: string,
+	digest: string,
+	envId?: number | null
+): Promise<string | null> {
+	const meta = await getRegistryImageCreatedAt(`${registry}/${repo}`, digest, envId);
+	return meta?.createdAt ?? null;
 }
 
 /**
@@ -3935,6 +4045,8 @@ export interface ImageUpdateCheckResult {
 	hasUpdate: boolean;
 	currentDigest?: string;
 	registryDigest?: string;
+	/** An image is available but still inside the configured cooldown. */
+	releaseAgeRemainingHours?: number;
 	/** True if this is a local-only image (no registry) */
 	isLocalImage?: boolean;
 	/** Error message if check failed */
@@ -4014,13 +4126,17 @@ export async function checkImageUpdateAvailable(
 		// a digest we don't have, an update is available. If the registry can't
 		// resolve it (404 / unreachable / truly local), THEN treat it as local.
 		if (localDigests.length === 0) {
-			const registryDigest = await getRegistryManifestDigest(imageName);
+			const registryDigest = await getRegistryManifestDigest(imageName, envId);
 			const { hasUpdate, isLocalImage, registryDigest: rd } = classifyEmptyDigestImage(registryDigest);
+			if (hasUpdate && rd) {
+				const remaining = await imageCooldownRemainingMs(imageName, rd, envId);
+				if (remaining > 0) return { hasUpdate: false, currentDigest: currentImageId, registryDigest: rd, releaseAgeRemainingHours: Math.ceil(remaining / 3600000) };
+			}
 			return { hasUpdate, isLocalImage, currentDigest: currentImageId, registryDigest: rd };
 		}
 
 		// Query registry for current manifest digest
-		const { digest: registryDigest, reason: registryFailure } = await getRegistryManifestDigestDetailed(imageName);
+		const { digest: registryDigest, reason: registryFailure } = await getRegistryManifestDigestDetailed(imageName, envId);
 
 		if (!registryDigest) {
 			// Registry unreachable or image not found - can't determine update status.
@@ -4046,6 +4162,10 @@ export async function checkImageUpdateAvailable(
 		if (await localDigestMatchesRegistryChild(imageName, localDigests)) {
 			return { hasUpdate: false, currentDigest: currentRepoDigests[0], localDigests };
 		}
+		const remaining = await imageCooldownRemainingMs(imageName, registryDigest, envId);
+		if (remaining > 0) {
+			return { hasUpdate: false, currentDigest: currentRepoDigests[0], registryDigest, localDigests, releaseAgeRemainingHours: Math.ceil(remaining / 3600000) };
+		}
 
 		return {
 			hasUpdate: true,
@@ -4056,6 +4176,11 @@ export async function checkImageUpdateAvailable(
 	} catch (e: any) {
 		return { hasUpdate: false, error: e.message };
 	}
+}
+
+async function imageCooldownRemainingMs(imageName: string, digest: string, envId?: number): Promise<number> {
+	const { hours } = await getMinimumReleaseAgeConfig(envId);
+	return hours > 0 ? imageReleaseAgeRemainingMs(imageName, digest, hours, persisted => getRegistryImageCreatedAt(imageName, digest, envId, undefined, persisted), envId) : 0;
 }
 
 export async function tagImage(id: string, repo: string, tag: string, envId?: number | null) {
@@ -5286,7 +5411,7 @@ export async function runContainerWithStreaming(options: {
 			// dies with the ephemeral container so it never accumulates on disk.
 			LogConfig: {
 				Type: 'json-file',
-				Config: { 'max-file': '1', 'max-size': '1g' }
+				Config: { 'max-file': '1', 'max-size': '1g', 'compress': 'false' }
 			}
 		}
 	};
@@ -5368,6 +5493,10 @@ export async function runContainerWithStreaming(options: {
 			// Poll is the safe default; set HELPERS_WAIT_MODE=wait to force the streaming /wait.
 			// Applies to every helper this function runs — backup/restore AND the image scanner.
 			let exitCode: number | undefined;
+			// The daemon's own reason when it refused to START the container (a bad bind
+			// source, a missing image platform). Such a container produces NO logs, so
+			// without this the failure reads as "no output" and says nothing.
+			let daemonError: string | undefined;
 			if (process.env.HELPERS_WAIT_MODE !== 'wait') {
 				// Bounded by the caller's timeout (scanner passes 600_000, probes 60_000);
 				// the backup helper passes 0 = unbounded. One line so the log confirms which
@@ -5386,6 +5515,7 @@ export async function runContainerWithStreaming(options: {
 							// terminally `created`/`dead` after a start failure (e.g. Docker 29.x
 							// exit 128 "failed to mount overlay: device or resource busy", #1487) -
 							// otherwise the unbounded poll waits forever for an `exited` that never comes.
+							if (st?.Error) daemonError = st.Error;
 							const resolved = helperExitFromState(st);
 							if (resolved !== undefined) {
 								exitCode = resolved;
@@ -5447,6 +5577,7 @@ export async function runContainerWithStreaming(options: {
 								StartedAt: st?.StartedAt, FinishedAt: st?.FinishedAt, Pid: st?.Pid,
 							})}`
 						);
+						if (st?.Error) daemonError = st.Error;
 						const resolved = helperExitFromState(st);
 						if (resolved !== undefined) {
 							exitCode = resolved;
@@ -5491,9 +5622,20 @@ export async function runContainerWithStreaming(options: {
 				} catch {
 					// Ignore stderr fetch errors
 				}
-				// Include stdout in the detail too — restic often writes its error
-				// summary there — so callers' error matching (e.g. repo-not-init) works.
-				const detail = (stderrText || stdout || 'no output').substring(0, 1000);
+				// A container the daemon refused has no logs, and the wait-mode route never
+				// inspects it, so read State.Error now rather than reporting "no output".
+				if (needsDaemonErrorLookup({ stderr: stderrText, stdout, daemonError })) {
+					try {
+						const insp = await dockerFetch(`/containers/${containerId}/json`, {}, options.envId);
+						if (insp.ok) {
+							const data = await insp.json() as { State?: { Error?: string } };
+							if (data.State?.Error) daemonError = data.State.Error;
+						}
+					} catch {
+						// Best-effort: a failed inspect just leaves the detail as it was.
+					}
+				}
+				const detail = helperFailureDetail({ stderr: stderrText, stdout, daemonError });
 				const code = exitCode === undefined ? 'unknown (could not determine container exit status)' : String(exitCode);
 				throw new Error(`Container exited with code ${code}: ${detail}`);
 			}

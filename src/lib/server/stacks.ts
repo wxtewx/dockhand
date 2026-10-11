@@ -23,11 +23,13 @@ import {
 	type DeletionSkipReason
 } from './git-deletions';
 import { buildComposeOperationArgs, shouldRunSeparateBuildStep } from './compose-args';
-import { findStackNameCollision, moveStackFilePathCrossDevice, resolveStackDirForLayout } from './stack-path-utils';
+import { findStackNameCollision, getStackPathHintsFromContainers, moveStackFilePathCrossDevice, resolveStackDirForLayout } from './stack-path-utils';
 import { db, environments, eq } from './db/drizzle.js';
 import { isAllowedStackFilename } from './stack-filename';
+import { coolingDown as coolingDownRows } from '$lib/utils/pending-update-rows';
+import { getMinimumReleaseAgeConfig } from './minimum-release-age';
 
-import { deriveStackStatus } from './stack-status';
+import { deriveStackStatus, deriveStackHealth } from './stack-status';
 import {
 	getEnvironment,
 	getSecretEnvVarsAsRecord,
@@ -59,7 +61,7 @@ import { isDeletableStackDir } from './stack-delete-guard';
 import { cleanPem } from '$lib/utils/pem';
 import { quoteForEnvFile } from '$lib/utils/env-file-values';
 import { rewriteComposeVolumePaths, getHostDataDir } from './host-path';
-import { getOrderValue } from './container-labels';
+import { compareContainerOrder } from './container-labels';
 import { stackLabelTags, type LabelTagSpec } from '$lib/utils/tags-core';
 import { pendingRowsToClear } from './pending-updates-core';
 import { buildDockhandOverrideFile } from './dockhand-override-file';
@@ -1841,6 +1843,8 @@ async function executeComposeCommand(
 ): Promise<StackOperationResult> {
 	const { stackName, envId, forceRecreate, build, noBuildCache, pullPolicy, removeVolumes, stackFiles, workingDir, composePath, envPath, useOverrideFile, serviceName, composeFileName, filesToDelete, removeFiles } = options;
 
+	// Stack deployments (including Git automation) are outside the container-update cooldown.
+
 	// Get environment configuration
 	const env = envId ? await getEnvironment(envId) : null;
 
@@ -2057,12 +2061,17 @@ export async function listComposeStacks(envId?: number | null): Promise<ComposeS
 	// on hasImageUpdate. `newerVersionIds` drives the separate semver stack badge.
 	const pendingUpdateIds = new Set<string>();
 	const newerVersionIds = new Set<string>();
+	// A held update: an update exists but the image is too young to apply. Counted
+	// separately so it never reaches updateCount, which offers a redeploy.
+	const coolingDownIds = new Set<string>();
 	const newerVersionById = new Map<string, unknown>();
 	if (typeof envId === 'number') {
 		try {
 			const pending = await getPendingContainerUpdates(envId);
+			const heldIds = coolingDownRows(pending, (await getMinimumReleaseAgeConfig(envId).catch(() => ({ hours: 0 }))).hours);
 			pending.forEach((p) => {
 				if (p.hasImageUpdate) pendingUpdateIds.add(p.containerId);
+				if (heldIds.has(p.containerId)) coolingDownIds.add(p.containerId);
 				if (p.newerVersion) {
 					newerVersionIds.add(p.containerId);
 					try {
@@ -2140,12 +2149,7 @@ export async function listComposeStacks(envId?: number | null): Promise<ComposeS
 					newerVersion: newerVersionById.get(c.id) ?? null
 				};
 			})
-			.sort((a, b) => {
-				const orderA = getOrderValue(a.labels);
-				const orderB = getOrderValue(b.labels);
-				if (orderA !== orderB) return orderA - orderB;
-				return a.service.localeCompare(b.service);
-			});
+			.sort(compareContainerOrder);
 
 		return {
 			name,
@@ -2159,12 +2163,17 @@ export async function listComposeStacks(envId?: number | null): Promise<ComposeS
 			updateCount: stackContainers.filter((c) => pendingUpdateIds.has(c.id)).length,
 			// Newer-version-tag (semver) suggestions in this stack - drives the Tag badge.
 			newerVersionCount: stackContainers.filter((c) => newerVersionIds.has(c.id)).length,
+			// Held updates in this stack - shown as waiting, never offered for redeploy.
+			coolingDownCount: stackContainers.filter((c) => coolingDownIds.has(c.id)).length,
 			status: deriveStackStatus({
 				total: stackContainers.length,
 				running: runningCount,
 				restarting: restartingCount,
 				completed: completedCount
-			})
+			}),
+			// Reported beside status, not inside it: a running stack with one unhealthy
+			// container is still running.
+			health: deriveStackHealth(containerDetails)
 		};
 	});
 
@@ -2194,21 +2203,7 @@ export async function getStackPathHints(
 	configFiles: string[] | null;
 }> {
 	const containers = await getStackContainers(stackName, envId);
-
-	if (containers.length === 0) {
-		return { workingDir: null, configFiles: null };
-	}
-
-	// Get labels from first container (all containers in stack have same project labels)
-	const labels = containers[0].labels || {};
-
-	const workingDir = labels['com.docker.compose.project.working_dir'] || null;
-	const configFilesRaw = labels['com.docker.compose.project.config_files'] || null;
-
-	// Config files can be comma-separated if multiple compose files were used
-	const configFiles = configFilesRaw ? configFilesRaw.split(',').map((f: string) => f.trim()) : null;
-
-	return { workingDir, configFiles };
+	return getStackPathHintsFromContainers(containers);
 }
 
 /**
