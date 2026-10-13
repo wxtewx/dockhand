@@ -58,7 +58,7 @@ export async function testProviderConnection(
 ): Promise<TestConnectionResult> {
 	const provider = getProvider(type);
 	if (!provider) {
-		return { ok: false, error: `Unknown secret provider type: ${type}` };
+		return { ok: false, error: `未知密钥提供程序类型: ${type}` };
 	}
 	return provider.testConnection(config);
 }

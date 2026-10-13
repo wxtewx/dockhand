@@ -50,8 +50,8 @@
 			const response = await fetch('/api/secret-providers');
 			providers = await response.json();
 		} catch (e) {
-			console.error('Failed to fetch secret providers:', e);
-			toast.error('Failed to fetch secret providers');
+			console.error('获取密钥提供程序失败:', e);
+			toast.error('获取密钥提供程序失败');
 		} finally {
 			loading = false;
 		}
@@ -64,7 +64,7 @@
 			const data = await response.json();
 			defaultProviderId = data.providerId ?? null;
 		} catch (e) {
-			console.warn('Failed to load the default secret provider:', e);
+			console.warn('加载默认密钥提供程序失败:', e);
 		}
 	}
 
@@ -80,17 +80,17 @@
 			});
 			const data = await response.json();
 			if (!response.ok) {
-				toast.error(data.error || 'Failed to save the default secret provider');
+				toast.error(data.error || '保存默认密钥提供程序失败');
 				return;
 			}
 			defaultProviderId = data.providerId ?? null;
 			toast.success(
 				next === null
-					? 'No default secret provider'
-					: `${provider.name} is now the default for new stacks`,
+					? '未设置默认密钥提供程序'
+					: `${provider.name} 现已作为新堆栈的默认密钥提供程序`,
 			);
 		} catch {
-			toast.error('Failed to save the default secret provider');
+			toast.error('保存默认密钥提供程序失败');
 		} finally {
 			savingDefaultId = null;
 		}
@@ -127,13 +127,13 @@
 				// Deleting the default leaves the stored id dangling; the API resolves
 				// it against the live list, so re-read rather than assuming.
 				if (defaultProviderId === id) await fetchDefaultProvider();
-				toast.success('Secret provider deleted');
+				toast.success('密钥提供程序已删除');
 			} else {
 				const data = await response.json();
-				toast.error(data.error || 'Failed to delete secret provider');
+				toast.error(data.error || '删除密钥提供程序失败');
 			}
 		} catch {
-			toast.error('Failed to delete secret provider');
+			toast.error('删除密钥提供程序失败');
 		}
 	}
 
@@ -146,17 +146,17 @@
 			);
 			const data = await response.json();
 			if (data.ok) {
-				toast.success(`${provider.name}: connection works`);
+				toast.success(`${provider.name}: 连接正常`);
 				clearTimeout(testOkTimer);
 				testOkId = provider.id;
 				testOkTimer = setTimeout(() => (testOkId = null), 2000);
 			} else {
 				toast.error(
-					`${provider.name}: ${data.error || 'connection failed'}`,
+					`${provider.name}: ${data.error || '连接失败'}`,
 				);
 			}
 		} catch {
-			toast.error('Connection test failed');
+			toast.error('连接测试失败');
 		} finally {
 			testingId = null;
 		}
@@ -172,29 +172,29 @@
 	<div class="flex justify-between items-center">
 		<div class="flex items-center gap-3">
 			<Badge variant="secondary" class="text-xs"
-				>{providers.length} total</Badge
+				>{providers.length} 个总计</Badge
 			>
 		</div>
 		<div class="flex gap-2">
 			{#if $canAccess("secrets", "create")}
 				<Button size="sm" onclick={() => openModal()}>
 					<Plus class="w-4 h-4" />
-					Add secret provider
+					添加密钥提供程序
 				</Button>
 			{/if}
 			<Button size="sm" variant="outline" onclick={fetchProviders}
-				>Refresh</Button
+				>刷新</Button
 			>
 		</div>
 	</div>
 
 	{#if loading && providers.length === 0}
-		<p class="text-muted-foreground text-sm">Loading secret providers...</p>
+		<p class="text-muted-foreground text-sm">正在加载密钥提供程序...</p>
 	{:else if providers.length === 0}
 		<EmptyState
 			icon={KeyRound}
-			title="No secret providers"
-			description="Add a provider (1Password, Infisical, HashiCorp Vault, ...) to load secrets at deploy time"
+			title="暂无密钥提供程序"
+			description="添加提供程序 (1Password、Infisical、HashiCorp Vault、...)，用于在部署时加载密钥"
 		/>
 	{:else}
 		<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -215,7 +215,7 @@
 											class="text-xs gap-1 border-amber-500/50 text-amber-600 dark:text-amber-400"
 										>
 											<Star class="w-3 h-3 fill-current" />
-											Default
+											默认
 										</Badge>
 									{/if}
 								</div>
@@ -226,7 +226,7 @@
 						</Card.Header>
 						<Card.Content class="space-y-3">
 							<div class="text-xs text-muted-foreground">
-								Added {new Date(
+								添加于 {new Date(
 									provider.createdAt,
 								).toLocaleDateString()}
 							</div>
@@ -250,7 +250,7 @@
 												<PlugZap class="w-3 h-3" />
 											{/if}
 										</span>
-										Test
+										测试
 									</Button>
 								{/if}
 								{#if $canAccess("secrets", "edit")}
@@ -260,8 +260,8 @@
 										onclick={() => toggleDefault(provider)}
 										disabled={savingDefaultId === provider.id}
 										title={defaultProviderId === provider.id
-											? 'Stop preselecting this provider on new stacks'
-											: 'Preselect this provider on new stacks'}
+											? '不再在新建堆栈时预选此提供程序'
+											: '在新建堆栈时预选此提供程序'}
 										class={defaultProviderId === provider.id
 											? 'border-amber-500/50 text-amber-600 dark:text-amber-400'
 											: ''}
@@ -269,7 +269,7 @@
 										<Star
 											class="w-3 h-3 mr-1 {defaultProviderId === provider.id ? 'fill-current' : ''}"
 										/>
-										{defaultProviderId === provider.id ? 'Default' : 'Make default'}
+										{defaultProviderId === provider.id ? '默认' : '设为默认'}
 									</Button>
 									<Button
 										variant="outline"
@@ -282,10 +282,10 @@
 								{#if $canAccess("secrets", "delete")}
 									<ConfirmPopover
 										open={confirmDeleteId === provider.id}
-										action="Delete"
-										itemType="secret provider"
+										action="删除"
+										itemType="密钥提供程序"
 										itemName={provider.name}
-										title="Remove"
+										title="移除"
 										position="left"
 										autoHideMs={0}
 										onConfirm={() =>
@@ -305,10 +305,10 @@
 										{/snippet}
 										{#snippet extraContent()}
 											{#if loadingAffected}
-												<p class="text-xs text-muted-foreground">Checking which stacks use this provider...</p>
+												<p class="text-xs text-muted-foreground">正在检查哪些堆栈正在使用此提供程序...</p>
 											{:else if deleteAffectedStacks.length > 0}
 												<p class="text-xs text-amber-600 dark:text-amber-500">
-													This unbinds {deleteAffectedStacks.length} stack{deleteAffectedStacks.length === 1 ? '' : 's'}; their next deploy drops the injected secrets:
+													这将解除 {deleteAffectedStacks.length} 个堆栈的绑定；下次部署时这些堆栈将不再注入密钥:
 												</p>
 												<ul class="mt-1 text-xs text-muted-foreground list-disc list-inside max-h-24 overflow-y-auto">
 													{#each deleteAffectedStacks as s}

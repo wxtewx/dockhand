@@ -138,7 +138,7 @@
 			}
 
 			if (!result.success) {
-				error = result.error || 'Login failed';
+				error = result.error || '登录失败';
 				loading = false;
 				return;
 			}
@@ -148,7 +148,7 @@
 			await environments.refresh();
 			goto(redirectUrl);
 		} catch (e) {
-			error = 'An unexpected error occurred';
+			error = '发生未知错误';
 			loading = false;
 		}
 	}
@@ -164,7 +164,7 @@
 			const initiateUrl = `${provider.initiateUrl}?redirect=${encodeURIComponent(redirectUrl)}`;
 			window.location.href = initiateUrl;
 		} catch (e) {
-			error = 'Failed to initiate SSO login';
+			error = 'SSO 登录初始化失败';
 			ssoLoading = null;
 		}
 	}
@@ -175,7 +175,7 @@
 		try {
 			const optionsResponse = await fetch('/api/auth/passkeys/login/options', { method: 'POST' });
 			const optionsData = await optionsResponse.json();
-			if (!optionsResponse.ok) throw new Error(optionsData.error || 'Passkey login is unavailable');
+			if (!optionsResponse.ok) throw new Error(optionsData.error || '通行密钥登录服务不可用');
 
 			const authenticationResponse = await startAuthentication({ optionsJSON: optionsData.options });
 			const verifyResponse = await fetch('/api/auth/passkeys/login/verify', {
@@ -184,7 +184,7 @@
 				body: JSON.stringify({ ceremonyId: optionsData.ceremonyId, response: authenticationResponse })
 			});
 			const verifyData = await verifyResponse.json();
-			if (!verifyResponse.ok || !verifyData.success) throw new Error(verifyData.error || 'Passkey login failed');
+			if (!verifyResponse.ok || !verifyData.success) throw new Error(verifyData.error || '通行密钥登录失败');
 
 			await authStore.check();
 			await appSettings.refresh();
@@ -193,7 +193,7 @@
 		} catch (e) {
 			error = e instanceof Error && e.name !== 'NotAllowedError'
 				? e.message
-				: 'Passkey sign-in was cancelled or timed out';
+				: '通行密钥登录已取消或超时';
 		} finally {
 			passkeyLoading = false;
 		}
@@ -207,7 +207,7 @@
 </script>
 
 <svelte:head>
-	<title>Login - Dockhand</title>
+	<title>登录 - Dockhand</title>
 </svelte:head>
 
 <div class="min-h-screen flex items-center justify-center bg-background p-4">
@@ -216,16 +216,16 @@
 			<div class="flex justify-center mb-4">
 				<img
 					src="/logo.svg"
-					alt="Dockhand Logo"
+					alt="Dockhand 图标"
 					class="h-16 w-auto object-contain"
 				/>
 			</div>
-			<Card.Title class="text-2xl font-bold">Welcome back</Card.Title>
+			<Card.Title class="text-2xl font-bold">欢迎回来</Card.Title>
 			<Card.Description>
 				{#if requiresMfa}
-					Enter your two-factor authentication code
+					请输入双因素认证码
 				{:else}
-					Sign in to your Dockhand account
+					登录你的 Dockhand 账户
 				{/if}
 			</Card.Description>
 		</Card.Header>
@@ -250,7 +250,7 @@
 					{:else}
 						<KeyRound class="h-5 w-5" />
 					{/if}
-					<span>Sign in with passkey</span>
+					<span>使用通行密钥登录</span>
 				</Button>
 			{/if}
 
@@ -269,7 +269,7 @@
 							{:else}
 								<KeyRound class="h-5 w-5" />
 							{/if}
-							<span>Continue with {provider.name}</span>
+							<span>使用 {provider.name} 继续</span>
 						</Button>
 					{/each}
 				</div>
@@ -280,7 +280,7 @@
 							<span class="w-full border-t"></span>
 						</div>
 						<div class="relative flex justify-center text-xs uppercase">
-							<span class="bg-card px-2 text-muted-foreground">or continue with</span>
+							<span class="bg-card px-2 text-muted-foreground">或使用以下方式登录</span>
 						</div>
 					</div>
 				{/if}
@@ -291,7 +291,7 @@
 					{#if !requiresMfa}
 						{#if credentialProviders.length > 1}
 							<div class="space-y-2">
-								<Label>Sign in with</Label>
+								<Label>登录方式</Label>
 								<div class="grid gap-2">
 									{#each credentialProviders as provider}
 										{@const Icon = getProviderIcon(provider.type)}
@@ -308,11 +308,11 @@
 												<div class="font-medium text-sm">{provider.name}</div>
 												<div class="text-xs text-muted-foreground">
 													{#if provider.type === 'local'}
-														Local account
+														本地账户
 													{:else if provider.type === 'ldap'}
-														LDAP directory
+														LDAP 目录
 													{:else}
-														Single sign-on
+														单点登录
 													{/if}
 												</div>
 											</div>
@@ -326,11 +326,11 @@
 						{/if}
 
 						<div class="space-y-2">
-							<Label for="username">Username</Label>
+							<Label for="username">用户名</Label>
 							<Input
 								id="username"
 								type="text"
-								placeholder="Enter your username"
+								placeholder="请输入用户名"
 								bind:value={username}
 								required
 								disabled={loading}
@@ -340,11 +340,11 @@
 						</div>
 
 						<div class="space-y-2">
-							<Label for="password">Password</Label>
+							<Label for="password">密码</Label>
 							<Input
 								id="password"
 								type="password"
-								placeholder="Enter your password"
+								placeholder="请输入密码"
 								bind:value={password}
 								required
 								disabled={loading}
@@ -355,14 +355,14 @@
 						<div class="space-y-2">
 							<div class="flex items-center gap-2 text-sm text-muted-foreground mb-4">
 								<Shield class="h-4 w-4" />
-								<span>Two-factor authentication required</span>
+								<span>需要双因素认证</span>
 							</div>
-							<Label for="mfaToken">Authentication code</Label>
+							<Label for="mfaToken">认证码</Label>
 							<Input
 								id="mfaToken"
 								name="totp"
 								type="text"
-								placeholder="Enter code"
+								placeholder="请输入认证码"
 								bind:value={mfaToken}
 								required
 								disabled={loading}
@@ -370,7 +370,7 @@
 								autofocus
 							/>
 							<p class="text-xs text-muted-foreground">
-								Enter the 6-digit code from your authenticator app, or use a backup code
+								请输入来自认证器应用的 6 位数字验证码，或使用备用码
 							</p>
 						</div>
 					{/if}
@@ -378,10 +378,10 @@
 					<Button type="submit" class="w-full" disabled={loading}>
 						{#if loading}
 							<Loader2 class="mr-2 h-4 w-4 animate-spin" />
-							{requiresMfa ? 'Verifying...' : 'Signing in...'}
+							{requiresMfa ? '验证中...' : '登录中...'}
 						{:else}
 							<LogIn class="mr-2 h-4 w-4" />
-							{requiresMfa ? 'Verify' : 'Sign in'}
+							{requiresMfa ? '验证' : '登录'}
 						{/if}
 					</Button>
 
@@ -396,7 +396,7 @@
 								error = null;
 							}}
 						>
-							Back to login
+							返回登录
 						</Button>
 					{/if}
 				</form>
@@ -404,7 +404,7 @@
 		</Card.Content>
 
 		<Card.Footer class="flex flex-col space-y-2 text-center text-sm text-muted-foreground">
-			<p>Dockhand Docker Management</p>
+			<p>Dockhand Docker 管理面板</p>
 		</Card.Footer>
 	</Card.Root>
 </div>

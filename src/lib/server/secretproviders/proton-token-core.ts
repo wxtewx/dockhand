@@ -19,25 +19,25 @@ const BASE64URL_RE = /^[A-Za-z0-9_-]+$/;
 
 /** Why a token cannot be used, or null when its shape is right. */
 export function protonTokenFormatError(raw: string): string | null {
-	if (!raw) return 'Proton Pass access token is empty';
+	if (!raw) return 'Proton Pass 访问令牌为空';
 	if (raw.includes('\0') || /\s/.test(raw)) {
-		return 'Proton Pass access token is malformed: it contains whitespace or a control character';
+		return 'Proton Pass 访问令牌格式错误：包含空白字符或控制字符';
 	}
 
 	const parts = raw.split(TOKEN_SEPARATOR);
 	if (parts.length !== 2) {
-		return `Proton Pass access token is malformed: expected the format ${TOKEN_PREFIX}<token>${TOKEN_SEPARATOR}<key>. Copy the whole token, including the part after "${TOKEN_SEPARATOR}".`;
+		return `Proton Pass访问令牌格式错误：预期格式为 ${TOKEN_PREFIX}<令牌>${TOKEN_SEPARATOR}<密钥>。请复制完整令牌，包括 "${TOKEN_SEPARATOR}" 之后的部分。`;
 	}
 
 	const [token, key] = parts;
 	if (!token.startsWith(TOKEN_PREFIX)) {
-		return `Proton Pass access token is malformed: it must start with "${TOKEN_PREFIX}"`;
+		return `Proton Pass访问令牌格式错误：必须以 "${TOKEN_PREFIX}" 开头`;
 	}
 	if (token.length - TOKEN_PREFIX.length !== TOKEN_LENGTH_WITHOUT_PREFIX) {
-		return `Proton Pass access token is malformed: expected ${TOKEN_LENGTH_WITHOUT_PREFIX} characters after "${TOKEN_PREFIX}", got ${token.length - TOKEN_PREFIX.length}`;
+		return `Proton Pass访问令牌格式错误："${TOKEN_PREFIX}" 之后应当为 ${TOKEN_LENGTH_WITHOUT_PREFIX} 个字符，实际为 ${token.length - TOKEN_PREFIX.length} 个`;
 	}
 	if (!key || !BASE64URL_RE.test(key)) {
-		return `Proton Pass access token is malformed: the key after "${TOKEN_SEPARATOR}" must be base64url (A-Z, a-z, 0-9, - and _)`;
+		return `Proton Pass访问令牌格式错误："${TOKEN_SEPARATOR}" 之后的密钥必须为 base64url 格式 (A-Z, a-z, 0-9, - 和 _)`;
 	}
 	return null;
 }
@@ -51,10 +51,10 @@ export function protonTokenFormatError(raw: string): string | null {
  * `Caused by:` chain, verified against 2.4.1.
  */
 const KNOWN_CAUSES = [
-	'This personal access token is invalid, expired or has been deleted.',
-	'Personal access token token not found. Set PROTON_PASS_PERSONAL_ACCESS_TOKEN environment variable',
-	'Invalid personal access token token format. Expected format: pst_<token>::<key>',
-	'Already authenticated'
+	'该个人访问令牌无效、已过期或已被删除。',
+    '未找到个人访问令牌。请设置环境变量 PROTON_PASS_PERSONAL_ACCESS_TOKEN',
+    '个人访问令牌格式无效。预期格式：pst_<token>::<key>',
+    '已经完成身份验证'
 ] as const;
 
 /**

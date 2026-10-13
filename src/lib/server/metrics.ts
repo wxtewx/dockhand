@@ -58,62 +58,62 @@ const g = (name: string, help: string, labelNames: string[] = []) =>
 	new Gauge({ name: PREFIX + name, help, labelNames, registers: [registry] });
 
 // --- Build / process ---
-const buildInfo = g('build_info', 'Dockhand build info; value is always 1.', ['version']);
-const uptimeSeconds = g('uptime_seconds', 'Seconds since the Dockhand server started.');
+const buildInfo = g('build_info', 'Dockhand 构建信息；数值固定为 1。', ['version']);
+const uptimeSeconds = g('uptime_seconds', 'Dockhand 服务启动时长 (秒)。');
 
 // --- Per-environment state ---
-const envUp = g('env_up', '1 if the environment responded to the last scrape, else 0.', ['env', 'env_id', 'connection_type']);
-const containers = g('containers', 'Containers by lifecycle state.', ['env', 'env_id', 'state']);
-const containersHealth = g('containers_health', 'Containers by health status.', ['env', 'env_id', 'health']);
-const containersRestarts = g('container_restarts_total', 'Sum of container restart counts.', ['env', 'env_id']);
-const containersTotal = g('containers_count', 'Total containers (all states).', ['env', 'env_id']);
-const updatesAvailable = g('updates_available', 'Containers with a pending image update.', ['env', 'env_id']);
-const imagesTotal = g('images_count', 'Number of images.', ['env', 'env_id']);
-const imagesDangling = g('images_dangling', 'Untagged (dangling) images.', ['env', 'env_id']);
-const imageBytes = g('image_bytes', 'Total on-disk size of images in bytes.', ['env', 'env_id']);
-const volumesTotal = g('volumes_count', 'Number of volumes.', ['env', 'env_id']);
-const networksTotal = g('networks_count', 'Number of networks.', ['env', 'env_id']);
-const stacksTotal = g('stacks_count', 'Number of compose stacks.', ['env', 'env_id']);
-const vulnerabilities = g('vulnerabilities', 'Vulnerability findings by severity.', ['env', 'env_id', 'severity']);
-const vulnerabilitiesTotal = g('vulnerabilities_count', 'Total vulnerability findings.', ['env', 'env_id']);
-const imagesScanned = g('images_scanned', 'Images with at least one persisted scan.', ['env', 'env_id']);
-const eventsTotal = g('container_events_total', 'Recorded container events (all time).', ['env', 'env_id']);
-const eventsToday = g('container_events_today', 'Recorded container events since local midnight.', ['env', 'env_id']);
-const eventsByAction = g('container_events_by_action', 'Recorded container events by action type.', ['env', 'env_id', 'action']);
-const scanOldestAge = g('scan_oldest_age_seconds', 'Age of the oldest current scan (staleness).', ['env', 'env_id']);
-const scanAvgDuration = g('scan_avg_duration_seconds', 'Average scan duration.', ['env', 'env_id']);
+const envUp = g('env_up', '环境上次探测响应则为 1，否则为 0。', ['env', 'env_id', 'connection_type']);
+const containers = g('containers', '按生命周期状态统计容器数量。', ['env', 'env_id', 'state']);
+const containersHealth = g('containers_health', '按健康状态统计容器数量。', ['env', 'env_id', 'health']);
+const containersRestarts = g('container_restarts_total', '容器重启次数总和。', ['env', 'env_id']);
+const containersTotal = g('containers_count', '容器总数 (所有状态)。', ['env', 'env_id']);
+const updatesAvailable = g('updates_available', '存在镜像更新的容器数量。', ['env', 'env_id']);
+const imagesTotal = g('images_count', '镜像数量。', ['env', 'env_id']);
+const imagesDangling = g('images_dangling', '无标签 (悬挂) 镜像。', ['env', 'env_id']);
+const imageBytes = g('image_bytes', '镜像磁盘总占用大小 (字节)。', ['env', 'env_id']);
+const volumesTotal = g('volumes_count', '数据卷数量。', ['env', 'env_id']);
+const networksTotal = g('networks_count', '网络数量。', ['env', 'env_id']);
+const stacksTotal = g('stacks_count', 'Compose 堆栈数量。', ['env', 'env_id']);
+const vulnerabilities = g('vulnerabilities', '按严重等级统计漏洞条目。', ['env', 'env_id', 'severity']);
+const vulnerabilitiesTotal = g('vulnerabilities_count', '漏洞条目总数。', ['env', 'env_id']);
+const imagesScanned = g('images_scanned', '至少完成一次持久化扫描的镜像。', ['env', 'env_id']);
+const eventsTotal = g('container_events_total', '记录的容器事件 (累计)。', ['env', 'env_id']);
+const eventsToday = g('container_events_today', '本地午夜之后记录的容器事件。', ['env', 'env_id']);
+const eventsByAction = g('container_events_by_action', '按操作类型统计容器事件。', ['env', 'env_id', 'action']);
+const scanOldestAge = g('scan_oldest_age_seconds', '当前最早一次扫描的时长 (用于判断扫描滞后)。', ['env', 'env_id']);
+const scanAvgDuration = g('scan_avg_duration_seconds', '平均扫描耗时。', ['env', 'env_id']);
 
 // --- Per-environment resources (from the Go collector, via metrics-store) ---
-const envCpu = g('env_cpu_percent', 'Host CPU usage percent (from the collector).', ['env', 'env_id']);
-const envMemUsed = g('env_memory_used_bytes', 'Host memory used in bytes (from the collector).', ['env', 'env_id']);
-const envMemTotal = g('env_memory_total_bytes', 'Host memory total in bytes (from the collector).', ['env', 'env_id']);
+const envCpu = g('env_cpu_percent', '宿主机 CPU 使用率 (采集器上报)。', ['env', 'env_id']);
+const envMemUsed = g('env_memory_used_bytes', '宿主机已用内存 (字节，采集器上报)。', ['env', 'env_id']);
+const envMemTotal = g('env_memory_total_bytes', '宿主机总内存 (字节，采集器上报)。', ['env', 'env_id']);
 
 // --- Internals ---
-const environmentsTotal = g('environments', 'Configured environments.');
-const usersTotal = g('users', 'Configured users.');
-const registriesTotal = g('registries', 'Configured image registries.');
-const gitReposTotal = g('git_repositories', 'Configured git repositories.');
-const configSetsTotal = g('config_sets', 'Saved config sets.');
-const apiTokens = g('api_tokens', 'API tokens by state.', ['state']);
-const scheduleExec = g('schedule_executions', 'Scheduled task executions by type and status.', ['type', 'status']);
-const scheduleLastRun = g('schedule_last_run_seconds', 'Age of the last execution, by schedule type.', ['type']);
-const scheduleLastSuccess = g('schedule_last_success_seconds', 'Age of the last SUCCESSFUL execution, by schedule type.', ['type']);
+const environmentsTotal = g('environments', '已配置环境数量。');
+const usersTotal = g('users', '已配置用户数量。');
+const registriesTotal = g('registries', '已配置镜像仓库数量。');
+const gitReposTotal = g('git_repositories', '已配置 Git 仓库数量。');
+const configSetsTotal = g('config_sets', '已保存配置集数量。');
+const apiTokens = g('api_tokens', '按状态统计 API 令牌。', ['state']);
+const scheduleExec = g('schedule_executions', '按类型与状态统计定时任务执行记录。', ['type', 'status']);
+const scheduleLastRun = g('schedule_last_run_seconds', '各类定时任务上次执行距今时长。', ['type']);
+const scheduleLastSuccess = g('schedule_last_success_seconds', '各类定时任务上次成功执行距今时长。', ['type']);
 // Per-backup-config visibility (audit medium #16) so one silently-failing target
 // is alertable, not hidden behind the type-level aggregates above.
-const backupLastSuccess = g('backup_last_success_seconds', 'Age of the last successful backup, per config.', ['config_id', 'target', 'env']);
-const backupLastStatus = g('backup_last_status', 'Last backup status per config (1=success, 0=failed/unknown).', ['config_id', 'target', 'env']);
-const hawserAgents = g('hawser_agents_connected', 'Connected hawser edge agents.');
-const hawserPending = g('hawser_pending_requests', 'In-flight requests across all edge agents.');
-const hawserAgentInfo = g('hawser_agent_info', 'Connected edge agent info; value is connection age in seconds.', ['env_id', 'agent', 'agent_version', 'docker_version', 'hostname']);
-const jobs = g('jobs', 'Background SSE jobs by status.', ['status']);
-const scanQueue = g('scan_queue', 'Vulnerability scan queue depth.', ['kind']);
-const cacheEntries = g('vuln_cache_entries', 'Vulnerability aggregation cache occupancy.', ['kind']);
-const schedulerRunning = g('scheduler_running', '1 if the scheduler is running, else 0.');
-const schedulerJobs = g('scheduler_active_jobs', 'Active scheduled cron jobs.');
-const dbSizeBytes = g('database_size_bytes', 'On-disk database size in bytes.', ['type']);
-const dbInfo = g('database_info', 'Database engine info; value is always 1.', ['type', 'version']);
-const dbRows = g('database_rows', 'Row counts for high-churn tables.', ['table']);
-const dbExtra = g('database_stat', 'Engine-specific DB gauges (postgres connections, sqlite wal/freelist bytes, ...).', ['type', 'stat']);
+const backupLastSuccess = g('backup_last_success_seconds', '各备份配置上次成功备份距今时长。', ['config_id', 'target', 'env']);
+const backupLastStatus = g('backup_last_status', '各备份配置最近状态 (1=成功，0=失败/未知)。', ['config_id', 'target', 'env']);
+const hawserAgents = g('hawser_agents_connected', '已连接 Hawser 边缘节点。');
+const hawserPending = g('hawser_pending_requests', '所有边缘节点正在处理的请求。');
+const hawserAgentInfo = g('hawser_agent_info', '已连接边缘节点信息；数值为连接时长 (秒)。', ['env_id', 'agent', 'agent_version', 'docker_version', 'hostname']);
+const jobs = g('jobs', '按状态统计后台 SSE 任务。', ['status']);
+const scanQueue = g('scan_queue', '漏洞扫描队列长度。', ['kind']);
+const cacheEntries = g('vuln_cache_entries', '漏洞聚合缓存占用条目数。', ['kind']);
+const schedulerRunning = g('scheduler_running', '调度器运行中为 1，否则为 0。');
+const schedulerJobs = g('scheduler_active_jobs', '正在运行的定时 Cron 任务。');
+const dbSizeBytes = g('database_size_bytes', '数据库磁盘占用大小 (字节)。', ['type']);
+const dbInfo = g('database_info', '数据库引擎信息；数值固定为 1。', ['type', 'version']);
+const dbRows = g('database_rows', '高频数据表行数统计。', ['table']);
+const dbExtra = g('database_stat', '引擎专属数据库指标 (Postgres 连接数、SQLite WAL/空闲列表字节等)。', ['type', 'stat']);
 
 // ---------------------------------------------------------------------------
 // Collection.

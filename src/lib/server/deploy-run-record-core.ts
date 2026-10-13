@@ -46,7 +46,7 @@ export interface DeployRunDetails {
  */
 export function buildRunDetails(input: BuildRunDetailsInput): DeployRunDetails {
 	if (!input.logFile) {
-		throw new Error('buildRunDetails: logFile is required to tie the record to its log file');
+		throw new Error('buildRunDetails: logFile 为必填项，用于将记录关联到其日志文件');
 	}
 	return {
 		options: input.options,

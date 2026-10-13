@@ -26,14 +26,14 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 	// Authentication gate first: a caller without a session gets 401 here, not
 	// a 403 indistinguishable from "logged in but lacking the permission".
 	if (auth.authEnabled && !auth.isAuthenticated) {
-		return json({ error: 'Authentication required' }, { status: 401 });
+		return json({ error: '需要进行身份验证' }, { status: 401 });
 	}
 	// Coarse gate: reject a caller who lacks stacks:view EVERYWHERE, before
 	// even touching the database. This does not by itself scope to the run's
 	// environment (see the check below) -- it only screens out someone with
 	// no stacks:view grant on any role at all.
 	if (auth.authEnabled && !(await auth.can('stacks', 'view'))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const stackName = decodeURIComponent(params.name);
@@ -56,7 +56,7 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 	// "no environment context" global-permission check those routes use for
 	// their own nullable environmentId (`gitStack.environmentId || undefined`).
 	if (auth.authEnabled && !(await auth.can('stacks', 'view', run.environmentId ?? undefined))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	return json({
@@ -102,11 +102,11 @@ export const DELETE: RequestHandler = async ({ params, cookies }) => {
 	const auth = await authorize(cookies);
 
 	if (auth.authEnabled && !auth.isAuthenticated) {
-		return json({ error: 'Authentication required' }, { status: 401 });
+		return json({ error: '需要进行身份验证' }, { status: 401 });
 	}
 	// Coarse gate -- see the identical comment on GET above.
 	if (auth.authEnabled && !(await auth.can('stacks', 'edit'))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const stackName = decodeURIComponent(params.name);
@@ -120,7 +120,7 @@ export const DELETE: RequestHandler = async ({ params, cookies }) => {
 	// gate. Checked before either delete happens: neither the log file nor
 	// the database record is touched if this denies.
 	if (auth.authEnabled && !(await auth.can('stacks', 'edit', run.environmentId ?? undefined))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Finding B fix: refuse to delete a run that has not finished yet. Checked AFTER
@@ -130,7 +130,7 @@ export const DELETE: RequestHandler = async ({ params, cookies }) => {
 	// isTerminalRunStatus()'s doc comment (deploy-run-access.ts) for why an unrecognized
 	// status is treated as NOT finished rather than assumed safe to delete.
 	if (!isTerminalRunStatus(run.status)) {
-		return json({ error: 'Cannot delete a running deploy run' }, { status: 409 });
+		return json({ error: '无法删除正在运行的部署任务' }, { status: 409 });
 	}
 
 	// F5 fix: scoped to the run's OWN environment directory (deploy-log-store.ts).

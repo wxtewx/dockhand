@@ -47,7 +47,7 @@
 			const response = await fetch(`/api/environments/report?format=${format}&env=${environmentId}`);
 			if (!response.ok) {
 				const message = await response.json().then((b) => b?.error).catch(() => null);
-				toast.error(message || 'Failed to build the report');
+				toast.error(message || '生成报告失败');
 				return;
 			}
 			const blob = await response.blob();
@@ -61,8 +61,8 @@
 			link.click();
 			URL.revokeObjectURL(url);
 		} catch (error) {
-			console.error('Failed to download the report:', error);
-			toast.error('Failed to build the report');
+			console.error('下载报告失败:', error);
+			toast.error('生成报告失败');
 		} finally {
 			downloading = false;
 		}
@@ -70,23 +70,22 @@
 
 	const formatLabel = $derived(reportFormat === 'csv' ? 'CSV' : 'PDF');
 	const channelLabel = $derived(
-		smtpChannels.find((c) => c.id === reportNotificationId)?.name ?? 'Select a channel'
+		smtpChannels.find((c) => c.id === reportNotificationId)?.name ?? '选择通道'
 	);
 </script>
 
 <div class="space-y-4">
 	<div class="flex items-center gap-2 text-sm font-medium">
 		<FileText class="w-4 h-4" />
-		Scheduled state report
+		定时状态报告
 	</div>
 	<p class="text-xs text-muted-foreground">
-		Mail a report of what is running in this environment, with its vulnerability counts and scan
-		coverage, on a schedule.
+		按计划发送此环境运行资源的报告，包含漏洞数量与扫描覆盖率。
 	</p>
 
 	{#if !licensed}
 		<div class="rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
-			A commercial license is required to build a state report.
+			生成状态报告需要商业许可证。
 		</div>
 	{:else if reportLoading}
 		<div class="flex items-center justify-center py-4">
@@ -97,8 +96,8 @@
 		<div class="flex items-center gap-2 rounded-md border border-border bg-muted/30 p-3">
 			<Download class="w-4 h-4 text-muted-foreground shrink-0" />
 			<div class="flex-1 min-w-0">
-				<Label>Download this environment's report</Label>
-				<p class="text-xs text-muted-foreground">Build it now, for this environment only.</p>
+				<Label>下载此环境的报告</Label>
+				<p class="text-xs text-muted-foreground">立即生成，仅包含当前环境。</p>
 			</div>
 			<Button size="sm" variant="outline" disabled={downloading || environmentId === null}
 				onclick={() => downloadNow('pdf')}>PDF</Button>
@@ -109,10 +108,9 @@
 		<div class="flex items-start gap-2 pt-1">
 			<FileDown class="w-4 h-4 text-sky-500 mt-0.5 shrink-0" />
 			<div class="flex-1">
-				<Label>Send a report on a schedule</Label>
+				<Label>按计划发送报告</Label>
 				<p class="text-xs text-muted-foreground">
-					The report lists every container and the vulnerabilities known about its images, and it
-					leaves this installation as a mail attachment.
+					报告会列出所有容器及其镜像已知漏洞，并以邮件附件形式从本实例发出。
 				</p>
 			</div>
 			<TogglePill bind:checked={reportEnabled} />
@@ -122,7 +120,7 @@
 			<div class="flex items-start gap-2">
 				<div class="w-4 shrink-0"></div>
 				<div class="flex-1 space-y-2">
-					<Label>Schedule</Label>
+					<Label>调度计划</Label>
 					<CronEditor value={reportCron} onchange={(cron) => (reportCron = cron)} />
 				</div>
 			</div>
@@ -130,12 +128,12 @@
 			<div class="flex items-start gap-2">
 				<div class="w-4 shrink-0"></div>
 				<div class="flex-1 space-y-2">
-					<Label>Format</Label>
+					<Label>格式</Label>
 					<Select.Root type="single" bind:value={reportFormat}>
 						<Select.Trigger class="w-full">{formatLabel}</Select.Trigger>
 						<Select.Content>
-							<Select.Item value="pdf">PDF - formatted for reading and filing</Select.Item>
-							<Select.Item value="csv">CSV - for a spreadsheet or another tool</Select.Item>
+							<Select.Item value="pdf">PDF - 适合阅读与归档</Select.Item>
+							<Select.Item value="csv">CSV - 用于电子表格或其他工具</Select.Item>
 						</Select.Content>
 					</Select.Root>
 				</div>
@@ -144,12 +142,12 @@
 			<div class="flex items-start gap-2">
 				<Mail class="w-4 h-4 text-muted-foreground mt-7 shrink-0" />
 				<div class="flex-1 space-y-2">
-					<Label>Send to</Label>
+					<Label>发送至</Label>
 					{#if smtpChannels.length === 0}
 						<p class="text-xs text-amber-600 dark:text-amber-400">
-							No SMTP channel is configured. Add one under Settings &gt; Notifications - a webhook
-							channel cannot carry the attachment. Until then, turn the schedule off above:
-							it cannot be saved without a channel.
+							尚未配置 SMTP 通道。前往 设置 > 通知 新增；Webhook
+                            通道无法携带附件。在此之前，请关闭上方的定时任务：
+                            未配置通道时无法保存。
 						</p>
 					{:else}
 						<Select.Root
@@ -165,7 +163,7 @@
 							</Select.Content>
 						</Select.Root>
 						<p class="text-xs text-muted-foreground">
-							Only SMTP channels are listed; the report is sent as an attachment.
+							列表仅展示 SMTP 通道；报告将作为附件发送。
 						</p>
 					{/if}
 				</div>

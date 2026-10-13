@@ -64,7 +64,7 @@
 
 	async function testConnection() {
 		if (!formUrl.trim()) {
-			formError = 'URL is required to test';
+			formError = '测试连接必须填写地址';
 			return;
 		}
 
@@ -95,7 +95,7 @@
 
 			testResult = await response.json();
 		} catch {
-			testResult = { success: false, message: 'Failed to test connection' };
+			testResult = { success: false, message: '连接测试失败' };
 		} finally {
 			testLoading = false;
 		}
@@ -103,7 +103,7 @@
 
 	async function save() {
 		if (!formName.trim() || !formUrl.trim()) {
-			formError = 'Name and URL are required';
+			formError = '名称和 URL 为必填项';
 			return;
 		}
 
@@ -136,10 +136,10 @@
 				onSaved();
 			} else {
 				const data = await response.json();
-				formError = data.error || `Failed to ${isEditing ? 'update' : 'create'} registry`;
+				formError = data.error || `${isEditing ? '更新' : '创建'}镜像仓库失败`;
 			}
 		} catch {
-			formError = `Failed to ${isEditing ? 'update' : 'create'} registry`;
+			formError = `${isEditing ? '更新' : '创建'}镜像仓库失败`;
 		} finally {
 			formSaving = false;
 		}
@@ -154,29 +154,29 @@
 <Dialog.Root bind:open onOpenChange={(o) => { if (o) { formError = ''; focusFirstInput(); } }}>
 	<Dialog.Content class="max-w-md">
 		<Dialog.Header>
-			<Dialog.Title>{isEditing ? 'Edit' : 'Add'} registry</Dialog.Title>
+			<Dialog.Title>{isEditing ? '编辑' : '添加'}镜像仓库</Dialog.Title>
 		</Dialog.Header>
 		<div class="space-y-4">
 			{#if formError}
 				<div class="text-sm text-red-600 dark:text-red-400">{formError}</div>
 			{/if}
 			<div class="space-y-2">
-				<Label for="reg-name">Name</Label>
-				<Input id="reg-name" bind:value={formName} placeholder="My Private Registry" />
+				<Label for="reg-name">名称</Label>
+				<Input id="reg-name" bind:value={formName} placeholder="我的私有仓库" />
 			</div>
 			<div class="space-y-2">
 				<Label for="reg-url">URL</Label>
 				<Input id="reg-url" bind:value={formUrl} placeholder="https://registry.example.com" />
 			</div>
 			<div class="space-y-4 pt-2 border-t">
-				<p class="text-xs text-muted-foreground">Credentials {isEditing ? '(leave password blank to keep existing)' : '(optional)'}</p>
+				<p class="text-xs text-muted-foreground">凭据 {isEditing ? '(留空密码以保留现有设置)' : '(可选)'}</p>
 				<div class="space-y-2">
-					<Label for="reg-username">Username</Label>
-					<Input id="reg-username" bind:value={formUsername} placeholder="username" />
+					<Label for="reg-username">用户名</Label>
+					<Input id="reg-username" bind:value={formUsername} placeholder="用户名" />
 				</div>
 				<div class="space-y-2">
-					<Label for="reg-password">Password / Token</Label>
-					<Input id="reg-password" type="password" bind:value={formPassword} placeholder={isEditing ? 'leave blank to keep existing' : 'password or access token'} />
+					<Label for="reg-password">密码 / 令牌</Label>
+					<Input id="reg-password" type="password" bind:value={formPassword} placeholder={isEditing ? '留空以保留现有密码' : '密码或访问令牌'} />
 				</div>
 			</div>
 		</div>
@@ -197,10 +197,10 @@
 				{:else}
 					<Wifi class="w-4 h-4" />
 				{/if}
-				Test
+				测试
 			</Button>
 			<div class="flex-1"></div>
-			<Button variant="outline" onclick={handleClose}>Cancel</Button>
+			<Button variant="outline" onclick={handleClose}>取消</Button>
 			<Button onclick={save} disabled={formSaving}>
 				{#if formSaving}
 					<RefreshCw class="w-4 h-4 mr-1 animate-spin" />
@@ -209,7 +209,7 @@
 				{:else}
 					<Plus class="w-4 h-4" />
 				{/if}
-				{isEditing ? 'Save' : 'Add'}
+				{isEditing ? '保存' : '添加'}
 			</Button>
 		</Dialog.Footer>
 	</Dialog.Content>

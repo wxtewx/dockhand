@@ -139,13 +139,13 @@
 				return;
 			}
 			if (!res.ok) {
-				logs = new Map(logs).set(run.id, { status: 'error', error: `Failed to load log (${res.status})` });
+				logs = new Map(logs).set(run.id, { status: 'error', error: `加载日志失败 (${res.status})` });
 				return;
 			}
 			const text = await res.text();
 			logs = new Map(logs).set(run.id, { status: 'loaded', text });
 		} catch {
-			logs = new Map(logs).set(run.id, { status: 'error', error: 'Failed to load log.' });
+			logs = new Map(logs).set(run.id, { status: 'error', error: '加载日志失败。' });
 		}
 	}
 
@@ -161,7 +161,7 @@
 			});
 			if (!res.ok) {
 				const data = await res.json().catch(() => null);
-				toast.error(data?.error || 'Failed to delete deploy run');
+				toast.error(data?.error || '删除部署记录失败');
 				return;
 			}
 			runs = runs.filter((r) => r.id !== run.id);
@@ -171,9 +171,9 @@
 			const l = new Map(logs);
 			l.delete(run.id);
 			logs = l;
-			toast.success('Deploy run deleted');
+			toast.success('部署记录已删除');
 		} catch {
-			toast.error('Failed to delete deploy run');
+			toast.error('删除部署记录失败');
 		} finally {
 			const d = new Set(deletingIds);
 			d.delete(run.id);
@@ -189,13 +189,13 @@
 			const res = await fetch(appendEnvParam(`/api/stacks/${encodeURIComponent(stackName)}/deploys`, envId));
 			if (!res.ok) {
 				const data = await res.json().catch(() => null);
-				loadError = data?.error || `Failed to load deploy history (${res.status})`;
+				loadError = data?.error || `加载部署历史失败 (${res.status})`;
 				return;
 			}
 			const data = await res.json();
 			runs = Array.isArray(data?.runs) ? data.runs : [];
 		} catch {
-			loadError = 'Failed to load deploy history.';
+			loadError = '加载部署历史失败。';
 		} finally {
 			loading = false;
 		}
@@ -315,8 +315,8 @@
 		{#snippet emptyState()}
 			<div class="flex min-h-[40vh] flex-col items-center justify-center py-10 text-center">
 				<Clock class="mb-3 h-10 w-10 text-muted-foreground/40" />
-				<p class="text-sm text-muted-foreground">No deploy runs yet.</p>
-				<p class="mt-1 text-xs text-muted-foreground">Deploy this stack — its run history appears here.</p>
+				<p class="text-sm text-muted-foreground">暂无部署记录。</p>
+				<p class="mt-1 text-xs text-muted-foreground">部署此堆栈，运行记录将会显示在这里。</p>
 			</div>
 		{/snippet}
 
@@ -371,9 +371,9 @@
 					<div class="flex justify-end">
 						<ConfirmPopover
 							open={confirmDeleteId === run.id}
-							action="Delete"
-							itemType="deploy run"
-							title="Delete this run"
+							action="删除"
+							itemType="部署记录"
+							title="删除这条记录"
 							position="left"
 							disabled={deletingIds.has(run.id)}
 							onConfirm={() => deleteRun(run)}
@@ -399,7 +399,7 @@
 			<div class="w-full p-4 pl-12 shadow-inner bg-muted text-xs">
 				<div class="grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-3">
 					<div>
-						<div class="text-muted-foreground">Containers</div>
+						<div class="text-muted-foreground">容器</div>
 						<div>{view.containerSummary}</div>
 						{#if view.containerNames.length > 0}
 							<div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -413,11 +413,11 @@
 						{/if}
 					</div>
 					<div>
-						<div class="text-muted-foreground">Build</div>
+						<div class="text-muted-foreground">构建</div>
 						<div>{view.buildStatus}</div>
 					</div>
 					<div>
-						<div class="text-muted-foreground">Triggered by</div>
+						<div class="text-muted-foreground">触发来源</div>
 						<div>{view.trigger}</div>
 					</div>
 				</div>
@@ -425,7 +425,7 @@
 					<div class="mt-2 space-y-1">
 						{#if view.imagesBuilt.length > 0}
 							<div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-								<span class="text-muted-foreground">Built:</span>
+								<span class="text-muted-foreground">已构建:</span>
 								{#each view.imagesBuilt as img}
 									<span class="inline-flex items-center gap-1">
 										<ContainerIcon image={img} showFallbackWhenOff class="w-3 h-3 shrink-0" />
@@ -436,7 +436,7 @@
 						{/if}
 						{#if view.imagesPulled.length > 0}
 							<div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-								<span class="text-muted-foreground">Pulled:</span>
+								<span class="text-muted-foreground">已拉取:</span>
 								{#each view.imagesPulled as img}
 									<span class="inline-flex items-center gap-1">
 										<ContainerIcon image={img} showFallbackWhenOff class="w-3 h-3 shrink-0" />
@@ -451,7 +451,7 @@
 					{#if panelState.truncated}
 						<div class="mb-1">
 							<span class="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
-								<AlertTriangle class="h-2.5 w-2.5" /> Log truncated
+								<AlertTriangle class="h-2.5 w-2.5" /> 日志已截断
 							</span>
 						</div>
 					{/if}
@@ -460,7 +460,7 @@
 						     LogViewer with logs="" -- the two mean opposite things, so this case
 						     gets its own message. -->
 						<div class="rounded-md border border-dashed border-zinc-300 px-3 py-6 text-center text-muted-foreground dark:border-zinc-700">
-							Protocol no longer available.
+							日志已无法获取。
 						</div>
 					{:else if logEntry?.status === 'error'}
 						<div class="rounded-md border border-dashed border-destructive/40 px-3 py-6 text-center text-destructive">
@@ -485,7 +485,7 @@
 							role="separator"
 							aria-orientation="horizontal"
 							tabindex="0"
-							title="Drag to resize"
+							title="拖动调整大小"
 						>
 							<GripHorizontal class="h-3 w-3 text-white opacity-0 transition-opacity group-hover:opacity-100 {dragging ? 'opacity-100' : ''}" />
 						</div>

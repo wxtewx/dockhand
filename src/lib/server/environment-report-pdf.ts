@@ -10,6 +10,7 @@
  */
 
 import type { EnvironmentReport, ReportEnvironment, ReportImageScan } from './environment-report-core';
+import { getLabelText } from '$lib/types';		
 
 const BRAND_INK = '#111827';
 const MUTED = '#6b7280';
@@ -45,6 +46,8 @@ interface Column<T> {
  * silently absent in production.
  */
 let logoCache: string | null | undefined;
+let fontRegularCache: Buffer | null | undefined;
+let fontBoldCache: Buffer | null | undefined;
 export async function readReportLogo(): Promise<string | null> {
 	if (logoCache !== undefined) return logoCache;
 	const { readFile } = await import('node:fs/promises');
@@ -59,6 +62,38 @@ export async function readReportLogo(): Promise<string | null> {
 	}
 	logoCache = null;
 	return logoCache;
+}
+
+async function readReportFontRegular(): Promise<Buffer | null> {
+    if (fontRegularCache !== undefined) return fontRegularCache;
+    const { readFile } = await import('node:fs/promises');
+    const { join } = await import('node:path');
+    for (const dir of ['build/client', 'static']) {
+        try {
+            fontRegularCache = await readFile(join(process.cwd(), dir, 'fonts/NotoSansSC/NotoSansSC-Regular.ttf'));
+            return fontRegularCache;
+        } catch {
+            continue;
+        }
+    }
+    fontRegularCache = null;
+    return null;
+}
+
+async function readReportFontBold(): Promise<Buffer | null> {
+    if (fontBoldCache !== undefined) return fontBoldCache;
+    const { readFile } = await import('node:fs/promises');
+    const { join } = await import('node:path');
+    for (const dir of ['build/client', 'static']) {
+        try {
+            fontBoldCache = await readFile(join(process.cwd(), dir, 'fonts/NotoSansSC/NotoSansSC-Bold.ttf'));
+            return fontBoldCache;
+        } catch {
+            continue;
+        }
+    }
+    fontBoldCache = null;
+    return null;
 }
 
 /**
@@ -121,12 +156,12 @@ export function fitToWidth(doc: PDFKit.PDFDocument, value: string, avail: number
 export function headlineFigures(report: EnvironmentReport): Array<{ label: string; value: number; color?: string }> {
 	const t = report.totals;
 	return [
-		{ label: 'Environments', value: t.environments },
-		{ label: 'Containers', value: t.containers },
-		{ label: 'Stacks', value: t.stacks },
-		{ label: 'Scanned images', value: t.scannedImages },
-		{ label: 'Critical', value: t.critical, color: t.critical > 0 ? CRITICAL : undefined },
-		{ label: 'High', value: t.high, color: t.high > 0 ? HIGH : undefined }
+		{ label: '环境', value: t.environments },
+        { label: '容器', value: t.containers },
+        { label: '堆栈', value: t.stacks },
+        { label: '已扫描镜像', value: t.scannedImages },
+        { label: '严重', value: t.critical, color: t.critical > 0 ? CRITICAL : undefined },
+        { label: '高危', value: t.high, color: t.high > 0 ? HIGH : undefined }
 	];
 }
 
@@ -154,7 +189,7 @@ export async function buildReportPdf(report: EnvironmentReport, logoSvg?: string
 		margin: MARGIN,
 		bufferPages: true,
 		info: {
-			Title: 'Dockhand environment state report',
+			Title: 'Dockhand 环境状态报告',
 			Author: 'Dockhand',
 			Creator: `Dockhand ${report.appVersion}`,
 			CreationDate: new Date(report.generatedAt)
@@ -168,26 +203,35 @@ export async function buildReportPdf(report: EnvironmentReport, logoSvg?: string
 		doc.on('error', reject);
 	});
 
+	const [fontRegularBuf, fontBoldBuf] = await Promise.all([
+        readReportFontRegular(),
+        readReportFontBold()
+    ]);
+    const fontNormal: Buffer | string = fontRegularBuf ?? 'Helvetica';
+    const fontBold: Buffer | string = fontBoldBuf ?? 'Helvetica-Bold';
+
 	const left = MARGIN;
 	const right = doc.page.width - MARGIN;
 	const width = right - left;
 
-	drawHeader(doc, svgToPdf, report, logoSvg, left, right, width);
-	drawFigures(doc, report, left, width);
+	drawHeader(doc, fontNormal, fontBold, svgToPdf, report, logoSvg, left, right, width);
+	drawFigures(doc, fontNormal, fontBold, report, left, width);
 
 	for (const env of report.environments) {
-		drawEnvironment(doc, env, left, width);
+		drawEnvironment(doc, fontNormal, fontBold, env, left, width);
 	}
-	drawScans(doc, report, left, width);
-	if (report.includesChanges) drawChanges(doc, report, left, width);
+	drawScans(doc, fontNormal, fontBold, report, left, width);
+	if (report.includesChanges) drawChanges(doc, fontNormal, fontBold, report, left, width);
 
-	drawFooters(doc, left, width);
+	drawFooters(doc, fontNormal, fontBold, left, width);
 	doc.end();
 	return done;
 }
 
 function drawHeader(
 	doc: PDFKit.PDFDocument,
+	fontNormal: PDFKit.Font | string,
+    fontBold: PDFKit.Font | string,
 	svgToPdf: (doc: PDFKit.PDFDocument, svg: string, x: number, y: number, opts?: object) => void,
 	report: EnvironmentReport,
 	logoSvg: string | null | undefined,
@@ -204,40 +248,40 @@ function drawHeader(
 			// A logo that will not parse is not worth failing a report over.
 		}
 	}
-	doc.fillColor(BRAND_INK).font('Helvetica-Bold').fontSize(17)
-		.text('Environment state report', textLeft, MARGIN, { lineBreak: false });
+	doc.fillColor(BRAND_INK).font(fontBold).fontSize(17)
+		.text('环境状态报告', textLeft, MARGIN, { lineBreak: false });
 
 	const when = (report.generatedAt || '').replace('T', ' ').slice(0, 16);
 	const envCount = report.environments.length;
-	const scope = `${envCount} ${envCount === 1 ? 'environment' : 'environments'}`;
-	doc.fillColor(MUTED).font('Helvetica').fontSize(8.5)
-		.text(`Generated ${when} UTC   |   Dockhand ${report.appVersion}   |   ${scope}`,
+	const scope = `${envCount} ${envCount === 1 ? '个环境' : '个环境'}`;
+	doc.fillColor(MUTED).font(fontNormal).fontSize(8.5)
+		.text(`生成时间 ${when} UTC   |   Dockhand ${report.appVersion}   |   ${scope}`,
 			textLeft, MARGIN + 21, { lineBreak: false });
 
 	doc.moveTo(left, MARGIN + 44).lineTo(right, MARGIN + 44).lineWidth(0.5).strokeColor(RULE).stroke();
 	doc.y = MARGIN + 60;
 }
 
-function drawFigures(doc: PDFKit.PDFDocument, report: EnvironmentReport, left: number, width: number) {
+function drawFigures(doc: PDFKit.PDFDocument, fontNormal: PDFKit.Font | string, fontBold: PDFKit.Font | string, report: EnvironmentReport, left: number, width: number) {
 	const items = headlineFigures(report);
 	const cell = width / items.length;
 	const top = doc.y;
 	items.forEach((item, i) => {
 		const x = left + i * cell;
-		doc.fillColor(item.color || BRAND_INK).font('Helvetica-Bold').fontSize(19)
+		doc.fillColor(item.color || BRAND_INK).font(fontBold).fontSize(19)
 			.text(String(item.value), x, top, { width: cell - 8, lineBreak: false });
-		doc.fillColor(MUTED).font('Helvetica').fontSize(7.5)
+		doc.fillColor(MUTED).font(fontNormal).fontSize(7.5)
 			.text(item.label.toUpperCase(), x, top + 23, { width: cell - 8, characterSpacing: 0.6, lineBreak: false });
 	});
 	doc.y = top + 46;
 }
 
-function drawTable<T>(doc: PDFKit.PDFDocument, title: string, columns: Column<T>[], rows: T[], left: number, width: number) {
+function drawTable<T>(doc: PDFKit.PDFDocument, fontNormal: PDFKit.Font | string, fontBold: PDFKit.Font | string, title: string, columns: Column<T>[], rows: T[], left: number, width: number) {
 	if (doc.y > doc.page.height - 150) {
 		doc.addPage();
 		doc.y = MARGIN;
 	}
-	doc.fillColor(BRAND_INK).font('Helvetica-Bold').fontSize(10.5).text(title, left, doc.y, { lineBreak: false });
+	doc.fillColor(BRAND_INK).font(fontBold).fontSize(10.5).text(title, left, doc.y, { lineBreak: false });
 	doc.y += 16;
 
 	const heading = () => {
@@ -245,7 +289,7 @@ function drawTable<T>(doc: PDFKit.PDFDocument, title: string, columns: Column<T>
 		doc.rect(left, y - 2, width, 15).fill(HEAD_BG);
 		let x = left + 5;
 		for (const col of columns) {
-			doc.fillColor(MUTED).font('Helvetica-Bold').fontSize(7.5)
+			doc.fillColor(MUTED).font(fontBold).fontSize(7.5)
 				.text(col.heading.toUpperCase(), x, y + 2.5, { width: col.width - 8, characterSpacing: 0.4, lineBreak: false });
 			x += col.width;
 		}
@@ -254,8 +298,8 @@ function drawTable<T>(doc: PDFKit.PDFDocument, title: string, columns: Column<T>
 	heading();
 
 	if (rows.length === 0) {
-		doc.fillColor(DIM).font('Helvetica-Oblique').fontSize(8)
-			.text('Nothing to report.', left + 5, doc.y, { lineBreak: false });
+		doc.fillColor(DIM).font(fontNormal).fontSize(8)
+			.text('无报告内容。', left + 5, doc.y, { lineBreak: false });
 		doc.y += ROW_H + 12;
 		return;
 	}
@@ -271,7 +315,7 @@ function drawTable<T>(doc: PDFKit.PDFDocument, title: string, columns: Column<T>
 		let x = left + 5;
 		for (const col of columns) {
 			doc.fillColor(col.color ? col.color(row) : '#1f2937')
-				.font(col.mono ? 'Courier' : 'Helvetica').fontSize(7.5)
+				.font(col.mono ? 'Courier' : fontNormal).fontSize(7.5)
 				.text(fitToWidth(doc, col.value(row), col.width - 8), x, y, {
 					width: col.width - 8,
 					lineBreak: false
@@ -283,21 +327,21 @@ function drawTable<T>(doc: PDFKit.PDFDocument, title: string, columns: Column<T>
 	doc.y += 14;
 }
 
-function drawEnvironment(doc: PDFKit.PDFDocument, env: ReportEnvironment, left: number, width: number) {
+function drawEnvironment(doc: PDFKit.PDFDocument, fontNormal: PDFKit.Font | string, fontBold: PDFKit.Font | string, env: ReportEnvironment, left: number, width: number) {
 	const count = env.containers.length;
 	const title = env.unreachable
-		? `${env.name}  -  unreachable`
-		: `${env.name}  -  ${count} ${count === 1 ? 'container' : 'containers'}`;
+		? `${env.name}  -  无法访问`
+		: `${env.name}  -  ${count} ${count === 1 ? '个容器' : '个容器'}`;
 
 	if (env.unreachable) {
 		if (doc.y > doc.page.height - 120) { doc.addPage(); doc.y = MARGIN; }
-		doc.fillColor(BRAND_INK).font('Helvetica-Bold').fontSize(10.5).text(title, left, doc.y, { lineBreak: false });
+		doc.fillColor(BRAND_INK).font(fontBold).fontSize(10.5).text(title, left, doc.y, { lineBreak: false });
 		doc.y += 14;
 		// An environment that could not be read is not an empty one, and a compliance
 		// reader has to be able to tell those apart.
 		const reason =
-			env.unreachableReason || 'The environment could not be read, so its contents are unknown.';
-		doc.fillColor(CRITICAL).font('Helvetica').fontSize(8);
+			env.unreachableReason || '无法读取该环境，因此其内容未知。';
+		doc.fillColor(CRITICAL).font(fontNormal).fontSize(8);
 		// A daemon error can be several lines long, and `text` advances the cursor past
 		// however many it actually took - so the gap is added to where it left off, not
 		// to where it started.
@@ -306,45 +350,45 @@ function drawEnvironment(doc: PDFKit.PDFDocument, env: ReportEnvironment, left: 
 		return;
 	}
 
-	drawTable<ReportEnvironment['containers'][number]>(doc, title, [
-		{ heading: 'Container', width: 150, value: (c) => c.name },
-		{ heading: 'Image', width: 190, mono: true, value: (c) => c.image },
-		{ heading: 'Status', width: 60, value: (c) => c.status,
-			color: (c) => (c.status === 'running' ? RUNNING : DIM) },
-		{ heading: 'Stack', width: 99, value: (c) => c.stack || '-' }
-	], env.containers, left, width);
+	drawTable<ReportEnvironment['containers'][number]>(doc, fontNormal, fontBold, title, [
+		{ heading: '容器', width: 150, value: (c) => c.name },
+        { heading: '镜像', width: 190, mono: true, value: (c) => c.image },
+        { heading: '状态', width: 60, value: (c) => getLabelText(c.status),
+            color: (c) => (c.status === 'running' ? RUNNING : DIM) },
+        { heading: '堆栈', width: 99, value: (c) => c.stack || '-' }
+    ], env.containers, left, width);
 }
 
-function drawScans(doc: PDFKit.PDFDocument, report: EnvironmentReport, left: number, width: number) {
+function drawScans(doc: PDFKit.PDFDocument, fontNormal: PDFKit.Font | string, fontBold: PDFKit.Font | string, report: EnvironmentReport, left: number, width: number) {
 	const scans: Array<ReportImageScan & { env: string }> = [];
 	for (const env of report.environments) {
 		for (const scan of env.scans) scans.push({ ...scan, env: env.name });
 	}
-	drawTable<(typeof scans)[number]>(doc, 'Vulnerability scans', [
-		{ heading: 'Image', width: 180, mono: true, value: (s) => s.image },
-		{ heading: 'Environment', width: 78, value: (s) => s.env },
-		{ heading: 'Critical', width: 52, value: (s) => String(s.critical),
-			color: (s) => (s.critical > 0 ? CRITICAL : DIM) },
-		{ heading: 'High', width: 34, value: (s) => String(s.high),
-			color: (s) => (s.high > 0 ? HIGH : DIM) },
-		{ heading: 'Medium', width: 44, value: (s) => String(s.medium) },
-		{ heading: 'Low', width: 30, value: (s) => String(s.low) },
-		{ heading: 'Scanned', width: 79, value: (s) => (s.scannedAt || '-').slice(0, 10) }
-	], scans, left, width);
+	drawTable<(typeof scans)[number]>(doc, fontNormal, fontBold, '漏洞扫描', [
+		{ heading: '镜像', width: 180, mono: true, value: (s) => s.image },
+        { heading: '环境', width: 78, value: (s) => s.env },
+        { heading: '严重', width: 52, value: (s) => String(s.critical),
+            color: (s) => (s.critical > 0 ? CRITICAL : DIM) },
+        { heading: '高危', width: 34, value: (s) => String(s.high),
+            color: (s) => (s.high > 0 ? HIGH : DIM) },
+        { heading: '中危', width: 44, value: (s) => String(s.medium) },
+        { heading: '低危', width: 30, value: (s) => String(s.low) },
+        { heading: '扫描日期', width: 79, value: (s) => (s.scannedAt || '-').slice(0, 10) }
+    ], scans, left, width);
 }
 
-function drawChanges(doc: PDFKit.PDFDocument, report: EnvironmentReport, left: number, width: number) {
+function drawChanges(doc: PDFKit.PDFDocument, fontNormal: PDFKit.Font | string, fontBold: PDFKit.Font | string, report: EnvironmentReport, left: number, width: number) {
 	const changes = report.environments.flatMap((env) => (env.changes || []).map((c) => ({ ...c, env: env.name })));
-	drawTable<(typeof changes)[number]>(doc, 'Change history', [
-		{ heading: 'When', width: 92, value: (c) => (c.at || '').replace('T', ' ').slice(0, 16) },
-		{ heading: 'Environment', width: 78, value: (c) => c.env },
-		{ heading: 'User', width: 76, value: (c) => c.username },
-		{ heading: 'Action', width: 82, value: (c) => c.action },
-		{ heading: 'Target', width: 171, value: (c) => `${c.entityType}: ${c.entityName}` }
-	], changes, left, width);
+	drawTable<(typeof changes)[number]>(doc, fontNormal, fontBold, '变更记录', [
+		{ heading: '时间', width: 92, value: (c) => (c.at || '').replace('T', ' ').slice(0, 16) },
+        { heading: '环境', width: 78, value: (c) => c.env },
+        { heading: '用户', width: 76, value: (c) => c.username },
+        { heading: '操作', width: 82, value: (c) => getLabelText(c.action) },
+        { heading: '目标', width: 171, value: (c) => `${c.entityType}: ${c.entityName}` }
+    ], changes, left, width);
 }
 
-function drawFooters(doc: PDFKit.PDFDocument, left: number, width: number) {
+function drawFooters(doc: PDFKit.PDFDocument, fontNormal: PDFKit.Font | string, fontBold: PDFKit.Font | string, left: number, width: number) {
 	const range = doc.bufferedPageRange();
 	const total = range.start + range.count;
 	for (let i = range.start; i < total; i++) {
@@ -355,9 +399,9 @@ function drawFooters(doc: PDFKit.PDFDocument, left: number, width: number) {
 		// being printed and leave blank pages behind. Lift the margin for the footer only.
 		const bottom = doc.page.margins.bottom;
 		doc.page.margins.bottom = 0;
-		doc.fillColor(MUTED).font('Helvetica').fontSize(7.5)
-			.text('Dockhand environment state report', left, y, { width: width / 2, lineBreak: false });
-		doc.text(`Page ${i + 1} of ${total}`, left + width / 2, y, { width: width / 2, align: 'right', lineBreak: false });
+		doc.fillColor(MUTED).font(fontNormal).fontSize(7.5)
+			.text('Dockhand 环境状态报告', left, y, { width: width / 2, lineBreak: false });
+		doc.text(`第 ${i + 1} 页 / 共 ${total} 页`, left + width / 2, y, { width: width / 2, align: 'right', lineBreak: false });
 		doc.page.margins.bottom = bottom;
 	}
 	doc.flushPages();

@@ -55,40 +55,40 @@ function collectErrorInfo(error: unknown): { codes: string[]; text: string } {
 function formatRetryAfter(value: string | null | undefined): string {
 	const v = value?.trim();
 	if (!v) return '';
-	if (/^\d+$/.test(v)) return `, retry after ${v}s`;
-	if (/^[\w ,:+-]{1,40}$/.test(v)) return `, retry after ${v}`;
+	if (/^\d+$/.test(v)) return `, ${v} 秒后重试`;
+	if (/^[\w ,:+-]{1,40}$/.test(v)) return `, ${v} 之后重试`;
 	return '';
 }
 
 export function describeRegistryFailure(failure: RegistryFailure): string {
 	switch (failure.kind) {
 		case 'blocked-host':
-			return `Registry host not allowed (${failure.registry})`;
+			return `不允许访问镜像仓库主机 (${failure.registry})`;
 		case 'no-digest':
-			return 'Registry response had no Docker-Content-Digest header';
+			return '镜像仓库响应不包含 Docker-Content-Digest 请求头';
 		case 'http': {
 			const s = failure.status;
-			if (s === 429) return `Rate limited by registry (429${formatRetryAfter(failure.retryAfter)})`;
+			if (s === 429) return `镜像仓库触发访问限流 (429${formatRetryAfter(failure.retryAfter)})`;
 			// A locally built image and an image deleted upstream both 404 - don't claim to know which.
-			if (s === 404) return 'Registry returned 404 (image or tag not found - deleted upstream, private, or a locally built image)';
-			if (s === 401 || s === 403) return `Registry denied access (${s}) - private image or missing credentials`;
-			if (s >= 500) return `Registry server error (${s})`;
-			return `Could not query registry (${s})`;
+			if (s === 404) return '镜像仓库返回 404 (未找到镜像或标签：上游已删除、私有镜像或者为本机构建镜像)';
+			if (s === 401 || s === 403) return `镜像仓库拒绝访问 (${s})‑私有镜像或凭据缺失`;
+			if (s >= 500) return `镜像仓库服务器错误 (${s})`;
+			return `无法查询镜像仓库 (${s})`;
 		}
 		case 'error': {
 			const { registry } = failure;
 			const { codes, text } = collectErrorInfo(failure.error);
 			if (codes.some((c) => DNS_CODES.has(c)) || /\b(ENOTFOUND|EAI_AGAIN)\b/.test(text)) {
-				return `DNS resolution failed for ${registry}`;
+				return `${registry} 的 DNS 解析失败`;
 			}
 			if (codes.some((c) => TLS_PROTOCOL_CODES.has(c)) || text.toLowerCase().includes('wrong version number')) {
-				return `TLS handshake with ${registry} failed - registry may be HTTP-only (set its URL to http:// in Settings > Registries)`;
+				return `与 ${registry} 的 TLS 握手失败-该镜像仓库可能仅支持 HTTP (请在设置>镜像仓库中将 URL 设置为 http://)`;
 			}
 			const cert = codes.find((c) => TLS_CERT_CODES.has(c));
-			if (cert) return `TLS certificate not trusted for ${registry} (${cert})`;
+			if (cert) return `${registry} 的 TLS 证书不受信任 (${cert})`;
 			const unreachable = codes.find((c) => UNREACHABLE_CODES.has(c));
-			if (unreachable) return `Registry unreachable: ${registry} (${unreachable})`;
-			return codes.length > 0 ? `Could not query registry (${codes[0]})` : 'Could not query registry';
+			if (unreachable) return `无法访问镜像仓库：${registry} (${unreachable})`;
+			return codes.length > 0 ? `无法查询镜像仓库 (${codes[0]})` : '无法查询镜像仓库';
 		}
 	}
 }

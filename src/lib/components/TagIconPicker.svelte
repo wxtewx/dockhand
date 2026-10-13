@@ -35,7 +35,7 @@
 <Popover.Root bind:open>
 	<Popover.Trigger>
 		{#snippet child({ props })}
-			<button {...props} type="button" title="Pick icon"
+			<button {...props} type="button" title="选择图标"
 				class="{triggerClass} shrink-0 rounded-md border flex items-center justify-center text-muted-foreground hover:text-foreground">
 				{#if icon}
 					<TagLucideIcon name={icon} class="h-4 w-4" style="color: {hex};" />
@@ -46,9 +46,9 @@
 		{/snippet}
 	</Popover.Trigger>
 	<Popover.Content class="w-56 p-2" align="start">
-		<Input bind:value={search} placeholder="Search icons..." class="h-7 text-2xs" />
+		<Input bind:value={search} placeholder="搜索图标..." class="h-7 text-2xs" />
 		<div class="mt-1 grid grid-cols-8 gap-0.5 max-h-40 overflow-y-auto p-0.5">
-			<button type="button" title="Default tag icon" onclick={() => pick(null)}
+			<button type="button" title="默认标签图标" onclick={() => pick(null)}
 				class="flex aspect-square items-center justify-center rounded hover:bg-muted {icon === null ? 'bg-primary/15 ring-1 ring-inset ring-primary' : ''}">
 				<TagIcon class="h-3.5 w-3.5" style="color: {hex};" />
 			</button>

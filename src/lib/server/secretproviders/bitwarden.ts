@@ -57,7 +57,7 @@ function executablePath(): string {
 	const override = process.env.DOCKHAND_BWS_PATH?.trim();
 	if (!override) return DEFAULT_BWS_PATH;
 	if (!isAbsolute(override)) {
-		throw new BwsAdapterError('Bitwarden bws executable path must be absolute');
+		throw new BwsAdapterError('Bitwarden bws 可执行文件路径必须为绝对路径');
 	}
 	return override;
 }
@@ -77,9 +77,9 @@ function childEnvironment(stateDir: string, accessToken?: string): NodeJS.Proces
 
 function spawnFailure(error: unknown): BwsAdapterError {
 	const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : '';
-	if (code === 'ENOENT') return new BwsAdapterError('Bitwarden bws executable was not found');
-	if (code === 'EACCES') return new BwsAdapterError('Bitwarden bws executable is not executable');
-	return new BwsAdapterError('Bitwarden bws executable could not be started');
+	if (code === 'ENOENT') return new BwsAdapterError('未找到 Bitwarden bws 可执行程序');
+	if (code === 'EACCES') return new BwsAdapterError('Bitwarden bws 可执行程序缺少执行权限');
+	return new BwsAdapterError('无法启动 Bitwarden bws 可执行程序');
 }
 
 /** Execute one bws process without a shell while bounding its lifetime and output. */
@@ -123,7 +123,7 @@ async function executeBws(
 			};
 
 			const timeout = setTimeout(
-				() => terminate(new BwsAdapterError('Bitwarden bws command timed out')),
+				() => terminate(new BwsAdapterError('Bitwarden bws 命令执行超时')),
 				limits.timeoutMs
 			);
 
@@ -132,7 +132,7 @@ async function executeBws(
 				const data = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
 				stdoutBytes += data.length;
 				if (stdoutBytes > limits.stdoutBytes) {
-					terminate(new BwsAdapterError('Bitwarden bws command exceeded the stdout limit'));
+					terminate(new BwsAdapterError('Bitwarden bws 命令超出标准输出大小限制'));
 					return;
 				}
 				stdoutChunks.push(Buffer.from(data));
@@ -143,7 +143,7 @@ async function executeBws(
 				if (failure) return;
 				stderrBytes += Buffer.byteLength(chunk);
 				if (stderrBytes > limits.stderrBytes) {
-					terminate(new BwsAdapterError('Bitwarden bws command exceeded the stderr limit'));
+					terminate(new BwsAdapterError('Bitwarden bws 命令超出标准错误输出大小限制'));
 				}
 			});
 
@@ -165,7 +165,7 @@ async function executeBws(
 					return;
 				}
 				if (code !== 0) {
-					reject(new BwsAdapterError('Bitwarden bws command failed'));
+					reject(new BwsAdapterError('Bitwarden bws 命令执行失败'));
 					return;
 				}
 				resolve(Buffer.concat(stdoutChunks, stdoutBytes));
@@ -184,7 +184,7 @@ async function runBws(args: string[], limits: CommandLimits): Promise<Buffer> {
 		await chmod(stateDir, 0o700);
 	} catch {
 		if (stateDir) await rm(stateDir, { recursive: true, force: true }).catch(() => undefined);
-		throw new BwsAdapterError('Bitwarden bws temporary state could not be created');
+		throw new BwsAdapterError('无法创建 Bitwarden bws 临时工作目录');
 	}
 
 	try {
@@ -217,10 +217,10 @@ async function runJsonArray(args: string[], limits: CommandLimits): Promise<unkn
 		try {
 			parsed = JSON.parse(output.toString('utf8'));
 		} catch {
-			throw new BwsAdapterError('Bitwarden bws returned invalid JSON');
+			throw new BwsAdapterError('Bitwarden bws 返回无效 JSON 数据');
 		}
 		if (!Array.isArray(parsed)) {
-			throw new BwsAdapterError('Bitwarden bws returned an invalid JSON response');
+			throw new BwsAdapterError('Bitwarden bws 返回的 JSON 响应格式非法');
 		}
 		return parsed;
 	} finally {
@@ -243,7 +243,7 @@ async function assertSupportedVersion(): Promise<void> {
 		const patch = match ? Number(match[3]) : -1;
 		const isAtLeastStable210 = minor > 1 || (minor === 1 && (patch > 0 || !match?.[4]));
 		if (!match || Number(match[1]) !== 2 || !isAtLeastStable210) {
-			throw new BwsAdapterError('Bitwarden bws version must be >=2.1.0 and <3.0.0');
+			throw new BwsAdapterError('Bitwarden bws 版本必须 >=2.1.0 且 <3.0.0');
 		}
 	} finally {
 		output?.fill(0);
@@ -252,7 +252,7 @@ async function assertSupportedVersion(): Promise<void> {
 
 function accessToken(config: BitwardenConfig): string {
 	const token = typeof config?.token === 'string' ? config.token.trim() : '';
-	if (!token) throw new BwsAdapterError('Bitwarden Machine Account access token is empty');
+	if (!token) throw new BwsAdapterError('Bitwarden 机器账户访问令牌为空');
 	return token;
 }
 
@@ -263,7 +263,7 @@ function serverUrl(config: BitwardenConfig): string | undefined {
 		assertSafeProviderHost(url, 'Bitwarden Secrets Manager');
 	} catch (error: unknown) {
 		throw new BwsAdapterError(
-			error instanceof Error ? error.message : 'Bitwarden Secrets Manager: host not allowed'
+			error instanceof Error ? error.message : 'Bitwarden Secrets Manager：不允许使用该主机地址'
 		);
 	}
 	return url.replace(/\/+$/, '');
@@ -272,7 +272,7 @@ function serverUrl(config: BitwardenConfig): string | undefined {
 function projectId(selector: string): string {
 	const id = typeof selector === 'string' ? selector.trim() : '';
 	if (!UUID_RE.test(id)) {
-		throw new BwsAdapterError('Bitwarden Project selector must be a valid UUID');
+		throw new BwsAdapterError('Bitwarden 项目选择器必须为有效的 UUID');
 	}
 	return id;
 }
@@ -280,7 +280,7 @@ function projectId(selector: string): string {
 function sanitizedError(error: unknown): string {
 	return error instanceof BwsAdapterError
 		? error.message
-		: 'Bitwarden bws operation failed';
+		: 'Bitwarden bws 操作执行失败';
 }
 
 function secretRecord(payload: unknown[]): Record<string, string> {
@@ -289,20 +289,20 @@ function secretRecord(payload: unknown[]): Record<string, string> {
 
 	for (const entry of payload) {
 		if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
-			throw new BwsAdapterError('Bitwarden bws returned an invalid secret list');
+			throw new BwsAdapterError('Bitwarden bws 返回的密钥列表格式非法');
 		}
 		const { key, value } = entry as Record<string, unknown>;
 		if (typeof key !== 'string' || typeof value !== 'string' || value.includes('\0')) {
-			throw new BwsAdapterError('Bitwarden bws returned an invalid secret list');
+			throw new BwsAdapterError('Bitwarden bws 返回的密钥列表格式非法');
 		}
 		if (!ENV_NAME_RE.test(key)) {
-			throw new BwsAdapterError('Bitwarden secret key is not a valid environment variable name');
+			throw new BwsAdapterError('Bitwarden 密钥键名不是合法的环境变量名称');
 		}
 		if (DANGEROUS_KEYS.has(key)) {
-			throw new BwsAdapterError('Bitwarden secret key is not allowed');
+			throw new BwsAdapterError('Bitwarden 该密钥键名不被允许使用');
 		}
 		if (seen.has(key)) {
-			throw new BwsAdapterError('Bitwarden bws returned duplicate secret keys');
+			throw new BwsAdapterError('Bitwarden bws 返回重复的密钥键名');
 		}
 		seen.add(key);
 		result[key] = value;
@@ -341,7 +341,7 @@ export const bitwardenProvider: SecretProvider<BitwardenConfig> = {
 
 	async resolveSecretReferences(): Promise<Map<string, string>> {
 		throw new UnsupportedOperationError(
-			'Bitwarden Secrets Manager does not support inline references; use a Project bulk selector.'
+			'Bitwarden Secrets Manager 不支持内联引用；请使用项目批量选择器。'
 		);
 	},
 

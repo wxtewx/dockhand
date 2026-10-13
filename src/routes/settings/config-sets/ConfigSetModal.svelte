@@ -16,8 +16,8 @@
 
 	// Mode options for volumes
 	const volumeModeOptions = [
-		{ value: 'rw', label: 'RW' },
-		{ value: 'ro', label: 'RO' }
+		{ value: 'rw', label: '读写' },
+		{ value: 'ro', label: '只读' }
 	];
 
 	export interface ConfigSet {
@@ -145,7 +145,7 @@
 		formErrors = {};
 
 		if (!formName.trim()) {
-			formErrors.name = 'Name is required';
+			formErrors.name = '名称不能为空';
 		}
 
 		// Validate all ports
@@ -186,13 +186,13 @@
 			} else {
 				const data = await response.json();
 				if (data.error?.includes('already exists')) {
-					formErrors.name = 'Config set name already exists';
+					formErrors.name = '配置集名称已存在';
 				} else {
-					formError = data.error || `Failed to ${isEditing ? 'update' : 'create'} config set`;
+					formError = data.error || `配置集 ${isEditing ? '更新' : '创建'} 失败`;
 				}
 			}
 		} catch {
-			formError = `Failed to ${isEditing ? 'update' : 'create'} config set`;
+			formError = `配置集 ${isEditing ? '更新' : '创建'} 失败`;
 		} finally {
 			formSaving = false;
 		}
@@ -207,7 +207,7 @@
 <Dialog.Root bind:open onOpenChange={(o) => { if (o) { formError = ''; formErrors = {}; focusFirstInput(); } }}>
 	<Dialog.Content class="max-w-3xl max-h-[90vh] overflow-y-auto">
 		<Dialog.Header>
-			<Dialog.Title>{isEditing ? 'Edit' : 'Add'} config set</Dialog.Title>
+			<Dialog.Title>{isEditing ? '编辑' : '添加'}配置集</Dialog.Title>
 		</Dialog.Header>
 		<div class="space-y-4">
 			{#if formError}
@@ -216,7 +216,7 @@
 
 			<div class="grid grid-cols-2 gap-4">
 				<div class="space-y-2">
-					<Label for="cfg-name">Name *</Label>
+					<Label for="cfg-name">名称 *</Label>
 					<Input
 						id="cfg-name"
 						bind:value={formName}
@@ -229,36 +229,36 @@
 					{/if}
 				</div>
 				<div class="space-y-2">
-					<Label for="cfg-description">Description</Label>
-					<Input id="cfg-description" bind:value={formDescription} placeholder="Common settings for web services" />
+					<Label for="cfg-description">描述</Label>
+					<Input id="cfg-description" bind:value={formDescription} placeholder="Web 服务通用配置" />
 				</div>
 			</div>
 
 			<div class="grid grid-cols-2 gap-4">
 				<div class="space-y-2">
-					<Label for="cfg-network">Network mode</Label>
+					<Label for="cfg-network">网络模式</Label>
 					<Select.Root type="single" value={formNetworkMode} onValueChange={(v) => formNetworkMode = v}>
 						<Select.Trigger class="w-full">
-							<span>{formNetworkMode === 'bridge' ? 'Bridge' : formNetworkMode === 'host' ? 'Host' : 'None'}</span>
+							<span>{formNetworkMode === 'bridge' ? '桥接' : formNetworkMode === 'host' ? '主机' : '无'}</span>
 						</Select.Trigger>
 						<Select.Content>
-							<Select.Item value="bridge" label="Bridge" />
-							<Select.Item value="host" label="Host" />
-							<Select.Item value="none" label="None" />
+							<Select.Item value="bridge" label="桥接" />
+							<Select.Item value="host" label="主机" />
+							<Select.Item value="none" label="无" />
 						</Select.Content>
 					</Select.Root>
 				</div>
 				<div class="space-y-2">
-					<Label for="cfg-restart">Restart policy</Label>
+					<Label for="cfg-restart">重启策略</Label>
 					<Select.Root type="single" value={formRestartPolicy} onValueChange={(v) => formRestartPolicy = v}>
 						<Select.Trigger class="w-full">
-							<span>{formRestartPolicy === 'no' ? 'No' : formRestartPolicy === 'always' ? 'Always' : formRestartPolicy === 'on-failure' ? 'On failure' : 'Unless stopped'}</span>
+							<span>{formRestartPolicy === 'no' ? '不重启' : formRestartPolicy === 'always' ? '始终重启' : formRestartPolicy === 'on-failure' ? '失败时重启' : '除非手动停止'}</span>
 						</Select.Trigger>
 						<Select.Content>
-							<Select.Item value="no" label="No" />
-							<Select.Item value="always" label="Always" />
-							<Select.Item value="on-failure" label="On failure" />
-							<Select.Item value="unless-stopped" label="Unless stopped" />
+							<Select.Item value="no" label="不重启" />
+							<Select.Item value="always" label="始终重启" />
+							<Select.Item value="on-failure" label="失败时重启" />
+							<Select.Item value="unless-stopped" label="除非手动停止" />
 						</Select.Content>
 					</Select.Root>
 				</div>
@@ -267,15 +267,15 @@
 			<!-- Environment Variables -->
 			<div class="space-y-2 border-t pt-4">
 				<div class="flex justify-between items-center">
-					<Label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Environment variables</Label>
+					<Label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">环境变量</Label>
 					<Button type="button" size="sm" variant="ghost" onclick={addEnvVar} class="h-7 text-xs">
-						<Plus class="w-3.5 h-3.5" />Add
+						<Plus class="w-3.5 h-3.5" />添加
 					</Button>
 				</div>
 				{#each formEnvVars as envVar, i}
 					<div class="flex gap-2 items-center">
-						<Input bind:value={envVar.key} placeholder="KEY" class="flex-1 h-8" />
-						<Input bind:value={envVar.value} placeholder="value" class="flex-1 h-8" />
+						<Input bind:value={envVar.key} placeholder="变量名" class="flex-1 h-8" />
+						<Input bind:value={envVar.value} placeholder="变量值" class="flex-1 h-8" />
 						<Button type="button" size="icon" variant="ghost" onclick={() => removeEnvVar(i)} disabled={formEnvVars.length === 1} class="h-8 w-8">
 							<Trash2 class="w-3 h-3 text-muted-foreground" />
 						</Button>
@@ -286,15 +286,15 @@
 			<!-- Labels -->
 			<div class="space-y-2 border-t pt-4">
 				<div class="flex justify-between items-center">
-					<Label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Labels</Label>
+					<Label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">标签</Label>
 					<Button type="button" size="sm" variant="ghost" onclick={addLabel} class="h-7 text-xs">
-						<Plus class="w-3.5 h-3.5" />Add
+						<Plus class="w-3.5 h-3.5" />添加
 					</Button>
 				</div>
 				{#each formLabels as label, i}
 					<div class="flex gap-2 items-center">
-						<Input bind:value={label.key} placeholder="label.key" class="flex-1 h-8" />
-						<Input bind:value={label.value} placeholder="value" class="flex-1 h-8" />
+						<Input bind:value={label.key} placeholder="标签键" class="flex-1 h-8" />
+						<Input bind:value={label.value} placeholder="标签值" class="flex-1 h-8" />
 						<Button type="button" size="icon" variant="ghost" onclick={() => removeLabel(i)} disabled={formLabels.length === 1} class="h-8 w-8">
 							<Trash2 class="w-3 h-3 text-muted-foreground" />
 						</Button>
@@ -305,9 +305,9 @@
 			<!-- Ports -->
 			<div class="space-y-2 border-t pt-4">
 				<div class="flex justify-between items-center">
-					<Label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Port mappings</Label>
+					<Label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">端口映射</Label>
 					<Button type="button" size="sm" variant="ghost" onclick={addPort} class="h-7 text-xs">
-						<Plus class="w-3.5 h-3.5" />Add
+						<Plus class="w-3.5 h-3.5" />添加
 					</Button>
 				</div>
 				{#each formPorts as port, i}
@@ -315,23 +315,23 @@
 						<div>
 							<Input
 								bind:value={port.hostPort}
-								placeholder="Host port"
+								placeholder="主机端口"
 								class="h-8 {hasPortError(i, 'host') ? 'border-destructive focus-visible:ring-destructive' : ''}"
 								oninput={() => validatePort(i, 'host')}
 							/>
 							{#if hasPortError(i, 'host')}
-								<p class="text-xs text-destructive mt-0.5">Invalid port (1-65535)</p>
+								<p class="text-xs text-destructive mt-0.5">端口无效 (1-65535)</p>
 							{/if}
 						</div>
 						<div>
 							<Input
 								bind:value={port.containerPort}
-								placeholder="Container port"
+								placeholder="容器端口"
 								class="h-8 {hasPortError(i, 'container') ? 'border-destructive focus-visible:ring-destructive' : ''}"
 								oninput={() => validatePort(i, 'container')}
 							/>
 							{#if hasPortError(i, 'container')}
-								<p class="text-xs text-destructive mt-0.5">Invalid port (1-65535)</p>
+								<p class="text-xs text-destructive mt-0.5">端口无效 (1-65535)</p>
 							{/if}
 						</div>
 						<ToggleGroup
@@ -349,15 +349,15 @@
 			<!-- Volumes -->
 			<div class="space-y-2 border-t pt-4">
 				<div class="flex justify-between items-center">
-					<Label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Volume mappings</Label>
+					<Label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">数据卷映射</Label>
 					<Button type="button" size="sm" variant="ghost" onclick={addVolume} class="h-7 text-xs">
-						<Plus class="w-3.5 h-3.5" />Add
+						<Plus class="w-3.5 h-3.5" />添加
 					</Button>
 				</div>
 				{#each formVolumes as vol, i}
 					<div class="grid grid-cols-[1fr_1fr_5rem_auto] gap-2 items-center">
-						<Input bind:value={vol.hostPath} placeholder="Host path" class="h-8" />
-						<Input bind:value={vol.containerPath} placeholder="Container path" class="h-8" />
+						<Input bind:value={vol.hostPath} placeholder="主机路径" class="h-8" />
+						<Input bind:value={vol.containerPath} placeholder="容器路径" class="h-8" />
 						<ToggleGroup
 							value={vol.mode}
 							options={volumeModeOptions}
@@ -371,7 +371,7 @@
 			</div>
 		</div>
 		<Dialog.Footer>
-			<Button variant="outline" onclick={handleClose}>Cancel</Button>
+			<Button variant="outline" onclick={handleClose}>取消</Button>
 			<Button onclick={save} disabled={formSaving}>
 				{#if formSaving}
 					<RefreshCw class="w-4 h-4 mr-1 animate-spin" />
@@ -380,7 +380,7 @@
 				{:else}
 					<Plus class="w-4 h-4" />
 				{/if}
-				{isEditing ? 'Save' : 'Add'}
+				{isEditing ? '保存' : '添加'}
 			</Button>
 		</Dialog.Footer>
 	</Dialog.Content>

@@ -52,7 +52,7 @@
 		</Tooltip.Root>
 	{/if}
 	{#if env}
-		<span class="shrink-0">on <span class="text-amber-600 dark:text-amber-400">{env}</span></span>
+		<span class="shrink-0">位于 <span class="text-amber-600 dark:text-amber-400">{env}</span></span>
 	{/if}
 	{#if extra}
 		<span class="shrink-0 flex items-center gap-2">{@render extra()}</span>

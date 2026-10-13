@@ -48,7 +48,7 @@ export function shouldForceRecreateGitStack(input: {
  * three places write it - and only a failed deploy leaves containers out of step
  * with the recorded commit.
  */
-export const DEPLOY_FAILURE_PREFIX = 'Deploy failed: ';
+export const DEPLOY_FAILURE_PREFIX = '部署失败: ';
 
 /** Whether a stack's stored error came from a deploy rather than from the sync. */
 export function isDeployFailure(syncStatus: string | null | undefined, syncError: string | null | undefined): boolean {

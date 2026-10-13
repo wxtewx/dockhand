@@ -80,7 +80,7 @@
 				class="w-full px-2 py-1 text-xs text-left text-muted-foreground/60 hover:text-muted-foreground"
 				onclick={clearAndClose}
 			>
-				Clear
+				清空
 			</button>
 		{/if}
 		{#each options as option}

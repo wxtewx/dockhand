@@ -13,15 +13,15 @@
 set -e
 
 echo "========================================"
-echo "  Dockhand - Reset User Password (SQLite)"
+echo "  Dockhand - 重置用户密码 (SQLite)"
 echo "========================================"
 echo ""
 
 # Check arguments
 if [ -z "$1" ] || [ -z "$2" ]; then
-    echo "Usage: $0 <username> <new_password>"
+    echo "用法：$0 <用户名> <新密码>"
     echo ""
-    echo "Example:"
+    echo "示例："
     echo "  $0 admin MyNewPassword123"
     exit 1
 fi
@@ -31,7 +31,7 @@ NEW_PASSWORD="$2"
 
 # Validate password length
 if [ ${#NEW_PASSWORD} -lt 8 ]; then
-    echo "Error: Password must be at least 8 characters"
+    echo "错误：密码长度至少为 8 位"
     exit 1
 fi
 
@@ -44,8 +44,8 @@ if [ ! -f "$DB_PATH" ] && [ -f "./data/db/dockhand.db" ]; then
 fi
 
 if [ ! -f "$DB_PATH" ]; then
-    echo "Error: Database not found at $DB_PATH"
-    echo "Set DOCKHAND_DB environment variable to specify the database path"
+    echo "错误：未在路径 $DB_PATH 找到数据库"
+    echo "请设置 DOCKHAND_DB 环境变量以指定数据库路径"
     exit 1
 fi
 
@@ -53,35 +53,35 @@ fi
 EXISTING=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM users WHERE username='$USERNAME';")
 
 if [ "$EXISTING" -eq "0" ]; then
-    echo "Error: User '$USERNAME' not found"
+    echo "错误：未找到用户 '$USERNAME'"
     echo ""
-    echo "Available users:"
+    echo "可用用户："
     sqlite3 "$DB_PATH" "SELECT username FROM users;" | while read user; do
         echo "  - $user"
     done
     exit 1
 fi
 
-echo "This script will reset the password for user '$USERNAME'."
+echo "本脚本将重置用户 '$USERNAME' 的密码。"
 echo ""
-echo "Database: $DB_PATH"
-echo "Username: $USERNAME"
+echo "数据库：$DB_PATH"
+echo "用户名：$USERNAME"
 echo ""
-printf "Continue? [y/N]: "
+printf "是否继续？[y/N]："
 read CONFIRM
 
 case "$CONFIRM" in
     [yY]|[yY][eE][sS])
         ;;
     *)
-        echo "Aborted."
+        echo "已取消。"
         exit 0
         ;;
 esac
 
 # Generate password hash using node (argon2 is available in the app)
 echo ""
-echo "Generating password hash..."
+echo "正在生成密码哈希值..."
 
 # Check if node and argon2 are available
 if command -v node >/dev/null 2>&1; then
@@ -96,28 +96,28 @@ if command -v node >/dev/null 2>&1; then
     " 2>/dev/null)
 
     if [ -z "$PASSWORD_HASH" ]; then
-        echo "Error: Could not generate password hash (argon2 not available)"
-        echo "This script requires Node.js with argon2 module"
+        echo "错误：无法生成密码哈希值（argon2 不可用）"
+        echo "本脚本需要安装带有 argon2 模块的 Node.js"
         exit 1
     fi
 else
-    echo "Error: Node.js is required to generate password hash"
+    echo "错误：生成密码哈希值需要 Node.js"
     exit 1
 fi
 
-echo "Resetting password for user '$USERNAME'..."
+echo "正在重置用户 '$USERNAME' 的密码..."
 sqlite3 "$DB_PATH" "UPDATE users SET password_hash='$PASSWORD_HASH', updated_at=datetime('now') WHERE username='$USERNAME';"
 
 if [ $? -eq 0 ]; then
     echo ""
-    echo "Password reset successfully for user '$USERNAME'"
+    echo "用户 '$USERNAME' 的密码已成功重置"
     echo ""
     # Invalidate sessions
     USER_ID=$(sqlite3 "$DB_PATH" "SELECT id FROM users WHERE username='$USERNAME';")
     sqlite3 "$DB_PATH" "DELETE FROM sessions WHERE user_id=$USER_ID;" 2>/dev/null || true
-    echo "All existing sessions have been invalidated."
-    echo "The user can now log in with the new password."
+    echo "所有已存在的会话已失效。"
+    echo "用户现在可以使用新密码登录。"
 else
-    echo "Error: Failed to reset password"
+    echo "错误：重置密码失败"
     exit 1
 fi

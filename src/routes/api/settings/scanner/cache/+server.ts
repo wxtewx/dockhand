@@ -14,7 +14,7 @@ export const DELETE: RequestHandler = async ({ cookies }) => {
 	const auth = await authorize(cookies);
 
 	if (auth.authEnabled && !await auth.can('settings', 'edit')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -41,7 +41,7 @@ export const DELETE: RequestHandler = async ({ cookies }) => {
 			skippedEnvironments: skippedEnvs
 		});
 	} catch (error) {
-		console.error('Failed to clear scanner cache:', error);
-		return json({ error: 'Failed to clear scanner cache' }, { status: 500 });
+		console.error('清除扫描器缓存失败:', error);
+		return json({ error: '清除扫描器缓存失败' }, { status: 500 });
 	}
 };

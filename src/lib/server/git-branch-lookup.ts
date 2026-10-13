@@ -91,7 +91,7 @@ function assertHostSafeFromParse(parsedHost: string): void {
 	const check = isSafeNotificationUrl(`https://${host}/`);
 	if (!check.ok) {
 		throw new Error(
-			`Repository URL host is not allowed (loopback, cloud-metadata or other reserved/dangerous target): ${check.reason}`
+			`仓库 URL 主机不被允许 (回环、云元数据或其他保留/危险目标): ${check.reason}`
 		);
 	}
 }
@@ -120,10 +120,10 @@ export function assertSafeRepoTarget(url: string): void {
 	assertSafeRepoUrl(url); // transport denylist (ext::/fd::/file::/local paths)
 	const host = parseRepoHost(url);
 	if (!host) {
-		throw new Error('Invalid repository URL for branch lookup');
+		throw new Error('分支查询使用的仓库 URL 无效');
 	}
 	if (host === 'localhost' || host.endsWith('.localhost')) {
-		throw new Error('Repository URL host is not allowed for branch lookup');
+		throw new Error('分支查询不允许使用该仓库 URL 主机');
 	}
 	assertHostSafeFromParse(host);
 }

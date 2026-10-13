@@ -116,7 +116,7 @@
 <Dialog.Root bind:open>
 	<Dialog.Content class="max-w-5xl max-h-[85vh] flex flex-col">
 		<Dialog.Header>
-			<Dialog.Title>Snapshot comparison</Dialog.Title>
+			<Dialog.Title>快照对比</Dialog.Title>
 			<Dialog.Description>
 				<span class="font-mono text-xs">{snapshotA.shortId}</span>
 				<span class="text-muted-foreground text-xs mx-1">({formatDateTime(snapshotA.time)})</span>
@@ -129,10 +129,10 @@
 		<!-- Tabs -->
 		<div class="flex gap-1 border-b mb-3">
 			<button class="px-3 py-1.5 text-sm {activeTab === 'files' ? 'border-b-2 border-primary font-medium' : 'text-muted-foreground'}" onclick={() => activeTab = 'files'}>
-				<FolderOpen class="w-3.5 h-3.5 inline mr-1" />Files
+				<FolderOpen class="w-3.5 h-3.5 inline mr-1" />文件
 			</button>
 			<button class="px-3 py-1.5 text-sm {activeTab === 'metadata' ? 'border-b-2 border-primary font-medium' : 'text-muted-foreground'}" onclick={switchToMetadata}>
-				<Container class="w-3.5 h-3.5 inline mr-1" />Metadata
+				<Container class="w-3.5 h-3.5 inline mr-1" />元数据
 			</button>
 		</div>
 
@@ -141,26 +141,26 @@
 			{#if loading}
 				<div class="flex items-center justify-center py-12">
 					<Loader2 class="w-5 h-5 animate-spin text-muted-foreground" />
-					<span class="ml-2 text-sm text-muted-foreground">Comparing snapshots...</span>
+					<span class="ml-2 text-sm text-muted-foreground">正在对比快照...</span>
 				</div>
 			{:else if error}
 				<div class="text-sm text-destructive py-4">{error}</div>
 			{:else if diff}
 				<div class="flex gap-2 mb-3 flex-wrap">
 					{#if diff.added.length > 0}
-						<Badge variant="outline" class="text-green-600"><Plus class="w-3 h-3 mr-1" />{diff.added.length} added</Badge>
+						<Badge variant="outline" class="text-green-600"><Plus class="w-3 h-3 mr-1" />{diff.added.length} 个新增</Badge>
 					{/if}
 					{#if diff.removed.length > 0}
-						<Badge variant="outline" class="text-red-500"><Minus class="w-3 h-3 mr-1" />{diff.removed.length} removed</Badge>
+						<Badge variant="outline" class="text-red-500"><Minus class="w-3 h-3 mr-1" />{diff.removed.length} 个移除</Badge>
 					{/if}
 					{#if diff.modified.length > 0}
-						<Badge variant="outline" class="text-amber-500"><FileEdit class="w-3 h-3 mr-1" />{diff.modified.length} modified</Badge>
+						<Badge variant="outline" class="text-amber-500"><FileEdit class="w-3 h-3 mr-1" />{diff.modified.length} 个修改</Badge>
 					{/if}
 					{#if diff.metadataChanged.length > 0}
-						<Badge variant="outline" class="text-blue-500"><FileCheck class="w-3 h-3 mr-1" />{diff.metadataChanged.length} metadata</Badge>
+						<Badge variant="outline" class="text-blue-500"><FileCheck class="w-3 h-3 mr-1" />{diff.metadataChanged.length} 条元数据变更</Badge>
 					{/if}
 					{#if totalChanges === 0}
-						<span class="text-sm text-muted-foreground">No differences found</span>
+						<span class="text-sm text-muted-foreground">未发现差异</span>
 					{/if}
 				</div>
 
@@ -183,18 +183,18 @@
 			{#if metaLoading}
 				<div class="flex items-center justify-center py-12">
 					<Loader2 class="w-5 h-5 animate-spin text-muted-foreground" />
-					<span class="ml-2 text-sm text-muted-foreground">Loading metadata...</span>
+					<span class="ml-2 text-sm text-muted-foreground">正在加载元数据...</span>
 				</div>
 			{:else if !metaA || !metaB}
-				<p class="text-sm text-muted-foreground py-4">Metadata not available for one or both snapshots.</p>
+				<p class="text-sm text-muted-foreground py-4">其中一个或两个快照无法获取元数据。</p>
 			{:else if metaDiffs.length === 0}
-				<p class="py-4 text-sm text-muted-foreground">The container configuration is identical (image, command, env, ports, mounts, networks, …).</p>
+				<p class="py-4 text-sm text-muted-foreground">容器配置完全一致 (镜像、命令、环境变量、端口、挂载、网络等)。</p>
 				<p class="flex items-start gap-1.5 text-xs text-muted-foreground"><Info class="mt-0.5 h-3.5 w-3.5 flex-shrink-0" /><span>If the Files tab shows <span class="font-mono">metadata.json</span> as modified, that's the capture timestamp / recorded container state inside it changing between backups — not a config change.</span></p>
 			{:else}
 				<table class="w-full text-xs">
 					<thead class="sticky top-0 bg-background">
 						<tr class="border-b text-muted-foreground">
-							<th class="text-left py-1.5 px-2 w-32">Field</th>
+							<th class="text-left py-1.5 px-2 w-32">字段</th>
 							<th class="text-left py-1.5 px-2">{snapshotA.shortId}</th>
 							<th class="text-left py-1.5 px-2">{snapshotB.shortId}</th>
 						</tr>

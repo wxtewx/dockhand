@@ -10,7 +10,7 @@
 set -e
 
 echo "========================================"
-echo "  Dockhand - List Users (SQLite)"
+echo "  Dockhand - 用户列表 (SQLite)"
 echo "========================================"
 echo ""
 
@@ -23,8 +23,8 @@ if [ ! -f "$DB_PATH" ] && [ -f "./data/db/dockhand.db" ]; then
 fi
 
 if [ ! -f "$DB_PATH" ]; then
-    echo "Error: Database not found at $DB_PATH"
-    echo "Set DOCKHAND_DB environment variable to specify the database path"
+    echo "错误：未在路径 $DB_PATH 找到数据库"
+    echo "请设置 DOCKHAND_DB 环境变量以指定数据库路径"
     exit 1
 fi
 
@@ -32,7 +32,7 @@ fi
 USER_COUNT=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM users;")
 
 if [ "$USER_COUNT" -eq "0" ]; then
-    echo "No users found."
+    echo "未找到任何用户。"
     exit 0
 fi
 
@@ -40,7 +40,7 @@ fi
 ADMIN_ROLE_ID=$(sqlite3 "$DB_PATH" "SELECT id FROM roles WHERE name='Admin';" 2>/dev/null || echo "")
 
 # Print header
-printf "%-4s %-20s %-8s %-8s %-6s %s\n" "ID" "Username" "Admin" "Active" "MFA" "Last Login"
+printf "%-4s %-20s %-8s %-8s %-6s %s\n" "ID" "用户名" "管理员" "启用" "MFA" "最后登录"
 printf "%-4s %-20s %-8s %-8s %-6s %s\n" "----" "--------------------" "--------" "--------" "------" "-------------------"
 
 # List users (check admin status via user_roles table)
@@ -49,32 +49,32 @@ sqlite3 -separator '|' "$DB_PATH" "SELECT id, username, is_active, mfa_enabled, 
     if [ -n "$ADMIN_ROLE_ID" ]; then
         HAS_ADMIN=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM user_roles WHERE user_id=$id AND role_id=$ADMIN_ROLE_ID;")
         if [ "$HAS_ADMIN" -gt "0" ]; then
-            admin_str="Yes"
+            admin_str="是"
         else
-            admin_str="No"
+            admin_str="否"
         fi
     else
-        admin_str="N/A"
+        admin_str="不适用"
     fi
 
     if [ "$is_active" = "1" ]; then
-        active_str="Yes"
+        active_str="是"
     else
-        active_str="No"
+        active_str="否"
     fi
 
     if [ "$mfa_enabled" = "1" ]; then
-        mfa_str="Yes"
+        mfa_str="是"
     else
-        mfa_str="No"
+        mfa_str="否"
     fi
 
     printf "%-4s %-20s %-8s %-8s %-6s %s\n" "$id" "$username" "$admin_str" "$active_str" "$mfa_str" "$last_login"
 done
 
 echo ""
-echo "Total: $USER_COUNT user(s)"
+echo "总计：$USER_COUNT 个用户"
 
 # Show session count
 SESSION_COUNT=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM sessions;")
-echo "Active sessions: $SESSION_COUNT"
+echo "活跃会话数：$SESSION_COUNT"

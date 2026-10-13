@@ -5,6 +5,7 @@
 	import { getSeverityColor } from '$lib/utils/vulnerability';
 	import type { Finding, FindingContainer, VulnerabilitySummary as Summary, SortField } from '$lib/utils/vulnerability';
 	import { formatDateTime } from '$lib/stores/settings';
+	import { getLabelText } from '$lib/types';
 	import { goto } from '$app/navigation';
 	import ContainerInspectModal from '../containers/ContainerInspectModal.svelte';
 	import SeveritySummaryPills from '$lib/components/SeveritySummaryPills.svelte';
@@ -69,28 +70,38 @@
 		onSortChange?.(field, dir);
 	}
 
+	function formatTimestamp(ts: string): string {
+		if (!ts) return '-';
+		let fixedIso = ts.trim();
+		if (!fixedIso.includes('T')) fixedIso = fixedIso.replace(' ', 'T');
+		if (!fixedIso.endsWith('Z') && !fixedIso.includes('+') && !fixedIso.includes('-', 10)) {
+			fixedIso += 'Z';
+		}
+		return formatDateTime(fixedIso, true);
+	}
+
 </script>
 
 <div class="flex-1 min-h-0 flex flex-col gap-2">
 	<!-- Summary row: scanned count + severity pills -->
 	<div class="shrink-0 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-		<span>Images scanned: <span class="font-medium text-foreground">{summary.imagesScanned}/{summary.totalImages}</span></span>
-		<span>Total: <span class="font-medium text-foreground">{summary.total}</span></span>
+		<span>已扫描镜像：<span class="font-medium text-foreground">{summary.imagesScanned}/{summary.totalImages}</span></span>
+		<span>总计：<span class="font-medium text-foreground">{summary.total}</span></span>
 		<SeveritySummaryPills counts={summary} />
 	</div>
 
 	{#if !scannerEnabled}
 		<div class="flex-1 min-h-0 flex flex-col items-center justify-center text-center gap-2 text-muted-foreground">
 			<ShieldAlert class="w-10 h-10 opacity-40" />
-			<p class="text-sm">No vulnerability scanner is configured for this environment.</p>
-			<a href="/settings?tab=environments" class="text-sm text-primary hover:underline">Configure a scanner in settings</a>
+			<p class="text-sm">当前环境未配置漏洞扫描器。</p>
+			<a href="/settings?tab=environments" class="text-sm text-primary hover:underline">前往设置配置扫描器</a>
 		</div>
 	{:else}
 		{#if !loading && findings.length === 0}
 			<div class="flex-1 min-h-0 flex flex-col items-center justify-center text-center gap-2 text-muted-foreground">
 				<ShieldCheck class="w-10 h-10 opacity-40" />
-				<p class="text-sm">No vulnerabilities found.</p>
-				<p class="text-xs">Click "Scan all images" to populate this view.</p>
+				<p class="text-sm">未检测到任何漏洞。</p>
+				<p class="text-xs">点击 "扫描全部镜像" 以加载漏洞列表。</p>
 			</div>
 		{:else}
 			<div class="flex-1 min-h-0 flex flex-col">
@@ -167,7 +178,7 @@
 							<span class="font-mono text-xs truncate" title={finding.package}>{finding.package}</span>
 						{:else if column.id === 'severity'}
 							<Badge variant="outline" class="{getSeverityColor(finding.severity)} text-xs py-0 px-1.5">
-								{finding.severity}
+								{getLabelText(finding.severity)}
 							</Badge>
 						{:else if column.id === 'installed'}
 							<span class="font-mono text-xs truncate" title={finding.installedVersion}>{finding.installedVersion}</span>
@@ -175,7 +186,7 @@
 							{#if finding.fixedVersion}
 								<span class="font-mono text-xs truncate" title={finding.fixedVersion}>{finding.fixedVersion}</span>
 							{:else}
-								<span class="text-xs text-muted-foreground">No fix</span>
+								<span class="text-xs text-muted-foreground">暂无修复版本</span>
 							{/if}
 						{:else if column.id === 'image'}
 							<span class="font-mono text-xs truncate" title={finding.imageName}>{finding.imageName}</span>
@@ -186,7 +197,7 @@
 										type="button"
 										onclick={() => inspectContainer(finding.containers![0])}
 										class="inline-flex items-center gap-1 text-xs text-blue-500 hover:underline truncate"
-										title={`Inspect ${finding.containers[0].name}`}
+										title={`查看容器详情 ${finding.containers[0].name}`}
 									>
 										<Box class="w-3 h-3 shrink-0 opacity-70" />
 										<span class="truncate">{finding.containers[0].name}</span>
@@ -206,7 +217,7 @@
 									type="button"
 									onclick={() => openStack(finding.stacks![0])}
 									class="inline-flex items-center gap-1 text-xs text-blue-500 hover:underline truncate"
-									title={`View stack ${finding.stacks[0]}`}
+									title={`查看堆栈 ${finding.stacks[0]}`}
 								>
 									<Layers class="w-3 h-3 shrink-0 opacity-70" />
 									<span class="truncate">{finding.stacks[0]}</span>
@@ -216,7 +227,7 @@
 							{/if}
 						{:else if column.id === 'scannedAt'}
 							{#if finding.scannedAt}
-								<span class="text-xs text-muted-foreground whitespace-nowrap" title={finding.scannedAt}>{formatDateTime(finding.scannedAt)}</span>
+								<span class="text-xs text-muted-foreground whitespace-nowrap" title={finding.scannedAt}>{formatTimestamp(finding.scannedAt)}</span>
 							{:else}
 								<span class="text-xs text-muted-foreground">—</span>
 							{/if}

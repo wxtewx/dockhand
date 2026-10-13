@@ -19,5 +19,5 @@
 	<Loader2 class="w-3.5 h-3.5 animate-spin" />
 	<!-- The "X of N repos" count only adds information with more than one repo; with a
 	     single repo it reads oddly ("1 of 1"), so just say "Loading snapshots…". -->
-	Loading snapshots…{#if total > 1} {done} of {total} repos{/if}
+	正在加载快照…{#if total > 1} 已完成 {done}/{total} 个仓库{/if}
 </span>

@@ -15,19 +15,19 @@ fi
 # === Non-root mode (user: directive in compose) ===
 # If container started as non-root, skip all user management and run directly
 if [ "$RUNNING_AS_ROOT" = "false" ]; then
-    echo "Running as user $(id -u):$(id -g) (set via container user directive)"
+    echo "以用户 $(id -u):$(id -g) 身份运行 (通过容器用户指令设置)"
 
     # Ensure data directories exist (user must have write access to DATA_DIR via volume mount)
     DATA_DIR="${DATA_DIR:-/app/data}"
     if [ ! -d "$DATA_DIR/db" ]; then
-        echo "Creating database directory at $DATA_DIR/db"
+        echo "正在 $DATA_DIR/db 创建数据库目录"
         mkdir -p "$DATA_DIR/db" 2>/dev/null || {
-            echo "ERROR: Cannot create $DATA_DIR/db directory"
-            echo "Ensure the data volume is mounted with correct permissions for user $(id -u):$(id -g)"
+            echo "错误：无法创建 $DATA_DIR/db 目录"
+            echo "请确保数据卷已挂载，且对用户 $(id -u):$(id -g) 拥有正确权限"
             echo ""
-            echo "Example docker-compose.yml:"
-            echo "  volumes:"
-            echo "    - ./data:/app/data  # This directory must be writable by user $(id -u)"
+            echo "docker-compose.yml 示例："
+            echo "  数据卷:"
+            echo "    - ./data:/app/data  # 此目录必须对用户 $(id -u) 可写"
             exit 1
         }
     fi
@@ -39,23 +39,23 @@ if [ "$RUNNING_AS_ROOT" = "false" ]; then
     SOCKET_PATH="/var/run/docker.sock"
     if [ -S "$SOCKET_PATH" ]; then
         if test -r "$SOCKET_PATH" 2>/dev/null; then
-            echo "Docker socket accessible at $SOCKET_PATH"
+            echo "Docker socket 可访问，路径：$SOCKET_PATH"
             # Detect hostname from Docker if not set
             if [ -z "$DOCKHAND_HOSTNAME" ]; then
                 DETECTED_HOSTNAME=$(curl -s --unix-socket "$SOCKET_PATH" http://localhost/info 2>/dev/null | sed -n 's/.*"Name":"\([^"]*\)".*/\1/p')
                 if [ -n "$DETECTED_HOSTNAME" ]; then
                     export DOCKHAND_HOSTNAME="$DETECTED_HOSTNAME"
-                    echo "Detected Docker host hostname: $DOCKHAND_HOSTNAME"
+                    echo "已检测到 Docker 主机名：$DOCKHAND_HOSTNAME"
                 fi
             fi
         else
             SOCKET_GID=$(stat -c '%g' "$SOCKET_PATH" 2>/dev/null || echo "unknown")
-            echo "WARNING: Docker socket not readable by user $(id -u)"
-            echo "Add --group-add $SOCKET_GID to your docker run command"
+            echo "警告：用户 $(id -u) 无法读取 Docker socket"
+            echo "请在 docker run 命令中添加参数：--group-add $SOCKET_GID"
         fi
     else
-        echo "No Docker socket found at $SOCKET_PATH"
-        echo "Configure Docker environments via the web UI (Settings > Environments)"
+        echo "在路径 $SOCKET_PATH 未找到 Docker socket"
+        echo "请通过网页界面配置 Docker 环境 (设置 > 环境)"
     fi
 
     # Run directly as current user (no su-exec needed)
@@ -69,16 +69,16 @@ fi
 # === User Setup ===
 # Root mode: PUID=0 requested OR already running as root with default PUID/PGID
 if [ "$PUID" = "0" ]; then
-    echo "Running as root user (PUID=0)"
+    echo "以 root 用户身份运行 (PUID=0)"
     RUN_USER="root"
 elif [ "$RUNNING_AS_ROOT" = "true" ] && [ "$PUID" = "1001" ] && [ "$PGID" = "1001" ]; then
-    echo "Running as root user"
+    echo "以 root 用户身份运行"
     RUN_USER="root"
 else
     RUN_USER="dockhand"
     # Only modify if PUID/PGID differ from image defaults (1001:1001)
     if [ "$PUID" != "1001" ] || [ "$PGID" != "1001" ]; then
-        echo "Configuring user with PUID=$PUID PGID=$PGID"
+        echo "正在配置用户，PUID=$PUID PGID=$PGID"
 
         # Remove existing dockhand user/group (using busybox commands)
         deluser dockhand 2>/dev/null || true
@@ -89,13 +89,13 @@ else
         EXISTING=$(awk -F: -v uid="$PUID" '$3 == uid { print $1 }' /etc/passwd)
         if [ -n "$EXISTING" ]; then
             if [ "$EXISTING" = "bun" ]; then
-                echo "Note: UID $PUID is used by the 'bun' runtime user - reusing it for dockhand"
-                echo "If upgrading from a previous version, you may need to fix data permissions:"
+                echo "注意：UID $PUID 被 'bun' 运行时用户使用 - 将其复用为 dockhand"
+                echo "如果从旧版本升级，你可能需要修复数据权限："
                 echo "  chown -R $PUID:$PGID /path/to/your/data"
                 RUN_USER="bun"
                 SKIP_USER_CREATE=true
             else
-                echo "WARNING: UID $PUID already in use by '$EXISTING'. Using default UID 1001."
+                echo "警告：UID $PUID 已被 '$EXISTING' 使用，将使用默认 UID 1001。"
                 PUID=1001
             fi
         fi
@@ -151,7 +151,7 @@ if [ -S "$SOCKET_PATH" ]; then
         if [ -n "$SOCKET_GID" ]; then
             # Check if user already has access
             if ! su-exec "$RUN_USER" test -r "$SOCKET_PATH" 2>/dev/null; then
-                echo "Docker socket GID: $SOCKET_GID - adding $RUN_USER to docker group..."
+                echo "Docker socket GID：$SOCKET_GID - 正在将 $RUN_USER 添加到 docker 组..."
 
                 # Check if group with this GID exists (without getent, use /etc/group)
                 DOCKER_GROUP=$(awk -F: -v gid="$SOCKET_GID" '$3 == gid { print $1 }' /etc/group)
@@ -167,17 +167,17 @@ if [ -S "$SOCKET_PATH" ]; then
 
                 # Verify access after adding to group
                 if su-exec "$RUN_USER" test -r "$SOCKET_PATH" 2>/dev/null; then
-                    echo "Docker socket accessible at $SOCKET_PATH"
+                    echo "Docker socket 可访问，路径：$SOCKET_PATH"
                 else
-                    echo "WARNING: Could not grant Docker socket access to $RUN_USER"
-                    echo "Try running container with: --group-add $SOCKET_GID"
+                    echo "警告：无法为 $RUN_USER 授予 Docker socket 访问权限"
+                    echo "请尝试使用以下参数运行容器：--group-add $SOCKET_GID"
                 fi
             else
-                echo "Docker socket accessible at $SOCKET_PATH"
+                echo "Docker socket 可访问，路径：$SOCKET_PATH"
             fi
         fi
     else
-        echo "Docker socket accessible at $SOCKET_PATH"
+        echo "Docker socket 可访问，路径：$SOCKET_PATH"
     fi
 
     # === Detect Docker Host Hostname (for license validation) ===
@@ -186,14 +186,14 @@ if [ -S "$SOCKET_PATH" ]; then
         DETECTED_HOSTNAME=$(curl -s --unix-socket "$SOCKET_PATH" http://localhost/info 2>/dev/null | sed -n 's/.*"Name":"\([^"]*\)".*/\1/p')
         if [ -n "$DETECTED_HOSTNAME" ]; then
             export DOCKHAND_HOSTNAME="$DETECTED_HOSTNAME"
-            echo "Detected Docker host hostname: $DOCKHAND_HOSTNAME"
+            echo "已检测到 Docker 主机名：$DOCKHAND_HOSTNAME"
         fi
     else
-        echo "Using configured hostname: $DOCKHAND_HOSTNAME"
+        echo "使用配置的主机名：$DOCKHAND_HOSTNAME"
     fi
 else
-    echo "No local Docker socket mounted (this is normal when using socket-proxy or remote Docker)"
-    echo "Configure your Docker environment via the web UI: Settings > Environments"
+    echo "未挂载本地 Docker socket (使用 socket 代理或远程 Docker 时属于正常情况)"
+    echo "请通过网页界面配置 Docker 环境：设置 > 环境"
 fi
 
 # === Run Application ===
@@ -206,7 +206,7 @@ if [ "$RUN_USER" = "root" ]; then
     fi
 else
     # Running as non-root user
-    echo "Running as user: $RUN_USER"
+    echo "以用户身份运行：$RUN_USER"
     if [ "$1" = "" ]; then
         exec su-exec "$RUN_USER" bun run ./build/index.js
     else

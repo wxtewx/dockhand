@@ -38,7 +38,7 @@ export const GET: RequestHandler = async (event) => {
 
 	// Handle error from IdP
 	if (error) {
-		console.warn(`[Auth] OIDC login failed: ip=${clientIp} error=${error}${errorDescription ? ` - ${errorDescription}` : ''}`);
+		console.warn(`[认证] OIDC登录失败: ip=${clientIp} error=${error}${errorDescription ? ` - ${errorDescription}` : ''}`);
 		const errorMsg = encodeURIComponent(errorDescription || error);
 		throw redirect(302, `/login?error=${errorMsg}`);
 	}
@@ -65,7 +65,7 @@ export const GET: RequestHandler = async (event) => {
 		const message = loginStateMessage(loginState.reason);
 		// The sentence, not the bare code: "missing" alone leaves whoever reads the log
 		// to guess between an expired login, a replay, and cookies being blocked.
-		console.warn(`[Auth] OIDC login failed: ip=${clientIp} reason=${loginState.reason} - ${message}`);
+		console.warn(`[认证] OIDC 登录失败: ip=${clientIp} 原因=${loginState.reason} - ${message}`);
 		throw redirect(302, `/login?error=${encodeURIComponent(message)}`);
 	}
 
@@ -73,8 +73,8 @@ export const GET: RequestHandler = async (event) => {
 		const result = await handleOidcCallback(code, loginState.state);
 
 		if (!result.success || !result.user) {
-			console.warn(`[Auth] OIDC login failed: ip=${clientIp} error=${result.error || 'Authentication failed'}`);
-			const errorMsg = encodeURIComponent(result.error || 'Authentication failed');
+			console.warn(`[认证] OIDC 登录失败: IP=${clientIp} 错误=${result.error || '身份验证失败'}`);
+			const errorMsg = encodeURIComponent(result.error || '身份验证失败');
 			throw redirect(302, `/login?error=${errorMsg}`);
 		}
 
@@ -83,7 +83,7 @@ export const GET: RequestHandler = async (event) => {
 		// session with, and the column already holds this shape for the user row.
 		const sessionProvider = result.providerName ? `oidc:${result.providerName}` : 'oidc';
 		await createUserSession(result.user.id, sessionProvider, cookies, event.request);
-		console.log(`[Auth] OIDC login successful: user=${result.user.username} provider=${result.providerName || 'oidc'} ip=${clientIp}`);
+		console.log(`[认证] OIDC 登录成功: 用户=${result.user.username} 提供商=${result.providerName || 'oidc'} ip=${clientIp}`);
 
 		// Audit log
 		await auditAuth(event, 'login', result.user.username, {
@@ -100,8 +100,8 @@ export const GET: RequestHandler = async (event) => {
 		if (error.status === 302) {
 			throw error;
 		}
-		console.error('OIDC callback error:', error);
-		const errorMsg = encodeURIComponent(error.message || 'Authentication failed');
+		console.error('OIDC 回调错误:', error);
+		const errorMsg = encodeURIComponent(error.message || '身份验证失败');
 		throw redirect(302, `/login?error=${errorMsg}`);
 	}
 };

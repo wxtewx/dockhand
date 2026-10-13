@@ -9,6 +9,7 @@
 	import { themeStore } from '$lib/stores/theme';
 	import { getMonospaceFont } from '$lib/themes';
 	import { AnsiUp } from 'ansi_up';
+	import { getLabelText } from '$lib/types';
 	const ansiUp = new AnsiUp();
 	ansiUp.use_classes = true;
 
@@ -223,6 +224,8 @@
 			text = formatLogTimestamps(text);
 		}
 
+		text = getLabelText(text);
+
 		const query = logSearchQuery.trim();
 
 		// Filter lines before ANSI conversion (plain text matching)
@@ -281,7 +284,7 @@
 			<button
 				onclick={() => onAutoRefreshChange?.(!autoRefresh)}
 				class="flex items-center gap-1 px-1.5 py-0.5 rounded text-xs transition-colors {autoRefresh ? (dark ? 'bg-amber-500/20 ring-1 ring-amber-500/50 text-amber-400' : 'bg-amber-500/30 ring-1 ring-amber-600/50 text-amber-700') : dark ? 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-300'}"
-				title="Toggle auto-refresh"
+				title="切换自动刷新"
 			>
 				<RefreshCw class="w-3 h-3" />
 			</button>
@@ -289,7 +292,7 @@
 			<button
 				onclick={() => onAutoScrollChange?.(!autoScroll)}
 				class="flex items-center gap-1 px-1.5 py-0.5 rounded text-xs transition-colors {autoScroll ? (dark ? 'bg-amber-500/20 ring-1 ring-amber-500/50 text-amber-400' : 'bg-amber-500/30 ring-1 ring-amber-600/50 text-amber-700') : dark ? 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-300'}"
-				title="Toggle auto-scroll"
+				title="切换自动滚动"
 			>
 				<ArrowDownToLine class="w-3 h-3" />
 			</button>
@@ -298,7 +301,7 @@
 			     buttons around it -- neutralize all of it with ! overrides and hide the
 			     chevron so it reads as one more toolbar control. -->
 			<Select.Root type="single" value={String(fontSize)} onValueChange={(v) => { fontSize = Number(v); localStorage.setItem(FONT_SIZE_KEY, String(fontSize)); }}>
-				<Select.Trigger class="!h-6 !w-auto !gap-1 !rounded !border-0 !bg-transparent !px-1.5 !py-0.5 !text-xs !shadow-none transition-colors dark:!bg-transparent [&>svg:last-child]:hidden {dark ? 'text-zinc-500 hover:text-zinc-300 hover:!bg-zinc-800' : 'text-gray-500 hover:text-gray-700 hover:!bg-gray-300'}" title="Font size">
+				<Select.Trigger class="!h-6 !w-auto !gap-1 !rounded !border-0 !bg-transparent !px-1.5 !py-0.5 !text-xs !shadow-none transition-colors dark:!bg-transparent [&>svg:last-child]:hidden {dark ? 'text-zinc-500 hover:text-zinc-300 hover:!bg-zinc-800' : 'text-gray-500 hover:text-gray-700 hover:!bg-gray-300'}" title="字体大小">
 					<Type class="w-3 h-3" />
 					<span>{fontSize}px</span>
 				</Select.Trigger>
@@ -315,7 +318,7 @@
 			<button
 				onclick={() => wordWrap = !wordWrap}
 				class="p-1 rounded transition-colors {wordWrap ? (dark ? 'bg-amber-500/20 ring-1 ring-amber-500/50' : 'bg-amber-500/30 ring-1 ring-amber-600/50') : ''} {dark ? 'hover:bg-zinc-800' : 'hover:bg-gray-300'}"
-				title="Toggle word wrap"
+				title="切换自动换行"
 			>
 				<WrapText class="w-3 h-3 transition-colors {wordWrap ? (dark ? 'text-amber-400' : 'text-amber-700') : dark ? 'text-zinc-500 hover:text-zinc-300' : 'text-gray-500 hover:text-gray-700'}" />
 			</button>
@@ -323,7 +326,7 @@
 			<button
 				onclick={() => { showLineNumbers = !showLineNumbers; localStorage.setItem('dockhand-log-line-numbers', String(showLineNumbers)); }}
 				class="p-1 rounded transition-colors {showLineNumbers ? (dark ? 'bg-amber-500/20 ring-1 ring-amber-500/50' : 'bg-amber-500/30 ring-1 ring-amber-600/50') : ''} {dark ? 'hover:bg-zinc-800' : 'hover:bg-gray-300'}"
-				title={showLineNumbers ? 'Hide line numbers' : 'Show line numbers'}
+				title={showLineNumbers ? '隐藏行号' : '显示行号'}
 			>
 				<Hash class="w-3 h-3 transition-colors {showLineNumbers ? (dark ? 'text-amber-400' : 'text-amber-700') : dark ? 'text-zinc-500 hover:text-zinc-300' : 'text-gray-500 hover:text-gray-700'}" />
 			</button>
@@ -334,7 +337,7 @@
 					<input
 						bind:this={logSearchInputRef}
 						type="text"
-						placeholder="Search..."
+						placeholder="搜索..."
 						bind:value={logSearchQuery}
 						onkeydown={handleLogSearchKeydown}
 						class="bg-transparent border-none outline-none text-xs w-20 {dark ? 'text-zinc-200 placeholder:text-zinc-500' : 'text-gray-800 placeholder:text-gray-400'}"
@@ -342,7 +345,7 @@
 					<button
 						onclick={toggleSearchFilterMode}
 						class="p-0.5 rounded transition-colors {logSearchFilterMode ? (dark ? 'bg-amber-500/20 ring-1 ring-amber-500/50' : 'bg-amber-500/30 ring-1 ring-amber-600/50') : dark ? 'hover:bg-zinc-700' : 'hover:bg-gray-300'}"
-						title={logSearchFilterMode ? 'Show all lines (filter mode active)' : 'Hide non-matching lines'}
+						title={logSearchFilterMode ? '显示全部行 (筛选模式已启用)' : '隐藏不匹配的行'}
 					>
 						<Filter class="w-3 h-3 transition-colors {logSearchFilterMode ? (dark ? 'text-amber-400' : 'text-amber-700') : dark ? 'text-zinc-400' : 'text-gray-500'}" />
 					</button>
@@ -351,13 +354,13 @@
 					{:else if logSearchQuery}
 						<span class="text-xs {dark ? 'text-zinc-500' : 'text-gray-400'}">0/0</span>
 					{/if}
-					<button onclick={() => navigateMatch('prev')} class="p-0.5 rounded {dark ? 'hover:bg-zinc-700' : 'hover:bg-gray-300'}" title="Previous">
+					<button onclick={() => navigateMatch('prev')} class="p-0.5 rounded {dark ? 'hover:bg-zinc-700' : 'hover:bg-gray-300'}" title="上一个">
 						<ChevronUp class="w-3 h-3 {dark ? 'text-zinc-400' : 'text-gray-500'}" />
 					</button>
-					<button onclick={() => navigateMatch('next')} class="p-0.5 rounded {dark ? 'hover:bg-zinc-700' : 'hover:bg-gray-300'}" title="Next">
+					<button onclick={() => navigateMatch('next')} class="p-0.5 rounded {dark ? 'hover:bg-zinc-700' : 'hover:bg-gray-300'}" title="下一个">
 						<ChevronDown class="w-3 h-3 {dark ? 'text-zinc-400' : 'text-gray-500'}" />
 					</button>
-					<button onclick={closeLogSearch} class="p-0.5 rounded {dark ? 'hover:bg-zinc-700' : 'hover:bg-gray-300'}" title="Close">
+					<button onclick={closeLogSearch} class="p-0.5 rounded {dark ? 'hover:bg-zinc-700' : 'hover:bg-gray-300'}" title="关闭">
 						<X class="w-3 h-3 {dark ? 'text-zinc-400' : 'text-gray-500'}" />
 					</button>
 				</div>
@@ -365,7 +368,7 @@
 				<button
 					onclick={toggleLogSearch}
 					class="p-1 rounded transition-colors {dark ? 'hover:bg-zinc-800' : 'hover:bg-gray-300'}"
-					title="Search logs"
+					title="搜索日志"
 				>
 					<Search class="w-3 h-3 {dark ? 'text-zinc-500 hover:text-zinc-300' : 'text-gray-500 hover:text-gray-700'}" />
 				</button>
@@ -374,7 +377,7 @@
 			<button
 				onclick={copyLogs}
 				class="p-1 rounded transition-colors {dark ? 'hover:bg-zinc-800' : 'hover:bg-gray-300'}"
-				title={copied ? 'Copied!' : 'Copy logs'}
+				title={copied ? '已复制！' : '复制日志'}
 			>
 				{#if copied}
 					<Check class="w-3 h-3 text-emerald-500" />
@@ -386,7 +389,7 @@
 			<button
 				onclick={downloadLogs}
 				class="p-1 rounded transition-colors {dark ? 'hover:bg-zinc-800' : 'hover:bg-gray-300'}"
-				title="Download logs"
+				title="下载日志"
 			>
 				<Download class="w-3 h-3 {dark ? 'text-zinc-500 hover:text-zinc-300' : 'text-gray-500 hover:text-gray-700'}" />
 			</button>
@@ -395,7 +398,7 @@
 				<button
 					onclick={() => onClear?.()}
 					class="p-1 rounded transition-colors {dark ? 'hover:bg-zinc-800' : 'hover:bg-gray-300'}"
-					title="Clear logs"
+					title="清空日志"
 				>
 					<Eraser class="w-3 h-3 {dark ? 'text-zinc-500 hover:text-zinc-300' : 'text-gray-500 hover:text-gray-700'}" />
 				</button>
@@ -405,7 +408,7 @@
 				<button
 					onclick={() => onRefresh?.()}
 					class="p-1 rounded transition-colors {dark ? 'hover:bg-zinc-800' : 'hover:bg-gray-300'}"
-					title="Refresh logs"
+					title="刷新日志"
 				>
 					<RefreshCw class="w-3 h-3 {dark ? 'text-zinc-500 hover:text-zinc-300' : 'text-gray-500 hover:text-gray-700'}" />
 				</button>
@@ -420,10 +423,10 @@
 		{:else if loading}
 			<div class="flex items-center justify-center h-full {dark ? 'text-zinc-500' : 'text-gray-500'}">
 				<RefreshCw class="w-5 h-5 animate-spin mr-2" />
-				Loading logs...
+				正在加载日志...
 			</div>
 		{:else}
-			<p class="text-sm {dark ? 'text-zinc-500' : 'text-gray-500'}">No logs available</p>
+			<p class="text-sm {dark ? 'text-zinc-500' : 'text-gray-500'}">暂无日志</p>
 		{/if}
 	</div>
 </div>

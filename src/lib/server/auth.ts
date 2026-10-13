@@ -163,7 +163,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 	try {
 		return await argon2.verify(hash, password);
 	} catch (e) {
-		console.error('[Auth] argon2.verify() threw unexpectedly:', e);
+		console.error('[认证] argon2.verify() 异常抛出：', e);
 		return false;
 	}
 }
@@ -372,7 +372,7 @@ export async function getOidcLogoutRedirect(
 
 		return await buildOidcLogoutUrl(config.id, postLogoutRedirectUri);
 	} catch (error) {
-		console.warn('[OIDC] Could not build the provider logout URL:', error);
+		console.warn('[OIDC] 无法构建该身份提供程序的登出 URL:', error);
 		return null;
 	}
 }
@@ -579,18 +579,18 @@ export async function authenticateLocal(
 
 	if (!user) {
 		await verifyPassword(password, await getDummyAuthHash());
-		return { success: false, error: 'Invalid username or password' };
+		return { success: false, error: '用户名或密码错误' };
 	}
 
 	if (!user.isActive) {
 		await verifyPassword(password, await getDummyAuthHash());
-		console.warn(`[Auth] Login attempt for disabled account: user=${username}`);
-		return { success: false, error: 'Invalid username or password' };
+		console.warn(`[认证] 尝试登录已禁用账号: 用户名=${username}`);
+		return { success: false, error: '用户名或密码错误' };
 	}
 
 	const validPassword = await verifyPassword(password, user.passwordHash);
 	if (!validPassword) {
-		return { success: false, error: 'Invalid username or password' };
+		return { success: false, error: '用户名或密码无效' };
 	}
 
 	// Check if MFA is required
@@ -628,7 +628,7 @@ export async function getEnabledLdapConfigs(): Promise<LdapConfig[]> {
 export async function testLdapConnection(configId: number): Promise<LdapTestResult> {
 	const config = await getLdapConfig(configId);
 	if (!config) {
-		return { success: false, error: 'LDAP configuration not found' };
+		return { success: false, error: '未找到 LDAP 配置' };
 	}
 
 	const client = new LdapClient({
@@ -658,7 +658,7 @@ export async function testLdapConnection(configId: number): Promise<LdapTestResu
 		return { success: true, userCount: searchEntries.length };
 	} catch (error: any) {
 		try { await client.unbind(); } catch {}
-		return { success: false, error: error.message || 'Connection failed' };
+		return { success: false, error: error.message || '连接失败' };
 	}
 }
 
@@ -676,7 +676,7 @@ export async function authenticateLdap(
 		: await getEnabledLdapConfigs();
 
 	if (configs.length === 0) {
-		return { success: false, error: 'No LDAP configuration available' };
+		return { success: false, error: '无可用的 LDAP 配置' };
 	}
 
 	// Try each LDAP configuration
@@ -687,7 +687,7 @@ export async function authenticateLdap(
 		}
 	}
 
-	return { success: false, error: 'Invalid username or password' };
+	return { success: false, error: '用户名或密码无效' };
 }
 
 /**
@@ -737,7 +737,7 @@ async function tryLdapAuth(
 		// to avoid leaking whether a username exists via response content or timing.
 		if (searchEntries.length === 0) {
 			await client.unbind();
-			return { success: false, error: 'Invalid username or password' };
+			return { success: false, error: '用户名或密码无效' };
 		}
 
 		const userEntry = searchEntries[0];
@@ -759,7 +759,7 @@ async function tryLdapAuth(
 			await userClient.bind(userDn, password);
 			await userClient.unbind();
 		} catch (bindError) {
-			return { success: false, error: 'Invalid username or password' };
+			return { success: false, error: '用户名或密码无效' };
 		}
 
 		// Authentication successful - get or create local user
@@ -850,7 +850,7 @@ async function tryLdapAuth(
 		invalidateTokenCacheForUser(user.id);
 
 		if (!user.isActive) {
-			return { success: false, error: 'Account is disabled' };
+			return { success: false, error: '账户已禁用' };
 		}
 
 		// Check if MFA is required
@@ -865,8 +865,8 @@ async function tryLdapAuth(
 	} catch (error: any) {
 		try { await client.unbind(); } catch {}
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		console.error('[LDAP] Authentication error:', errorMsg);
-		return { success: false, error: 'LDAP authentication failed' };
+		console.error('[LDAP] 认证错误：', errorMsg);
+		return { success: false, error: 'LDAP 认证失败' };
 	}
 }
 
@@ -935,7 +935,7 @@ async function checkLdapGroupMembership(
 		return searchEntries.length > 0;
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		console.error('[LDAP] Group membership check failed:', errorMsg);
+		console.error('[LDAP] 组成员检查失败：', errorMsg);
 		try { await client.unbind(); } catch {}
 		return false;
 	}
@@ -1386,7 +1386,7 @@ async function verifyIdToken(
 	expectedNonce: string
 ): Promise<Claims> {
 	if (!discovery.jwks_uri) {
-		throw new Error(`${config.name} publishes no signing keys (jwks_uri), so tokens cannot be verified`);
+		throw new Error(`${config.name} 未发布签名密钥 (jwks_uri)，因此无法验证令牌`);
 	}
 
 	return verifyIdTokenWithKeys(idToken, getKeyStore(discovery.jwks_uri), {
@@ -1414,7 +1414,7 @@ export async function buildOidcAuthorizationUrl(
 ): Promise<{ url: string; state: string; loginState: OidcLoginState } | { error: string }> {
 	const config = await getOidcConfig(configId);
 	if (!config || !config.enabled) {
-		return { error: 'OIDC configuration not found or disabled' };
+		return { error: 'OIDC 配置未找到或已禁用' };
 	}
 
 	try {
@@ -1453,8 +1453,8 @@ export async function buildOidcAuthorizationUrl(
 		return { url: authUrl, state, loginState };
 	} catch (error: any) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		console.error('[OIDC] Failed to build authorization URL:', errorMsg);
-		return { error: error.message || 'Failed to initialize SSO' };
+		console.error('[OIDC] 构建授权 URL 失败：', errorMsg);
+		return { error: error.message || 'SSO 初始化失败' };
 	}
 }
 
@@ -1467,7 +1467,7 @@ export async function handleOidcCallback(
 ): Promise<LoginResult & { redirectUrl?: string; providerName?: string; providerId?: number }> {
 	const config = await getOidcConfig(stateData.configId);
 	if (!config || !config.enabled) {
-		return { success: false, error: 'OIDC configuration not found or disabled' };
+		return { success: false, error: 'OIDC 配置未找到或已禁用' };
 	}
 
 	try {
@@ -1493,8 +1493,8 @@ export async function handleOidcCallback(
 			const errorBody = await tokenResponse.text();
 			// Named and prefixed like every other OIDC line: with more than one provider
 			// configured, a bare message does not say which one refused.
-			console.error(`[OIDC] ${config.name} refused the authorization code: HTTP ${tokenResponse.status} ${redactTokenErrorBody(errorBody)}`);
-			console.error(`[OIDC] ${config.name} token endpoint: ${discovery.token_endpoint}, redirect URI sent: ${config.redirectUri}`);
+			console.error(`[OIDC] ${config.name} 拒绝了授权码: HTTP ${tokenResponse.status} ${redactTokenErrorBody(errorBody)}`);
+			console.error(`[OIDC] ${config.name} 令牌端点: ${discovery.token_endpoint}, 发送的重定向 URI: ${config.redirectUri}`);
 			return { success: false, error: describeTokenExchangeFailure(tokenResponse.status, errorBody) };
 		}
 
@@ -1520,7 +1520,7 @@ export async function handleOidcCallback(
 			claims = await verifyIdToken(tokens.id_token!, discovery, config, stateData.nonce);
 		} catch (error) {
 			const reason = error instanceof Error ? error.message : String(error);
-			console.warn(`[OIDC] Rejected an ID token from ${config.name}: ${reason}`);
+			console.warn(`[OIDC] 拒绝来自 ${config.name} 的 ID 令牌: ${reason}`);
 			const rejected = rejectedToken(error);
 			return { success: false, error: rejected.proceed ? reason : rejected.error };
 		}
@@ -1540,7 +1540,7 @@ export async function handleOidcCallback(
 					const step = applyUserinfo(claims, userinfo, config.name);
 					if (!step.proceed) {
 						console.warn(
-							`[OIDC] ${config.name} returned userinfo for a different subject; rejecting the sign-in`
+							`[OIDC] ${config.name} 返回的用户信息属于另一个主体；拒绝本次登录`
 						);
 						return { success: false, error: step.error };
 					}
@@ -1548,13 +1548,13 @@ export async function handleOidcCallback(
 					claims = step.claims;
 				}
 			} catch (e) {
-				console.warn('Failed to fetch userinfo:', e);
+				console.warn('获取用户信息失败：', e);
 			}
 		}
 
 		const identity = identityFromClaims(claims, config);
 		if (!identity.ok) {
-			return { success: false, error: 'Username claim not found in token' };
+			return { success: false, error: '令牌中未找到用户名声明' };
 		}
 		const { username, email, displayName } = identity;
 
@@ -1618,7 +1618,7 @@ export async function handleOidcCallback(
 					}
 				}
 			} catch (e) {
-				console.warn('Failed to process OIDC role mappings:', e);
+				console.warn('处理 OIDC 角色映射失败：', e);
 			}
 		}
 
@@ -1626,7 +1626,7 @@ export async function handleOidcCallback(
 		invalidateTokenCacheForUser(user.id);
 
 		if (!user.isActive) {
-			return { success: false, error: 'Account is disabled' };
+			return { success: false, error: '账户已禁用' };
 		}
 
 		// OIDC users bypass MFA (they authenticated through IdP)
@@ -1639,8 +1639,8 @@ export async function handleOidcCallback(
 		};
 	} catch (error: any) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		console.error('[OIDC] Callback error:', errorMsg);
-		return { success: false, error: error.message || 'SSO authentication failed' };
+		console.error('[OIDC] 回调错误：', errorMsg);
+		return { success: false, error: error.message || 'SSO 认证失败' };
 	}
 }
 
@@ -1661,7 +1661,7 @@ export interface OidcTestResult {
 export async function testOidcConnection(configId: number): Promise<OidcTestResult> {
 	const config = await getOidcConfig(configId);
 	if (!config) {
-		return { success: false, error: 'OIDC configuration not found' };
+		return { success: false, error: '未找到 OIDC 配置' };
 	}
 
 	try {
@@ -1676,7 +1676,7 @@ export async function testOidcConnection(configId: number): Promise<OidcTestResu
 			}
 		};
 	} catch (error: any) {
-		return { success: false, error: error.message || 'Failed to connect to OIDC provider' };
+		return { success: false, error: error.message || '连接 OIDC 提供商失败' };
 	}
 }
 

@@ -87,10 +87,10 @@ export const vaultProvider: SecretProvider<VaultConfig> = {
 
 	async testConnection(config: VaultConfig): Promise<TestConnectionResult> {
 		if (!config.address?.trim()) {
-			return { ok: false, error: 'Address is empty' };
+			return { ok: false, error: '地址为空' };
 		}
 		if (!config.token?.trim()) {
-			return { ok: false, error: 'Token is empty' };
+			return { ok: false, error: '令牌为空' };
 		}
 		try {
 			// Read the KV v2 mount config: validates host + token + the configured mount
@@ -105,7 +105,7 @@ export const vaultProvider: SecretProvider<VaultConfig> = {
 			if (statusCode >= 200 && statusCode < 300) {
 				// A 2xx alone isn't proof: a parked domain / proxy can answer 200 with HTML.
 				if (!isJsonResponse(rawBody)) {
-					return { ok: false, error: 'Vault did not return a JSON response - the host may not be a Vault server' };
+					return { ok: false, error: 'Vault 未返回 JSON 响应，该主机可能不是 Vault 服务端' };
 				}
 				return { ok: true };
 			}
@@ -116,11 +116,11 @@ export const vaultProvider: SecretProvider<VaultConfig> = {
 			const safe = parseProviderError(rawBody);
 			return {
 				ok: false,
-				error: `Vault returned ${statusCode}${safe ? `: ${safe}` : ''}`
+				error: `Vault 返回 ${statusCode}${safe ? `: ${safe}` : ''}`
 			};
 		} catch (e: unknown) {
 			const message = e instanceof Error ? e.message : String(e);
-			return { ok: false, error: message || 'Connection failed' };
+			return { ok: false, error: message || '连接失败' };
 		}
 	},
 
@@ -130,7 +130,7 @@ export const vaultProvider: SecretProvider<VaultConfig> = {
 		_logPrefix?: string
 	): Promise<Map<string, string>> {
 		throw new UnsupportedOperationError(
-			'HashiCorp Vault does not support inline references; use bulk pull (KV v2 path).'
+			'HashiCorp Vault 不支持内联引用，请使用批量拉取(KV v2路径)。'
 		);
 	},
 
@@ -145,13 +145,13 @@ export const vaultProvider: SecretProvider<VaultConfig> = {
 		// A missing bulk selector is a real failure (unlike a single skipped ref).
 		if (statusCode === 404) {
 			await body.dump();
-			throw new Error(`HashiCorp Vault: KV v2 path not found: ${mount}/${path}`);
+			throw new Error(`HashiCorp Vault: 未找到 KV v2 路径: ${mount}/${path}`);
 		}
 		if (statusCode < 200 || statusCode >= 300) {
 			const detail = await readErrorDetail(body);
 			if (detail) console.warn(`[HashiCorp Vault] read ${mount}/${path} ${statusCode}: ${detail}`);
 			throw new Error(
-				`HashiCorp Vault: read failed for ${mount}/${path} (status ${statusCode})${detail ? `: ${detail}` : ''}`
+				`HashiCorp Vault: 读取 ${mount}/${path} 失败 (状态码 ${statusCode})${detail ? `: ${detail}` : ''}`
 			);
 		}
 

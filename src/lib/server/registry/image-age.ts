@@ -94,26 +94,26 @@ export async function fetchImageCreatedAt(request: ImageAgeRequest, fetchMetadat
 			let url = new URL(initialUrl);
 			let authorization = request.authorization;
 			for (let hop = 0; hop < 5; hop++) {
-				if (!isSafeNotificationUrl(url.href).ok || url.username || url.password) throw new Error('Unsafe registry metadata URL');
+				if (!isSafeNotificationUrl(url.href).ok || url.username || url.password) throw new Error('不安全的镜像仓库元数据地址');
 				const headers: Record<string, string> = { Accept: accept, 'User-Agent': 'Dockhand/1.0' };
 				if (authorization) headers.Authorization = authorization;
 				const response = await fetchMetadata(url.href, { headers, redirect: 'manual', signal });
 				if ([301, 302, 303, 307, 308].includes(response.status)) {
 					const location = response.headers.get('Location');
 					await response.body?.cancel();
-					if (!location) throw new Error('Missing metadata redirect location');
+					if (!location) throw new Error('缺少元数据重定向地址');
 					const next = new URL(location, url);
-					if (url.protocol === 'https:' && next.protocol !== 'https:') throw new Error('Insecure metadata redirect');
+					if (url.protocol === 'https:' && next.protocol !== 'https:') throw new Error('不安全的元数据重定向');
 					if (next.origin !== url.origin) authorization = null;
 					url = next;
 					continue;
 				}
 				if (!response.ok || Number(response.headers.get('Content-Length')) > limit) {
 					await response.body?.cancel();
-					throw new Error('Registry metadata unavailable or too large');
+					throw new Error('镜像仓库元数据不可用或过大');
 				}
 				const reader = response.body?.getReader();
-				if (!reader) throw new Error('Empty registry metadata');
+				if (!reader) throw new Error('镜像仓库元数据为空');
 				const chunks: Uint8Array[] = [];
 				let size = 0;
 				try {
@@ -121,7 +121,7 @@ export async function fetchImageCreatedAt(request: ImageAgeRequest, fetchMetadat
 						const { done, value } = await reader.read();
 						if (done) break;
 						size += value.byteLength;
-						if (size > limit) throw new Error('Registry metadata too large');
+						if (size > limit) throw new Error('镜像仓库元数据过大');
 						chunks.push(value);
 					}
 				} finally {
@@ -129,10 +129,10 @@ export async function fetchImageCreatedAt(request: ImageAgeRequest, fetchMetadat
 					reader.releaseLock();
 				}
 				const bytes = Buffer.concat(chunks);
-				if ('sha256:' + createHash('sha256').update(bytes).digest('hex') !== expectedDigest) throw new Error('Registry metadata digest mismatch');
+				if ('sha256:' + createHash('sha256').update(bytes).digest('hex') !== expectedDigest) throw new Error('镜像仓库元数据摘要不匹配');
 				return { body: JSON.parse(bytes.toString('utf8')), mediaType: (response.headers.get('Content-Type') ?? '').split(';')[0].trim() };
 			}
-			throw new Error('Too many metadata redirects');
+			throw new Error('元数据重定向次数过多');
 		}
 	} catch {
 		return null;

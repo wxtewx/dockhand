@@ -37,7 +37,7 @@
 </script>
 
 <svelte:head>
-	<title>Dockhand API Docs</title>
+	<title>Dockhand API 文档</title>
 </svelte:head>
 
 <div bind:this={container}></div>

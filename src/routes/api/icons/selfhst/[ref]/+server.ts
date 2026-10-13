@@ -29,7 +29,7 @@ const PLACEHOLDER_SVG =
 export const GET: RequestHandler = async ({ params }) => {
 	const ref = params.ref;
 	if (!isValidSelfhstRef(ref)) {
-		return json({ error: 'Invalid icon reference' }, { status: 400 });
+		return json({ error: '无效的图标引用' }, { status: 400 });
 	}
 	const icon = await getSelfhstIcon(ref);
 	if (!icon) {

@@ -5,7 +5,7 @@ export async function releaseAgeAdvisory<T>(lookup: (signal: AbortSignal) => Pro
 	let timer: ReturnType<typeof setTimeout>;
 	const deadline = new Promise<never>((_, reject) => {
 		timer = setTimeout(() => {
-			const error = new Error('Image age lookup timed out');
+			const error = new Error('镜像时长查询超时');
 			controller.abort(error);
 			reject(error);
 		}, timeoutMs);

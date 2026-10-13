@@ -52,7 +52,7 @@ function notifyListeners(event: DockerEvent) {
 		try {
 			callback(event);
 		} catch (e) {
-			console.error('Event listener error:', e);
+			console.error('事件监听器错误：', e);
 		}
 	});
 }
@@ -89,7 +89,7 @@ export function connectSSE(envId?: number | null) {
 		eventSource = new EventSource(url);
 
 		eventSource.addEventListener('connected', (e) => {
-			console.log('SSE connected:', JSON.parse(e.data));
+			console.log('SSE 已连接：', JSON.parse(e.data));
 			sseConnected.set(true);
 			sseError.set(null);
 			reconnectAttempts = 0;
@@ -100,7 +100,7 @@ export function connectSSE(envId?: number | null) {
 				const event: DockerEvent = JSON.parse(e.data);
 				notifyListeners(event);
 			} catch (err) {
-				console.error('Failed to parse docker event:', err);
+				console.error('解析 Docker 事件失败：', err);
 			}
 		});
 
@@ -136,19 +136,19 @@ export function connectSSE(envId?: number | null) {
 				return;
 			}
 
-			console.error('SSE error:', e);
+			console.error('SSE 错误：', e);
 			sseConnected.set(false);
 
 			// Attempt reconnection
 			if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
 				reconnectAttempts++;
-				sseError.set(`Connection lost. Reconnecting (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
+				sseError.set(`连接已断开，正在重新连接 (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
 				reconnectTimeout = setTimeout(() => {
 					const env = get(currentEnvironment);
 					connectSSE(env?.id);
 				}, RECONNECT_DELAY);
 			} else {
-				sseError.set('Connection failed. Refresh the page to retry.');
+				sseError.set('连接失败，请刷新页面重试。');
 			}
 		});
 
@@ -157,8 +157,8 @@ export function connectSSE(envId?: number | null) {
 		};
 
 	} catch (error: any) {
-		console.error('Failed to create EventSource:', error);
-		sseError.set(error.message || 'Failed to connect');
+		console.error('创建事件源失败：', error);
+		sseError.set(error.message || '连接失败');
 		sseConnected.set(false);
 	}
 }

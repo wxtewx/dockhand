@@ -17,14 +17,14 @@
 			class="px-3 py-1.5 text-sm font-medium rounded-md transition-all flex items-center gap-1.5 {gitSubTab === 'repositories' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
 		>
 			<FolderGit2 class="w-4 h-4" />
-			Repositories
+			仓库
 		</a>
 		<a
 			href="/settings?tab=git&subtab=credentials"
 			class="px-3 py-1.5 text-sm font-medium rounded-md transition-all flex items-center gap-1.5 {gitSubTab === 'credentials' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
 		>
 			<Key class="w-4 h-4" />
-			Credentials
+			凭据
 		</a>
 	</div>
 

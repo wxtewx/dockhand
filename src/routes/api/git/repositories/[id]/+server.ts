@@ -25,24 +25,24 @@ import { computeAuditDiff } from '$lib/utils/diff';
 export const GET: RequestHandler = async ({ params, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('git', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const id = parseInt(params.id);
 		if (isNaN(id)) {
-			return json({ error: 'Invalid repository ID' }, { status: 400 });
+			return json({ error: '无效的仓库 ID' }, { status: 400 });
 		}
 
 		const repository = await getGitRepository(id);
 		if (!repository) {
-			return json({ error: 'Repository not found' }, { status: 404 });
+			return json({ error: '仓库不存在' }, { status: 404 });
 		}
 
 		return json(repository);
 	} catch (error) {
-		console.error('Failed to get git repository:', error);
-		return json({ error: 'Failed to get git repository' }, { status: 500 });
+		console.error('获取 Git 仓库失败:', error);
+		return json({ error: '获取 Git 仓库失败' }, { status: 500 });
 	}
 };
 
@@ -63,18 +63,18 @@ export const PUT: RequestHandler = async (event) => {
 	const { params, request, cookies } = event;
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('git', 'edit')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const id = parseInt(params.id);
 		if (isNaN(id)) {
-			return json({ error: 'Invalid repository ID' }, { status: 400 });
+			return json({ error: '无效的仓库 ID' }, { status: 400 });
 		}
 
 		const existing = await getGitRepository(id);
 		if (!existing) {
-			return json({ error: 'Repository not found' }, { status: 404 });
+			return json({ error: '仓库不存在' }, { status: 404 });
 		}
 
 		const data = await request.json();
@@ -84,7 +84,7 @@ export const PUT: RequestHandler = async (event) => {
 			const credentials = await getGitCredentials();
 			const credential = credentials.find(c => c.id === data.credentialId);
 			if (!credential) {
-				return json({ error: 'Invalid credential ID' }, { status: 400 });
+				return json({ error: '无效的凭据 ID' }, { status: 400 });
 			}
 		}
 
@@ -98,7 +98,7 @@ export const PUT: RequestHandler = async (event) => {
 		});
 
 		if (!repository) {
-			return json({ error: 'Failed to update repository' }, { status: 500 });
+			return json({ error: '更新仓库失败' }, { status: 500 });
 		}
 
 		// Compute diff for audit
@@ -109,11 +109,11 @@ export const PUT: RequestHandler = async (event) => {
 
 		return json(repository);
 	} catch (error: any) {
-		console.error('Failed to update git repository:', error);
+		console.error('更新 Git 仓库失败:', error);
 		if (error.message?.includes('UNIQUE constraint failed')) {
-			return json({ error: 'A repository with this name already exists' }, { status: 400 });
+			return json({ error: '同名仓库已存在' }, { status: 400 });
 		}
-		return json({ error: 'Failed to update git repository' }, { status: 500 });
+		return json({ error: '更新 Git 仓库失败' }, { status: 500 });
 	}
 };
 
@@ -132,24 +132,24 @@ export const DELETE: RequestHandler = async (event) => {
 	const { params, cookies } = event;
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('git', 'delete')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const id = parseInt(params.id);
 		if (isNaN(id)) {
-			return json({ error: 'Invalid repository ID' }, { status: 400 });
+			return json({ error: '无效的仓库 ID' }, { status: 400 });
 		}
 
 		// Get repository name before deletion for audit log
 		const repository = await getGitRepository(id);
 		if (!repository) {
-			return json({ error: 'Repository not found' }, { status: 404 });
+			return json({ error: '仓库不存在' }, { status: 404 });
 		}
 
 		// Delete git stack clone directories before cascade deletes the DB rows
 		const stacks = await getGitStacksByRepositoryId(id);
-		console.log(`[GitStack] Repository "${repository.name}" (id=${id}) deletion affects ${stacks.length} stacks: ${stacks.map(s => s.stackName).join(', ')}`);
+		console.log(`[Git堆栈] 仓库 "${repository.name}" (id=${id}) 删除操作影响 ${stacks.length} 个堆栈：${stacks.map(s => s.stackName).join(', ')}`);
 		for (const stack of stacks) {
 			await deleteGitStackFiles(stack.id, stack.stackName, stack.environmentId);
 		}
@@ -159,7 +159,7 @@ export const DELETE: RequestHandler = async (event) => {
 
 		const deleted = await deleteGitRepository(id);
 		if (!deleted) {
-			return json({ error: 'Failed to delete repository' }, { status: 500 });
+			return json({ error: '删除仓库失败' }, { status: 500 });
 		}
 
 		// Audit log
@@ -167,7 +167,7 @@ export const DELETE: RequestHandler = async (event) => {
 
 		return json({ success: true });
 	} catch (error) {
-		console.error('Failed to delete git repository:', error);
-		return json({ error: 'Failed to delete git repository' }, { status: 500 });
+		console.error('删除 Git 仓库失败:', error);
+		return json({ error: '删除 Git 仓库失败' }, { status: 500 });
 	}
 };

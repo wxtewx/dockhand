@@ -27,7 +27,7 @@
 		variant="outline"
 		onclick={onDismiss}
 		class="gap-1.5 border-amber-500/40 text-amber-600 hover:bg-amber-500/10 hover:border-amber-500"
-		title="Dismiss all update indicators"
+		title="清除全部更新指示器"
 	>
 		{#if digestCount > 0}
 			<span class="flex items-center gap-0.5">
@@ -42,7 +42,7 @@
 			</span>
 		{/if}
 		{#if coolingDownCount > 0}
-			<span class="flex items-center gap-0.5 text-muted-foreground" title="{coolingDownCount} update(s) waiting out the minimum image age">
+			<span class="flex items-center gap-0.5 text-muted-foreground" title="{coolingDownCount} 项更新正在等待镜像最小存放时长冷却">
 				<Clock class="w-3 h-3" />
 				<span class="text-xs font-medium tabular-nums">{coolingDownCount}</span>
 			</span>

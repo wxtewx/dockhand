@@ -131,7 +131,7 @@
 	async function addPasskey() {
 		const name = passkeyName.trim();
 		if (!name) {
-			passkeyError = 'Enter a passkey name';
+			passkeyError = '请输入通行密钥名称';
 			return;
 		}
 		passkeyActionLoading = true;
@@ -143,7 +143,7 @@
 				body: JSON.stringify({ name })
 			});
 			const optionsData = await optionsResponse.json();
-			if (!optionsResponse.ok) throw new Error(optionsData.error || 'Passkey registration is unavailable');
+			if (!optionsResponse.ok) throw new Error(optionsData.error || '通行密钥注册服务不可用');
 
 			const registrationResponse = await startRegistration({ optionsJSON: optionsData.options });
 			const verifyResponse = await fetch('/api/auth/passkeys/register/verify', {
@@ -155,29 +155,29 @@
 				})
 			});
 			const verifyData = await verifyResponse.json();
-			if (!verifyResponse.ok) throw new Error(verifyData.error || 'Passkey registration failed');
+			if (!verifyResponse.ok) throw new Error(verifyData.error || '通行密钥注册失败');
 			passkeyName = '';
 			await fetchPasskeys();
-			showSuccessMessage('Passkey added successfully');
+			showSuccessMessage('通行密钥添加成功');
 		} catch (e) {
 			passkeyError = e instanceof Error && e.name !== 'NotAllowedError'
 				? e.message
-				: 'Passkey registration was cancelled or timed out';
+				: '通行密钥注册已取消或超时';
 		} finally {
 			passkeyActionLoading = false;
 		}
 	}
 
 	async function deletePasskey(passkey: Passkey) {
-		if (!window.confirm(`Delete passkey "${passkey.name || 'Passkey'}"?`)) return;
+		if (!window.confirm(`确定要删除通行密钥 "${passkey.name || '通行密钥'}"吗？`)) return;
 		passkeyError = '';
 		const response = await fetch(`/api/profile/passkeys/${passkey.id}`, { method: 'DELETE' });
 		if (response.ok) {
 			await fetchPasskeys();
-			showSuccessMessage('Passkey removed');
+			showSuccessMessage('通行密钥已移除');
 		} else {
 			const data = await response.json();
-			passkeyError = data.error || 'Failed to remove passkey';
+			passkeyError = data.error || '移除通行密钥失败';
 		}
 	}
 
@@ -222,7 +222,7 @@
 		const file = input.files?.[0];
 		if (file) {
 			if (!file.type.startsWith('image/')) {
-				formError = 'Please select an image file';
+				formError = '请选择图片文件';
 				return;
 			}
 			const reader = new FileReader();
@@ -260,10 +260,10 @@
 				goto('/login');
 			} else {
 				const data = await response.json();
-				error = data.error || 'Failed to load profile';
+				error = data.error || '加载个人资料失败';
 			}
 		} catch (e) {
-			error = 'Failed to load profile';
+			error = '加载个人资料失败';
 		} finally {
 			loading = false;
 		}
@@ -286,16 +286,16 @@
 
 			if (response.ok) {
 				profile = await response.json();
-				formSuccess = 'Profile updated successfully';
+				formSuccess = '个人资料更新成功';
 				// Refresh auth store to update sidebar
 				await authStore.check();
 				setTimeout(() => formSuccess = '', 3000);
 			} else {
 				const data = await response.json();
-				formError = data.error || 'Failed to update profile';
+				formError = data.error || '更新个人资料失败';
 			}
 		} catch (e) {
-			formError = 'Failed to update profile';
+			formError = '更新个人资料失败';
 		} finally {
 			formSaving = false;
 		}
@@ -328,10 +328,10 @@
 				showMfaSetupModal = true;
 			} else {
 				const data = await response.json();
-				mfaError = data.error || 'Failed to setup MFA';
+				mfaError = data.error || 'MFA 设置失败';
 			}
 		} catch (e) {
-			mfaError = 'Failed to setup MFA';
+			mfaError = 'MFA 设置失败';
 		} finally {
 			mfaLoading = false;
 		}
@@ -339,16 +339,16 @@
 
 	async function handleMfaEnabled() {
 		await fetchProfile();
-		showSuccessMessage('MFA enabled successfully');
+		showSuccessMessage('MFA 启用成功');
 	}
 
 	async function handleMfaDisabled() {
 		await fetchProfile();
-		showSuccessMessage('MFA disabled successfully');
+		showSuccessMessage('MFA 禁用成功');
 	}
 
 	function formatProfileDate(dateStr: string | null): string {
-		if (!dateStr) return 'Never';
+		if (!dateStr) return '从未';
 		return formatDateTime(dateStr, true);
 	}
 
@@ -368,7 +368,7 @@
 				if (profile) {
 					profile.avatar = data.avatar;
 				}
-				formSuccess = 'Avatar updated successfully';
+				formSuccess = '头像更新成功';
 				await authStore.check();
 				setTimeout(() => formSuccess = '', 3000);
 				// Close cropper
@@ -379,10 +379,10 @@
 				}
 			} else {
 				const data = await response.json();
-				formError = data.error || 'Failed to upload avatar';
+				formError = data.error || '上传头像失败';
 			}
 		} catch (e) {
-			formError = 'Failed to upload avatar';
+			formError = '上传头像失败';
 		} finally {
 			avatarSaving = false;
 		}
@@ -401,15 +401,15 @@
 				if (profile) {
 					profile.avatar = null;
 				}
-				formSuccess = 'Avatar removed successfully';
+				formSuccess = '头像移除成功';
 				await authStore.check();
 				setTimeout(() => formSuccess = '', 3000);
 			} else {
 				const data = await response.json();
-				formError = data.error || 'Failed to remove avatar';
+				formError = data.error || '移除头像失败';
 			}
 		} catch (e) {
-			formError = 'Failed to remove avatar';
+			formError = '移除头像失败';
 		} finally {
 			avatarSaving = false;
 		}
@@ -437,13 +437,13 @@
 </script>
 
 <svelte:head>
-	<title>Profile - Dockhand</title>
+	<title>个人资料 - Dockhand</title>
 </svelte:head>
 
 <div class="container mx-auto p-6">
 	<div class="flex items-center gap-3 mb-6">
-		<PageHeader icon={User} title="Profile" showConnection={false}>
-			<p class="text-muted-foreground text-sm">Manage your account settings</p>
+		<PageHeader icon={User} title="个人资料" showConnection={false}>
+			<p class="text-muted-foreground text-sm">管理你的账户设置</p>
 		</PageHeader>
 	</div>
 
@@ -478,7 +478,7 @@
 				<Card.Header>
 					<Card.Title class="flex items-center gap-2">
 						<User class="w-5 h-5" />
-						Account information
+						账户信息
 					</Card.Title>
 				</Card.Header>
 				<Card.Content class="space-y-4">
@@ -522,7 +522,7 @@
 										onclick={removeAvatar}
 										disabled={avatarSaving}
 										class="absolute -bottom-1 -right-1 p-1 rounded-full bg-background border border-border text-muted-foreground hover:text-destructive hover:border-destructive transition-colors"
-										title="Remove photo"
+										title="移除图片"
 									>
 										<Trash2 class="w-3.5 h-3.5" />
 									</button>
@@ -534,19 +534,19 @@
 						<div class="flex-1 space-y-4">
 							<div class="grid grid-cols-2 gap-4">
 								<div>
-									<Label class="text-muted-foreground text-xs">Username</Label>
+									<Label class="text-muted-foreground text-xs">用户名</Label>
 									<p class="font-medium">{profile.username}</p>
 								</div>
 								<div>
-									<Label class="text-muted-foreground text-xs">Role</Label>
+									<Label class="text-muted-foreground text-xs">角色</Label>
 									<div class="flex items-center gap-2">
 										{#if profile.isAdmin}
 											<Badge variant="default" class="gap-1 rounded-sm">
 												<Crown class="w-3 h-3" />
-												Admin
+												管理员
 											</Badge>
 										{:else}
-											<Badge variant="secondary" class="rounded-sm">User</Badge>
+											<Badge variant="secondary" class="rounded-sm">普通用户</Badge>
 										{/if}
 									</div>
 								</div>
@@ -554,14 +554,14 @@
 
 							<div class="grid grid-cols-2 gap-4">
 								<div>
-									<Label class="text-muted-foreground text-xs">Created</Label>
+									<Label class="text-muted-foreground text-xs">创建时间</Label>
 									<p class="text-sm flex items-center gap-1">
 										<Calendar class="w-3.5 h-3.5" />
 										{formatProfileDate(profile.createdAt)}
 									</p>
 								</div>
 								<div>
-									<Label class="text-muted-foreground text-xs">Last login</Label>
+									<Label class="text-muted-foreground text-xs">最后登录</Label>
 									<p class="text-sm flex items-center gap-1">
 										<Clock class="w-3.5 h-3.5" />
 										{formatProfileDate(profile.lastLogin)}
@@ -578,7 +578,7 @@
 				<Card.Header>
 					<Card.Title class="flex items-center gap-2">
 						<Mail class="w-5 h-5" />
-						Profile details
+						资料详情
 					</Card.Title>
 				</Card.Header>
 				<Card.Content class="flex-1 flex flex-col space-y-4">
@@ -591,18 +591,18 @@
 
 					<div class="space-y-4 flex-1">
 						<div class="space-y-2">
-							<Label>Display name</Label>
+							<Label>显示名称</Label>
 							<Input
 								bind:value={formDisplayName}
-								placeholder="Enter display name"
+								placeholder="输入显示名称"
 							/>
 						</div>
 						<div class="space-y-2">
-							<Label>Email</Label>
+							<Label>电子邮箱</Label>
 							<Input
 								type="email"
 								bind:value={formEmail}
-								placeholder="Enter email"
+								placeholder="输入电子邮箱"
 							/>
 						</div>
 					</div>
@@ -614,7 +614,7 @@
 							{:else}
 								<Check class="w-4 h-4" />
 							{/if}
-							Save changes
+							保存更改
 						</Button>
 					</div>
 				</Card.Content>
@@ -630,7 +630,7 @@
 				<Card.Header>
 					<Card.Title class="flex items-center gap-2">
 						<Shield class="w-5 h-5" />
-						Security
+						安全设置
 					</Card.Title>
 				</Card.Header>
 				<Card.Content class="space-y-4">
@@ -640,12 +640,12 @@
 							<div class="flex items-center gap-3">
 								<Key class="w-5 h-5 text-muted-foreground" />
 								<div>
-									<p class="font-medium">Password</p>
-									<p class="text-sm text-muted-foreground">Change your password</p>
+									<p class="font-medium">密码</p>
+									<p class="text-sm text-muted-foreground">修改你的密码</p>
 								</div>
 							</div>
 							<Button variant="outline" onclick={() => showPasswordModal = true}>
-								Change password
+								修改密码
 							</Button>
 						</div>
 					{:else}
@@ -653,8 +653,8 @@
 							<div class="flex items-center gap-3">
 								<Key class="w-5 h-5 text-muted-foreground" />
 								<div>
-									<p class="font-medium">Password</p>
-									<p class="text-sm text-muted-foreground">Managed by your SSO provider</p>
+									<p class="font-medium">密码</p>
+									<p class="text-sm text-muted-foreground">由你的单点登录提供商管理</p>
 								</div>
 							</div>
 							<Badge class="gap-1 rounded-sm bg-yellow-500/20 text-yellow-600 border-yellow-500/30 hover:bg-yellow-500/30">
@@ -671,28 +671,28 @@
 								<Smartphone class="w-5 h-5 text-muted-foreground" />
 								<div>
 									<div class="flex items-center gap-2">
-										<p class="font-medium">Two-factor authentication</p>
+										<p class="font-medium">双因素认证</p>
 										{#if profile.mfaEnabled}
 											<Badge variant="default" class="bg-green-500 gap-1 rounded-sm">
 												<ShieldCheck class="w-3 h-3" />
-												Enabled
+												已启用
 											</Badge>
 										{:else}
-											<Badge variant="secondary" class="rounded-sm">Disabled</Badge>
+											<Badge variant="secondary" class="rounded-sm">已禁用</Badge>
 										{/if}
 									</div>
 									<p class="text-sm text-muted-foreground">
 										{#if profile.mfaEnabled}
-											MFA is enabled for your account
+											你的账户已启用 MFA
 										{:else}
-											Add an extra layer of security
+											添加额外的安全防护层
 										{/if}
 									</p>
 								</div>
 							</div>
 							{#if profile.mfaEnabled}
 								<Button variant="outline" onclick={() => showDisableMfaModal = true}>
-									Disable MFA
+									禁用 MFA
 								</Button>
 							{:else}
 								<Button onclick={setupMfa} disabled={mfaLoading}>
@@ -701,7 +701,7 @@
 									{:else}
 										<QrCode class="w-4 h-4" />
 									{/if}
-									Setup MFA
+									设置 MFA
 								</Button>
 							{/if}
 						</div>
@@ -710,8 +710,8 @@
 							<div class="flex items-center gap-3">
 								<Smartphone class="w-5 h-5 text-muted-foreground" />
 								<div>
-									<p class="font-medium">Two-factor authentication</p>
-									<p class="text-sm text-muted-foreground">Managed by your SSO provider</p>
+									<p class="font-medium">双因素认证</p>
+									<p class="text-sm text-muted-foreground">由你的单点登录提供商管理</p>
 								</div>
 							</div>
 							<Badge class="gap-1 rounded-sm bg-yellow-500/20 text-yellow-600 border-yellow-500/30 hover:bg-yellow-500/30">
@@ -732,46 +732,45 @@
 						<div class="flex items-center gap-3">
 							<KeyRound class="w-5 h-5 text-muted-foreground" />
 							<div>
-								<p class="font-medium">Passkeys</p>
-								<p class="text-sm text-muted-foreground">Use a device-bound or synced passkey to sign in</p>
+								<p class="font-medium">通行密钥</p>
+								<p class="text-sm text-muted-foreground">使用设备绑定或可同步的通行密钥登录</p>
 							</div>
 						</div>
 
 						{#if !passkeysEnabled}
 							<p class="rounded-md bg-muted/50 p-2 text-xs text-muted-foreground">
-								Passkey sign-in is switched off for this instance. Any passkeys below are
-								kept and work again if an administrator turns it back on.
+								此实例已关闭通行密钥登录。下方已保存的通行密钥会保留，管理员重新开启功能后可再次使用。
 							</p>
 						{:else}
 						<div class="space-y-2">
-							<Label for="passkey-name">Passkey name</Label>
+							<Label for="passkey-name">通行密钥名称</Label>
 							<div class="flex flex-col sm:flex-row gap-2">
-							<Input id="passkey-name" bind:value={passkeyName} maxlength={64} placeholder="e.g. Token2 security key" />
+							<Input id="passkey-name" bind:value={passkeyName} maxlength={64} placeholder="例如：Token2 安全密钥" />
 							<Button onclick={addPasskey} disabled={passkeyActionLoading || !passkeyName.trim()} class="shrink-0">
 								{#if passkeyActionLoading}
 									<RefreshCw class="w-4 h-4 mr-1 animate-spin" />
 								{:else}
 									<Plus class="w-4 h-4 mr-1" />
 								{/if}
-								Add passkey
+								添加通行密钥
 							</Button>
 							</div>
 						</div>
 						{/if}
 
 						{#if passkeysLoading}
-							<p class="text-sm text-muted-foreground">Loading passkeys...</p>
+							<p class="text-sm text-muted-foreground">正在加载通行密钥...</p>
 						{:else if passkeys.length === 0}
-							<p class="text-sm text-muted-foreground">No passkeys registered.</p>
+							<p class="text-sm text-muted-foreground">暂无已注册的通行密钥。</p>
 						{:else}
 							<div class="divide-y rounded-md border">
 								{#each passkeys as passkey (passkey.id)}
 									<div class="flex items-center justify-between gap-3 p-3">
 										<div class="min-w-0">
-											<p class="font-medium truncate">{passkey.name || 'Passkey'}</p>
+											<p class="font-medium truncate">{passkey.name || '通行密钥'}</p>
 											<p class="text-xs text-muted-foreground mt-1">
-											{passkey.deviceType === 'multiDevice' ? 'Synced passkey' : 'Device-bound passkey'}
-											{passkey.backedUp ? ' · backed up' : ''} · added {formatDateTime(passkey.createdAt)}
+											{passkey.deviceType === 'multiDevice' ? '可同步通行密钥' : '设备绑定通行密钥'}
+											{passkey.backedUp ? ' · 已备份' : ''} · 创建于 {formatDateTime(passkey.createdAt)}
 											</p>
 										</div>
 										<Button
@@ -779,11 +778,11 @@
 											size="sm"
 											class="shrink-0 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
 											onclick={() => deletePasskey(passkey)}
-											aria-label={`Delete passkey ${passkey.name || 'Passkey'}`}
-											title={`Delete passkey ${passkey.name || 'Passkey'}`}
+											aria-label={`删除通行密钥 ${passkey.name || '通行密钥'}`}
+											title={`删除通行密钥 ${passkey.name || '通行密钥'}`}
 										>
 											<Trash2 class="w-4 h-4 mr-1" />
-											Delete
+											删除
 										</Button>
 									</div>
 								{/each}
@@ -806,28 +805,28 @@
 					<Card.Title class="flex items-center gap-2 justify-between">
 						<span class="flex items-center gap-2">
 							<KeyRound class="w-5 h-5" />
-							API tokens
+							API 令牌
 						</span>
 						<Button variant="outline" size="sm" onclick={() => showApiTokenModal = true}>
 							<Plus class="w-4 h-4 mr-1" />
-							Generate token
+							生成令牌
 						</Button>
 					</Card.Title>
-					<Card.Description>Create tokens for CI/CD pipelines and scripts</Card.Description>
+					<Card.Description>为 CI/CD 流水线和脚本创建令牌</Card.Description>
 				</Card.Header>
 				<Card.Content>
 					{#if tokensLoading}
-						<p class="text-sm text-muted-foreground">Loading tokens...</p>
+						<p class="text-sm text-muted-foreground">正在加载令牌...</p>
 					{:else if apiTokens.length === 0}
-						<p class="text-sm text-muted-foreground">No API tokens created yet.</p>
+						<p class="text-sm text-muted-foreground">尚未创建任何 API 令牌。</p>
 					{:else}
 						<Table.Root>
 							<Table.Header>
 								<Table.Row>
-									<Table.Head>Name</Table.Head>
-									<Table.Head>Prefix</Table.Head>
-									<Table.Head>Last used</Table.Head>
-									<Table.Head>Expires</Table.Head>
+									<Table.Head>名称</Table.Head>
+									<Table.Head>前缀</Table.Head>
+									<Table.Head>最近使用</Table.Head>
+									<Table.Head>过期时间</Table.Head>
 									<Table.Head class="w-[80px]"></Table.Head>
 								</Table.Row>
 							</Table.Header>
@@ -839,22 +838,22 @@
 											<code class="text-xs bg-muted px-1.5 py-0.5 rounded">dh_{token.tokenPrefix}...</code>
 										</Table.Cell>
 										<Table.Cell class="text-sm text-muted-foreground">
-											{token.lastUsed ? formatDateTime(token.lastUsed) : 'Never'}
+											{token.lastUsed ? formatDateTime(token.lastUsed) : '从未'}
 										</Table.Cell>
 										<Table.Cell class="text-sm">
 											{#if isTokenExpired(token.expiresAt)}
-												<Badge variant="destructive">Expired</Badge>
+												<Badge variant="destructive">已过期</Badge>
 											{:else if token.expiresAt}
 												{formatDateTime(token.expiresAt)}
 											{:else}
-												<span class="text-muted-foreground">Never</span>
+												<span class="text-muted-foreground">永不过期</span>
 											{/if}
 										</Table.Cell>
 										<Table.Cell>
 											<ConfirmPopover
-												title="Revoke token"
-												description="This token will stop working immediately."
-												confirmText="Revoke"
+												title="吊销令牌"
+												description="该令牌将立即失效。"
+												confirmText="吊销"
 												onConfirm={() => revokeToken(token.id)}
 											>
 												<Button variant="ghost" size="sm" class="text-destructive hover:text-destructive">
@@ -880,9 +879,9 @@
 				<Card.Header>
 					<Card.Title class="flex items-center gap-2">
 						<Palette class="w-5 h-5" />
-						Appearance
+						外观设置
 					</Card.Title>
-					<Card.Description>Customize the look of the application</Card.Description>
+					<Card.Description>自定义应用的显示样式</Card.Description>
 				</Card.Header>
 				<Card.Content class="space-y-4">
 					<ThemeSelector userId={profile.id} />
@@ -897,9 +896,9 @@
 				<Card.Header>
 					<Card.Title class="flex items-center gap-2">
 						<Compass class="w-5 h-5" />
-						Navigation
+						导航设置
 					</Card.Title>
-					<Card.Description>Your landing page and environment-click target. Leave on "Use global default" to follow the workspace setting.</Card.Description>
+					<Card.Description>设置默认启动页面与环境点击跳转目标。选择 "使用全局默认配置" 将跟随工作空间统一参数。</Card.Description>
 				</Card.Header>
 				<Card.Content>
 					<NavigationSelector scope="user" />
@@ -913,9 +912,9 @@
 				<Card.Header>
 					<Card.Title class="flex items-center gap-2">
 						<Palette class="w-5 h-5" />
-						Editor theme
+						编辑器主题
 					</Card.Title>
-					<Card.Description>Color theme for the code editor, with a live preview.</Card.Description>
+					<Card.Description>代码编辑器的配色主题，支持实时预览。</Card.Description>
 				</Card.Header>
 				<Card.Content>
 					<EditorThemeSelector userId={profile.id} />

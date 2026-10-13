@@ -62,8 +62,8 @@ export function supportsPercentageWarnings(driverStatus: DriverStatus): boolean 
 export function percentageUnsupportedNote(storageDriver?: string | null): string {
 	const driver = storageDriver?.trim();
 	return driver
-		? `This host's ${driver} storage driver reports no total size, so percentage warnings never fire.`
-		: 'This host reports no total size, so percentage warnings never fire.';
+		? `该主机的 ${driver} 存储驱动未报告总容量，因此百分比告警不会触发。`
+		: '该主机未报告总容量，因此百分比告警不会触发。';
 }
 
 /**

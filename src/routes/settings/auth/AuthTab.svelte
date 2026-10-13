@@ -80,7 +80,7 @@
 				passkeysConfigurable = data.passkeysConfigurable !== false;
 			}
 		} catch (error) {
-			console.error('Failed to fetch auth settings:', error);
+			console.error('获取身份验证设置失败:', error);
 		} finally {
 			authLoading = false;
 		}
@@ -93,7 +93,7 @@
 				roles = await response.json();
 			}
 		} catch (error) {
-			console.error('Failed to fetch roles:', error);
+			console.error('获取角色失败:', error);
 		}
 	}
 
@@ -107,18 +107,18 @@
 			});
 			if (response.ok) {
 				// authEnabled already updated via binding
-				toast.success(checked ? 'Authentication enabled' : 'Authentication disabled');
+				toast.success(checked ? '身份验证已启用' : '身份验证已禁用');
 				// Update global auth store so other components react immediately
 				await authStore.check();
 			} else {
 				const data = await response.json();
-				toast.error(data.error || 'Failed to update auth settings');
+				toast.error(data.error || '更新身份验证设置失败');
 				// Revert toggle on error - checked is new value, so previous was !checked
 				authEnabled = !checked;
 			}
 		} catch (error) {
-			console.error('Failed to update auth settings:', error);
-			toast.error('Failed to update auth settings');
+			console.error('更新身份验证设置失败:', error);
+			toast.error('更新身份验证设置失败');
 			// Revert toggle on error
 			authEnabled = !checked;
 		} finally {
@@ -135,14 +135,14 @@
 				body: JSON.stringify({ sessionTimeout: neverExpire ? 0 : sessionTimeout, passkeysEnabled })
 			});
 			if (response.ok) {
-				toast.success('Settings saved');
+				toast.success('设置已保存');
 			} else {
-				console.error('Failed to save auth settings');
-				toast.error('Failed to save settings');
+				console.error('保存身份验证设置失败');
+				toast.error('保存设置失败');
 			}
 		} catch (error) {
-			console.error('Failed to save auth settings:', error);
-			toast.error('Failed to save settings');
+			console.error('保存身份验证设置失败:', error);
+			toast.error('保存设置失败');
 		} finally {
 			authSaving = false;
 		}
@@ -175,7 +175,7 @@
 	<Shield class="w-5 h-5 text-muted-foreground mt-0.5" />
 	<div class="flex-1">
 		<div class="flex items-center gap-3">
-			<p class="text-sm font-medium">Authentication</p>
+			<p class="text-sm font-medium">身份验证</p>
 			<TogglePill
 				bind:checked={authEnabled}
 				onchange={(checked) => handleAuthEnabledToggle(checked)}
@@ -184,17 +184,17 @@
 		</div>
 		<p class="text-xs text-muted-foreground mt-1">
 			{authEnabled
-				? 'Users must log in to access the application'
-				: 'Authentication is disabled - open access'}
+				? '用户必须登录才能访问系统'
+				: '身份验证已关闭 - 允许公开访问'}
 		</p>
 		<p class="text-xs text-muted-foreground mt-1 flex items-center gap-1">
 			<Crown class="w-3 h-3 text-amber-500" />
 			{#if $licenseStore.isEnterprise}
 				{authEnabled
-					? 'Audit logging is active - all actions are recorded'
-					: 'Enable authentication to activate audit logging'}
+					? '审计日志已启用 - 所有操作均已记录'
+					: '启用身份验证以激活审计日志'}
 			{:else}
-				Enable authentication to activate audit logging
+				启用身份验证以激活审计日志
 			{/if}
 		</p>
 	</div>
@@ -211,7 +211,7 @@
 		onclick={() => (authSubTab = 'general')}
 	>
 		<Settings class="w-4 h-4" />
-		General
+		常规设置
 	</button>
 	<!-- The list behind this tab carries every account's email and says which are
 	     administrators, so the tab follows the same permission the API asks for. -->
@@ -224,7 +224,7 @@
 			onclick={() => (authSubTab = 'local')}
 		>
 			<User class="w-4 h-4" />
-			Users
+			用户
 		</button>
 	{/if}
 	<!-- Behind this is the identity-provider configuration, which /api/auth/oidc holds
@@ -268,7 +268,7 @@
 			onclick={() => (authSubTab = 'roles')}
 		>
 			<Shield class="w-4 h-4" />
-			Roles
+			角色
 			<Crown class="w-3 h-3 text-amber-500" />
 		</button>
 	{/if}
@@ -285,10 +285,9 @@
 			<div class="flex items-start gap-3 p-3 border rounded-md bg-muted/30">
 				<Shield class="w-5 h-5 text-muted-foreground mt-0.5" />
 				<div class="flex-1">
-					<p class="text-sm font-medium">Authentication settings are not visible to you</p>
+					<p class="text-sm font-medium">你无权查看身份验证设置</p>
 					<p class="text-xs text-muted-foreground mt-1">
-						Your account does not have permission to see how this instance
-						authenticates. Ask an administrator if you need it.
+						当前账号没有权限查看本实例的身份验证配置。如有需要，请联系管理员。
 					</p>
 				</div>
 			</div>
@@ -297,24 +296,24 @@
 				<Card.Header>
 					<Card.Title class="text-sm font-medium flex items-center gap-2">
 						<KeyRound class="w-4 h-4" />
-						Session settings
+						会话设置
 					</Card.Title>
 				</Card.Header>
 				<Card.Content class="space-y-4">
 					<div class="space-y-1.5">
-						<Label class="text-sm">Session timeout</Label>
+						<Label class="text-sm">会话超时时间</Label>
 						<p class="text-xs text-muted-foreground mb-2">
-							How long a session stays valid after sign-in
+							登录后会话的有效时长
 						</p>
 						<div class="flex items-center gap-2 mb-2">
 							<ToggleGroup
 								value={neverExpire ? 'never' : 'timed'}
-								options={[{ value: 'timed', label: 'Timed' }, { value: 'never', label: 'Never expire' }]}
+								options={[{ value: 'timed', label: '限时' }, { value: 'never', label: '永不过期' }]}
 								onchange={(v) => neverExpire = v === 'never'}
 								disabled={!$canAccess('settings', 'edit')}
 							/>
 							<span class="text-xs text-muted-foreground">
-								{neverExpire ? 'Sessions stay signed in until logout' : 'Sessions expire after the timeout below'}
+								{neverExpire ? '会话将保持登录状态直至主动登出' : '会话将在下方设定的超时时间后失效'}
 							</span>
 						</div>
 						<div class="flex items-center gap-2">
@@ -331,28 +330,25 @@
 								class="w-32"
 								disabled={neverExpire || !$canAccess('settings', 'edit')}
 							/>
-							<span class="text-sm text-muted-foreground">seconds</span>
+							<span class="text-sm text-muted-foreground">秒</span>
 							<span class="text-xs text-muted-foreground">
-								({Math.floor(sessionTimeout / 3600)} hours)
+								({Math.floor(sessionTimeout / 3600)} 小时)
 							</span>
 						</div>
 					</div>
 					<div class="space-y-1.5 border-t border-border/60 pt-4">
 						<div class="flex items-center gap-3">
-							<Label class="text-sm">Allow passkey sign-in</Label>
+							<Label class="text-sm">允许通行密钥登录</Label>
 							<TogglePill bind:checked={passkeysEnabled} disabled={!$canAccess('settings', 'edit')} />
 						</div>
 						<p class="text-xs text-muted-foreground">
-							Offer passkeys on the login page, and let people register one from their
-							profile. Off hides the option and refuses the endpoints; existing passkeys
-							are kept and work again when you turn it back on.
+							在登录页面提供通行密钥选项，并允许用户在个人资料页面注册通行密钥。关闭后会隐藏该选项并拒绝相关接口请求；已存在的通行密钥会保留，重新开启后可继续使用。
 						</p>
 						{#if passkeysEnabled && !passkeysConfigurable}
 							<div class="flex items-start gap-2 rounded-md bg-muted/50 p-2 text-xs text-muted-foreground">
 								<Info class="w-3.5 h-3.5 mt-0.5 shrink-0" />
 								<span>
-									Nothing is offered yet: passkeys need <code>ORIGIN</code> set to the address
-									people use to reach Dockhand, over HTTPS unless that address is localhost.
+									暂未提供通行密钥功能：需要将 <code>ORIGIN</code> 设置为用户访问 Dockhand 的地址，该地址必须使用 HTTPS，localhost 除外。
 								</span>
 							</div>
 						{/if}
@@ -364,7 +360,7 @@
 							{:else}
 								<Save class="w-4 h-4" />
 							{/if}
-							Save settings
+							保存设置
 						</Button>
 					{/if}
 				</Card.Content>
@@ -372,7 +368,7 @@
 		{:else}
 			<div class="text-center py-12 text-muted-foreground">
 				<Shield class="w-12 h-12 mx-auto mb-3 opacity-30" />
-				<p class="text-sm">Enable authentication to configure session settings</p>
+				<p class="text-sm">启用身份验证后可配置会话设置</p>
 			</div>
 		{/if}
 	</div>

@@ -42,14 +42,14 @@ export const POST: RequestHandler = async (event) => {
 	// Same permission as the recreate-style update — anyone who could edit
 	// the container the slow way should be able to edit it the fast way.
 	if (auth.authEnabled && !await auth.can('containers', 'create', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	let body: Record<string, unknown>;
 	try {
 		body = await request.json();
 	} catch {
-		return json({ error: 'Invalid JSON body' }, { status: 400 });
+		return json({ error: '请求体 JSON 格式无效' }, { status: 400 });
 	}
 
 	// Sanity-check: at least one allowed field must be present. Empty/all-unknown
@@ -61,7 +61,7 @@ export const POST: RequestHandler = async (event) => {
 	}
 	if (Object.keys(filtered).length === 0) {
 		return json({
-			error: 'No supported fields provided',
+			error: '未传入任何支持修改的字段',
 			supportedFields: Array.from(allowed)
 		}, { status: 400 });
 	}
@@ -86,8 +86,8 @@ export const POST: RequestHandler = async (event) => {
 		return json({ success: true, warnings: result.Warnings ?? [] });
 	} catch (error: any) {
 		if (error?.statusCode === 404) {
-			return json({ error: 'Container not found' }, { status: 404 });
+			return json({ error: '未找到容器' }, { status: 404 });
 		}
-		return json({ error: error?.message || 'Update failed' }, { status: 500 });
+		return json({ error: error?.message || '更新操作失败' }, { status: 500 });
 	}
 };
