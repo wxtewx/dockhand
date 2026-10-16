@@ -79,7 +79,7 @@ export const stackColumns: ColumnConfig[] = [
 	// so overflowing content would paint over the next column instead of clipping.
 	{ id: 'status', label: '状态', sortable: true, sortField: 'status', width: 142, minWidth: 116 },
 	{ id: 'source', label: '来源', width: 100, minWidth: 100, noTruncate: true },
-	{ id: 'webhook', label: 'Webhook', width: 90, minWidth: 70, defaultVisible: false, hint: 'Git-stack webhook id and URL (for wiring Gitea/GitHub/GitLab)' },
+	{ id: 'webhook', label: 'Webhook', width: 90, minWidth: 70, defaultVisible: false, hint: 'Git-stack Webhook ID 和 URL (用于对接 Gitea/GitHub/GitLab)' },
 	{ id: 'location', label: '路径', width: 180, minWidth: 100 },
 	{ id: 'containers', label: '容器', sortable: true, sortField: 'containers', width: 100, minWidth: 70 },
 	{ id: 'cpu', label: 'CPU', sortable: true, sortField: 'cpu', width: 60, minWidth: 50, align: 'right' },
