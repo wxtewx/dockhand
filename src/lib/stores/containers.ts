@@ -6,6 +6,7 @@ import { appendEnvParam, clearStaleEnvironment, environments } from '$lib/stores
 import { appSettings } from '$lib/stores/settings';
 import { toast } from 'svelte-sonner';
 import type { NewerVersion } from '$lib/types';
+import { m } from '$lib/paraglide/messages.js';
 
 export interface AutoUpdateSetting {
 	enabled: boolean;
@@ -39,6 +40,13 @@ export interface ContainerStoreState {
 	 * deliberately NOT offered for a bulk update.
 	 */
 	coolingDown: Map<string, number>;
+	/**
+	 * Containers running `repo:tag@sha256:...` whose tag now resolves to a different
+	 * digest. An entry means the move was found but cannot be applied here: pulling that
+	 * reference returns the pinned manifest, so the digest in the compose file is what has
+	 * to change. Like coolingDown, deliberately NOT offered for a bulk update.
+	 */
+	pinnedDigest: Set<string>;
 	/** Whether the current environment has vulnerability scanning */
 	envHasScanning: boolean;
 	/** Environment-level vulnerability criteria */
@@ -60,6 +68,7 @@ const INITIAL_STATE: ContainerStoreState = {
 	failedUpdateErrors: new Map(),
 	newerVersions: new Map(),
 	coolingDown: new Map(),
+	pinnedDigest: new Set(),
 	envHasScanning: false,
 	envVulnerabilityCriteria: 'never',
 	loading: true,
@@ -81,7 +90,7 @@ function createContainerStore() {
 		scheduleType: string,
 		cronExpression: string
 	): { label: string; tooltip: string } {
-		if (!cronExpression) return { label: 'on', tooltip: 'Auto-update enabled' };
+		if (!cronExpression) return { label: m.containersstore_label_on(), tooltip: m.dashboard_status_auto_update() };
 
 		const parts = cronExpression.split(' ');
 		if (parts.length < 5) return { label: 'cron', tooltip: cronExpression };
@@ -101,15 +110,16 @@ function createContainerStore() {
 		}
 
 		if (scheduleType === 'daily' || dow === '*') {
-			return { label: 'daily', tooltip: `Daily at ${timeStr}` };
+			return { label: m.containersstore_label_daily(), tooltip: m.containersstore_tooltip_daily({ time: timeStr }) };
 		}
 
 		if (scheduleType === 'weekly') {
-			const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-			const dayName = days[parseInt(dow)] || dow;
+			const days = [m.containersstore_day_sun, m.containersstore_day_mon, m.containersstore_day_tue, m.containersstore_day_wed, m.containersstore_day_thu, m.containersstore_day_fri, m.containersstore_day_sat];
+			const dayName = days[parseInt(dow)]?.() || dow;
+			const fullDayNames = [m.cron_sunday, m.cron_monday, m.cron_tuesday, m.cron_wednesday, m.cron_thursday, m.cron_friday, m.cron_saturday];
 			return {
 				label: dayName,
-				tooltip: `Every ${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][parseInt(dow)] || dow} at ${timeStr}`
+				tooltip: m.containersstore_tooltip_weekly({ day: fullDayNames[parseInt(dow)]?.() || dow, time: timeStr })
 			};
 		}
 
@@ -209,7 +219,7 @@ function createContainerStore() {
 					environments.refresh();
 					return;
 				}
-				toast.error('Failed to load containers');
+				toast.error(m.containersstore_load_failed());
 				return;
 			}
 			const data: ContainerInfo[] = await response.json();
@@ -219,7 +229,7 @@ function createContainerStore() {
 			await fetchAutoUpdateSettings(envId);
 		} catch (error) {
 			console.error('Failed to fetch containers:', error);
-			toast.error('Failed to load containers');
+			toast.error(m.containersstore_load_failed());
 		} finally {
 			patch({ loading: false });
 			fetchingContainers = false;
@@ -312,7 +322,8 @@ function createContainerStore() {
 				pendingUpdateIds: split.updatable.map((u) => u.containerId),
 				pendingUpdateNames: new Map(split.updatable.map((u) => [u.containerId, u.containerName])),
 				newerVersions: split.newerVersions as Map<string, NewerVersion>,
-				coolingDown: split.coolingDown
+				coolingDown: split.coolingDown,
+				pinnedDigest: split.pinnedDigest
 			});
 		} catch {
 			// Ignore errors - background load
@@ -381,6 +392,11 @@ function createContainerStore() {
 		/** Record which containers are waiting out the minimum image age, as id -> hours left. */
 		setCoolingDown(map: Map<string, number>) {
 			patch({ coolingDown: map });
+		},
+
+		/** Record which containers hold a digest their tag has moved away from. */
+		setPinnedDigest(ids: Set<string>) {
+			patch({ pinnedDigest: ids });
 		},
 
 		/** Patch arbitrary fields */

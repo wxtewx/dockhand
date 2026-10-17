@@ -4,12 +4,12 @@
 	import { m } from '$lib/paraglide/messages.js';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Wifi } from 'lucide-svelte';
-	import type { Component } from 'svelte';
+	import type { IconComponent } from '$lib/types';
 
 	export interface HeaderTab {
 		id: string;
 		label: string;
-		icon: Component;
+		icon: IconComponent;
 		/** Optional count badge shown next to the label. */
 		count?: number | string;
 		/** Optional secondary total, rendered as "count of total" (active tab only). */
@@ -62,7 +62,7 @@
 		if (tab.count === undefined) return null;
 		const countStr = typeof tab.count === 'number' ? tab.count.toLocaleString() : tab.count;
 		if (tab.total !== undefined) {
-			return `${countStr} of ${tab.total.toLocaleString()}`;
+			return m.pageheader_count_of({ count: countStr, total: tab.total.toLocaleString() });
 		}
 		return countStr;
 	}

@@ -1,6 +1,7 @@
 import { describe, test, expect } from 'bun:test';
 import {
 	isDaemonExportFailure,
+	scanErrorOutput,
 	toRegistryScanCmd,
 	toRegistryRef,
 	registryAuthEnv,
@@ -147,9 +148,27 @@ describe('toRegistryRef for the bare image ID the auto-update scans with', () =>
 		).toBe('nginx:1.27');
 	});
 
-	test('a temp tag is still cleaned when it is the only one', () => {
-		// Nothing better exists, and the stripped form is what was pulled.
-		expect(toRegistryRef(ID, ['nginx:1.27-dockhand-pending'])).toBe(ID);
+	test('a lone temp tag is stripped to the ref that was pulled', () => {
+		// What a scheduled update's new image carries: the real tag went back to the
+		// outgoing image before the scan, so the temp tag is the only name left. Its
+		// stripped form is exactly what was pulled, and the registry can answer it.
+		expect(toRegistryRef(ID, ['nginx:1.27-dockhand-pending'])).toBe('nginx:1.27');
+		expect(toRegistryRef(ID, ['busybox:latest-dockhand-pending'])).toBe('busybox:latest');
+		expect(toRegistryRef(ID, ['registry.bor6.pl:5000/team/app:v2-dockhand-update'])).toBe(
+			'registry.bor6.pl:5000/team/app:v2'
+		);
+	});
+
+	test('a temp tag that strips to nothing usable stays the ID', () => {
+		// The suffix alone is not a repository, so there is no ref to offer.
+		expect(toRegistryRef(ID, ['acme/app:-dockhand-pending'])).toBe(ID);
+	});
+
+	test('a tag merely containing the suffix is not treated as a temp tag', () => {
+		// It is a real tag, so it is returned as-is rather than mangled.
+		expect(toRegistryRef(ID, ['acme/dockhand-pending-tools:v1'])).toBe(
+			'acme/dockhand-pending-tools:v1'
+		);
 	});
 
 	test('stays the ID when the inspect offers nothing usable', () => {
@@ -274,5 +293,49 @@ describe('RegistryFallbackMemory', () => {
 		m.markBroken(5);
 		m.clear();
 		expect(m.prefersRegistry(5)).toBe(false);
+	});
+});
+
+describe('scanErrorOutput (classify on the full output, not the truncated message)', () => {
+	// A real scanner prints many INFO/progress lines before it fails, so the
+	// export-bug signature lands well past the 1000-char point the helper's error
+	// MESSAGE is truncated to. The helper carries the untruncated output on the
+	// error so the fallback can still classify it.
+	const padding = Array.from(
+		{ length: 40 },
+		(_, i) => `[0000] INFO cataloging package catalogers index=${i} name=some-catalog-name`
+	).join('\n');
+	const signatureLine =
+		` - docker: unable to provide image from tarball: file blobs/sha256/59a242dc0cb5 does not exist`;
+	const fullStderr = `${padding}\n${signatureLine}`;
+	const truncatedMessage = `Container exited with code 1: ${fullStderr}`.substring(0, 1000);
+
+	test('the signature is genuinely past the 1000-char message cut', () => {
+		// Guards the premise: if this ever fits in the message, the test proves nothing.
+		expect(fullStderr.length).toBeGreaterThan(1000);
+		expect(isDaemonExportFailure(truncatedMessage)).toBe(false);
+		expect(isDaemonExportFailure(fullStderr)).toBe(true);
+	});
+
+	test('prefers the error stderr over its truncated message', () => {
+		const err = Object.assign(new Error(truncatedMessage), { stderr: fullStderr });
+		expect(isDaemonExportFailure(scanErrorOutput(err))).toBe(true);
+	});
+
+	test('falls back to stdout when stderr is empty', () => {
+		const err = Object.assign(new Error('Container exited with code 1'), {
+			stderr: '',
+			stdout: fullStderr
+		});
+		expect(scanErrorOutput(err)).toBe(fullStderr);
+	});
+
+	test('falls back to the message for an error that carries no output', () => {
+		expect(scanErrorOutput(new Error('plain failure'))).toBe('plain failure');
+	});
+
+	test('handles a non-Error thrown value', () => {
+		expect(scanErrorOutput('string failure')).toBe('string failure');
+		expect(scanErrorOutput(null)).toBe('null');
 	});
 });

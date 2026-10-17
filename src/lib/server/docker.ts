@@ -17,7 +17,13 @@ import { pumpWebStreamToWritable } from './stream-pump';
 import { toWebReadableStream } from './node-readable-stream';
 import { buildImagePruneFilters } from './image-prune-core';
 import { demuxDockerStream } from './docker-demux-core';
-import { computeRequestTimeoutMs, isPrunePath } from './backups/request-timeout';
+import { isExpectedConnectionError, isQuietDockerFailure, transportTimeoutError } from './docker-probe-core';
+import {
+	computeRequestTimeoutMs,
+	isPrunePath,
+	isStopPath,
+	stopTimeoutMs
+} from './backups/request-timeout';
 import { helperWaitDeadline, helperExitFromState, helperFailureDetail, needsDaemonErrorLookup } from './helper-wait-core';
 import { cancelReaderOnAbort } from './reader-abort-core';
 import { configuredMacAddress, endpointWithoutGeneratedMac } from './endpoint-mac-core';
@@ -26,7 +32,9 @@ import { mapContainerNetworks } from '$lib/utils/network-identity';
 import type { Environment } from './db';
 import { getSetting } from './db';
 import { releaseAgeAdvisory } from './release-age-advisory';
-import { portableImageReference, trackedImageLabels, trackedImageReference } from '../utils/tracked-image';
+import { imageCheckPlan, resolvePinnedToDigest, isDigestBasedImage, portableImageReference, trackedImageLabels, trackedImageReference } from '../utils/tracked-image';
+// Re-exported: the updaters import it from here, and it belongs beside imagePinning.
+export { isDigestBasedImage };
 import { getMinimumReleaseAgeConfig, imageReleaseAgeRemainingMs, imageReleaseAgeStatus, type ImageCreationMetadata } from './minimum-release-age';
 import { manualPullAgeWarning, verifiedImagePullPlan } from './minimum-release-age-core';
 import { getAdditionalVolumeBinds, dedupeVolumesForRecreate } from './mount-dedupe';
@@ -48,7 +56,7 @@ import {
 	type RegistryPorts
 } from './registry/manifest-digest';
 import { classifyManifest, type ArtifactKind } from './semver/manifest-artifact';
-import { isSystemContainer, classifyEmptyDigestImage, localDigestIsIndexChild, indexChildDigests } from './scheduler/tasks/update-utils';
+import { isSystemContainer, classifyEmptyDigestImage, localDigestIsIndexChild, indexChildDigests, samePlatformImage } from './scheduler/tasks/update-utils';
 import { deepDiff } from '../utils/diff.js';
 import { getInstanceId } from './backups/identity';
 import { isOwnedBackupHelper } from './backups/reap-core';
@@ -412,18 +420,23 @@ export function httpsAgentRequest(
 		// A stream request BODY (a large tar PUT) must not get the small-request idle timeout
 		// even though the RESPONSE isn't streamed - computeRequestTimeoutMs decides on both.
 		const streamingBody = typeof (options.body as ReadableStream | undefined)?.getReader === 'function';
+		// `reqOptions.timeout` is a socket idle timeout that the caller's AbortSignal cannot
+		// lengthen, so a stop has to be given its allowance here too. The grace period is
+		// already on the path as `?t=`.
 		const timeoutMs = computeRequestTimeoutMs({
 			path,
 			streamingBody,
 			streamingResponse: streaming,
 			composeTimeoutSecs: parseInt(process.env.COMPOSE_TIMEOUT || '900'),
+			stopTimeoutSecs: stopTimeoutFromPath(path),
+			stopEnvSecs: stopTimeoutEnvSecs(),
 		});
 		if (timeoutMs !== null) reqOptions.timeout = timeoutMs;
 
 		// Honor AbortSignal from caller (e.g., AbortSignal.timeout(5000) for ping)
 		const signal = options.signal as AbortSignal | undefined;
 		if (signal?.aborted) {
-			reject(new Error('Request aborted'));
+			reject(transportTimeoutError('Request aborted'));
 			return;
 		}
 
@@ -463,11 +476,11 @@ export function httpsAgentRequest(
 		});
 
 		req.on('error', reject);
-		req.on('timeout', () => { req.destroy(new Error('Request timeout')); });
+		req.on('timeout', () => { req.destroy(transportTimeoutError('Request timeout')); });
 
 		if (signal) {
 			signal.addEventListener('abort', () => {
-				req.destroy(new Error('Request aborted'));
+				req.destroy(transportTimeoutError('Request aborted'));
 			}, { once: true });
 		}
 
@@ -805,6 +818,26 @@ export function unixSocketStreamRequest(
 	});
 }
 
+function logDockerFetchFailure(
+	targetLabel: string,
+	method: string,
+	path: string,
+	elapsed: number,
+	msg: string,
+	error: unknown
+) {
+	// A probe that cannot reach an offline host says nothing a reader needs: the
+	// environment already shows as offline, and the attempt repeats every cycle. It stays
+	// in the log on stdout rather than as an error, so a log collector filtering on stderr
+	// is not flooded. A probe failing for any OTHER reason - a bad token, an expired
+	// certificate - is still an error, because that one needs acting on.
+	if (isQuietDockerFailure(path, error)) {
+		console.debug(`[Docker] ${targetLabel}: ${method} ${path} probe failed after ${elapsed}ms (host offline/unreachable): ${msg}`);
+	} else {
+		console.error(`[Docker] ${targetLabel}: ${method} ${path} failed after ${elapsed}ms: ${msg}`);
+	}
+}
+
 export async function dockerFetch(
 	path: string,
 	options: DockerFetchOptions = {},
@@ -875,7 +908,7 @@ export async function dockerFetch(
 				body,
 				headers,
 				streaming || false,
-				(streaming || path === '/_hawser/compose' || isPrunePath(path)) ? 300000 : 30000, // 5 min for streaming/compose/prune, 30s for normal
+				edgeTimeoutMs(path, streaming || false), // streaming/compose/prune get longer; a stop waits out its grace period
 				isBinary,
 				fetchOptions.signal ?? undefined,
 				onLine
@@ -890,7 +923,7 @@ export async function dockerFetch(
 			const elapsed = Date.now() - startTime;
 			// Log error message only, not full stack trace
 			const msg = error?.message || String(error);
-			console.error(`[Docker] Edge env ${config.environmentId}: ${method} ${path} failed after ${elapsed}ms: ${msg}`);
+			logDockerFetchFailure(`Edge env ${config.environmentId}`, method, path, elapsed, msg, error);
 			throw DockerConnectionError.fromError(error);
 		}
 	}
@@ -910,7 +943,7 @@ export async function dockerFetch(
 			const elapsed = Date.now() - startTime;
 			// Log error message only, not full stack trace
 			const msg = error?.message || String(error);
-			console.error(`[Docker] Socket: ${method} ${path} failed after ${elapsed}ms: ${msg}`);
+			logDockerFetchFailure('Socket', method, path, elapsed, msg, error);
 			throw DockerConnectionError.fromError(error);
 		}
 	} else {
@@ -943,7 +976,7 @@ export async function dockerFetch(
 			} catch (error: any) {
 				const elapsed = Date.now() - startTime;
 				const msg = error?.message || String(error);
-				console.error(`[Docker] ${config.connectionType || 'direct'} ${config.host}: ${method} ${path} failed after ${elapsed}ms: ${msg}`);
+				logDockerFetchFailure(`${config.connectionType || 'direct'} ${config.host}`, method, path, elapsed, msg, error);
 				throw DockerConnectionError.fromError(error);
 			}
 		}
@@ -983,7 +1016,7 @@ export async function dockerFetch(
 		} catch (error: any) {
 			const elapsed = Date.now() - startTime;
 			const msg = error?.message || String(error);
-			console.error(`[Docker] ${config.connectionType || 'direct'} ${config.host}: ${method} ${path} failed after ${elapsed}ms: ${msg}`);
+			logDockerFetchFailure(`${config.connectionType || 'direct'} ${config.host}`, method, path, elapsed, msg, error);
 			throw DockerConnectionError.fromError(error);
 		}
 	}
@@ -1200,13 +1233,90 @@ export async function startContainer(id: string, envId?: number | null) {
 	await assertDockerResponse(response, 304); // 304 = already started
 }
 
-export async function stopContainer(id: string, envId?: number | null) {
-	const response = await dockerFetch(`/containers/${id}/stop`, { method: 'POST' }, envId);
+/**
+ * The grace period a container declares, in seconds, or null. Compose's
+ * `stop_grace_period` arrives here as Config.StopTimeout.
+ *
+ * Best-effort: the inspect is only here to size a timeout, so a failure falls back to the
+ * default rather than taking the stop down with it.
+ */
+async function declaredStopTimeout(id: string, envId?: number | null): Promise<number | null> {
+	try {
+		const inspect = await inspectContainer(id, envId);
+		const t = (inspect as { Config?: { StopTimeout?: number | null } })?.Config?.StopTimeout;
+		return typeof t === 'number' && t > 0 ? t : null;
+	} catch {
+		return null;
+	}
+}
+
+/** The grace period a stop/restart path carries as `?t=`, or null when it carries none. */
+function stopTimeoutFromPath(path: string): number | null {
+	if (!isStopPath(path)) return null;
+	const t = parseInt(new URLSearchParams(path.split('?')[1] || '').get('t') || '', 10);
+	return Number.isFinite(t) && t > 0 ? t : null;
+}
+
+/** DOCKER_STOP_TIMEOUT, seconds: a floor for a container that declares no grace period. */
+function stopTimeoutEnvSecs(): number | null {
+	const raw = process.env.DOCKER_STOP_TIMEOUT;
+	if (!raw || !raw.trim()) return null;
+	const n = parseInt(raw, 10);
+	return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/**
+ * Stop a container, waiting as long as it is allowed to take.
+ *
+ * Docker holds the response until the container exits or its grace period expires, so the
+ * request timeout has to cover that period - otherwise a container with a 60s
+ * `stop_grace_period` is aborted at 30s, the caller sees a failure, and the daemon stops it
+ * anyway, leaving it down. The period is passed explicitly as `?t=` too, so
+ * the daemon and Dockhand are working to the same deadline.
+ */
+/**
+ * The edge transport computes its own deadline instead of reading the request signal, so the
+ * stop/restart allowance has to be derived again here. The grace period is already on the
+ * path as `?t=`, put there by stopContainer, so no second inspect is needed.
+ */
+function edgeTimeoutMs(path: string, streaming: boolean): number {
+	if (streaming || path === '/_hawser/compose' || isPrunePath(path)) return 300000;
+	if (isStopPath(path)) return stopTimeoutMs(stopTimeoutFromPath(path), stopTimeoutEnvSecs());
+	return 30000;
+}
+
+export async function stopContainer(
+	id: string,
+	envId?: number | null,
+	knownStopTimeout?: number | null
+) {
+	const declared =
+		knownStopTimeout !== undefined ? knownStopTimeout : await declaredStopTimeout(id, envId);
+	const timeoutMs = stopTimeoutMs(declared, stopTimeoutEnvSecs());
+	const query = declared !== null ? `?t=${declared}` : '';
+	const response = await dockerFetch(
+		`/containers/${id}/stop${query}`,
+		{ method: 'POST', signal: AbortSignal.timeout(timeoutMs) },
+		envId
+	);
 	await assertDockerResponse(response, 304); // 304 = already stopped
 }
 
-export async function restartContainer(id: string, envId?: number | null) {
-	const response = await dockerFetch(`/containers/${id}/restart`, { method: 'POST' }, envId);
+/** Restart waits the same way a stop does: the daemon stops the container first. */
+export async function restartContainer(
+	id: string,
+	envId?: number | null,
+	knownStopTimeout?: number | null
+) {
+	const declared =
+		knownStopTimeout !== undefined ? knownStopTimeout : await declaredStopTimeout(id, envId);
+	const timeoutMs = stopTimeoutMs(declared, stopTimeoutEnvSecs());
+	const query = declared !== null ? `?t=${declared}` : '';
+	const response = await dockerFetch(
+		`/containers/${id}/restart${query}`,
+		{ method: 'POST', signal: AbortSignal.timeout(timeoutMs) },
+		envId
+	);
 	await assertDockerResponse(response);
 }
 
@@ -1933,11 +2043,13 @@ async function recreateSystemdManagedContainer(
 		name: string; oldContainerId: string; wasRunning: boolean; unit: string;
 		verifiedImageId?: string;
 		rollback?: { imageId: string; repo: string; tag: string };
+		/** The old container's own grace period, already known from its inspect. */
+		stopTimeout?: number | null;
 	},
 	envId: number | null | undefined,
 	log?: (msg: string) => void
 ): Promise<{ Id: string }> {
-	const { name, oldContainerId, wasRunning, unit } = opts;
+	const { name, oldContainerId, wasRunning, unit, stopTimeout } = opts;
 	log?.(`Managed by systemd unit ${unit} - handing the recreate to systemd (Quadlet)`);
 
 	// A stopped Quadlet container does not exist: the unit's ExecStop (podman rm -f)
@@ -1957,7 +2069,7 @@ async function recreateSystemdManagedContainer(
 	expectedEvents.markExpected(oldContainerId, Date.now(), EXPECTED_EVENT_TTL_MS);
 	log?.('Stopping container (systemd will recreate it on the new image)...');
 	try {
-		await stopContainer(oldContainerId, envId);
+		await stopContainer(oldContainerId, envId, stopTimeout ?? null);
 	} catch {
 		// A Quadlet stop can race the unit's own teardown; the container may already be
 		// gone. Not fatal - we verify the respawn below.
@@ -2037,9 +2149,43 @@ async function findRunningContainerByName(
 
 // Generous window: systemd honours RestartSec, and a heavy image can take a while to
 // become running even though it is already pulled.
+/** How long to wait for a stop we gave up on to actually land, before giving up too. */
+const RESTORE_AFTER_STOP_TIMEOUT_MS = 120_000;
+const RESTORE_AFTER_STOP_POLL_MS = 1_000;
+
 const SYSTEMD_RESPAWN_TIMEOUT_MS = 90_000;
 const SYSTEMD_RESPAWN_POLL_MS = 500;
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/**
+ * Bring a container back up after a stop Dockhand stopped waiting for.
+ *
+ * The daemon is still stopping it, so a start issued immediately answers 304 and changes
+ * nothing. Poll until it has exited, then start it. Best-effort throughout: the caller is
+ * already failing, and the worst case is an operator starting it by hand.
+ */
+async function restoreAfterFailedStop(
+	id: string,
+	envId: number | null | undefined,
+	log?: (msg: string) => void
+): Promise<void> {
+	const deadline = Date.now() + RESTORE_AFTER_STOP_TIMEOUT_MS;
+	try {
+		for (;;) {
+			const inspect = await inspectContainer(id, envId);
+			if (!inspect?.State?.Running) break;
+			if (Date.now() >= deadline) {
+				log?.('It is still stopping; start it by hand once it has.');
+				return;
+			}
+			await sleep(RESTORE_AFTER_STOP_POLL_MS);
+		}
+		await startContainer(id, envId);
+		log?.('Started again.');
+	} catch {
+		log?.('Could not start it again; it is stopped and needs starting by hand.');
+	}
+}
 
 /**
  * Recreate a container using full Config/HostConfig passthrough from inspect data.
@@ -2112,7 +2258,10 @@ export async function recreateContainerFromInspect(
 			}
 		}
 		return await recreateSystemdManagedContainer(
-			{ name, oldContainerId, wasRunning, unit: systemdUnit, verifiedImageId, rollback },
+			{
+				name, oldContainerId, wasRunning, unit: systemdUnit, verifiedImageId, rollback,
+				stopTimeout: config.StopTimeout ?? null
+			},
 			envId,
 			log
 		);
@@ -2135,7 +2284,18 @@ export async function recreateContainerFromInspect(
 		// The stop/kill/die events this triggers are an EXPECTED part of the update,
 		// not a crash - mark the id so the event handler skips their notifications (#68).
 		expectedEvents.markExpected(oldContainerId, Date.now(), EXPECTED_EVENT_TTL_MS);
-		await stopContainer(oldContainerId, envId);
+		try {
+			await stopContainer(oldContainerId, envId, config.StopTimeout ?? null);
+		} catch (error) {
+			// The daemon carries on stopping whether or not Dockhand is still waiting, so a
+			// failed update would leave the container down. Starting it right now changes
+			// nothing - it is still running, so the start answers 304 and the stop lands a
+			// moment later - so wait for it to exit, then bring it back.
+			log?.(`Stop failed: ${error instanceof Error ? error.message : String(error)}`);
+			log?.('Waiting for the stop to land, then starting it again...');
+			await restoreAfterFailedStop(oldContainerId, envId, log);
+			throw error;
+		}
 	}
 
 	// 2. Rename old container to free the name
@@ -3305,8 +3465,17 @@ export async function getImageHistory(id: string, envId?: number | null) {
 	return dockerJsonRequest(`/images/${encodeURIComponent(id)}/history`, {}, envId);
 }
 
+/** The fields callers read off an image inspect. */
+export interface ImageInspect {
+	Id: string;
+	RepoTags?: string[] | null;
+	RepoDigests?: string[] | null;
+	Created?: string;
+	Config?: ImageEnvLabels;
+}
+
 export async function inspectImage(id: string, envId?: number | null) {
-	return dockerJsonRequest(`/images/${encodeURIComponent(id)}/json`, {}, envId);
+	return dockerJsonRequest<ImageInspect>(`/images/${encodeURIComponent(id)}/json`, {}, envId);
 }
 
 /**
@@ -3993,49 +4162,74 @@ export async function getTagArtifactKind(
 	}
 }
 
+/** Fetch a manifest/index body by tag or digest. Null on any failure; never throws. */
+async function fetchManifestBody(
+	registry: string,
+	repo: string,
+	reference: string,
+	token: string | null,
+	scheme: string
+): Promise<unknown | null> {
+	const headers: Record<string, string> = {
+		'User-Agent': 'Dockhand/1.0',
+		'Accept': [
+			'application/vnd.docker.distribution.manifest.list.v2+json',
+			'application/vnd.oci.image.index.v1+json'
+		].join(', ')
+	};
+	if (token) headers['Authorization'] = token;
+	const response = await fetch(`${scheme}://${registry}/v2/${repo}/manifests/${reference}`, {
+		method: 'GET',
+		headers,
+		signal: AbortSignal.timeout(8000)
+	});
+	if (!response.ok) {
+		await drainResponse(response);
+		return null;
+	}
+	return response.json();
+}
+
 /**
- * A multi-arch tag is a manifest list / OCI image index: the list has one digest,
- * and each per-architecture child manifest has its own. `docker pull` usually records
- * the INDEX digest in RepoDigests, but some pulls leave only the PER-ARCH child digest.
- * getRegistryManifestDigest() (a HEAD) always returns the index digest, so a local
- * per-arch digest never matches it -> phantom "update available" (#1367).
- *
- * Fetches the index body and returns true if any local digest is one of its per-arch
- * child digests (same image, just recorded per-arch). Best-effort: ANY failure
- * (network, timeout, non-index body, unauthenticated) returns false so the caller
- * keeps its existing "update available" verdict. NEVER throws, own short timeout, and
- * runs ONLY on the already-flagged-as-update path - it can't slow or break the common
- * case. A false "update available" is acceptable; breaking the check is not.
+ * Rule out a multi-arch false positive after the index digest did not match any local
+ * digest. Two shapes, both resolved from the registry's CURRENT index for the tag:
+ *  - the local image recorded a per-arch CHILD of the current index, or
+ *  - the local image recorded an OLD index whose entry for the daemon's platform is the
+ *    SAME image as the new index's entry - the tag was republished with only another
+ *    architecture or the attestations changed.
+ * Best-effort: ANY failure (network, non-index, unauthenticated) returns false so the
+ * caller keeps its "update available" verdict. Never throws; own short timeouts; runs
+ * only on the already-flagged path.
  */
-async function localDigestMatchesRegistryChild(
+async function localImageMatchesRegistry(
 	imageName: string,
-	localDigests: string[]
+	localDigests: string[],
+	envId?: number | null
 ): Promise<boolean> {
 	try {
 		const { registry, repo, tag } = parseImageReference(imageName);
 		if (!isSafeRegistryHost(registry).ok) return false;
 		const token = await getRegistryBearerToken(registry, repo);
 		const scheme = await getRegistrySchemeForHost(registry);
-		const headers: Record<string, string> = {
-			'User-Agent': 'Dockhand/1.0',
-			'Accept': [
-				'application/vnd.docker.distribution.manifest.list.v2+json',
-				'application/vnd.oci.image.index.v1+json'
-			].join(', ')
-		};
-		if (token) headers['Authorization'] = token;
 
-		const response = await fetch(`${scheme}://${registry}/v2/${repo}/manifests/${tag}`, {
-			method: 'GET',
-			headers,
-			signal: AbortSignal.timeout(8000)
-		});
-		if (!response.ok) {
-			await drainResponse(response);
-			return false;
+		const registryIndex = await fetchManifestBody(registry, repo, tag, token, scheme);
+		if (registryIndex === null) return false;
+
+		// Local per-arch child of the current index.
+		if (localDigestIsIndexChild(localDigests, registryIndex)) return true;
+
+		// Local digest is an OLD index; compare the daemon-platform entry of both.
+		// Only worth the /info and the extra manifest reads when the registry side is
+		// actually a multi-arch index - a single-arch tag has no platform entry to compare.
+		if (indexChildDigests(registryIndex).length === 0) return false;
+		const info = await dockerJsonRequest('/info', { signal: AbortSignal.timeout(8000) }, envId) as { OSType?: string; Architecture?: string };
+		const platform = imagePlatform(info?.OSType, info?.Architecture);
+		if (!platform) return false;
+		for (const localDigest of localDigests) {
+			const localIndex = await fetchManifestBody(registry, repo, localDigest, token, scheme);
+			if (localIndex && samePlatformImage(localIndex, registryIndex, platform)) return true;
 		}
-		const body: unknown = await response.json();
-		return localDigestIsIndexChild(localDigests, body);
+		return false;
 	} catch {
 		return false;
 	}
@@ -4054,6 +4248,13 @@ export interface ImageUpdateCheckResult {
 	/** The running image's RepoDigests (sha256:...), for the semver check to suppress
 	 *  a newer-version tag that resolves to the same digest already installed (#1572). */
 	localDigests?: string[];
+	/**
+	 * The reference names a tag AND the digest behind it (`repo:tag@sha256:...`), so a
+	 * moved digest is reported but never applied: pulling that reference returns the
+	 * pinned manifest, and following the tag instead would rewrite a digest the user put
+	 * in their compose on purpose. Updating it is their edit to make.
+	 */
+	pinnedToDigest?: boolean;
 }
 
 /**
@@ -4070,15 +4271,28 @@ export async function checkImageUpdateAvailable(
 	currentImageId: string,
 	envId?: number
 ): Promise<ImageUpdateCheckResult> {
+	// A digest with no tag names one manifest, so there is nothing to follow. A tag that
+	// records its digest - the shape a base image patched for a CVE takes - is checked by
+	// its TAG. `pinnedToDigest` is set ONLY when that check found a move (hasUpdate): it
+	// means "a newer digest exists but the compose pins the old one", so the caller
+	// reports the move without applying it. A pinned tag whose digest has NOT moved is
+	// simply up to date and carries no flag, so the pin marker and the update counters
+	// never fire on a quiet pin.
+	const plan = imageCheckPlan(imageName);
+	if (plan.skip) {
+		return { hasUpdate: false, currentDigest: imageName.split('@')[1] };
+	}
+	const result = await checkTagForUpdate(plan.reference, currentImageId, envId);
+	return resolvePinnedToDigest(plan, result.hasUpdate) ? { ...result, pinnedToDigest: true } : result;
+}
+
+async function checkTagForUpdate(
+	checkedReference: string,
+	currentImageId: string,
+	envId?: number
+): Promise<ImageUpdateCheckResult> {
+	const imageName = checkedReference;
 	try {
-		// Skip update check for digest-pinned images
-		// If the user explicitly pins to a digest (image@sha256:...), they don't want auto-updates
-		if (isDigestBasedImage(imageName)) {
-			return {
-				hasUpdate: false,
-				currentDigest: imageName.split('@')[1] // Extract the digest part
-			};
-		}
 
 		// Skip update check for images tagged against a localhost registry.
 		// These never resolve from inside Dockhand's container and only produce
@@ -4126,17 +4340,17 @@ export async function checkImageUpdateAvailable(
 		// a digest we don't have, an update is available. If the registry can't
 		// resolve it (404 / unreachable / truly local), THEN treat it as local.
 		if (localDigests.length === 0) {
-			const registryDigest = await getRegistryManifestDigest(imageName, envId);
+			const registryDigest = await getRegistryManifestDigest(checkedReference, envId);
 			const { hasUpdate, isLocalImage, registryDigest: rd } = classifyEmptyDigestImage(registryDigest);
 			if (hasUpdate && rd) {
-				const remaining = await imageCooldownRemainingMs(imageName, rd, envId);
+				const remaining = await imageCooldownRemainingMs(checkedReference, rd, envId);
 				if (remaining > 0) return { hasUpdate: false, currentDigest: currentImageId, registryDigest: rd, releaseAgeRemainingHours: Math.ceil(remaining / 3600000) };
 			}
 			return { hasUpdate, isLocalImage, currentDigest: currentImageId, registryDigest: rd };
 		}
 
 		// Query registry for current manifest digest
-		const { digest: registryDigest, reason: registryFailure } = await getRegistryManifestDigestDetailed(imageName, envId);
+		const { digest: registryDigest, reason: registryFailure } = await getRegistryManifestDigestDetailed(checkedReference, envId);
 
 		if (!registryDigest) {
 			// Registry unreachable or image not found - can't determine update status.
@@ -4156,13 +4370,14 @@ export async function checkImageUpdateAvailable(
 		}
 
 		// The HEAD digest (always the manifest-list/index digest) didn't match. Before
-		// declaring an update, rule out the multi-arch false positive: a local per-arch
-		// child digest won't equal the index digest even when the image is current
-		// (#1367). Best-effort GET of the index; on any failure hasUpdate stays true.
-		if (await localDigestMatchesRegistryChild(imageName, localDigests)) {
+		// declaring an update, rule out the multi-arch false positives: a local per-arch
+		// child digest never equals the index digest, and an index that moved while the
+		// daemon-platform image stayed the same is not an update either. Both are
+		// best-effort registry reads; on any failure hasUpdate stays true.
+		if (await localImageMatchesRegistry(imageName, localDigests, envId)) {
 			return { hasUpdate: false, currentDigest: currentRepoDigests[0], localDigests };
 		}
-		const remaining = await imageCooldownRemainingMs(imageName, registryDigest, envId);
+		const remaining = await imageCooldownRemainingMs(checkedReference, registryDigest, envId);
 		if (remaining > 0) {
 			return { hasUpdate: false, currentDigest: currentRepoDigests[0], registryDigest, localDigests, releaseAgeRemainingHours: Math.ceil(remaining / 3600000) };
 		}
@@ -4228,14 +4443,6 @@ export function getTempImageTag(imageName: string): string {
 	const tag = afterColon;
 
 	return `${repo}:${tag}-dockhand-pending`;
-}
-
-/**
- * Check if an image name is using a digest (sha256) instead of a tag.
- * Digest-based images don't need temp tag handling.
- */
-export function isDigestBasedImage(imageName: string): boolean {
-	return imageName.includes('@sha256:');
 }
 
 /**
@@ -4358,9 +4565,9 @@ export async function getDockerVersion(envId?: number | null) {
  * Used to pin DOCKER_API_VERSION when spawning sidecar containers (scanner, updater)
  * whose bundled Docker CLI may be newer than the host daemon supports.
  * Returns null if the version cannot be determined.
- * Requires an envId — local Docker (no environment) must query /version directly.
+ * Omitting envId asks the local daemon, the same way getDockerVersion does.
  */
-export async function getNegotiatedApiVersion(envId: number): Promise<string | null> {
+export async function getNegotiatedApiVersion(envId?: number | null): Promise<string | null> {
 	try {
 		const versionInfo = await getDockerVersion(envId);
 		return versionInfo?.ApiVersion || null;
@@ -5637,7 +5844,13 @@ export async function runContainerWithStreaming(options: {
 				}
 				const detail = helperFailureDetail({ stderr: stderrText, stdout, daemonError });
 				const code = exitCode === undefined ? 'unknown (could not determine container exit status)' : String(exitCode);
-				throw new Error(`Container exited with code ${code}: ${detail}`);
+				// The message is truncated for display, but carry the FULL stderr/stdout so a
+				// caller can classify on it: a scanner's "blob not found in tar" line (the
+				// registry-fallback signal) often lands after the truncation point.
+				throw Object.assign(new Error(`Container exited with code ${code}: ${detail}`), {
+					stderr: stderrText,
+					stdout
+				});
 			}
 
 			return stdout;
@@ -6711,8 +6924,7 @@ async function cleanupStaleVolumeHelpersForEnv(envId?: number | null): Promise<n
 	} catch (err: any) {
 		// Don't spam logs for expected connection failures (offline envs, TLS mismatches, etc.)
 		const msg = err?.message || String(err);
-		const isExpected = /not connected|offline|unreachable|fetch failed|EPROTO|ECONNREFUSED|ECONNRESET|ETIMEDOUT|EHOSTUNREACH/i.test(msg);
-		if (!isExpected) {
+		if (!isExpectedConnectionError(err)) {
 			console.warn(`Failed to query stale volume helpers for env ${envId}:`, msg);
 		}
 		return 0;
@@ -6761,8 +6973,7 @@ async function cleanupStaleBackupHelpersForEnv(myInstance: string, envId?: numbe
 	} catch (err: any) {
 		// Don't spam logs for expected connection failures (offline envs, TLS mismatches, etc.)
 		const msg = err?.message || String(err);
-		const isExpected = /not connected|offline|unreachable|fetch failed|EPROTO|ECONNREFUSED|ECONNRESET|ETIMEDOUT|EHOSTUNREACH/i.test(msg);
-		if (!isExpected) {
+		if (!isExpectedConnectionError(err)) {
 			console.warn(`Failed to query orphan backup helpers for env ${envId}:`, msg);
 		}
 		return 0;

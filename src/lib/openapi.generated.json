@@ -5317,6 +5317,7 @@
             "bearerAuth": []
           }
         ],
+        "description": "Containers, images, volumes and networks are addressed by `id`; a STACK is addressed by `name`, because compose identifies a project by its name and GET /api/stacks returns no id. For a stack send the name in `name` - it is also accepted in `id`, which is what older callers did.",
         "requestBody": {
           "required": true,
           "content": {
@@ -5341,11 +5342,7 @@
                         "name": {
                           "type": "string"
                         }
-                      },
-                      "required": [
-                        "id",
-                        "name"
-                      ]
+                      }
                     }
                   },
                   "options": {
@@ -10374,6 +10371,9 @@
                           "hasImageUpdate": {
                             "type": "boolean"
                           },
+                          "pinnedToDigest": {
+                            "type": "boolean"
+                          },
                           "newerVersion": {
                             "type": "object",
                             "properties": {}
@@ -10387,7 +10387,8 @@
                           "containerName",
                           "currentImage",
                           "checkedAt",
-                          "hasImageUpdate"
+                          "hasImageUpdate",
+                          "pinnedToDigest"
                         ]
                       }
                     }
@@ -10408,6 +10409,7 @@
                       "currentImage": "string",
                       "checkedAt": "string",
                       "hasImageUpdate": true,
+                      "pinnedToDigest": true,
                       "newerVersion": {},
                       "releaseAgeRemainingHours": 0
                     }
@@ -14699,7 +14701,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful response",
+            "description": "stacksUsing lists the git stacks bound to this repository, each {stackName, environmentId}, filtered to the caller's accessible environments (plus null-env stacks) on enterprise.",
             "content": {
               "application/json": {
                 "schema": {
@@ -14719,13 +14721,21 @@
                     },
                     "credentialId": {
                       "type": "integer"
+                    },
+                    "stacksUsing": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {}
+                      }
                     }
                   },
                   "required": [
                     "id",
                     "name",
                     "url",
-                    "branch"
+                    "branch",
+                    "stacksUsing"
                   ]
                 },
                 "example": {
@@ -14733,7 +14743,10 @@
                   "name": "string",
                   "url": "string",
                   "branch": "string",
-                  "credentialId": 0
+                  "credentialId": 0,
+                  "stacksUsing": [
+                    {}
+                  ]
                 }
               }
             }
@@ -25296,6 +25309,9 @@
                     "latestVersion": {
                       "type": "string"
                     },
+                    "currentVersion": {
+                      "type": "string"
+                    },
                     "currentDigest": {
                       "type": "string"
                     },
@@ -25311,6 +25327,9 @@
                     "isLocalImage": {
                       "type": "boolean"
                     },
+                    "versionOnly": {
+                      "type": "boolean"
+                    },
                     "error": {
                       "type": "string"
                     }
@@ -25324,11 +25343,13 @@
                   "currentImage": "string",
                   "newImage": "string",
                   "latestVersion": "string",
+                  "currentVersion": "string",
                   "currentDigest": "string",
                   "newDigest": "string",
                   "containerName": "string",
                   "isComposeManaged": true,
                   "isLocalImage": true,
+                  "versionOnly": true,
                   "error": "string"
                 }
               }
@@ -25345,7 +25366,8 @@
           {
             "bearerAuth": []
           }
-        ]
+        ],
+        "description": "Where Dockhand can inspect its own container it compares the image and its digest. Where it cannot - Kubernetes, a plain Podman pod, bare metal - there is no image to read, so it falls back to comparing the build's own version against the newest release in the changelog and answers with versionOnly:true. That answer names no image and must not be offered as an update: such a deployment replaces the image through its own manifest."
       }
     },
     "/api/self-update/progress": {
@@ -26973,6 +26995,9 @@
               }
             }
           },
+          "400": {
+            "description": "Invalid stack name"
+          },
           "403": {
             "description": "Permission denied (requires stacks:edit)"
           },
@@ -27041,6 +27066,9 @@
         "responses": {
           "200": {
             "description": "Successful response"
+          },
+          "400": {
+            "description": "Invalid stack name"
           },
           "403": {
             "description": "Permission denied (needs stacks:view)"
@@ -27249,6 +27277,9 @@
               }
             }
           },
+          "400": {
+            "description": "Invalid stack name"
+          },
           "403": {
             "description": "Permission denied (requires stacks:remove)"
           },
@@ -27296,6 +27327,9 @@
         "responses": {
           "200": {
             "description": "Server-Sent-Events job stream with progress events and a final result event ({success, output})"
+          },
+          "400": {
+            "description": "Invalid stack name"
           },
           "403": {
             "description": "Permission denied (requires stacks:start, or environment access denied on enterprise)"
@@ -27550,6 +27584,9 @@
               }
             }
           },
+          "400": {
+            "description": "Invalid stack name"
+          },
           "401": {
             "description": "Authentication required"
           },
@@ -27615,6 +27652,9 @@
               }
             }
           },
+          "400": {
+            "description": "Invalid stack name"
+          },
           "401": {
             "description": "Authentication required"
           },
@@ -27666,6 +27706,9 @@
         "responses": {
           "200": {
             "description": "Plain-text log content"
+          },
+          "400": {
+            "description": "Invalid stack name"
           },
           "401": {
             "description": "Authentication required"
@@ -27736,6 +27779,9 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid stack name"
           },
           "403": {
             "description": "Permission denied, or access denied to this environment"
@@ -27856,6 +27902,9 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid stack name (or malformed request body)"
           },
           "403": {
             "description": "Permission denied (needs stacks:view)"
@@ -28026,6 +28075,9 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid stack name (or malformed request body)"
           },
           "403": {
             "description": "Permission denied (requires stacks:view, or environment access denied on enterprise)"
@@ -28678,6 +28730,9 @@
           "200": {
             "description": "Server-Sent-Events job stream with a final result event ({success, output})"
           },
+          "400": {
+            "description": "Invalid stack name"
+          },
           "403": {
             "description": "Permission denied (requires stacks:restart, or environment access denied on enterprise)"
           }
@@ -28741,6 +28796,9 @@
               }
             }
           },
+          "400": {
+            "description": "Invalid stack name"
+          },
           "403": {
             "description": "Permission denied, or access denied to this environment"
           }
@@ -28803,6 +28861,9 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid stack name"
           },
           "403": {
             "description": "Permission denied, or access denied to this environment"
