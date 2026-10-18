@@ -5,7 +5,7 @@ import { notificationFetch, drainResponse, type NotificationPayload, type Notifi
 export async function sendWorkflows(appriseUrl: string, payload: NotificationPayload): Promise<NotificationResult> {
 	const url = resolveWorkflowsHttpUrl(appriseUrl);
 	if (!url) {
-		return { success: false, error: 'Invalid Workflows URL format. Expected the full https:// webhook URL with the scheme changed to workflows://, or workflows://hostname/workflow/signature' };
+		return { success: false, error: 'Workflows URL 格式无效。需使用完整 https:// webhook URL 并将协议改为 workflows://, 或 workflows://hostname/workflow/signature' };
 	}
 	const titleWithEnv = payload.environmentName ? `${payload.title} [${payload.environmentName}]` : payload.title;
 
@@ -44,11 +44,11 @@ export async function sendWorkflows(appriseUrl: string, payload: NotificationPay
 
 		if (!response.ok) {
 			const text = await response.text().catch(() => '');
-			return { success: false, error: `Workflows error ${response.status}: ${text || response.statusText}` };
+			return { success: false, error: `Workflows 请求异常 ${response.status}: ${text || response.statusText}` };
 		}
 		await drainResponse(response);
 		return { success: true };
 	} catch (error) {
-		return { success: false, error: `Workflows connection failed: ${error instanceof Error ? error.message : String(error)}` };
+		return { success: false, error: `Workflows 连接失败: ${error instanceof Error ? error.message : String(error)}` };
 	}
 }

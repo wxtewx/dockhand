@@ -34,7 +34,7 @@ export interface FontMeta {
 
 // Light theme options - colors defined in app.css
 export const lightThemes: ThemeMeta[] = [
-	{ id: 'default', name: 'Default', preview: '#3b82f6' },
+	{ id: 'default', name: '默认', preview: '#3b82f6' },
 	{ id: 'catppuccin', name: 'Catppuccin Latte', preview: '#8839ef' }, // Mauve
 	{ id: 'rose-pine', name: 'Rose Pine Dawn', preview: '#907aa9' }, // Iris
 	{ id: 'nord', name: 'Nord Light', preview: '#5e81ac' }, // Nord10
@@ -48,7 +48,7 @@ export const lightThemes: ThemeMeta[] = [
 
 // Dark theme options - colors defined in app.css
 export const darkThemes: ThemeMeta[] = [
-	{ id: 'default', name: 'Default', preview: '#3b82f6' },
+	{ id: 'default', name: '默认', preview: '#3b82f6' },
 	{ id: 'catppuccin', name: 'Catppuccin Mocha', preview: '#cba6f7' }, // Mauve
 	{ id: 'dracula', name: 'Dracula', preview: '#bd93f9' }, // Purple
 	{ id: 'rose-pine', name: 'Rose Pine', preview: '#c4a7e7' }, // Iris
@@ -70,7 +70,7 @@ export const darkThemes: ThemeMeta[] = [
 // Font options - Google Fonts loaded on-demand, not kept in memory
 export const fonts: FontMeta[] = [
 	// System fonts (no external load)
-	{ id: 'system', name: 'System UI', family: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' },
+	{ id: 'system', name: '系统默认字体', family: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' },
 
 	// Modern geometric sans-serif
 	{ id: 'geist', name: 'Geist', family: "'Geist', sans-serif", googleFont: 'Geist:wght@400;500;600;700' },
@@ -108,7 +108,7 @@ export const fonts: FontMeta[] = [
 // Monospace fonts for terminal, logs, and editors
 export const monospaceFonts: FontMeta[] = [
 	// System monospace (no external load)
-	{ id: 'system-mono', name: 'System Monospace', family: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' },
+	{ id: 'system-mono', name: '系统等宽字体', family: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' },
 
 	// Popular coding fonts (Google Fonts)
 	{ id: 'jetbrains-mono', name: 'JetBrains Mono', family: "'JetBrains Mono', monospace", googleFont: 'JetBrains+Mono:wght@400;500;600;700' },

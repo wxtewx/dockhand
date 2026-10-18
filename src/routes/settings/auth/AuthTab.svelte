@@ -82,7 +82,7 @@
 				passkeysConfigurable = data.passkeysConfigurable !== false;
 			}
 		} catch (error) {
-			console.error('Failed to fetch auth settings:', error);
+			console.error('获取身份验证设置失败:', error);
 		} finally {
 			authLoading = false;
 		}
@@ -95,7 +95,7 @@
 				roles = await response.json();
 			}
 		} catch (error) {
-			console.error('Failed to fetch roles:', error);
+			console.error('获取角色失败:', error);
 		}
 	}
 

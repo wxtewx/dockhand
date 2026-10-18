@@ -344,7 +344,7 @@
 		}
 
 		if (streamReconnectAttempts >= MAX_STREAM_RECONNECT_ATTEMPTS) {
-			streamError = 'Connection failed - click refresh to retry';
+			streamError = '连接失败 - 点击刷新重试';
 			return;
 		}
 
@@ -577,7 +577,7 @@
 									dashboardData.setInitialized(true);
 								}
 							} catch (e) {
-								console.error('Failed to parse SSE data:', e);
+								console.error('解析 SSE 数据失败:', e);
 							}
 						}
 						eventType = '';
@@ -597,23 +597,23 @@
 			if (error instanceof Error && error.name === 'AbortError') {
 				// Check if this was a timeout (from timeoutController) vs intentional abort
 				if (timeoutController.signal.aborted) {
-					streamError = 'Connection timed out';
+					streamError = '连接超时';
 					scheduleStreamReconnect();
 				}
 				return;
 			}
 
-			console.error('Failed to fetch dashboard stats:', error);
+			console.error('获取控制台统计数据失败:', error);
 			// Convert technical errors to user-friendly messages
 			const rawError = error instanceof Error ? error.message : 'Connection failed';
 			if (rawError.includes('typo') || rawError.includes('verbose')) {
-				streamError = 'Connection failed';
+				streamError = '连接失败';
 			} else if (rawError.includes('FailedToOpenSocket') || rawError.includes('ECONNREFUSED')) {
-				streamError = 'Docker not accessible';
+				streamError = 'Docker 不可访问';
 			} else if (rawError.includes('ECONNRESET') || rawError.includes('closed')) {
-				streamError = 'Connection lost';
+				streamError = '连接已断开';
 			} else {
-				streamError = 'Connection failed';
+				streamError = '连接失败';
 			}
 			scheduleStreamReconnect();
 		} finally {
@@ -1135,6 +1135,7 @@
 						<List class="w-4 h-4" />
 						<span>{m.dashboard_layout_list()}</span>
 					</DropdownMenu.Item>
+					<DropdownMenu.Separator />
 				</DropdownMenu.Content>
 			</DropdownMenu.Root>
 

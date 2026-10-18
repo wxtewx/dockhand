@@ -92,6 +92,7 @@
 	import { isKnownIconName } from '$lib/utils/icons';
 	import { tagOrder } from '$lib/stores/tag-order';
 	import { applyOrder } from '$lib/utils/apply-order';
+	import { getLabelText } from '$lib/types';
 	import TagChips from '$lib/components/TagChips.svelte';
 	import TagEditPopover from '$lib/components/TagEditPopover.svelte';
 	import TagFilter from '$lib/components/TagFilter.svelte';
@@ -929,7 +930,7 @@
 				terminalShell = bestShell;
 			}
 		} catch (error) {
-			console.error('Failed to detect shells:', error);
+			console.error('检测命令行 shell 失败:', error);
 		} finally {
 			detectingShellsFor = null;
 		}
@@ -2200,7 +2201,7 @@
 							{#if containerStats.get(container.id)}
 								{@const stats = containerStats.get(container.id)}
 								<span class="text-xs font-mono text-muted-foreground" title={m.containers_list_disk_title({ read: formatBytes(stats.blockRead), written: formatBytes(stats.blockWrite) })}>
-									<span class="text-2xs text-green-400">r</span>{formatBytesCompact(stats.blockRead, 0)} <span class="text-2xs text-yellow-400">w</span>{formatBytesCompact(stats.blockWrite, 0)}
+									<span class="text-2xs text-green-400">读</span>{formatBytesCompact(stats.blockRead, 0)} <span class="text-2xs text-yellow-400">写</span>{formatBytesCompact(stats.blockWrite, 0)}
 								</span>
 							{:else if container.state === 'running'}
 								<span class="text-xs text-muted-foreground/50">...</span>

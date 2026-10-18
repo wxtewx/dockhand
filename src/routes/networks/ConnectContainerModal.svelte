@@ -9,6 +9,7 @@
 	import { focusFirstInput } from '$lib/utils';
 	import type { NetworkInfo } from '$lib/types';
 	import { m } from '$lib/paraglide/messages.js';
+	import { getLabelText } from '$lib/types';
 
 	interface Container {
 		id: string;
@@ -55,7 +56,7 @@
 				containers = await response.json();
 			}
 		} catch (error) {
-			console.error('Failed to fetch containers:', error);
+			console.error('获取容器失败:', error);
 		} finally {
 			loading = false;
 		}
@@ -143,7 +144,7 @@
 									<span class="flex items-center gap-2">
 										<span class="w-2 h-2 rounded-full {container.state === 'running' ? 'bg-green-500' : 'bg-gray-400'}"></span>
 										{container.name}
-										<span class="text-xs text-muted-foreground ml-auto">{container.state}</span>
+										<span class="text-xs text-muted-foreground ml-auto">{getLabelText(container.state)}</span>
 									</span>
 								</Select.Item>
 							{/each}

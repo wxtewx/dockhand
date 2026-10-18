@@ -241,7 +241,7 @@
 		} catch (error) {
 			// Ignore abort errors
 			if (error instanceof Error && error.name !== 'AbortError') {
-				console.error('Failed to fetch host info:', error);
+				console.error('获取主机信息失败:', error);
 			}
 		}
 	}
@@ -263,7 +263,7 @@
 		} catch (error) {
 			// Ignore abort errors
 			if (error instanceof Error && error.name !== 'AbortError') {
-				console.error('Failed to fetch disk usage:', error);
+				console.error('获取磁盘使用率失败:', error);
 			}
 			diskUsage = null;
 		} finally {
@@ -366,9 +366,9 @@
 		const days = Math.floor(seconds / 86400);
 		const hours = Math.floor((seconds % 86400) / 3600);
 		if (days > 0) {
-			return `${days}d ${hours}h`;
+			return `${days}天 ${hours}小时`;
 		}
-		return `${hours}h`;
+		return `${hours}小时`;
 	}
 
 	let memoryPercent = $derived(
@@ -602,10 +602,10 @@
 		<div class="hidden md:flex items-center gap-1">
 			{#if hostInfo.environment?.connectionType === 'hawser-standard'}
 				<Route class="{iconSizeClass()}" />
-				<span>Hawser (standard){hostInfo.environment.hawserVersion ? ` ${hostInfo.environment.hawserVersion}` : ''}</span>
+				<span>Hawser (标准){hostInfo.environment.hawserVersion ? ` ${hostInfo.environment.hawserVersion}` : ''}</span>
 			{:else if hostInfo.environment?.connectionType === 'hawser-edge'}
 				<UndoDot class="{iconSizeClass()}" />
-				<span>Hawser (edge){hostInfo.environment.hawserVersion ? ` ${hostInfo.environment.hawserVersion}` : ''}</span>
+				<span>Hawser (边缘){hostInfo.environment.hawserVersion ? ` ${hostInfo.environment.hawserVersion}` : ''}</span>
 			{:else}
 				<Icon iconNode={whale} class="{iconSizeClass()}" />
 				<span>Socket</span>
@@ -622,7 +622,7 @@
 
 		<!-- Memory -->
 		{#if hostInfo.totalMemory > 0}
-			<span class="hidden lg:inline">{formatBytes(hostInfo.totalMemory)} RAM</span>
+			<span class="hidden lg:inline">{formatBytes(hostInfo.totalMemory)} 内存</span>
 			<span class="hidden lg:inline text-border">|</span>
 		{/if}
 

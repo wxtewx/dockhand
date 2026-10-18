@@ -69,6 +69,7 @@
 			value={dateValue}
 			onValueChange={onSelect}
 			initialFocus
+			locale="zh-CN"
 		/>
 	</Popover.Content>
 </Popover.Root>

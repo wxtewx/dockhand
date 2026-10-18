@@ -11,6 +11,7 @@
 	import { focusFirstInput } from '$lib/utils';
 	import { m } from '$lib/paraglide/messages.js';
 	import { splitAtName } from '$lib/i18n/split';
+	import { getLabelText } from '$lib/types';
 
 	export interface LdapRoleMapping {
 		groupDn: string;
@@ -363,7 +364,7 @@
 								<Label>{m.settings_ldap_email_attribute_label()}</Label>
 								<Input
 									bind:value={formEmailAttr}
-									placeholder="mail"
+									placeholder="邮箱"
 								/>
 							</div>
 							<div class="space-y-2">
@@ -470,7 +471,7 @@
 												</Select.Trigger>
 												<Select.Content>
 													{#each roles.filter(r => !r.isSystem || r.name !== 'Admin') as role}
-														<Select.Item value={String(role.id)}>{role.name}</Select.Item>
+														<Select.Item value={String(role.id)}>{getLabelText(role.name)}</Select.Item>
 													{/each}
 												</Select.Content>
 											</Select.Root>

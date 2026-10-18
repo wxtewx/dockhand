@@ -27,6 +27,7 @@
 	import { compareIps } from '$lib/utils/ip';
 	import NetworkGraphModal from './NetworkGraphModal.svelte';
 	import { m } from '$lib/paraglide/messages.js';
+	import { getLabelText } from '$lib/types';
 
 	type SortField = 'name' | 'driver' | 'containers' | 'subnet' | 'gateway';
 	type SortDirection = 'asc' | 'desc';
@@ -558,7 +559,7 @@
 				{m.networks_list_view_graph()}
 			</Button>
 			{#if $canAccess('networks', 'create')}
-			<Button size="sm" variant="outline" onclick={() => showCreateModal = true}>
+			<Button size="sm" variant="secondary" onclick={() => showCreateModal = true}>
 				<Plus class="w-3.5 h-3.5" />
 				{m.networks_list_create()}
 			</Button>
@@ -637,9 +638,9 @@
 						{/if}
 					</div>
 				{:else if column.id === 'driver'}
-					<span class={getDriverClasses(network.driver)}>{network.driver}</span>
+					<span class={getDriverClasses(network.driver)}>{getLabelText(network.driver)}</span>
 				{:else if column.id === 'scope'}
-					<span class="text-xs">{network.scope}</span>
+					<span class="text-xs">{getLabelText(network.scope)}</span>
 				{:else if column.id === 'subnet'}
 					<code class="text-xs">{getSubnet(network)}</code>
 				{:else if column.id === 'gateway'}

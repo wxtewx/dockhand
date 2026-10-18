@@ -112,7 +112,7 @@
 				clearSelection();
 			}
 		} catch (error) {
-			console.error('Failed to fetch containers:', error);
+			console.error('获取容器失败：', error);
 		}
 	}
 
@@ -147,7 +147,7 @@
 				committedUser = 'root';
 			}
 		} catch (error) {
-			console.error('Failed to detect shells:', error);
+			console.error('检测终端失败：', error);
 		} finally {
 			detectingShells = false;
 		}

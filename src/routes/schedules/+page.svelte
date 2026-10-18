@@ -71,10 +71,11 @@
 	const canRunSchedules = $derived($canAccess('schedules', 'run'));
 	import { vulnerabilityCriteriaIcons, vulnerabilityCriteriaLabels } from '$lib/utils/update-steps';
 	import type { VulnerabilityCriteria } from '$lib/server/db';
-	import cronstrue from 'cronstrue';
+	import cronstrue from 'cronstrue/i18n'; 
 	import { cronstrueLocale } from '$lib/i18n/cron';
 	import { splitAtName } from '$lib/i18n/split';
 	import { m } from '$lib/paraglide/messages.js';
+	import { getLabelText } from '$lib/types';
 
 	// Scanner result per scanner
 	interface ScannerResult {
@@ -237,6 +238,7 @@
 			? environments.find(e => e.id === selectedExecution!.environmentId)?.timezone
 			: undefined
 	);
+	let defaultTimezone = $derived($appSettings.defaultTimezone);
 
 	function toggleLogTheme() {
 		logDarkMode = !logDarkMode;
@@ -345,7 +347,7 @@
 		connectionTimeoutId = setTimeout(() => {
 			if (loading && !receivedConnectedEvent) {
 				// Connection truly failed - no 'connected' event received
-				console.warn('Schedule stream timeout - connection failed');
+				console.warn('计划任务流超时 - 连接失败');
 				loading = false;
 				refreshing = false;
 			}
@@ -415,7 +417,7 @@
 				loading = false;
 				refreshing = false;
 			} catch (error) {
-				console.error('Failed to parse schedules data:', error);
+				console.error('解析计划任务数据失败:', error);
 			}
 		});
 
@@ -435,7 +437,7 @@
 			if (messageEvent.data) {
 				try {
 					const errorData = JSON.parse(messageEvent.data);
-					console.error('[Schedules] Server error:', errorData.error);
+					console.error('[计划任务] 服务器错误:', errorData.error);
 					if (errorData.fatal) {
 						// Fatal error - server couldn't get initial data after retries
 						toast.error(m.schedules_toast_load_failed({ error: errorData.error }));
@@ -453,7 +455,7 @@
 			// Reconnect even if schedules is empty - the server might recover
 			const timeoutId = setTimeout(() => {
 				if (eventSource?.readyState === EventSource.CLOSED) {
-					console.log('[Schedules] Attempting to reconnect SSE...');
+					console.log('[计划任务] 正在尝试重新连接 SSE...');
 					connectToStream();
 				}
 			}, 5000);
@@ -476,7 +478,7 @@
 				refreshing = false;
 			}
 		} catch (error) {
-			console.error('Failed to refresh schedules from REST:', error);
+			console.error('通过 REST 刷新计划任务失败:', error);
 		}
 	}
 
@@ -493,7 +495,7 @@
 				environments = await res.json();
 			}
 		} catch (error) {
-			console.error('Failed to load environments:', error);
+			console.error('加载环境失败:', error);
 		}
 	}
 
@@ -505,7 +507,7 @@
 				hideSystemJobs = data.hideSystemJobs ?? false;
 			}
 		} catch (error) {
-			console.error('Failed to load settings:', error);
+			console.error('加载设置失败:', error);
 		}
 	}
 
@@ -524,7 +526,7 @@
 				body: JSON.stringify({ hideSystemJobs })
 			});
 		} catch (error) {
-			console.error('Failed to save hide system jobs preference:', error);
+			console.error('保存隐藏系统任务偏好失败:', error);
 		}
 	}
 
@@ -644,7 +646,7 @@
 							}
 						}
 					} catch (error) {
-						console.error('Failed to refresh execution:', error);
+						console.error('刷新执行记录失败:', error);
 					}
 				}
 			}, 1000);
@@ -771,34 +773,31 @@
 	}
 
 	function formatTimestamp(iso: string | null, tz?: string): string {
-		if (!iso) return '-';
-		if (!tz) return formatDateTime(iso, true);
-		const d = new Date(iso);
-		if (isNaN(d.getTime())) return iso;
-		return new Intl.DateTimeFormat('en-GB', {
-			timeZone: tz,
-			year: 'numeric',
-			month: '2-digit',
-			day: '2-digit',
-			hour: '2-digit',
-			minute: '2-digit',
-			second: '2-digit',
-			hour12: getTimeFormat() === '12h'
-		}).format(d);
+	if (!iso) return '-';
+	let fixedIso = iso.trim();
+
+	if (!fixedIso.includes('T')) {
+		fixedIso = fixedIso.replace(' ', 'T');
 	}
+
+	if (!fixedIso.endsWith('Z') && !fixedIso.includes('+') && !fixedIso.includes('-', 10)) {
+		fixedIso += 'Z';
+	}
+	return formatDateTime(fixedIso, true);
+}
 
 	function formatDuration(ms: number | null): string {
 		if (ms === null) return '-';
 		if (ms < 1000) return `${ms}ms`;
-		if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
-		return `${Math.floor(ms / 60000)}m ${Math.floor((ms % 60000) / 1000)}s`;
+		if (ms < 60000) return `${(ms / 1000).toFixed(1)}秒`;
+		return `${Math.floor(ms / 60000)}分 ${Math.floor((ms % 60000) / 1000)}秒`;
 	}
 
 	function formatNextRun(iso: string | null): string {
-		if (!iso) return '-';
-		const date = new Date(iso);
-		const now = new Date();
-		const diff = date.getTime() - now.getTime();
+	if (!iso) return '-';
+	const date = new Date(iso);
+	const now = new Date();
+	const diff = date.getTime() - now.getTime();
 
 		if (diff < 0) return m.schedules_next_run_overdue();
 		if (diff < 60000) return m.schedules_next_run_less_than_minute();
@@ -1292,7 +1291,7 @@
 							{:else if schedule.type === 'backup'}
 								{@const parts = (schedule.description || '').split(' to ')}
 								{#if parts.length === 2}
-									<span class="truncate">{parts[0]} to</span>
+									<span class="truncate">{parts[0]} 至</span>
 									<HardDrive class="w-3 h-3 shrink-0 text-muted-foreground" />
 									<span class="truncate">{parts[1]}</span>
 								{:else}
@@ -1358,7 +1357,7 @@
 				</div>
 			{:else if column.id === 'lastRun'}
 				{#if schedule.lastExecution}
-					<div class="text-xs">{formatTimestamp(schedule.lastExecution.triggeredAt)}</div>
+					<div class="text-xs">{formatTimestamp(schedule.lastExecution.triggeredAt, defaultTimezone)}</div>
 					{#if schedule.lastExecution.duration}
 						<div class="flex items-center gap-1 text-xs text-muted-foreground">
 							<Timer class="w-3 h-3" />
@@ -1514,7 +1513,7 @@
 									{@const badge = getStatusBadge(exec.status)}
 									{@const trigger = getTriggerBadge(exec.triggeredBy)}
 									<tr class="border-t border-muted hover:bg-muted/50">
-										<td class="px-2 py-1 text-xs">{formatTimestamp(exec.triggeredAt)}</td>
+										<td class="px-2 py-1 text-xs">{formatTimestamp(exec.triggeredAt, defaultTimezone)}</td>
 										<td class="px-2 py-1 text-center">
 											<Tooltip.Root>
 												<Tooltip.Trigger>

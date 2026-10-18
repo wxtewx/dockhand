@@ -160,37 +160,37 @@
 
 		for (const t of lightThemes) {
 			add(
-				{ id: `light:${t.id}`, group: G_LIGHT, label: t.name, keywords: 'light theme', active: $themeStore.lightTheme === t.id },
+				{ id: `light:${t.id}`, group: G_LIGHT, label: t.name, keywords: '浅色主题', active: $themeStore.lightTheme === t.id },
 				{ icon: Sun, preview: t.preview, run: () => applyLightTheme(t.id) }
 			);
 		}
 		for (const t of darkThemes) {
 			add(
-				{ id: `dark:${t.id}`, group: G_DARK, label: t.name, keywords: 'dark theme', active: $themeStore.darkTheme === t.id },
+				{ id: `dark:${t.id}`, group: G_DARK, label: t.name, keywords: '深色主题', active: $themeStore.darkTheme === t.id },
 				{ icon: Moon, preview: t.preview, run: () => applyDarkTheme(t.id) }
 			);
 		}
 		for (const f of fonts) {
 			add(
-				{ id: `font:${f.id}`, group: G_FONT, label: f.name, keywords: 'font', active: $themeStore.font === f.id },
+				{ id: `font:${f.id}`, group: G_FONT, label: f.name, keywords: '字体', active: $themeStore.font === f.id },
 				{ icon: Type, run: () => applyFont(f.id) }
 			);
 		}
 		for (const t of EDITOR_THEMES) {
 			add(
-				{ id: `editor:${t.id}`, group: G_EDITOR, label: t.label, keywords: 'editor theme code', active: $themeStore.editorTheme === t.id },
+				{ id: `editor:${t.id}`, group: G_EDITOR, label: t.label, keywords: '编辑器主题代码', active: $themeStore.editorTheme === t.id },
 				{ icon: Palette, run: () => applyEditorTheme(t.id) }
 			);
 		}
 		for (const env of environments) {
 			add(
-				{ id: `env:${env.id}`, group: G_ENV, label: env.name, keywords: 'environment', active: $currentEnvironment?.id === env.id },
+				{ id: `env:${env.id}`, group: G_ENV, label: env.name, keywords: '环境', active: $currentEnvironment?.id === env.id },
 				{ icon: Server, run: () => selectEnv(env), env }
 			);
 		}
 		for (const s of stacks) {
 			add(
-				{ id: `stack:${s.envId}:${s.name}`, group: G_STACK, label: s.name, keywords: `stack compose ${s.envName}`.toLowerCase() },
+				{ id: `stack:${s.envId}:${s.name}`, group: G_STACK, label: s.name, keywords: `堆栈 compose ${s.envName}`.toLowerCase() },
 				{ icon: Layers, run: () => selectStack(s), stack: s }
 			);
 		}
@@ -198,7 +198,7 @@
 			add(
 				// Env-scoped id: the same container id can arrive from several environments
 				// that share a daemon, and each must stay a distinct, correctly-labelled row.
-				{ id: `cont:${c.envId}:${c.id}`, group: G_CONT, label: c.displayName, keywords: `container ${c.name} ${c.image} ${c.envName}`.toLowerCase() },
+				{ id: `cont:${c.envId}:${c.id}`, group: G_CONT, label: c.displayName, keywords: `容器 ${c.name} ${c.image} ${c.envName}`.toLowerCase() },
 				{ icon: Box, run: () => containerAction(c, 'logs'), container: c }
 			);
 		}
@@ -359,7 +359,7 @@
 			stacks = stackResults.flat();
 			lastLoadedAt = Date.now();
 		} catch (e) {
-			console.error('Failed to load command palette data:', e);
+			console.error('加载命令面板数据失败:', e);
 		} finally {
 			loading = false;
 		}
@@ -421,7 +421,7 @@
 			try {
 				await fetch(`/api/containers/${containerId}/${action}${container.envId ? `?env=${container.envId}` : ''}`, { method: 'POST' });
 			} catch (e) {
-				console.error(`Failed to ${action} container:`, e);
+				console.error(`${action === 'start' ? '启动' : action === 'stop' ? '停止' : '重启'}容器失败:`, e);
 			}
 		}
 	}

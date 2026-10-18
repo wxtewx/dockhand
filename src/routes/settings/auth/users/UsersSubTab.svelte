@@ -33,6 +33,7 @@
 	import { licenseStore } from '$lib/stores/license';
 	import UserModal from './UserModal.svelte';
 	import { m } from '$lib/paraglide/messages.js';
+	import { getLabelText } from '$lib/types';
 
 	const MAX_VISIBLE_ROLES = 5;
 
@@ -386,7 +387,7 @@
 														{@const RoleIcon = getRoleIcon(role.name)}
 														<Badge variant="outline" class="text-2xs px-1.5 py-0 h-4 gap-1 rounded-sm bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/30">
 															<RoleIcon class="w-2.5 h-2.5" />
-															{role.name}
+															{getLabelText(role.name)}
 														</Badge>
 													{/each}
 													{#if hiddenRolesCount > 0}

@@ -9,7 +9,7 @@ const ID = /^[A-Za-z0-9_-]+$/;
  * resolve to some other file.
  */
 export function runLogFileName(runId: string): string {
-	if (!ID.test(runId)) throw new Error(`invalid run id: ${JSON.stringify(runId)}`);
+	if (!ID.test(runId)) throw new Error(`无效的运行 id: ${JSON.stringify(runId)}`);
 	return `${runId}.log`;
 }
 
@@ -43,7 +43,7 @@ export function runLogFileName(runId: string): string {
 export function envDirName(envId: number | null): string {
 	if (envId === null) return 'null';
 	if (!Number.isInteger(envId)) {
-		throw new Error(`invalid environment id: ${JSON.stringify(envId)}`);
+		throw new Error(`无效的环境 id: ${JSON.stringify(envId)}`);
 	}
 	return String(envId);
 }
@@ -64,7 +64,7 @@ export function envDirName(envId: number | null): string {
 export function parseEnvDirName(name: string): number | null {
 	if (name === 'null') return null;
 	if (!/^\d+$/.test(name)) {
-		throw new Error(`not an environment directory name: ${JSON.stringify(name)}`);
+		throw new Error(`不是有效的环境目录名称: ${JSON.stringify(name)}`);
 	}
 	return Number(name);
 }

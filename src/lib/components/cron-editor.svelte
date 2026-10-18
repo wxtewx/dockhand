@@ -3,7 +3,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Calendar, CalendarDays, Clock } from 'lucide-svelte';
 	import { appSettings } from '$lib/stores/settings';
-	import cronstrue from 'cronstrue';
+	import cronstrue from 'cronstrue/i18n';
 	import { m } from '$lib/paraglide/messages.js';
 	import { cronstrueLocale } from '$lib/i18n/cron';
 
@@ -169,7 +169,7 @@
 
 		// Validate first
 		if (!isValidCron(value)) {
-			return 'Invalid';
+			return '无效';
 		}
 
 		try {
@@ -182,7 +182,7 @@
 			});
 			return description;
 		} catch (error) {
-			return 'Invalid';
+			return '无效';
 		}
 	});
 
@@ -193,7 +193,7 @@
 		Array.from({ length: 24 }, (_, i) => ({
 			value: String(i),
 			label: is12Hour
-				? i === 0 ? '12 AM' : i < 12 ? `${i} AM` : i === 12 ? '12 PM' : `${i - 12} PM`
+				? i === 0 ? '12 上午' : i < 12 ? `${i} 上午` : i === 12 ? '12 下午' : `${i - 12} 下午`
 				: i.toString().padStart(2, '0')
 		}))
 	);
@@ -312,7 +312,7 @@
 	{:else}
 		<!-- Custom cron input -->
 		{@const readable = humanReadable()}
-		{@const isInvalid = readable === 'Invalid'}
+		{@const isInvalid = readable === '无效'}
 		<Input
 			value={value}
 			oninput={handleCustomCronInput}
@@ -326,7 +326,7 @@
 <!-- Description -->
 {#if value}
 	{@const readable = humanReadable()}
-	{@const isInvalid = readable === 'Invalid'}
+	{@const isInvalid = readable === '无效'}
 	<p class="text-[10px] mt-0.5 {isInvalid ? 'text-destructive' : 'text-muted-foreground/60'}">
 		{isInvalid ? m.cron_invalid() : readable}
 	</p>

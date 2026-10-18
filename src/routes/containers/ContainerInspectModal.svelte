@@ -27,6 +27,7 @@
 	import { formatHostPortUrl } from '$lib/utils/url';
 	import { containerStore } from '$lib/stores/containers';
 	import { m } from '$lib/paraglide/messages.js';
+	import { getLabelText } from '$lib/types';
 
 	interface Props {
 		open: boolean;
@@ -249,7 +250,7 @@
 				availableNetworks = await response.json();
 			}
 		} catch (err) {
-			console.error('Failed to fetch networks:', err);
+			console.error('获取网络列表失败:', err);
 		} finally {
 			networksLoading = false;
 		}
@@ -378,10 +379,10 @@
 				}
 			} else {
 				const data = await response.json();
-				console.error('Failed to rename container:', data.error);
+				console.error('重命名容器失败：', data.error);
 			}
 		} catch (error) {
-			console.error('Failed to rename container:', error);
+			console.error('重命名容器失败：', error);
 		} finally {
 			renaming = false;
 		}
@@ -947,11 +948,11 @@
 									</div>
 									<div class="space-y-1 text-xs">
 										<div class="flex justify-between">
-											<span class="text-muted-foreground">RX:</span>
+											<span class="text-muted-foreground">接收：</span>
 											<span class="font-mono">{formatBytes(currentStats?.networkRx ?? 0)}</span>
 										</div>
 										<div class="flex justify-between">
-											<span class="text-muted-foreground">TX:</span>
+											<span class="text-muted-foreground">发送：</span>
 											<span class="font-mono">{formatBytes(currentStats?.networkTx ?? 0)}</span>
 										</div>
 									</div>
@@ -1286,7 +1287,7 @@
 												{/if}
 												{#if networkData.MacAddress}
 													<div>
-														<p class="text-muted-foreground">MAC</p>
+														<p class="text-muted-foreground">MAC 地址</p>
 														<code>{networkData.MacAddress}</code>
 													</div>
 												{/if}
@@ -1334,7 +1335,7 @@
 													<span class="flex items-center gap-2">
 														<Network class="w-3 h-3 text-muted-foreground" />
 														{network.name}
-														<Badge variant="outline" class="text-[10px] px-1 py-0 ml-auto">{network.driver}</Badge>
+														<Badge variant="outline" class="text-[10px] px-1 py-0 ml-auto">{getLabelText(network.driver)}</Badge>
 													</span>
 												</Select.Item>
 											{/each}
@@ -1404,7 +1405,7 @@
 											{/each}
 										{:else}
 											<div class="flex items-center gap-2 text-xs p-2 bg-amber-500/10 border border-amber-500/20 rounded">
-												<code class="text-amber-600 dark:text-amber-400">exposed</code>
+												<code class="text-amber-600 dark:text-amber-400">已暴露</code>
 												<code class="text-amber-600 dark:text-amber-400">{containerPort}</code>
 											</div>
 										{/if}
@@ -1424,11 +1425,11 @@
 											<!-- Typed mount chip, consistent with the backup picker/log (amber Folder
 											     for bind, sky HardDrive for volume). -->
 											{#if mount.Type === 'bind'}
-												<span class="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400"><Folder class="h-3 w-3" />bind</span>
+												<span class="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400"><Folder class="h-3 w-3" />绑定挂载</span>
 											{:else if mount.Type === 'volume'}
-												<span class="inline-flex items-center gap-1 rounded-full bg-sky-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-400"><HardDrive class="h-3 w-3" />volume</span>
+												<span class="inline-flex items-center gap-1 rounded-full bg-sky-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-400"><HardDrive class="h-3 w-3" />数据卷</span>
 											{:else}
-												<Badge variant="outline" class="text-xs">{mount.Type}</Badge>
+												<Badge variant="outline" class="text-xs">{getLabelText(mount.Type)}</Badge>
 											{/if}
 											<Badge variant={mount.RW ? 'default' : 'secondary'} class="text-xs">
 												{mount.RW ? m.containers_inspect_mount_read_write() : m.containers_inspect_mount_read_only()}
@@ -1644,7 +1645,7 @@
 							{/if}
 							{#if containerData.HostConfig?.SecurityOpt?.some((o: string) => o.startsWith('seccomp'))}
 								<div class="p-3 border border-border rounded-lg">
-									<p class="text-xs text-muted-foreground mb-1">Seccomp</p>
+									<p class="text-xs text-muted-foreground mb-1">安全计算模式 (Seccomp)</p>
 									<code class="text-xs">
 										{containerData.HostConfig.SecurityOpt.find((o: string) => o.startsWith('seccomp'))?.split('=')[1] || m.containers_inspect_default()}
 									</code>
@@ -1732,12 +1733,12 @@
 						<!-- Ulimits -->
 						{#if containerData.HostConfig?.Ulimits?.length > 0}
 							<div class="space-y-2">
-								<h3 class="text-sm font-semibold">Ulimits</h3>
+								<h3 class="text-sm font-semibold">用户资源限制</h3>
 								<div class="grid grid-cols-1 lg:grid-cols-2 gap-2">
 									{#each containerData.HostConfig.Ulimits as ulimit}
 										<div class="flex justify-between text-xs p-2 bg-muted rounded">
 											<code class="text-muted-foreground">{ulimit.Name}</code>
-											<code>soft={ulimit.Soft} hard={ulimit.Hard}</code>
+											<code>软限制={ulimit.Soft} 硬限制={ulimit.Hard}</code>
 										</div>
 									{/each}
 								</div>
@@ -1838,7 +1839,7 @@
 					<Tabs.Content value="health" class="flex flex-col overflow-hidden">
 						{@const healthConfig = containerData.Config?.Healthcheck}
 						{@const healthState = containerData.State?.Health}
-						{@const formatNs = (ns: number) => ns ? `${ns / 1e9}s` : '-'}
+						{@const formatNs = (ns: number) => ns ? `${ns / 1e9} 秒` : '-'}
 						{#if healthConfig || healthState}
 							<div class="flex flex-col flex-1 min-h-0 gap-4">
 								<!-- Healthcheck Configuration -->
@@ -1878,7 +1879,7 @@
 											<div>
 												<p class="text-muted-foreground">{m.containers_inspect_health_current_status()}</p>
 												<Badge variant={healthState.Status === 'healthy' ? 'default' : healthState.Status === 'starting' ? 'secondary' : 'destructive'}>
-													{healthState.Status}
+													{healthState.Status === 'healthy' ? '健康' : healthState.Status === 'starting' ? '启动中' : '异常'}
 												</Badge>
 											</div>
 											<div>

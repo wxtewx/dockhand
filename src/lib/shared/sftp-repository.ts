@@ -74,33 +74,33 @@ export function parseSftpRepository(repository: string): SftpRepositoryConfig | 
 export function validateSftpRepository(repository: string): string | null {
 	if (!isSftpRepository(repository)) return null;
 	if (repository !== repository.trim()) {
-		return 'Invalid SFTP repository: leading or trailing whitespace is not allowed';
+		return '无效的 SFTP 仓库：不允许存在前导或尾随空白字符';
 	}
 	if (repository.startsWith('sftp://')) {
 		try {
 			const url = new URL(repository);
-			if (url.password) return 'Invalid SFTP repository: passwords in the repository URL are not allowed';
-			if (url.search || url.hash) return 'Invalid SFTP repository: query strings and fragments are not allowed';
+			if (url.password) return '无效的 SFTP 仓库：仓库 URL 中不允许填写密码';
+			if (url.search || url.hash) return '无效的 SFTP 仓库：不允许使用查询字符串和片段';
 		} catch {
-			return 'Invalid SFTP repository URL';
+			return 'SFTP 仓库 URL 无效';
 		}
 	}
 
 	const parsed = parseSftpRepository(repository);
 	if (!parsed) {
-		return 'Invalid SFTP repository: use sftp:user@host:/path or sftp://user@host:port//path';
+		return '无效的 SFTP 仓库：请使用 sftp:user@host:/path 或 sftp://user@host:port//path';
 	}
-	if (!parsed.username.trim()) return 'Invalid SFTP repository: an SSH username is required';
-	if (!parsed.host.trim() || /\s/.test(parsed.host)) return 'Invalid SFTP repository: a valid SSH host is required';
+	if (!parsed.username.trim()) return '无效的 SFTP 仓库：必须填写 SSH 用户名';
+	if (!parsed.host.trim() || /\s/.test(parsed.host)) return '无效的 SFTP 仓库：必须填写有效的 SSH 主机地址';
 	// A leading dash reaches ssh in the host position, where it reads as an option and
 	// the connection fails on a usage error instead of saying the host is wrong.
-	if (parsed.host.startsWith('-')) return 'Invalid SFTP repository: a host cannot start with "-"';
+	if (parsed.host.startsWith('-')) return '无效的SFTP仓库：主机不能以 "-" 开头';
 	const port = Number(parsed.port);
 	if (!Number.isInteger(port) || port < 1 || port > 65535) {
-		return 'Invalid SFTP repository: SSH port must be between 1 and 65535';
+		return '无效的 SFTP 仓库：SSH 端口必须介于 1 到 65535 之间';
 	}
 	if (parsed.path.startsWith('~')) {
-		return 'Invalid SFTP repository: use a relative path or an absolute path instead of ~';
+		return '无效的 SFTP 仓库：请使用相对路径或绝对路径，不要使用 ~';
 	}
 	return null;
 }
@@ -128,30 +128,30 @@ function suppliedSecret(value: unknown, stored: boolean): { present: boolean; in
 export function validateSftpCredentials(input: SftpCredentialValidationInput): string | null {
 	const privateKey = suppliedSecret(input.sshPrivateKey, !!input.hasStoredSshPrivateKey);
 	const knownHosts = suppliedSecret(input.sshKnownHosts, !!input.hasStoredSshKnownHosts);
-	if (privateKey.invalidType) return 'SSH private key must be text';
-	if (knownHosts.invalidType) return 'SSH known_hosts data must be text';
+	if (privateKey.invalidType) return 'SSH 私钥必须为文本格式';
+	if (knownHosts.invalidType) return 'SSH known_hosts 数据必须为文本格式';
 	if (!isSftpRepository(input.repository)) return null;
-	if (!privateKey.present) return 'SFTP destinations require an SSH private key';
-	if (!knownHosts.present) return 'SFTP destinations require verified SSH known_hosts data';
+	if (!privateKey.present) return 'SFTP 目标需要 SSH 私钥';
+	if (!knownHosts.present) return 'SFTP 目标需要已验证的 SSH known_hosts 数据';
 
 	if (privateKey.text) {
 		if (textEncoder.encode(privateKey.text).byteLength > MAX_SFTP_CREDENTIAL_BYTES) {
-			return 'SSH private key is too large';
+			return 'SSH 私钥过大';
 		}
-		if (privateKey.text.includes('\0')) return 'SSH private key must not contain NUL bytes';
-		if (!PRIVATE_KEY_HEADER.test(privateKey.text)) return 'SSH private key is not a recognized private-key PEM';
+		if (privateKey.text.includes('\0')) return 'SSH 私钥不能包含空字节';
+		if (!PRIVATE_KEY_HEADER.test(privateKey.text)) return 'SSH 私钥不是可识别的私钥 PEM 格式';
 	}
 	if (knownHosts.text) {
 		if (textEncoder.encode(knownHosts.text).byteLength > MAX_SFTP_CREDENTIAL_BYTES) {
-			return 'SSH known_hosts data is too large';
+			return 'SSH known_hosts 数据过大';
 		}
-		if (knownHosts.text.includes('\0')) return 'SSH known_hosts data must not contain NUL bytes';
+		if (knownHosts.text.includes('\0')) return 'SSH known_hosts 数据不能包含空字节';
 		const entries = knownHosts.text
 			.split(/\r?\n/)
 			.map((line) => line.trim())
 			.filter((line) => line && !line.startsWith('#'));
 		if (entries.length === 0 || entries.some((line) => line.split(/\s+/).length < 3)) {
-			return 'SSH known_hosts data must contain at least one valid host-key entry';
+			return 'SSH known_hosts 数据至少需要包含一条有效的主机密钥条目';
 		}
 	}
 	return null;

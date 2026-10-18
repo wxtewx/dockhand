@@ -79,11 +79,11 @@ export interface DeployRunView {
 export function formatStatusLabel(status: string): string {
 	switch (status) {
 		case 'success':
-			return 'Success';
+			return '成功';
 		case 'failed':
-			return 'Failed';
+			return '失败';
 		case 'running':
-			return 'Running';
+			return '运行中';
 		default:
 			// An unrecognized status is a schema drift worth seeing as-is, not one
 			// more row silently rendered "Success" or hidden entirely.
@@ -94,13 +94,13 @@ export function formatStatusLabel(status: string): string {
 export function formatTrigger(triggeredBy: string): string {
 	switch (triggeredBy) {
 		case 'cron':
-			return 'Scheduled';
+			return '定时任务';
 		case 'webhook':
 			return 'Webhook';
 		case 'startup':
-			return 'Startup';
+			return '启动时';
 		case 'manual':
-			return 'Manual';
+			return '手动';
 		default:
 			return triggeredBy;
 	}
@@ -111,12 +111,12 @@ export function formatTrigger(triggeredBy: string): string {
  *  there) because that one is a component-local, unexported function. */
 export function formatRunDuration(ms: number | null | undefined): string {
 	if (ms === null || ms === undefined) return '—';
-	if (ms < 1000) return `${ms}ms`;
-	if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+	if (ms < 1000) return `${ms} 毫秒`;
+	if (ms < 60000) return `${(ms / 1000).toFixed(1)} 秒`;
 	const totalSeconds = Math.floor(ms / 1000);
 	const minutes = Math.floor(totalSeconds / 60);
 	const seconds = totalSeconds % 60;
-	return `${minutes}m ${seconds}s`;
+	return `${minutes} 分 ${seconds} 秒`;
 }
 
 /**
@@ -128,12 +128,12 @@ export function formatRunDuration(ms: number | null | undefined): string {
  * report the first case as a fact it never established.
  */
 export function formatContainerSummary(summary: DeployRunSummary | undefined): string {
-	if (!summary) return 'No summary recorded for this run';
+	if (!summary) return '未记录本次运行的汇总信息';
 	const parts: string[] = [];
-	if (summary.containersCreated > 0) parts.push(`${summary.containersCreated} created`);
-	if (summary.containersRecreated > 0) parts.push(`${summary.containersRecreated} recreated`);
-	if (summary.containersStarted > 0) parts.push(`${summary.containersStarted} started`);
-	return parts.length > 0 ? parts.join(', ') : 'No container changes';
+	if (summary.containersCreated > 0) parts.push(`${summary.containersCreated} 个已创建`);
+	if (summary.containersRecreated > 0) parts.push(`${summary.containersRecreated} 个已重建`);
+	if (summary.containersStarted > 0) parts.push(`${summary.containersStarted} 个已启动`);
+	return parts.length > 0 ? parts.join(', ') : '无容器变更';
 }
 
 /**
@@ -144,24 +144,24 @@ export function formatContainerSummary(summary: DeployRunSummary | undefined): s
  * same string.
  */
 export function formatBuildStatus(summary: DeployRunSummary | undefined): string {
-	if (!summary) return 'Build status unknown';
+	if (!summary) return '构建状态未知';
 	const { buildSteps, buildStepsCached } = summary;
-	if (buildSteps === 0) return 'Nothing built';
+	if (buildSteps === 0) return '未构建任何内容';
 	if (buildStepsCached === buildSteps) {
-		return buildSteps === 1 ? 'Built from cache' : `Built from cache (${buildSteps} steps)`;
+		return buildSteps === 1 ? '从缓存构建' : `从缓存构建 (${buildSteps} 个步骤)`;
 	}
 	if (buildStepsCached === 0) {
-		return buildSteps === 1 ? 'Built (1 step)' : `Built (${buildSteps} steps)`;
+		return buildSteps === 1 ? '已构建 (1 个步骤)' : `已构建 (${buildSteps} 个步骤)`;
 	}
-	return `Built (${buildSteps} steps, ${buildStepsCached} from cache)`;
+	return `已构建 (${buildSteps} 个步骤, ${buildStepsCached} 个来自缓存)`;
 }
 
 export function formatOptionChips(options: DeployRunOptions | undefined): string[] {
 	if (!options) return [];
 	const chips: string[] = [];
-	if (options.pull) chips.push('Pull');
-	if (options.build) chips.push('Build');
-	if (options.forceRecreate) chips.push('Force recreate');
+	if (options.pull) chips.push('拉取镜像');
+	if (options.build) chips.push('构建');
+	if (options.forceRecreate) chips.push('强制重建');
 	return chips;
 }
 

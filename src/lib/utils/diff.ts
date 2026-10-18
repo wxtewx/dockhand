@@ -229,23 +229,23 @@ export function deepDiff(a: any, b: any, path = ''): string[] {
 export function formatFieldName(field: string): string {
 	// Handle special cases
 	const specialCases: Record<string, string> = {
-		'tlsCa': 'TLS CA',
-		'tlsCert': 'TLS certificate',
-		'tlsKey': 'TLS key',
-		'tlsSkipVerify': 'Skip TLS verification',
-		'sshPrivateKey': 'SSH private key',
-		'sshPassphrase': 'SSH passphrase',
-		'envVars': 'Environment variables',
-		'isDefault': 'Default',
-		'ipAddress': 'IP address',
-		'authType': 'Auth type',
-		'eventTypes': 'Event types',
-		'hawserToken': 'Hawser token',
-		'connectionType': 'Connection type',
-		'socketPath': 'Socket path',
-		'collectActivity': 'Collect activity',
-		'collectMetrics': 'Collect metrics',
-		'highlightChanges': 'Highlight changes'
+		'tlsCa': 'TLS CA 证书',
+		'tlsCert': 'TLS 证书',
+		'tlsKey': 'TLS 私钥',
+		'tlsSkipVerify': '跳过 TLS 校验',
+		'sshPrivateKey': 'SSH 私钥',
+		'sshPassphrase': 'SSH 密钥密码',
+		'envVars': '环境变量',
+		'isDefault': '默认项',
+		'ipAddress': 'IP 地址',
+		'authType': '认证类型',
+		'eventTypes': '事件类型',
+		'hawserToken': 'Hawser 令牌',
+		'connectionType': '连接类型',
+		'socketPath': 'Socket 路径',
+		'collectActivity': '收集操作记录',
+		'collectMetrics': '收集监控指标',
+		'highlightChanges': '高亮变更内容'
 	};
 
 	if (specialCases[field]) {

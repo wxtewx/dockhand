@@ -33,6 +33,16 @@
 		expanded = s;
 	}
 
+	function formatTimestamp(ts: string): string {
+		if (!ts) return '-';
+		let fixedIso = ts.trim();
+		if (!fixedIso.includes('T')) fixedIso = fixedIso.replace(' ', 'T');
+		if (!fixedIso.endsWith('Z') && !fixedIso.includes('+') && !fixedIso.includes('-', 10)) {
+			fixedIso += 'Z';
+		}
+		return formatDateTime(fixedIso, true);
+	}
+	
 	function cleanError(msg: string): string {
 		try { const p = JSON.parse(msg); if (p.message) return p.message; } catch {}
 		const m = msg.match(/\{"message":"([^"]+)"\}/);

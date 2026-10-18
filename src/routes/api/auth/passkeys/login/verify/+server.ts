@@ -31,40 +31,40 @@ const NO_STORE = { 'Cache-Control': 'no-store' };
  */
 export const POST: RequestHandler = async (event) => {
 	const { request, cookies } = event;
-	if (!(await isAuthEnabled())) return json({ error: 'Authentication is not enabled' }, { status: 400, headers: NO_STORE });
+	if (!(await isAuthEnabled())) return json({ error: '未启用身份认证' }, { status: 400, headers: NO_STORE });
 	// Hiding the button is not switching the feature off: the endpoints answer a
 	// direct request too, so the administrator's setting is enforced here.
-	if (!(await getPasskeysEnabled())) return json({ error: 'Passkeys are disabled on this instance' }, { status: 403, headers: NO_STORE });
+	if (!(await getPasskeysEnabled())) return json({ error: '此实例已禁用通行密钥' }, { status: 403, headers: NO_STORE });
 
 	let config;
 	try {
 		config = getWebAuthnConfig();
 	} catch (error) {
-		return json({ error: error instanceof Error ? error.message : 'Passkeys are not configured' }, { status: 503, headers: NO_STORE });
+		return json({ error: error instanceof Error ? error.message : '通行密钥未配置' }, { status: 503, headers: NO_STORE });
 	}
-	if (!hasExactWebAuthnOrigin(request)) return json({ error: 'Invalid request origin' }, { status: 403, headers: NO_STORE });
+	if (!hasExactWebAuthnOrigin(request)) return json({ error: '无效的请求源' }, { status: 403, headers: NO_STORE });
 
 	let body: { ceremonyId?: string; response?: AuthenticationResponseJSON };
 	try {
 		body = await request.json();
 	} catch {
-		return json({ error: 'Invalid request' }, { status: 400, headers: NO_STORE });
+		return json({ error: '无效请求' }, { status: 400, headers: NO_STORE });
 	}
-	if (!body.ceremonyId || !body.response) return json({ error: 'Invalid request' }, { status: 400, headers: NO_STORE });
+	if (!body.ceremonyId || !body.response) return json({ error: '无效请求' }, { status: 400, headers: NO_STORE });
 
 	const ceremony = webAuthnChallenges.consume(body.ceremonyId, 'authentication');
-	if (!ceremony) return json({ error: 'Passkey ceremony expired or is invalid' }, { status: 400, headers: NO_STORE });
+	if (!ceremony) return json({ error: '通行密钥交互流程已过期或无效' }, { status: 400, headers: NO_STORE });
 
 	try {
 		const credential = await getPasskeyCredentialByCredentialId(body.response.id);
-		if (!credential) return json({ error: 'Passkey authentication failed' }, { status: 401, headers: NO_STORE });
+		if (!credential) return json({ error: '通行密钥认证失败' }, { status: 401, headers: NO_STORE });
 
 		const user = await getUser(credential.userId);
-		if (!user?.isActive) return json({ error: 'Passkey authentication failed' }, { status: 401, headers: NO_STORE });
+		if (!user?.isActive) return json({ error: '通行密钥认证失败' }, { status: 401, headers: NO_STORE });
 
 		const responseUserHandle = body.response.response.userHandle;
 		if (!responseUserHandle || responseUserHandle !== credential.webauthnUserId) {
-			return json({ error: 'Passkey authentication failed' }, { status: 401, headers: NO_STORE });
+			return json({ error: '通行密钥认证失败' }, { status: 401, headers: NO_STORE });
 		}
 
 		const verification = await verifyAuthenticationResponse({
@@ -80,14 +80,14 @@ export const POST: RequestHandler = async (event) => {
 			},
 			requireUserVerification: true
 		});
-		if (!verification.verified) return json({ error: 'Passkey authentication failed' }, { status: 401, headers: NO_STORE });
+		if (!verification.verified) return json({ error: '通行密钥认证失败' }, { status: 401, headers: NO_STORE });
 
 		const counterUpdated = await updatePasskeyCounter(
 			credential.id,
 			credential.counter,
 			verification.authenticationInfo.newCounter
 		);
-		if (!counterUpdated) return json({ error: 'Passkey authentication failed' }, { status: 401, headers: NO_STORE });
+		if (!counterUpdated) return json({ error: '通行密钥认证失败' }, { status: 401, headers: NO_STORE });
 
 		// A verified Passkey is the complete interactive authentication factor. It
 		// deliberately enters the existing session path without a separate TOTP step.
@@ -96,6 +96,6 @@ export const POST: RequestHandler = async (event) => {
 
 		return json({ success: true }, { headers: NO_STORE });
 	} catch {
-		return json({ error: 'Passkey authentication failed' }, { status: 401, headers: NO_STORE });
+		return json({ error: '通行密钥认证失败' }, { status: 401, headers: NO_STORE });
 	}
 };

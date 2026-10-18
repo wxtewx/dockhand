@@ -21,6 +21,7 @@
 	import { appSettings } from '$lib/stores/settings';
 	import ContainerIcon from '$lib/components/ContainerIcon.svelte';
 	import type { VolumeInfo } from '$lib/types';
+	import { getLabelText } from '$lib/types';
 	import { currentEnvironment, environments, appendEnvParam, clearStaleEnvironment } from '$lib/stores/environment';
 	import MultiSelectFilter from '$lib/components/MultiSelectFilter.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -64,7 +65,7 @@
 	const driverOptions = $derived(
 		[...new Set(volumes.map(v => v.driver))].sort().map(d => {
 			const mapping = driverIconMap[d] || { icon: Database, color: 'text-muted-foreground' };
-			return { value: d, label: d, icon: mapping.icon, color: mapping.color };
+			return { value: d, label: getLabelText(d), icon: mapping.icon, color: mapping.color };
 		})
 	);
 
@@ -541,15 +542,15 @@
 				{#if column.id === 'name'}
 					<code class="text-xs truncate block" title={volume.name}>{volume.name}</code>
 				{:else if column.id === 'driver'}
-					<Badge variant="outline" class="text-xs py-0 px-1.5 shadow-sm rounded-sm">{volume.driver}</Badge>
+					<Badge variant="outline" class="text-xs py-0 px-1.5 shadow-sm rounded-sm">{getLabelText(volume.driver)}</Badge>
 				{:else if column.id === 'type'}
 					{#if volume.options?.type}
-						<Badge variant="outline" class="text-xs py-0 px-1.5 shadow-sm rounded-sm" title={Object.entries(volume.options).map(([k, v]) => `${k}=${v}`).join('\n')}>{volume.options.type}</Badge>
+						<Badge variant="outline" class="text-xs py-0 px-1.5 shadow-sm rounded-sm" title={Object.entries(volume.options).map(([k, v]) => `${k}=${v}`).join('\n')}>{getLabelText(volume.options.type)}</Badge>
 					{:else}
 						<span class="text-muted-foreground text-xs">-</span>
 					{/if}
 				{:else if column.id === 'scope'}
-					<span class="text-xs">{volume.scope}</span>
+					<span class="text-xs">{getLabelText(volume.scope)}</span>
 				{:else if column.id === 'stack'}
 					{#if stack}
 						<button

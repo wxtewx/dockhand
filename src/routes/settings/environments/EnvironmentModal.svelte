@@ -176,75 +176,75 @@
 	const NOTIFICATION_EVENT_GROUPS = [
 		{
 			id: 'container',
-			label: 'Container events',
+			label: '容器事件',
 			events: [
-				{ id: 'container_started', label: 'Container started', description: 'When a container starts running' },
-				{ id: 'container_stopped', label: 'Container stopped', description: 'When a container is stopped' },
-				{ id: 'container_restarted', label: 'Container restarted', description: 'When a container restarts' },
-				{ id: 'container_exited', label: 'Container exited', description: 'When a container exits unexpectedly' },
-				{ id: 'container_unhealthy', label: 'Container unhealthy', description: 'When a container health check fails' },
-				{ id: 'container_oom', label: 'Container OOM killed', description: 'When a container is killed due to out of memory' },
-				{ id: 'container_updated', label: 'Container updated', description: 'When a container image is updated' }
+				{ id: 'container_started', label: '容器已启动', description: '容器开始运行时' },
+				{ id: 'container_stopped', label: '容器已停止', description: '容器被停止时' },
+				{ id: 'container_restarted', label: '容器已重启', description: '容器重启时' },
+				{ id: 'container_exited', label: '容器异常退出', description: '容器意外退出时' },
+				{ id: 'container_unhealthy', label: '容器健康检查失败', description: '容器健康检查未通过时' },
+				{ id: 'container_oom', label: '容器内存溢出终止', description: '容器因内存不足被杀死时' },
+				{ id: 'container_updated', label: '容器已更新', description: '容器镜像被更新时' }
 			]
 		},
 		{
 			id: 'auto_update',
-			label: 'Auto-update events',
+			label: '自动更新事件',
 			events: [
-				{ id: 'auto_update_success', label: 'Update succeeded', description: 'Container successfully updated to new image' },
-				{ id: 'auto_update_failed', label: 'Update failed', description: 'Container auto-update failed' },
-				{ id: 'auto_update_blocked', label: 'Update blocked by vulns', description: 'Update blocked due to vulnerability criteria' },
-				{ id: 'updates_detected', label: 'Updates detected', description: 'Container image updates are available (scheduled check)' },
-				{ id: 'newer_version_available', label: 'Newer version tag', description: 'A newer version tag is published for a pinned image (semver, advisory)' },
-				{ id: 'batch_update_success', label: 'Batch update completed', description: 'Scheduled container updates completed successfully' }
+				{ id: 'auto_update_success', label: '更新成功', description: '容器已成功更新至新镜像' },
+				{ id: 'auto_update_failed', label: '更新失败', description: '容器自动更新失败' },
+				{ id: 'auto_update_blocked', label: '漏洞阻止更新', description: '因漏洞判定条件阻止更新' },
+				{ id: 'updates_detected', label: '检测到更新', description: '容器镜像存在可用更新 (定时检查)' },
+				{ id: 'newer_version_available', label: '存在较新版本标签', description: '固定版本镜像已发布较新版本标签 (semver、安全通告)' },
+				{ id: 'batch_update_success', label: '批量更新已完成', description: '定时容器更新任务执行成功' }
 			]
 		},
 		{
 			id: 'git_stack',
-			label: 'Git stack events',
+			label: 'Git 堆栈事件',
 			events: [
-				{ id: 'git_sync_success', label: 'Git sync succeeded', description: 'Git stack synced and deployed successfully' },
-				{ id: 'git_sync_failed', label: 'Git sync failed', description: 'Git stack sync or deploy failed' },
-				{ id: 'git_sync_skipped', label: 'Git sync skipped', description: 'Git stack sync skipped (no changes)' }
+				{ id: 'git_sync_success', label: 'Git 同步成功', description: 'Git 堆栈同步并部署成功' },
+				{ id: 'git_sync_failed', label: 'Git 同步失败', description: 'Git 堆栈同步或部署失败' },
+				{ id: 'git_sync_skipped', label: 'Git 同步已跳过', description: 'Git 堆栈同步已跳过 (无变更)' }
 			]
 		},
 		{
 			id: 'stack',
-			label: 'Stack events',
+			label: '堆栈事件',
 			events: [
-				{ id: 'stack_started', label: 'Stack started', description: 'When a compose stack starts' },
-				{ id: 'stack_stopped', label: 'Stack stopped', description: 'When a compose stack stops' },
-				{ id: 'stack_deployed', label: 'Stack deployed', description: 'Stack deployed (new or update)' },
-				{ id: 'stack_deploy_failed', label: 'Stack deploy failed', description: 'Stack deployment failed' }
+				{ id: 'stack_started', label: '堆栈已启动', description: 'Compose 堆栈启动时' },
+				{ id: 'stack_stopped', label: '堆栈已停止', description: 'Compose 堆栈停止时' },
+				{ id: 'stack_deployed', label: '堆栈已部署', description: '堆栈已部署 (新建或更新)' },
+				{ id: 'stack_deploy_failed', label: '堆栈部署失败', description: '堆栈部署失败' }
 			]
 		},
 		{
 			id: 'security',
-			label: 'Security events',
+			label: '安全事件',
 			events: [
-				{ id: 'vulnerability_critical', label: 'Critical vulns found', description: 'Critical vulnerabilities found in image scan' },
-				{ id: 'vulnerability_high', label: 'High vulns found', description: 'High severity vulnerabilities found' },
-				{ id: 'vulnerability_any', label: 'Any vulns found', description: 'Any vulnerabilities found (medium/low)' }
+				{ id: 'vulnerability_critical', label: '发现严重漏洞', description: '镜像扫描中发现严重漏洞' },
+				{ id: 'vulnerability_high', label: '发现高危漏洞', description: '发现高危级别的漏洞' },
+				{ id: 'vulnerability_any', label: '发现任意漏洞', description: '发现任意漏洞 (中/低危)' }
 			]
 		},
 		{
 			id: 'backup',
-			label: 'Backup events',
+			label: '备份事件',
 			events: [
-				{ id: 'backup_success', label: 'Backup succeeded', description: 'Backup completed successfully' },
-				{ id: 'backup_failed', label: 'Backup failed', description: 'Backup failed' },
-				{ id: 'restore_success', label: 'Restore succeeded', description: 'Restore completed successfully' },
-				{ id: 'restore_failed', label: 'Restore failed', description: 'Restore failed' }
+				{ id: 'backup_success', label: '备份成功', description: '备份任务已顺利完成' },
+				{ id: 'backup_failed', label: '备份失败', description: '备份任务执行失败' },
+				{ id: 'restore_success', label: '恢复成功', description: '恢复任务已顺利完成' },
+				{ id: 'restore_failed', label: '恢复失败', description: '恢复任务执行失败' }
 			]
 		},
 		{
 			id: 'system',
-			label: 'System events',
+			label: '系统事件',
 			events: [
-				{ id: 'image_pulled', label: 'Image pulled', description: 'When a new image is pulled' },
-				{ id: 'environment_offline', label: 'Environment offline', description: 'Environment became unreachable' },
-				{ id: 'environment_online', label: 'Environment online', description: 'Environment came back online' },
-				{ id: 'disk_space_warning', label: 'Disk space warning', description: 'Docker disk usage exceeds threshold' }
+				{ id: 'image_pulled', label: '镜像已拉取', description: '拉取新镜像时' },
+				{ id: 'environment_offline', label: '环境离线', description: '环境无法访问' },
+				{ id: 'environment_online', label: '环境在线', description: '环境恢复连接' },
+				{ id: 'disk_space_warning', label: '磁盘空间警告', description: 'Docker 磁盘使用量超过阈值' }
 				// Note: license_expiring is a global event configured at the notification channel level
 			]
 		}
@@ -1156,7 +1156,7 @@
 				formStorageDriver = data.storageDriver ?? null;
 			}
 		} catch (error) {
-			console.error('Failed to load disk warning settings:', error);
+			console.error('加载磁盘警告设置失败:', error);
 		}
 	}
 
@@ -1168,7 +1168,7 @@
 				formRemoteStacksDir = data.remoteStacksDir ?? '';
 			}
 		} catch (error) {
-			console.error('Failed to load remote stacks dir:', error);
+			console.error('加载远程堆栈目录失败:', error);
 		}
 	}
 
@@ -1180,7 +1180,7 @@
 				body: JSON.stringify({ remoteStacksDir: formRemoteStacksDir.trim() || null })
 			});
 		} catch (error) {
-			console.error('Failed to save remote stacks dir:', error);
+			console.error('保存远程堆栈目录失败:', error);
 		}
 	}
 
@@ -1197,7 +1197,7 @@
 				})
 			});
 		} catch (error) {
-			console.error('Failed to save disk warning settings:', error);
+			console.error('保存磁盘警告设置失败:', error);
 		}
 	}
 
@@ -1210,7 +1210,7 @@
 				formTimezone = data.timezone || 'UTC';
 			}
 		} catch (error) {
-			console.error('Failed to load timezone:', error);
+			console.error('加载时区失败:', error);
 			formTimezone = 'UTC';
 		}
 	}
@@ -1223,7 +1223,7 @@
 				formTimezone = data.defaultTimezone || 'UTC';
 			}
 		} catch (error) {
-			console.error('Failed to load default timezone:', error);
+			console.error('加载默认时区失败:', error);
 			formTimezone = 'UTC';
 		}
 	}
@@ -1237,10 +1237,10 @@
 			});
 			if (!response.ok) {
 				const data = await response.json().catch(() => ({}));
-				console.error('Failed to save timezone:', data.error || response.status);
+				console.error('保存时区失败:', data.error || response.status);
 			}
 		} catch (error) {
-			console.error('Failed to save timezone:', error);
+			console.error('保存时区失败:', error);
 		}
 	}
 
@@ -1262,7 +1262,7 @@
 			scannerLoading = false;
 			loadScannerVersionsAsync(envId);
 		} catch (error) {
-			console.error('Failed to load scanner settings:', error);
+			console.error('加载扫描器设置失败:', error);
 			scannerLoading = false;
 		}
 	}
@@ -1280,7 +1280,7 @@
 				scannerVersions = fullData.versions;
 			}
 		} catch (error) {
-			console.error('Failed to load scanner versions:', error);
+			console.error('加载扫描器版本失败:', error);
 		} finally {
 			loadingScannerVersions = false;
 		}
@@ -1306,7 +1306,7 @@
 				onScannerStatusChange?.(envId, scannerEnabled);
 			}
 		} catch (error) {
-			console.error('Failed to save scanner settings:', error);
+			console.error('保存扫描器设置失败:', error);
 		}
 	}
 
@@ -1324,7 +1324,7 @@
 				.filter((c: { type?: string; enabled?: boolean }) => c.type === 'smtp' && c.enabled !== false)
 				.map((c: { id: number; name: string }) => ({ id: c.id, name: c.name }));
 		} catch (error) {
-			console.error('Failed to load notification channels:', error);
+			console.error('加载通知通道失败:', error);
 		}
 	}
 
@@ -1364,7 +1364,7 @@
 				}
 			}
 		} catch (error) {
-			console.error('Failed to load report settings:', error);
+			console.error('加载报表设置失败:', error);
 		} finally {
 			reportLoading = false;
 		}
@@ -1423,7 +1423,7 @@
 				}
 			}
 		} catch (error) {
-			console.error('Failed to load update check settings:', error);
+			console.error('加载更新检查设置失败:', error);
 		} finally {
 			updateCheckLoading = false;
 		}
@@ -1471,7 +1471,7 @@
 				}
 			}
 		} catch (error) {
-			console.error('Failed to load image prune settings:', error);
+			console.error('加载镜像清理设置失败:', error);
 		} finally {
 			imagePruneLoading = false;
 		}
@@ -1489,7 +1489,7 @@
 				})
 			});
 		} catch (error) {
-			console.error('Failed to save image prune settings:', error);
+			console.error('保存镜像清理设置失败:', error);
 		}
 	}
 
@@ -1506,7 +1506,7 @@
 				scannerVersions = { ...scannerVersions, grype: null };
 			}
 		} catch (error) {
-			console.error('Failed to remove Grype:', error);
+			console.error('卸载 Grype 失败:', error);
 		} finally {
 			removingGrype = false;
 		}
@@ -1525,7 +1525,7 @@
 				scannerVersions = { ...scannerVersions, trivy: null };
 			}
 		} catch (error) {
-			console.error('Failed to remove Trivy:', error);
+			console.error('卸载 Trivy 失败:', error);
 		} finally {
 			removingTrivy = false;
 		}
@@ -1548,7 +1548,7 @@
 				if (!grypeNewerVersion) setTimeout(() => { grypeUpdateStatus = 'idle'; }, 3000);
 			}
 		} catch (error) {
-			console.error('Failed to check Grype update:', error);
+			console.error('检查 Grype 更新失败:', error);
 		} finally {
 			checkingGrypeUpdate = false;
 		}
@@ -1571,7 +1571,7 @@
 				if (!trivyNewerVersion) setTimeout(() => { trivyUpdateStatus = 'idle'; }, 3000);
 			}
 		} catch (error) {
-			console.error('Failed to check Trivy update:', error);
+			console.error('检查 Trivy 更新失败:', error);
 		} finally {
 			checkingTrivyUpdate = false;
 		}
@@ -1690,7 +1690,7 @@
 				envNotifications = await response.json();
 			}
 		} catch (error) {
-			console.error('Failed to load environment notifications:', error);
+			console.error('加载环境通知失败:', error);
 		} finally {
 			envNotifLoading = false;
 		}
@@ -1740,7 +1740,7 @@
 				body: JSON.stringify(data)
 			});
 		} catch (error) {
-			console.error('Failed to update environment notification:', error);
+			console.error('更新环境通知失败:', error);
 			await loadEnvNotifications(envId);
 		}
 	}
@@ -1754,7 +1754,7 @@
 				await loadEnvNotifications(envId);
 			}
 		} catch (error) {
-			console.error('Failed to delete environment notification:', error);
+			console.error('删除环境通知失败:', error);
 		}
 	}
 
@@ -1769,7 +1769,7 @@
 				hawserToken = tokens.length > 0 ? tokens[0] : null;
 			}
 		} catch (error) {
-			console.error('Failed to load Hawser token:', error);
+			console.error('加载 Hawser 令牌失败:', error);
 		} finally {
 			hawserTokenLoading = false;
 		}
@@ -1809,7 +1809,7 @@
 			try {
 				await fetch(`/api/hawser/tokens?id=${hawserToken.id}`, { method: 'DELETE' });
 			} catch (error) {
-				console.error('Failed to revoke old token:', error);
+				console.error('吊销旧令牌失败:', error);
 			}
 		}
 		await generateHawserToken(envId);

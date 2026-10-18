@@ -42,37 +42,37 @@ function uniqueConstraint(error: unknown): 'name' | 'credential' | null {
  * resp-503: Passkeys are not configured (ORIGIN missing or not HTTPS)
  */
 export const POST: RequestHandler = async ({ request, cookies }) => {
-	if (!(await isAuthEnabled())) return json({ error: 'Authentication is not enabled' }, { status: 400, headers: NO_STORE });
+	if (!(await isAuthEnabled())) return json({ error: '未启用身份认证' }, { status: 400, headers: NO_STORE });
 	// Hiding the button is not switching the feature off: the endpoints answer a
 	// direct request too, so the administrator's setting is enforced here.
-	if (!(await getPasskeysEnabled())) return json({ error: 'Passkeys are disabled on this instance' }, { status: 403, headers: NO_STORE });
+	if (!(await getPasskeysEnabled())) return json({ error: '此实例已禁用通行密钥' }, { status: 403, headers: NO_STORE });
 
 	let config;
 	try {
 		config = getWebAuthnConfig();
 	} catch (error) {
-		return json({ error: error instanceof Error ? error.message : 'Passkeys are not configured' }, { status: 503, headers: NO_STORE });
+		return json({ error: error instanceof Error ? error.message : '通行密钥未配置' }, { status: 503, headers: NO_STORE });
 	}
-	if (!hasExactWebAuthnOrigin(request)) return json({ error: 'Invalid request origin' }, { status: 403, headers: NO_STORE });
+	if (!hasExactWebAuthnOrigin(request)) return json({ error: '无效的请求源' }, { status: 403, headers: NO_STORE });
 
 	const user = await validateSession(cookies);
 	const sessionId = cookies.get(SESSION_COOKIE);
-	if (!user || !sessionId) return json({ error: 'Not authenticated' }, { status: 401, headers: NO_STORE });
+	if (!user || !sessionId) return json({ error: '未通过身份认证' }, { status: 401, headers: NO_STORE });
 
 	let body: { ceremonyId?: string; response?: RegistrationResponseJSON };
 	try {
 		body = await request.json();
 	} catch {
-		return json({ error: 'Invalid request' }, { status: 400, headers: NO_STORE });
+		return json({ error: '无效请求' }, { status: 400, headers: NO_STORE });
 	}
 
-	if (!body.ceremonyId || !body.response) return json({ error: 'Invalid request' }, { status: 400, headers: NO_STORE });
+	if (!body.ceremonyId || !body.response) return json({ error: '无效请求' }, { status: 400, headers: NO_STORE });
 	const ceremony = webAuthnChallenges.consume(body.ceremonyId, 'registration', { userId: user.id, sessionId });
 	if (!ceremony?.userHandle || !ceremony.passkeyName) {
-		return json({ error: 'Passkey ceremony expired or is invalid' }, { status: 400, headers: NO_STORE });
+		return json({ error: '通行密钥交互流程已过期或无效' }, { status: 400, headers: NO_STORE });
 	}
 	if (await getPasskeyCredentialByNameForUser(user.id, ceremony.passkeyName)) {
-		return json({ error: 'A Passkey with this name already exists' }, { status: 409, headers: NO_STORE });
+		return json({ error: '已存在同名的通行密钥' }, { status: 409, headers: NO_STORE });
 	}
 
 	try {
@@ -84,17 +84,17 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			requireUserVerification: true
 		});
 		if (!verification.verified || !verification.registrationInfo) {
-			return json({ error: 'Passkey registration could not be verified' }, { status: 400, headers: NO_STORE });
+			return json({ error: '通行密钥注册校验失败' }, { status: 400, headers: NO_STORE });
 		}
 
 		const { credential, credentialDeviceType, credentialBackedUp, aaguid } = verification.registrationInfo;
 		if (await getPasskeyCredentialByCredentialId(credential.id)) {
-			return json({ error: 'This Passkey is already registered' }, { status: 409, headers: NO_STORE });
+			return json({ error: '该通行密钥已注册' }, { status: 409, headers: NO_STORE });
 		}
 
 		const existingCredentials = await getPasskeyCredentialsForUser(user.id);
 		if (existingCredentials.some((item) => item.webauthnUserId !== ceremony.userHandle)) {
-			return json({ error: 'Passkey user handle mismatch' }, { status: 400, headers: NO_STORE });
+			return json({ error: '通行密钥用户句柄不匹配' }, { status: 400, headers: NO_STORE });
 		}
 
 		const saved = await createPasskeyCredential({
@@ -125,11 +125,11 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 	} catch (error) {
 		const constraint = uniqueConstraint(error);
 		if (constraint === 'name') {
-			return json({ error: 'A Passkey with this name already exists' }, { status: 409, headers: NO_STORE });
+			return json({ error: '已存在同名的通行密钥' }, { status: 409, headers: NO_STORE });
 		}
 		if (constraint === 'credential') {
-			return json({ error: 'This Passkey is already registered' }, { status: 409, headers: NO_STORE });
+			return json({ error: '该通行密钥已注册' }, { status: 409, headers: NO_STORE });
 		}
-		return json({ error: 'Passkey registration could not be verified' }, { status: 400, headers: NO_STORE });
+		return json({ error: '通行密钥注册校验失败' }, { status: 400, headers: NO_STORE });
 	}
 };

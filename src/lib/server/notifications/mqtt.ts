@@ -19,7 +19,7 @@ const MQTT_TIMEOUT_MS = (() => {
 /** Publish a notification to an MQTT broker. Connects, publishes once, disconnects. */
 export async function sendMqtt(url: string, payload: NotificationPayload): Promise<NotificationResult> {
 	const parsed = parseMqttUrl(url);
-	if (!parsed.ok) return { success: false, error: `Invalid MQTT URL: ${parsed.reason}` };
+	if (!parsed.ok) return { success: false, error: `MQTT URL 无效: ${parsed.reason}` };
 	const t = parsed.target;
 
 	return new Promise<NotificationResult>((resolve) => {
@@ -31,7 +31,7 @@ export async function sendMqtt(url: string, payload: NotificationPayload): Promi
 		let pendingSuccess = false;
 		const overall = setTimeout(() => {
 			try { client.end(true); } catch { /* already closing */ }
-			finish(pendingSuccess ? { success: true } : { success: false, error: 'MQTT publish timed out' });
+			finish(pendingSuccess ? { success: true } : { success: false, error: 'MQTT 发布超时' });
 		}, MQTT_TIMEOUT_MS);
 
 		const finish = (r: NotificationResult) => {
@@ -53,7 +53,7 @@ export async function sendMqtt(url: string, payload: NotificationPayload): Promi
 			client.publish(t.topic, body, { qos: t.qos, retain: t.retain }, (err) => {
 				if (err) {
 					try { client.end(true); } catch { /* already closing */ }
-					finish({ success: false, error: `MQTT publish failed: ${err.message}` });
+					finish({ success: false, error: `MQTT 发布失败: ${err.message}` });
 					return;
 				}
 				// Publish OK. Close GRACEFULLY (DISCONNECT) so the broker fully processes it -
@@ -66,7 +66,7 @@ export async function sendMqtt(url: string, payload: NotificationPayload): Promi
 		});
 		client.on('error', (err) => {
 			try { client.end(true); } catch { /* already closing */ }
-			finish({ success: false, error: `MQTT connection failed: ${err.message}` });
+			finish({ success: false, error: `MQTT 连接失败: ${err.message}` });
 		});
 	});
 }

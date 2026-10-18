@@ -17,8 +17,8 @@
 
 	// Mode options for volumes
 	const volumeModeOptions = [
-		{ value: 'rw', label: 'RW' },
-		{ value: 'ro', label: 'RO' }
+		{ value: 'rw', label: '读写' },
+		{ value: 'ro', label: '只读' }
 	];
 
 	export interface ConfigSet {
@@ -275,8 +275,8 @@
 				</div>
 				{#each formEnvVars as envVar, i}
 					<div class="flex gap-2 items-center">
-						<Input bind:value={envVar.key} placeholder="KEY" class="flex-1 h-8" />
-						<Input bind:value={envVar.value} placeholder="value" class="flex-1 h-8" />
+						<Input bind:value={envVar.key} placeholder="变量名" class="flex-1 h-8" />
+						<Input bind:value={envVar.value} placeholder="变量值" class="flex-1 h-8" />
 						<Button type="button" size="icon" variant="ghost" onclick={() => removeEnvVar(i)} disabled={formEnvVars.length === 1} class="h-8 w-8">
 							<Trash2 class="w-3 h-3 text-muted-foreground" />
 						</Button>
@@ -294,8 +294,8 @@
 				</div>
 				{#each formLabels as label, i}
 					<div class="flex gap-2 items-center">
-						<Input bind:value={label.key} placeholder="label.key" class="flex-1 h-8" />
-						<Input bind:value={label.value} placeholder="value" class="flex-1 h-8" />
+						<Input bind:value={label.key} placeholder="标签键" class="flex-1 h-8" />
+						<Input bind:value={label.value} placeholder="标签值" class="flex-1 h-8" />
 						<Button type="button" size="icon" variant="ghost" onclick={() => removeLabel(i)} disabled={formLabels.length === 1} class="h-8 w-8">
 							<Trash2 class="w-3 h-3 text-muted-foreground" />
 						</Button>

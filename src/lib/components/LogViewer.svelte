@@ -10,6 +10,8 @@
 	import { getMonospaceFont } from '$lib/themes';
 	import { AnsiUp } from 'ansi_up';
 	import { m } from '$lib/paraglide/messages.js';
+	import { getLabelText } from '$lib/types';
+	
 	const ansiUp = new AnsiUp();
 	ansiUp.use_classes = true;
 
@@ -223,6 +225,8 @@
 		if ($appSettings.formatLogTimestamps) {
 			text = formatLogTimestamps(text);
 		}
+
+		text = getLabelText(text);
 
 		const query = logSearchQuery.trim();
 

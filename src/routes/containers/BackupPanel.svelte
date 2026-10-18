@@ -28,6 +28,7 @@
 	import { cronstrueLocale } from '$lib/i18n/cron';
 	import { reconcileSelectedVolumeKeys } from '$lib/utils/mounts';
 	import { m } from '$lib/paraglide/messages.js';
+	import { getLabelText } from '$lib/types';
 
 	interface Props {
 		containerName: string;
@@ -150,7 +151,7 @@
 		try {
 			const res = await fetch(`/api/backup/configs/${progressConfigId}/stop`, { method: 'POST' });
 			if (res.ok) {
-				progressLogs = [...progressLogs, '[dockhand] Cancelling backup…'];
+				progressLogs = [...progressLogs, '[dockhand] 正在取消备份…'];
 			} else {
 				const d = await res.json().catch(() => ({}));
 				toast.error(d.error || m.containers_backup_cancel_failed());
@@ -781,7 +782,7 @@
 							<div class="space-y-1">
 								<Label class="text-xs font-medium">{m.containers_backup_compression()}</Label>
 								<Select.Root type="single" value={editCompression} onValueChange={(v) => { editCompression = v; }}>
-									<Select.Trigger class="h-9 w-full text-xs">{editCompression}</Select.Trigger>
+									<Select.Trigger class="h-9 w-full text-xs">{getLabelText(editCompression)}</Select.Trigger>
 									<Select.Content>
 										<Select.Item value="auto">{m.containers_backup_compression_auto()}</Select.Item>
 										<Select.Item value="off">{m.containers_backup_compression_off()}</Select.Item>

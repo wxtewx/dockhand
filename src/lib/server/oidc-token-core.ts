@@ -84,13 +84,13 @@ export async function verifyIdTokenWithKeys(
 	// meant for this one, so the provider has to name the party it authorized.
 	const audiences = payload.aud;
 	if (Array.isArray(audiences) && audiences.length > 1 && payload.azp !== expected.clientId) {
-		throw new Error('the ID token names several applications and was not authorised for this one');
+		throw new Error('该 ID 令牌面向多个应用，并未授权本应用');
 	}
 
 	// Required, not checked-if-present: a token without a nonce cannot be tied to the
 	// request that started this login, which is the whole point of sending one.
 	if (payload.nonce !== expected.nonce) {
-		throw new Error('the ID token does not belong to this sign-in request');
+		throw new Error('该 ID 令牌不属于本次登录请求');
 	}
 
 	return payload;
@@ -101,23 +101,23 @@ export function describeVerifyFailure(error: unknown): string {
 	const code = (error as { code?: string })?.code;
 	switch (code) {
 		case 'ERR_JWT_EXPIRED':
-			return `the ID token has expired by more than ${ID_TOKEN_CLOCK_TOLERANCE_SECONDS}s (check the clock on this host and on the provider)`;
+			return `该 ID 令牌已超出允许的 ${ID_TOKEN_CLOCK_TOLERANCE_SECONDS} 秒时钟容错时长而过期 (请检查本机以及身份提供程序服务器的系统时钟)`;
 		case 'ERR_JWT_CLAIM_VALIDATION_FAILED': {
 			const claim = (error as { claim?: string })?.claim;
-			if (claim === 'iss') return 'the ID token came from a different issuer than configured';
-			if (claim === 'aud') return 'the ID token was issued for a different application';
-			if (claim === 'exp') return 'the ID token carries no expiry, which OIDC requires';
-			if (claim === 'sub') return 'the ID token names no subject, which OIDC requires';
-			return `the ID token failed its ${claim ?? 'claim'} check`;
+			if (claim === 'iss') return '该 ID 令牌的签发者与配置项不一致';
+            if (claim === 'aud') return '该 ID 令牌是为另一个应用签发的';
+            if (claim === 'exp') return '该 ID 令牌缺少过期时间，OIDC 规范强制要求该字段';
+            if (claim === 'sub') return '该 ID 令牌未包含主体标识，OIDC 规范强制要求该字段';
+            return `该 ID 令牌的 ${claim ?? '声明'} 校验未通过`;
 		}
 		case 'ERR_JWS_SIGNATURE_VERIFICATION_FAILED':
-			return 'the ID token signature does not match the provider signing keys';
-		case 'ERR_JWKS_NO_MATCHING_KEY':
-			return 'the ID token was signed with a key the provider does not publish';
-		case 'ERR_JOSE_ALG_NOT_ALLOWED':
-		case 'ERR_JOSE_NOT_SUPPORTED':
-			return 'the ID token uses a signing algorithm the provider keys do not allow';
-		default:
-			return `the ID token could not be verified (${error instanceof Error ? error.message : String(error)})`;
+            return '该 ID 令牌的签名与身份提供程序的签名密钥不匹配';
+        case 'ERR_JWKS_NO_MATCHING_KEY':
+            return '该 ID 令牌使用了一条身份提供程序未对外发布的密钥进行签名';
+        case 'ERR_JOSE_ALG_NOT_ALLOWED':
+        case 'ERR_JOSE_NOT_SUPPORTED':
+            return '该 ID 令牌使用了不被允许的签名算法';
+        default:
+            return `无法验证该 ID 令牌 (${error instanceof Error ? error.message : String(error)})`;
 	}
 }

@@ -104,7 +104,7 @@
 				configSets = await response.json();
 			}
 		} catch (err) {
-			console.error('Failed to fetch config sets:', err);
+			console.error('获取配置集失败:', err);
 		}
 	}
 
@@ -144,7 +144,7 @@
 			// Let the list refresh so the row icon reflects the change without an env switch.
 			onIconChanged?.();
 		} catch (e) {
-			console.error('Failed to set container icon:', e);
+			console.error('设置容器图标失败:', e);
 		}
 	}
 	let command = $state('');
@@ -351,7 +351,7 @@
 				const settings = data.settings || data;
 			}
 		} catch (err) {
-			console.error('Failed to check scanner settings:', err);
+			console.error('检查扫描器设置失败:', err);
 		}
 	}
 
@@ -374,7 +374,7 @@
 				};
 			}
 		} catch (err) {
-			console.error('Failed to fetch auto-update settings:', err);
+			console.error('获取自动更新设置失败:', err);
 		}
 	}
 
@@ -391,7 +391,7 @@
 				})
 			});
 		} catch (err) {
-			console.error('Failed to save auto-update settings:', err);
+			console.error('保存自动更新设置失败:', err);
 		}
 	}
 

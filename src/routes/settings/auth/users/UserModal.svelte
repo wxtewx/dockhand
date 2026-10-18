@@ -12,6 +12,7 @@
 	import { focusFirstInput } from '$lib/utils';
 	import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
 	import { m } from '$lib/paraglide/messages.js';
+	import { getLabelText } from '$lib/types';
 
 	export interface LocalUser {
 		id: number;
@@ -505,7 +506,7 @@
 											{:else}
 												<RoleIcon class="w-4 h-4 flex-shrink-0 opacity-50" />
 											{/if}
-											<span class="truncate">{role.name}</span>
+											<span class="truncate">{getLabelText(role.name)}</span>
 										</button>
 									{/each}
 								</div>
@@ -536,7 +537,7 @@
 												<RoleIcon class="w-4 h-4 flex-shrink-0 opacity-50" />
 											{/if}
 											<div class="flex-1 min-w-0">
-												<span class="truncate block">{role.name}</span>
+												<span class="truncate block">{getLabelText(role.name)}</span>
 												<span class="text-2xs opacity-70 flex items-center gap-1">
 													{#if isGlobal}
 														<Globe class="w-2.5 h-2.5" />

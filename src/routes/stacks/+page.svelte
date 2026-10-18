@@ -39,6 +39,7 @@
 	import ContainerIcon from '$lib/components/ContainerIcon.svelte';
 	import BatchOperationModal from '$lib/components/BatchOperationModal.svelte';
 	import type { ComposeStackInfo, ContainerStats, StackContainer } from '$lib/types';
+	import { getLabelText } from '$lib/types';
 	import { showsManagementActions } from '$lib/utils/stack-actions';
 	import { sumStackStats, type StackStats } from '$lib/utils/stack-stats';
 	import StackModal from './StackModal.svelte';
@@ -432,7 +433,7 @@
 			}
 		} catch (error: any) {
 			if (error?.name !== 'AbortError') {
-				console.error('Failed to fetch container stats:', error);
+				console.error('获取容器统计信息失败:', error);
 			}
 		} finally {
 			statsFetching = false;
@@ -1051,7 +1052,7 @@
 
 			// Handle stale environment ID (e.g., after database reset)
 			if (stacksRes.status === 404 && envId) {
-				console.warn(`[Stacks] Got 404 for env ${envId}, refreshing environments`);
+				console.warn(`[堆栈] 环境 ${envId} 返回 404，正在刷新环境列表`);
 				clearStaleEnvironment(envId);
 				environments.refresh();
 				return;
@@ -1062,7 +1063,7 @@
 				try {
 					return await res.json();
 				} catch {
-					console.warn(`[Stacks] Failed to parse response from ${res.url}`);
+					console.warn(`[堆栈] 解析接口 ${res.url} 响应失败`);
 					return fallback;
 				}
 			};
@@ -1073,7 +1074,7 @@
 
 			// Debug logging
 			if (gitStacksData?.error) {
-				console.error('Git stacks API error:', gitStacksData.error, 'Status:', gitStacksRes.status);
+				console.error('Git 堆栈接口错误:', gitStacksData.error, '状态码:', gitStacksRes.status);
 			}
 
 			// Ensure responses are valid before using them
@@ -1133,7 +1134,7 @@
 
 	function getDisplayStatus(stack: ComposeStackInfo): string {
 		if (stack.status === 'created' && getStackSource(stack.name).sourceType === 'git') {
-			return 'not deployed';
+			return '未部署';
 		}
 		return stack.status;
 	}
@@ -1149,7 +1150,7 @@
 			gitRepositories = await reposRes.json();
 			gitCredentials = await credsRes.json();
 		} catch (error) {
-			console.error('Failed to fetch git data:', error);
+			console.error('获取 Git 数据失败:', error);
 			gitRepositories = [];
 			gitCredentials = [];
 		}
@@ -2339,7 +2340,7 @@
 					<div class="text-right whitespace-nowrap">
 						{#if stats}
 							<span class="text-xs font-mono text-muted-foreground" title={m.containers_list_disk_title({ read: formatBytes(stats.blockRead), written: formatBytes(stats.blockWrite) })}>
-								<span class="text-2xs text-green-400">r</span>{formatBytesCompact(stats.blockRead, 0)} <span class="text-2xs text-yellow-400">w</span>{formatBytesCompact(stats.blockWrite, 0)}
+								<span class="text-2xs text-green-400">读</span>{formatBytesCompact(stats.blockRead, 0)} <span class="text-2xs text-yellow-400">写</span>{formatBytesCompact(stats.blockWrite, 0)}
 							</span>
 						{:else if stack.status === 'running' || stack.status === 'partial' || stack.status === 'restarting'}
 							<span class="text-xs text-muted-foreground/50">...</span>

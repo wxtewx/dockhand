@@ -65,7 +65,7 @@
 			const data = await response.json();
 			defaultProviderId = data.providerId ?? null;
 		} catch (e) {
-			console.warn('Failed to load the default secret provider:', e);
+			console.warn('加载默认密钥提供程序失败:', e);
 		}
 	}
 

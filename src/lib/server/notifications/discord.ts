@@ -16,7 +16,7 @@ export async function sendDiscord(appriseUrl: string, payload: NotificationPaylo
 					description: payload.message,
 					color: payload.type === 'error' ? 0xff0000 : payload.type === 'warning' ? 0xffaa00 : payload.type === 'success' ? 0x00ff00 : 0x0099ff,
 					...(payload.environmentName && {
-						footer: { text: `Environment: ${payload.environmentName}` }
+						footer: { text: `环境: ${payload.environmentName}` }
 					})
 				}]
 			})
@@ -24,11 +24,11 @@ export async function sendDiscord(appriseUrl: string, payload: NotificationPaylo
 
 		if (!response.ok) {
 			const text = await response.text().catch(() => '');
-			return { success: false, error: `Discord error ${response.status}: ${text || response.statusText}` };
+			return { success: false, error: `Discord 请求异常 ${response.status}: ${text || response.statusText}` };
 		}
 		await drainResponse(response);
 		return { success: true };
 	} catch (error) {
-		return { success: false, error: `Discord connection failed: ${error instanceof Error ? error.message : String(error)}` };
+		return { success: false, error: `Discord 连接失败: ${error instanceof Error ? error.message : String(error)}` };
 	}
 }

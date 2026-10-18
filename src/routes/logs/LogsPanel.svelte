@@ -78,7 +78,7 @@
 	const tailOptions = [
 		{ value: '100', label: '100' },
 		{ value: '500', label: '500' },
-		{ value: '1000', label: '1K' }
+		{ value: '1000', label: '1000' }
 	];
 	const VALID_TAIL_VALUES = new Set(tailOptions.map(o => o.value));
 

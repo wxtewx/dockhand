@@ -13,7 +13,7 @@ import type { Finding } from '$lib/utils/vulnerability';
 import type { RequestHandler } from './$types';
 
 function toCSV(findings: Finding[]): string {
-	const headers = ['CVE', 'Severity', 'Package', 'Installed Version', 'Fixed Version', 'Image', 'Scanned', 'Description', 'Link'];
+	const headers = ['CVE 编号', '危险等级', '软件包', '已安装版本', '修复版本', '镜像', '扫描时间', '描述', '链接'];
 	const rows = findings.map((f) => [
 		f.cve, f.severity, f.package, f.installedVersion, f.fixedVersion, f.imageName, f.scannedAt, f.description, f.link
 	]);
@@ -33,7 +33,7 @@ function toCSV(findings: Finding[]): string {
  */
 export const GET: RequestHandler = async ({ url, cookies }) => {
 	const imageId = url.searchParams.get('imageId') || url.searchParams.get('image');
-	if (!imageId) return jsonError('imageId is required', 400);
+	if (!imageId) return jsonError('必须传入 imageId 参数', 400);
 
 	// RBAC (images:view) + enterprise environment scoping, shared with the other
 	// vuln endpoints. Auth via cookie or Bearer token is handled inside authorize().
@@ -45,7 +45,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 	// actually runs — otherwise a user scoped to env A could read env B's scans by
 	// omitting env (CWE-639). Free/open mode has no tenant boundary to enforce.
 	if (authEnabled && envIdNum === undefined) {
-		return jsonError('env is required', 400);
+		return jsonError('必须传入 env 参数', 400);
 	}
 
 	try {
@@ -73,7 +73,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 			toCSV
 		});
 	} catch (error) {
-		console.error('Error exporting image vulnerabilities:', error);
-		return jsonError('Failed to export image vulnerabilities', 500);
+		console.error('导出镜像漏洞数据时发生错误:', error);
+		return jsonError('导出镜像漏洞数据失败', 500);
 	}
 };

@@ -9,6 +9,7 @@
 	import ContainerTile from '../containers/ContainerTile.svelte';
 	import ContainerInspectModal from '../containers/ContainerInspectModal.svelte';
 	import { m } from '$lib/paraglide/messages.js';
+	import { getLabelText } from '$lib/types';
 
 	interface Props {
 		open: boolean;

@@ -28,16 +28,16 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 	const auth = await authorize(cookies);
 
 	if (auth.authEnabled && !auth.isAuthenticated) {
-		return json({ error: 'Authentication required' }, { status: 401 });
+		return json({ error: '需要身份认证' }, { status: 401 });
 	}
 
 	const tier = reportTier(auth.licenseTier);
 	if (!tier) {
-		return json({ error: 'A commercial license is required' }, { status: 403 });
+		return json({ error: '需要商业许可证' }, { status: 403 });
 	}
 
 	if (!(await auth.can('environments', 'view'))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -50,11 +50,11 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 		if (envParam !== null && envParam !== '') {
 			const wanted = parseInt(envParam, 10);
 			if (!Number.isFinite(wanted)) {
-				return json({ error: 'Invalid environment id' }, { status: 400 });
+				return json({ error: '无效的环境 ID' }, { status: 400 });
 			}
 			selected = selected.filter((e) => e.id === wanted);
 			if (selected.length === 0) {
-				return json({ error: 'Environment not found' }, { status: 404 });
+				return json({ error: '未找到环境' }, { status: 404 });
 			}
 		}
 
@@ -99,7 +99,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 			}
 		});
 	} catch (error) {
-		console.error('Error building environment report:', error);
-		return json({ error: 'Failed to build the report' }, { status: 500 });
+		console.error('生成环境报表出错:', error);
+		return json({ error: '生成报表失败' }, { status: 500 });
 	}
 };

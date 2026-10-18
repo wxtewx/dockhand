@@ -253,7 +253,7 @@
 				configSets = await response.json();
 			}
 		} catch (err) {
-			console.error('Failed to fetch config sets:', err);
+			console.error('获取配置集失败:', err);
 		}
 	}
 
@@ -269,7 +269,7 @@
 				envHasScanning = scanner !== 'none';
 			}
 		} catch (err) {
-			console.error('Failed to fetch scanner settings:', err);
+			console.error('获取扫描器设置失败:', err);
 		}
 	}
 
@@ -475,7 +475,7 @@
 						})
 					});
 				} catch (err) {
-					console.error('Failed to save auto-update settings:', err);
+					console.error('保存自动更新设置失败:', err);
 				}
 			}
 

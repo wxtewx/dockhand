@@ -76,7 +76,7 @@ export function buildBackupScript(resticArgs: string[], stackDirProbe?: { volume
 		// (which contains quotes, parens, and `>` - e.g. `"Remote stack path (for backup)"` and
 		// `Settings > Environments > <env>`) can never break the `sh` syntax. The timestamp stays
 		// a live $(date ...) OUTSIDE the quoted literal, concatenated in.
-		const msg = `${label} STACKDIR PROBE FAILED: compose ${stackDirProbe.composeFileName} not found${at}${on}.${fix}`;
+		const msg = `${label} 堆栈目录探测失败：未找到 compose 文件 ${stackDirProbe.composeFileName}${at}${on}。${fix}`;
 		probe =
 			`if [ ! -f ${composePath} ]; then ` +
 			`echo "[backup] $(date -u +%Y-%m-%dT%H:%M:%SZ)"${shellQuote(msg)} 1>&2; ` +

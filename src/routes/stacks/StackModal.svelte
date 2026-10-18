@@ -119,7 +119,7 @@
 			if (next !== undefined) formIcon = next; // undefined = POST failed, keep current
 			onSuccess?.();
 		} catch (e) {
-			console.error('Failed to set stack icon:', e);
+			console.error('设置堆栈图标失败:', e);
 		}
 	}
 
@@ -131,7 +131,7 @@
 		try {
 			await fetch(target, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
 		} catch (e) {
-			console.error('Failed to set stack icon:', e);
+			console.error('设置堆栈图标失败:', e);
 		}
 	}
 
@@ -727,7 +727,7 @@
 				}
 			}
 		} catch (e) {
-			console.warn('Failed to check path changes:', e);
+			console.warn('检查路径变更失败:', e);
 		}
 
 		// No files to move, just update paths
@@ -988,7 +988,7 @@
 					rawEnvContent = '';
 				}
 			} catch (e) {
-				console.error('Failed to load env file:', e);
+				console.error('加载环境变量文件失败:', e);
 			}
 		}
 
@@ -1232,7 +1232,7 @@
 	}
 
 	// Display title
-	const displayName = $derived(mode === 'edit' ? stackName : (newStackName || 'New stack'));
+	const displayName = $derived(mode === 'edit' ? stackName : (newStackName || '新建堆栈'));
 
 	onMount(() => {
 		// Load saved editor theme, or fall back to app theme / system preference
@@ -1281,7 +1281,7 @@
 			const data = await response.json();
 			secretProviders = (data ?? []).map((p: any) => ({ id: p.id, name: p.name, type: p.type }));
 		} catch (e) {
-			console.warn('Failed to load secret providers:', e);
+			console.warn('加载密钥提供程序失败:', e);
 		}
 	}
 
@@ -1306,7 +1306,7 @@
 			runProbe();
 			validateEnvVars();
 		} catch (e) {
-			console.warn('Failed to load the default secret provider:', e);
+			console.warn('加载默认密钥提供程序失败:', e);
 		}
 	}
 
@@ -1443,8 +1443,8 @@
 							if (thisStack?.containerDetails) {
 								stackContainers = thisStack.containerDetails.map((c: any) => ({
 									name: c.name || m.stacks_modal_container_unknown(),
-									state: c.state || 'unknown',
-									image: c.image || 'unknown'
+									state: c.state || '未知',
+									image: c.image || '未知'
 								}));
 							}
 						}
@@ -1453,7 +1453,7 @@
 						// containers' mounts (same normalizer used by the other backup surfaces).
 						await loadStackVolumes(envId);
 					} catch (e) {
-						console.error('Failed to fetch stack containers:', e);
+						console.error('获取堆栈容器失败:', e);
 					}
 
 					// Load the stack's icon even when the compose isn't local (read-only git
@@ -1466,11 +1466,11 @@
 							formIcon = sourceMap?.[stackName]?.icon ?? null;
 						}
 					} catch (e) {
-						console.warn('Failed to load stack icon:', e);
+						console.warn('加载堆栈图标失败:', e);
 					}
 					return;
 				}
-				throw new Error((typeof data.error === 'string' ? data.error : data.message) || 'Failed to load compose file');
+				throw new Error((typeof data.error === 'string' ? data.error : data.message) || '加载 Compose 文件失败');
 			}
 
 			composeContent = data.content;
@@ -1491,14 +1491,14 @@
 					formIcon = source?.icon ?? null;
 				}
 			} catch (e) {
-				console.warn('Failed to load stack source for secret provider binding:', e);
+				console.warn('加载用于密钥提供程序绑定的堆栈源失败:', e);
 			}
 
 			// Volumes/binds for the backup picker (managed/internal stack path).
 			try {
 				await loadStackVolumes(envId);
 			} catch (e) {
-				console.error('Failed to load stack volumes:', e);
+				console.error('加载堆栈数据卷失败:', e);
 			}
 
 			// Load both env endpoints in parallel, then process results together
@@ -1564,7 +1564,7 @@
 				setTimeout(() => updateEditorMarkers(), 0);
 			}
 		} catch (e) {
-			console.error('Failed to validate env vars:', e);
+			console.error('验证环境变量失败:', e);
 		} finally {
 			validating = false;
 		}
@@ -1620,7 +1620,7 @@
 				}
 			}
 		} catch (e) {
-			console.warn('Failed to check for existing stacks:', e);
+			console.warn('检查现有堆栈失败:', e);
 			// Continue with creation if check fails
 		}
 
@@ -1671,7 +1671,7 @@
 			if (start) startOutput(m.stacks_modal_output_starting({ name: newStackName.trim() }));
 
 			// Create the stack
-			response = await fetch(appendEnvParam('/api/stacks', envId), {
+			const response = await fetch(appendEnvParam('/api/stacks', envId), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(requestBody)
@@ -1791,7 +1791,7 @@
 						}
 					}
 				} catch (e) {
-					console.warn('Failed to check path changes:', e);
+					console.warn('检查路径变更失败:', e);
 					// Continue with save even if check fails
 				}
 			}
@@ -1887,7 +1887,7 @@
 
 			if (!envResponse.ok) {
 				// Log but don't fail - DB stores secret values
-				console.warn('Failed to save secret variables to database');
+				console.warn('保存保密变量至数据库失败');
 			}
 
 			hadExistingDbVars = secretVars.length > 0;

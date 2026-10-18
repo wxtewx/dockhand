@@ -5,6 +5,7 @@
 	import { watchJob } from '$lib/utils/sse-fetch';
 	import { m } from '$lib/paraglide/messages.js';
 	import { splitAtName } from '$lib/i18n/split';
+	import { getLabelText } from '$lib/types';
 
 	type PushStatus = 'idle' | 'pushing' | 'complete' | 'error';
 
@@ -124,7 +125,7 @@
 				return;
 			}
 
-			addOutputLine(`[push] Starting push to ${registryName}...`);
+			addOutputLine(`[push] 开始推送到 ${registryName}...`);
 
 			// Push to target registry with streaming
 			const pushResponse = await fetch(appendEnvParam('/api/images/push', envId), {
@@ -174,13 +175,13 @@
 		}
 
 		if (data.status === 'tagging') {
-			addOutputLine(`[push] Tagging image for target registry...`);
+			addOutputLine(`[push] 正在为目标仓库标记镜像...`);
 		} else if (data.status === 'pushing') {
-			addOutputLine(`[push] Pushing layers...`);
+			addOutputLine(`[push] 正在推送镜像层...`);
 		} else if (data.status === 'complete') {
 			statusMessage = data.message || m.images_push_success();
 			status = 'complete';
-			addOutputLine(`[push] ${data.message || 'Push complete!'}`);
+			addOutputLine(`[push] ${data.message || '推送完成！'}`);
 			onComplete?.(targetTag || data.targetTag || '');
 		} else if (data.status === 'error' || data.error) {
 			errorMessage = data.error || m.images_push_failed();
@@ -256,16 +257,16 @@
 					{#each outputLines as line}
 						<div class="whitespace-pre-wrap break-all leading-relaxed flex items-start gap-1.5">
 							{#if line.startsWith('[push]')}
-								<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-blue-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">push</span>
-								<span>{line.slice(7)}</span>
+								<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-blue-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">推送</span>
+								<span>{getLabelText(line.slice(7))}</span>
 							{:else if line.startsWith('[layer')}
-								<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-violet-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">layer</span>
-								<span>{line.slice(line.indexOf(']') + 2)}</span>
+								<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-violet-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">分层</span>
+								<span>{getLabelText(line.slice(line.indexOf(']') + 2))}</span>
 							{:else if line.startsWith('[error]')}
-								<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-red-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">error</span>
-								<span class="text-red-400">{line.slice(8)}</span>
+								<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-red-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">错误</span>
+								<span class="text-red-400">{getLabelText(line.slice(8))}</span>
 							{:else}
-								<span>{line}</span>
+								<span>{getLabelText(line)}</span>
 							{/if}
 						</div>
 					{/each}

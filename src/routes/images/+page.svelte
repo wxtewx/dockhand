@@ -164,13 +164,13 @@
 
 	const vulnList = createWindowedList<VulnFinding>({
 		windowSize: 400,
-		onError: (e) => console.error('Failed to load vulnerabilities:', e),
+		onError: (e) => console.error('加载漏洞数据失败:', e),
 		fetchPage: async (offset, limit, signal) => {
 			// Mark the tab as "opened" up front so a failed load doesn't leave the
 			// lazy-load effect re-firing in a tight retry loop (it gates on !vulnFetched).
 			vulnFetched = true;
 			const res = await fetch(`/api/vulnerabilities?${vulnQueryParams(offset, limit)}`, { signal });
-			if (!res.ok) throw new Error(`Failed to load vulnerabilities (${res.status})`);
+			if (!res.ok) throw new Error(`加载漏洞数据失败 (${res.status})`);
 			const data = await res.json();
 			// The paged response carries a filtered summary — update the header pills so
 			// the severity counts + total reflect the active filters, not the env total.
@@ -225,7 +225,7 @@
 				vulnStackOptions = toOpts(data.options?.stacks ?? []);
 			}
 		} catch (e) {
-			console.error('Failed to load vulnerability meta:', e);
+			console.error('加载漏洞元数据失败:', e);
 		}
 	}
 
@@ -623,7 +623,7 @@
 			const url = appendEnvParam('/api/images', envId);
 			const response = await fetch(url);
 			if (!response.ok) {
-				// Handle stale environment ID (e.g., after database reset)
+				// Handle stale environment ID (例如：after database reset)
 				if (response.status === 404 && envId) {
 					clearStaleEnvironment(envId);
 					environments.refresh();
@@ -648,7 +648,7 @@
 			}
 			registries = await response.json();
 		} catch (error) {
-			console.error('Failed to fetch registries:', error);
+			console.error('获取镜像仓库失败：', error);
 		}
 	}
 
@@ -664,7 +664,7 @@
 				scannerEnabled = data.settings.scanner !== 'none';
 			}
 		} catch (error) {
-			console.error('Failed to fetch scanner settings:', error);
+			console.error('获取扫描器设置失败：', error);
 			scannerEnabled = false;
 		}
 	}
@@ -899,7 +899,7 @@
 		}
 	}
 
-	// Handle tab visibility changes (e.g., user switches back from another tab)
+	// Handle tab visibility changes (例如：user switches back from another tab)
 	function handleVisibilityChange() {
 		if (document.visibilityState === 'visible' && envId) {
 			fetchImages();

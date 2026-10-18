@@ -538,7 +538,7 @@
 					onDone?.(); // the data DID land — refresh the snapshot list
 				} else {
 					restoreStatus = 'success';
-					restoreLogs = [...restoreLogs, tagLogLine('[dockhand] Restore completed.')];
+					restoreLogs = [...restoreLogs, tagLogLine('[dockhand] 恢复完成。')];
 					onDone?.();
 				}
 			}
@@ -712,10 +712,10 @@
 										<Checkbox bind:checked={vol.selected} />
 										{#if vol.type === 'bind'}
 											<Folder class="h-3.5 w-3.5 shrink-0 text-amber-500" />
-											<span class="w-11 shrink-0 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-center text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">bind</span>
+											<span class="w-11 shrink-0 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-center text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">绑定挂载</span>
 										{:else}
 											<HardDrive class="h-3.5 w-3.5 shrink-0 text-sky-500" />
-											<span class="w-11 shrink-0 rounded-full bg-sky-500/15 px-1.5 py-0.5 text-center text-[10px] font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-400">vol</span>
+											<span class="w-11 shrink-0 rounded-full bg-sky-500/15 px-1.5 py-0.5 text-center text-[10px] font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-400">数据卷</span>
 										{/if}
 										<span class="truncate font-mono">{vol.name}</span>
 									</label>
@@ -755,10 +755,10 @@
 									<Checkbox bind:checked={vol.selected} class="mt-0.5" />
 									{#if vol.type === 'bind'}
 										<Folder class="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
-										<span class="mt-0.5 w-11 shrink-0 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-center text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">bind</span>
+										<span class="mt-0.5 w-11 shrink-0 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-center text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">绑定挂载</span>
 									{:else}
 										<HardDrive class="mt-0.5 h-3.5 w-3.5 shrink-0 text-sky-500" />
-										<span class="mt-0.5 w-11 shrink-0 rounded-full bg-sky-500/15 px-1.5 py-0.5 text-center text-[10px] font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-400">vol</span>
+										<span class="mt-0.5 w-11 shrink-0 rounded-full bg-sky-500/15 px-1.5 py-0.5 text-center text-[10px] font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-400">数据卷</span>
 									{/if}
 									<span class="min-w-0">
 										<span class="block truncate font-mono">{vol.name}</span>
@@ -977,7 +977,7 @@
 									{@const t = targetPreview?.volumes.find((x) => x.key === v.name)}
 									<li class="flex items-center gap-2 text-xs">
 										{#if v.type === 'bind'}<Folder class="h-3 w-3 shrink-0 text-amber-500" />{:else}<HardDrive class="h-3 w-3 shrink-0 text-sky-500" />{/if}
-										{#if v.type === 'bind'}<span class="w-9 shrink-0 rounded-full bg-amber-500/15 px-1 py-0.5 text-center text-[9px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">bind</span>{:else}<span class="w-9 shrink-0 rounded-full bg-sky-500/15 px-1 py-0.5 text-center text-[9px] font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-400">vol</span>{/if}
+										{#if v.type === 'bind'}<span class="w-9 shrink-0 rounded-full bg-amber-500/15 px-1 py-0.5 text-center text-[9px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">绑定</span>{:else}<span class="w-9 shrink-0 rounded-full bg-sky-500/15 px-1 py-0.5 text-center text-[9px] font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-400">数据卷</span>{/if}
 										<span class="font-mono">{v.name}</span>
 										{#if v.type === 'bind' && (t?.target ?? v.origDest)}
 											<span class="text-muted-foreground">&rarr; {m.containers_restore_host_path_lower()}</span>
@@ -1006,7 +1006,7 @@
 										{@render kindBadge(v.type)}
 										<span class="font-mono">{v.name}</span>
 										<span class="shrink-0 text-muted-foreground">&rarr;</span>
-										{@render kindBadge(v.destKind === 'path' ? 'bind' : 'volume')}
+										{@render kindBadge(v.destKind === 'path' ? '绑定' : '数据卷')}
 										<span class="font-mono {(v.conflict || v.pathInvalid) ? 'text-destructive' : ''}">{v.dest.trim() || '…'}</span>
 										<!-- Per-row data probe: a small spinner pill while checking, then a badge. -->
 										{#if v.dest.trim()}

@@ -98,7 +98,7 @@
 			descriptionClass: 'whitespace-pre-line',
 			class: '!w-[28rem] !max-w-[28rem]',
 			duration: Infinity,
-			action: { label: 'OK', onClick: () => {} }
+			action: { label: '确定', onClick: () => {} }
 		});
 	}
 

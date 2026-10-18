@@ -42,21 +42,21 @@ export async function sendZabbix(
 		if (!token) {
 			return {
 				success: false,
-				error: 'Zabbix API token is required'
+				error: '必须提供 Zabbix API 令牌'
 			};
 		}
 
 		if (!host) {
 			return {
 				success: false,
-				error: 'Zabbix host is required'
+				error: '必须提供 Zabbix 主机'
 			};
 		}
 
 		if (!key) {
 			return {
 				success: false,
-				error: 'Zabbix item key is required'
+				error: '必须提供 Zabbix 监控项键'
 			};
 		}
 
@@ -116,7 +116,7 @@ export async function sendZabbix(
 		if (!response.ok) {
 			return {
 				success: false,
-				error: `Zabbix HTTP error ${response.status}: ${
+				error: `Zabbix HTTP 错误 ${response.status}: ${
 					responseText || response.statusText
 				}`
 			};
@@ -129,7 +129,7 @@ export async function sendZabbix(
 		} catch {
 			return {
 				success: false,
-				error: 'Zabbix returned an invalid JSON response'
+				error: 'Zabbix 返回无效的 JSON 响应'
 			};
 		}
 
@@ -141,14 +141,14 @@ export async function sendZabbix(
 
 			return {
 				success: false,
-				error: `Zabbix API error: ${parts.join(' - ')}`
+				error: `Zabbix API 错误: ${parts.join(' - ')}`
 			};
 		}
 
 		if (result.result?.response !== 'success') {
 			return {
 				success: false,
-				error: 'Zabbix history.push did not return success'
+				error: 'Zabbix history.push 未返回成功结果'
 			};
 		}
 
@@ -160,7 +160,7 @@ export async function sendZabbix(
 		if (itemErrors.length > 0) {
 			return {
 				success: false,
-				error: `Zabbix history.push error: ${itemErrors.join('; ')}`
+				error: `Zabbix history.push 错误: ${itemErrors.join('; ')}`
 			};
 		}
 
@@ -173,8 +173,8 @@ export async function sendZabbix(
 			success: false,
 			error:
 				error instanceof Error
-					? `Zabbix connection failed: ${error.message}`
-					: `Zabbix connection failed: ${String(error)}`
+					? `Zabbix 连接失败: ${error.message}`
+					: `Zabbix 连接失败: ${String(error)}`
 		};
 	}
 }

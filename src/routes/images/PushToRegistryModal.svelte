@@ -224,7 +224,7 @@
 									{/if}
 									{registry.name}
 									{#if registry.hasCredentials}
-										<Badge variant="outline" class="ml-2 text-xs">auth</Badge>
+										<Badge variant="outline" class="ml-2 text-xs">已认证</Badge>
 									{/if}
 								</Select.Item>
 							{/each}

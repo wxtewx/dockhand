@@ -49,6 +49,7 @@
 	import RoleModal from './RoleModal.svelte';
 	import EnvironmentIcon from '$lib/components/EnvironmentIcon.svelte';
 	import { m } from '$lib/paraglide/messages.js';
+	import { getLabelText } from '$lib/types';
 
 	interface Role {
 		id: number;
@@ -225,7 +226,7 @@
 				environments = await response.json();
 			}
 		} catch (error) {
-			console.error('Failed to fetch environments:', error);
+			console.error('获取环境失败:', error);
 		}
 	}
 
@@ -350,7 +351,7 @@
 							<div class="flex items-center justify-between p-3 border rounded-md gap-4">
 								<div class="flex-1 min-w-0">
 									<div class="flex items-center gap-2 mb-1">
-										<span class="font-medium text-sm">{role.name}</span>
+										<span class="font-medium text-sm">{getLabelText(role.name)}</span>
 										{#if role.isSystem}
 											<Badge variant="outline" class="text-xs">{m.schedules_badge_system()}</Badge>
 										{/if}

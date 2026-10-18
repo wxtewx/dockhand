@@ -12,7 +12,7 @@ import { parseMinimumReleaseAgeHours } from '$lib/server/minimum-release-age-cor
 export const GET: RequestHandler = async ({ cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('settings', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 	return json(await getMinimumReleaseAgeConfig());
 };
@@ -29,13 +29,13 @@ export const GET: RequestHandler = async ({ cookies }) => {
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('settings', 'edit')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 	const { hours: raw } = await request.json().catch(() => ({}));
 	const hours = parseMinimumReleaseAgeHours(raw);
-	if (hours === null) return json({ error: 'Hours must be a whole number from 0 to 720' }, { status: 400 });
+	if (hours === null) return json({ error: '小时数必须是 0 至 720 之间的整数' }, { status: 400 });
 	const config = await getMinimumReleaseAgeConfig();
-	if (config.overridden) return json({ error: 'MINIMUM_RELEASE_AGE_HOURS overrides this setting' }, { status: 409 });
+	if (config.overridden) return json({ error: 'MINIMUM_RELEASE_AGE_HOURS 环境变量会覆盖此配置项' }, { status: 409 });
 	await setMinimumReleaseAgeHours(hours);
 	return json({ hours, overridden: false });
 };

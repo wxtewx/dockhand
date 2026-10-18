@@ -11,6 +11,7 @@
 	import ConfigSetModal from './ConfigSetModal.svelte';
 	import { EmptyState } from '$lib/components/ui/empty-state';
 	import { m } from '$lib/paraglide/messages.js';
+	import { getLabelText } from '$lib/types';
 
 	// Config set types
 	interface ConfigSet {

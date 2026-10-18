@@ -85,7 +85,7 @@ export async function getRegistryBearerToken(
 	try {
 		const hostSafety = isSafeRegistryHost(registry);
 		if (!hostSafety.ok) {
-			console.error(`[Registry] Refusing token request for ${registry}: ${hostSafety.reason}`);
+			console.error(`[镜像仓库] 拒绝向 ${registry} 发起令牌请求: ${hostSafety.reason}`);
 			return null;
 		}
 		// Honour the scheme the registry was configured with (#1580): a plain-HTTP local
@@ -113,7 +113,7 @@ export async function getRegistryBearerToken(
 		// If not 401, something else is wrong
 		if (challengeResponse.status !== 401) {
 			await drainResponse(challengeResponse);
-			console.error(`Registry challenge failed: ${challengeResponse.status}`);
+			console.error(`镜像仓库质询失败: ${challengeResponse.status}`);
 			return null;
 		}
 
@@ -128,7 +128,7 @@ export async function getRegistryBearerToken(
 
 		if (!challenge.startsWith('bearer')) {
 			await drainResponse(challengeResponse);
-			console.error(`Unsupported auth type: ${wwwAuth}`);
+			console.error(`不支持的认证类型: ${wwwAuth}`);
 			return null;
 		}
 
@@ -140,7 +140,7 @@ export async function getRegistryBearerToken(
 		const serviceMatch = wwwAuth.match(/service="([^"]+)"/i);
 
 		if (!realmMatch) {
-			console.error('No realm in WWW-Authenticate header');
+			console.error('WWW-Authenticate 头部缺少 realm 字段');
 			return null;
 		}
 
@@ -168,14 +168,14 @@ export async function getRegistryBearerToken(
 			const errBody = (await tokenResponse.text()).slice(0, 300).replace(/\s+/g, ' ').trim();
 			const finalNote =
 				tokenResponse.url && tokenResponse.url !== tokenUrl.toString()
-					? ` (final ${new URL(tokenResponse.url).origin})`
+					? ` (最终访问源 ${new URL(tokenResponse.url).origin})`
 					: '';
 			const identity = credentials
-				? ` as ${credentials.username.slice(0, 4)}...(len=${credentials.username.length})`
-				: ' anonymously';
+				? ` 使用账号 ${credentials.username.slice(0, 4)}...(长度=${credentials.username.length})`
+				: ' 匿名';
 			console.error(
-				`[Registry] Token request failed: ${tokenResponse.status} at ${tokenUrl.origin}${finalNote}, sent${identity}` +
-					(errBody ? ` - response: ${errBody}` : '')
+				`[镜像仓库] 令牌请求失败: ${tokenResponse.status}，地址 ${tokenUrl.origin}${finalNote}，认证方式${identity}` +
+					(errBody ? ` - 响应内容: ${errBody}` : '')
 			);
 			return null;
 		}
@@ -187,11 +187,11 @@ export async function getRegistryBearerToken(
 	} catch (e) {
 		const errorMsg = e instanceof Error ? e.message : String(e);
 		const cause = (e as any)?.cause;
-		const causeMsg = cause ? ` (cause: ${cause})` : '';
-		console.error('[Registry] Failed to get bearer token:', errorMsg + causeMsg);
+		const causeMsg = cause ? ` (根因: ${cause})` : '';
+		console.error('[镜像仓库] 获取 Bearer 令牌失败:', errorMsg + causeMsg);
 		const causeStr = String(cause ?? errorMsg);
 		if (causeStr.includes('EAI_AGAIN') || causeStr.includes('ENOTFOUND')) {
-			console.error('[Registry] DNS resolution failed. If you are on a NAS (Synology, uGreen, QNAP), try adding --dns=8.8.8.8 to your docker run command or set {"dns": ["8.8.8.8"]} in /etc/docker/daemon.json');
+			console.error('[镜像仓库] DNS 解析失败。如果你使用 NAS (群晖、绿联、威联通)，尝试在 docker run 命令增加 --dns=8.8.8.8，或在 /etc/docker/daemon.json 设置 {"dns": ["8.8.8.8"]}');
 		}
 		return null;
 	}
@@ -231,9 +231,9 @@ export async function getRegistryManifestDigestDirectDetailed(
 			await drainResponse(response);
 			const retryAfter = response.headers.get('Retry-After');
 			if (response.status === 429) {
-				console.warn(`[Registry] ${imageName}: rate limited (429)${retryAfter ? `, retry after ${retryAfter}s` : ''}`);
+				console.warn(`[镜像仓库] ${imageName}：请求受限(429)${retryAfter ? `，${retryAfter}秒后重试` : ''}`);
 			} else {
-				console.error(`[Registry] ${imageName}: ${response.status}`);
+				console.error(`[镜像仓库] ${imageName}：${response.status}`);
 			}
 			return {
 				digest: null,
@@ -248,9 +248,9 @@ export async function getRegistryManifestDigestDirectDetailed(
 	} catch (e) {
 		const causeStr = String((e as any)?.cause ?? e);
 		if (causeStr.includes('EAI_AGAIN') || causeStr.includes('ENOTFOUND')) {
-			console.error(`[Registry] ${imageName}: DNS resolution failed. If you are on a NAS (Synology, uGreen, QNAP), add --dns=8.8.8.8 to your docker run command.`);
+			console.error(`[镜像仓库] ${imageName}: DNS 解析失败。如果你使用 NAS (群晖、绿联、威联通)，尝试在 docker run 命令增加 --dns=8.8.8.8，或在 /etc/docker/daemon.json 设置 {"dns": ["8.8.8.8"]}`);
 		} else {
-			console.error(`[Registry] ${imageName}: ${e}`);
+			console.error(`[镜像仓库] ${imageName}: ${e}`);
 		}
 		return {
 			digest: null,

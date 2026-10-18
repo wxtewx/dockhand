@@ -206,7 +206,7 @@
 			// applying retention), `stopped` is false — let the real progress stream
 			// finish and report the true 'Completed' status instead of a false 'Cancelled'.
 			if (body?.stopped) {
-				logModalLogs = [...logModalLogs, '⚠ Backup cancelled by user'];
+				logModalLogs = [...logModalLogs, '⚠ 备份已由用户取消'];
 				logModalStatus = 'error';
 				logModalError = m.backups_cancelled();
 			} else {
@@ -266,6 +266,16 @@
 			// First selection
 			diffPending = { snapshot, configDestId };
 		}
+	}
+
+	function formatTimestamp(ts: string): string {
+		if (!ts) return '-';
+		let fixedIso = ts.trim();
+		if (!fixedIso.includes('T')) fixedIso = fixedIso.replace(' ', 'T');
+		if (!fixedIso.endsWith('Z') && !fixedIso.includes('+') && !fixedIso.includes('-', 10)) {
+			fixedIso += 'Z';
+		}
+		return formatDateTime(fixedIso, true);
 	}
 
 	const getDestIcon = getRepoTypeIcon;

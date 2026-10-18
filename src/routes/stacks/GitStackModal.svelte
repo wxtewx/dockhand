@@ -106,7 +106,7 @@
 			if (next !== undefined) formIcon = next; // undefined = POST failed, keep current
 			onSaved();
 		} catch (e) {
-			console.error('Failed to set stack icon:', e);
+			console.error('设置堆栈图标失败:', e);
 		}
 	}
 
@@ -310,7 +310,7 @@
 			const data = await response.json();
 			secretProviders = (data ?? []).map((p: any) => ({ id: p.id, name: p.name, type: p.type }));
 		} catch (e) {
-			console.warn('Failed to load secret providers:', e);
+			console.warn('加载密钥提供程序失败:', e);
 		}
 	}
 
@@ -374,7 +374,7 @@
 				envFiles = data.files || [];
 			}
 		} catch (e) {
-			console.error('Failed to load env files:', e);
+			console.error('加载环境变量文件失败:', e);
 		} finally {
 			loadingEnvFiles = false;
 		}
@@ -395,7 +395,7 @@
 				return data.vars || {};
 			}
 		} catch (e) {
-			console.error('Failed to read env file contents:', e);
+			console.error('读取环境文件内容失败:', e);
 		}
 		return {};
 	}
@@ -442,7 +442,7 @@
 				injectedSecretKeys = data.injectedSecretKeys ?? [];
 			}
 		} catch (e) {
-			console.error('Failed to load env var overrides:', e);
+			console.error('加载环境变量覆盖配置失败:', e);
 		}
 	}
 
@@ -615,7 +615,7 @@
 			const source = sourceMap?.[stackName];
 			formSecretProviderId = source?.secretProviderId ?? null;
 		} catch (e) {
-			console.warn('Failed to load secret provider binding for git stack:', e);
+			console.warn('加载 git 堆栈的密钥提供程序绑定失败:', e);
 		}
 	}
 
@@ -648,7 +648,7 @@
 			}
 		} catch (e) {
 			if (seq !== branchesFetchSeq) return;
-			console.error('Failed to fetch branches:', e);
+			console.error('获取分支失败:', e);
 		} finally {
 			if (seq === branchesFetchSeq) branchesLoading = false;
 		}
@@ -706,7 +706,7 @@
 					}
 				}
 			} catch (e) {
-				console.warn('Failed to check for existing stacks:', e);
+				console.warn('检查现有堆栈失败:', e);
 			}
 		}
 

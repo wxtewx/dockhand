@@ -17,7 +17,7 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 	const auth = await authorize(cookies);
 	const envId = parseEnvParam(url.searchParams.get('env'));
 	if (auth.authEnabled && !(await auth.can('stacks', 'view', envId ?? undefined))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 	return json({ tagIds: await getStackTagIds(params.name, envId) });
 };
@@ -37,7 +37,7 @@ export const PUT: RequestHandler = async ({ params, url, request, cookies }) => 
 	const auth = await authorize(cookies);
 	const envId = parseEnvParam(url.searchParams.get('env'));
 	if (auth.authEnabled && !(await auth.can('stacks', 'edit', envId ?? undefined))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 	const body = await request.json().catch(() => ({}));
 	const tagIds = Array.isArray(body.tagIds) ? body.tagIds.filter((n: unknown) => Number.isInteger(n)) : [];

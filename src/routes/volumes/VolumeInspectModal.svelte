@@ -9,6 +9,7 @@
 	import ModalHeader from '$lib/components/ModalHeader.svelte';
 	import { formatDateTime } from '$lib/stores/settings';
 	import { m } from '$lib/paraglide/messages.js';
+	import { getLabelText } from '$lib/types';
 
 	interface Props {
 		open: boolean;

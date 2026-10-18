@@ -194,15 +194,15 @@
 			const response = await fetch(deleteUrl, { method: 'DELETE' });
 			if (!response.ok) {
 				const data = await response.json().catch(() => ({}));
-				throw new Error(data.error || 'Failed to delete image');
+				throw new Error(data.error || '删除镜像失败');
 			}
 
 			// Close modal after successful delete
 			onComplete?.();
-			open = false;
 			onClose?.();
+			open = false;
 		} catch (error: any) {
-			console.error('Failed to delete image:', error);
+			console.error('删除镜像失败:', error);
 			// Could add error display here if needed
 		} finally {
 			isDeleting = false;

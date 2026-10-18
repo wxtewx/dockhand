@@ -17,6 +17,7 @@
 	import DestinationPicker from '$lib/components/backup/DestinationPicker.svelte';
 	import { normalizeMounts, volumesForStack, type VolumeInfo } from '$lib/utils/mounts';
 	import { m } from '$lib/paraglide/messages.js';
+	import { getLabelText } from '$lib/types';
 
 	interface Props {
 		open: boolean;

@@ -1280,13 +1280,13 @@ services:
 									disabled={!$canAccess('settings', 'edit') || (eventCollectionMode || 'stream') !== 'poll'}
 								>
 									<Select.Trigger class="w-24 h-8 {(eventCollectionMode || 'stream') === 'poll' ? '' : 'invisible'}">
-										{(eventPollInterval || 60000) === 30000 ? '30s' : (eventPollInterval || 60000) === 60000 ? '60s' : (eventPollInterval || 60000) === 120000 ? '120s' : '300s'}
+										{(eventPollInterval || 60000) === 30000 ? '30 秒' : (eventPollInterval || 60000) === 60000 ? '60 秒' : (eventPollInterval || 60000) === 120000 ? '120 秒' : '300 秒'}
 									</Select.Trigger>
 									<Select.Content>
-										<Select.Item value="30000">30s</Select.Item>
-										<Select.Item value="60000">60s</Select.Item>
-										<Select.Item value="120000">120s</Select.Item>
-										<Select.Item value="300000">300s</Select.Item>
+										<Select.Item value="30000">30 秒</Select.Item>
+										<Select.Item value="60000">60 秒</Select.Item>
+										<Select.Item value="120000">120 秒</Select.Item>
+										<Select.Item value="300000">300 秒</Select.Item>
 									</Select.Content>
 								</Select.Root>
 							</div>
@@ -1315,13 +1315,13 @@ services:
 								disabled={!$canAccess('settings', 'edit')}
 							>
 								<Select.Trigger class="w-24 h-8">
-									{(metricsCollectionInterval || 30000) === 10000 ? '10s' : (metricsCollectionInterval || 30000) === 30000 ? '30s' : (metricsCollectionInterval || 30000) === 60000 ? '60s' : '120s'}
+									{(metricsCollectionInterval || 30000) === 10000 ? '10 秒' : (metricsCollectionInterval || 30000) === 30000 ? '30 秒' : (metricsCollectionInterval || 30000) === 60000 ? '60 秒' : '120 秒'}
 								</Select.Trigger>
 								<Select.Content>
-									<Select.Item value="10000">10s</Select.Item>
-									<Select.Item value="30000">30s</Select.Item>
-									<Select.Item value="60000">60s</Select.Item>
-									<Select.Item value="120000">120s</Select.Item>
+									<Select.Item value="10000">10 秒</Select.Item>
+									<Select.Item value="30000">30 秒</Select.Item>
+									<Select.Item value="60000">60 秒</Select.Item>
+									<Select.Item value="120000">120 秒</Select.Item>
 								</Select.Content>
 							</Select.Root>
 						</div>

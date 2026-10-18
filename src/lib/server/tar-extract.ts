@@ -38,7 +38,7 @@ export function extractFirstFileFromTar(tarData: Uint8Array): Uint8Array {
 			const start = offset + 512;
 			const end = start + size;
 			if (end > tarData.length) {
-				throw new Error('Truncated tar archive');
+				throw new Error('tar 归档文件不完整');
 			}
 			return tarData.subarray(start, end);
 		}
@@ -46,7 +46,7 @@ export function extractFirstFileFromTar(tarData: Uint8Array): Uint8Array {
 		// Skip header + content (padded to 512-byte boundary)
 		offset += 512 + Math.ceil(size / 512) * 512;
 	}
-	throw new Error('No regular file entry found in tar archive');
+	throw new Error('tar 归档中未找到普通文件条目');
 }
 
 function isZeroBlock(block: Uint8Array): boolean {

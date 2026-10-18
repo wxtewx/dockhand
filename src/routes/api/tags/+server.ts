@@ -16,7 +16,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
 	// Anyone who can view containers can read the catalog (needed to assign tags);
 	// only admins can mutate it (POST/PUT/DELETE below).
 	if (auth.authEnabled && !(await auth.can('containers', 'view'))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 	return json({ tags: await getTags() });
 };
@@ -36,12 +36,12 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 	// The catalog is global and shared across every environment, so only admins may
 	// create tags. Non-admins can assign existing tags (per-env assignment endpoints).
 	if (auth.authEnabled && !auth.isAdmin) {
-		return json({ error: 'Only an administrator can manage the tag catalog' }, { status: 403 });
+		return json({ error: '仅管理员可以管理标签目录' }, { status: 403 });
 	}
 	const body = await request.json().catch(() => ({}));
 	const name = normalizeTag(body.name);
 	if (!name) {
-		return json({ error: 'A valid tag name is required' }, { status: 400 });
+		return json({ error: '需要提供有效的标签名称' }, { status: 400 });
 	}
 	const icon = typeof body.icon === 'string' && body.icon.trim() ? body.icon.trim() : null;
 	const tag = await getOrCreateTag(name, normalizeColor(body.color), icon);
