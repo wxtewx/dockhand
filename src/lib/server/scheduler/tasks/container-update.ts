@@ -42,7 +42,7 @@ import { getScannerSettings, scanImage, type ScanResult, type VulnerabilitySever
 import { sendEventNotification } from '../../notifications';
 import { parseImageNameAndTag, combineScanSummaries, isSystemContainer, isPodmanInfraContainer } from './update-utils';
 import { resolveBlockDecision } from './block-decision';
-import { isUpdateDisabledByLabel, isHiddenByLabel, isDigestWatchDisabledByLabel } from '../../container-labels';
+import { isUpdateDisabledByLabel, isHiddenByLabel, isDigestWatchDisabledByLabel, isCooldownSkippedByLabel } from '../../container-labels';
 
 // =============================================================================
 // TYPES
@@ -414,8 +414,25 @@ export async function runContainerUpdate(
 		// CHECK FOR UPDATES
 		// =============================================================================
 
+		// The label says this container's re-pushed tags are not news. Honoured here as
+		// well as in the update CHECK, or the badge would be hidden while the container
+		// was recreated anyway. Checked before the registry, which then is not asked at all.
+		if (isDigestWatchDisabledByLabel(inspectData.Config?.Labels)) {
+			log(`Skipping - dockhand.watch.digest=false label set on container`);
+			await updateScheduleExecution(execution.id, {
+				status: 'skipped',
+				completedAt: new Date().toISOString(),
+				duration: Date.now() - startTime,
+				details: { reason: 'Skipped by dockhand.watch.digest=false label' }
+			});
+			return;
+		}
+
 		log(`Checking registry for updates: ${imageNameFromConfig}`);
-		const registryCheck = await checkImageUpdateAvailable(imageNameFromConfig, currentImageId, envId);
+		const registryCheck = await checkImageUpdateAvailable(
+			imageNameFromConfig, currentImageId, envId, true,
+			isCooldownSkippedByLabel(inspectData.Config?.Labels)
+		);
 
 		if (registryCheck.isLocalImage) {
 			log(`Local image detected - skipping (auto-update requires registry)`);
@@ -435,20 +452,6 @@ export async function runContainerUpdate(
 				completedAt: new Date().toISOString(),
 				duration: Date.now() - startTime,
 				details: { reason: `Registry check failed: ${registryCheck.error}` }
-			});
-			return;
-		}
-
-		// The label says this container's re-pushed tags are not news. Honoured here as
-		// well as in the update CHECK, or the badge would be hidden while the container
-		// was recreated anyway - the opposite of what the label asks for.
-		if (registryCheck.hasUpdate && isDigestWatchDisabledByLabel(inspectData.Config?.Labels)) {
-			log(`Skipping - dockhand.watch.digest=false label set on container`);
-			await updateScheduleExecution(execution.id, {
-				status: 'skipped',
-				completedAt: new Date().toISOString(),
-				duration: Date.now() - startTime,
-				details: { reason: 'Skipped by dockhand.watch.digest=false label' }
 			});
 			return;
 		}

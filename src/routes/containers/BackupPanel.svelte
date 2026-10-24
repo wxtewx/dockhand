@@ -26,7 +26,7 @@
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import { getRepoTypeIcon, parseRetention, parseOptions, retentionSummary as getRetentionSummary, formatCron, runBackupAction, classifyJobResult, tagLogLine, fetchBackupExecutions, pickDuplicateDestinationId, duplicateStartsEnabled, type BackupAction, type BackupFormState } from '$lib/utils/backup';
 	import { cronstrueLocale } from '$lib/i18n/cron';
-	import { reconcileSelectedVolumeKeys } from '$lib/utils/mounts';
+	import { reconcileSelectedVolumeKeys, fileBindKeys } from '$lib/utils/mounts';
 	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
@@ -209,7 +209,10 @@
 				const d = destinations.find((x) => x.id === c.destinationId);
 				return [c.id, { repository: d?.repository, name: d?.name }] as const;
 			}));
-			const r = await fetchBackupExecutions(ids, 50, repoByConfig);
+			// Per-run destination lookup: a run stamps the destination it actually
+			// wrote to, so re-pointing the schedule doesn't rewrite old runs' repo (#1783).
+			const destById = new Map(destinations.map((d) => [d.id, { repository: d.repository, name: d.name }] as const));
+			const r = await fetchBackupExecutions(ids, 50, repoByConfig, destById);
 			executions = r.executions;
 			tally = { ok: r.ok, failed: r.failed };
 			onTally?.(tally);
@@ -724,6 +727,7 @@
 					bind:allVolumes={editAllVolumes}
 					bind:selectedVolumes={editSelectedVolumes}
 					emptyLabel={type === 'stack' ? m.containers_backup_no_volumes_stack() : m.containers_backup_no_volumes_container()}
+					fileKeys={fileBindKeys(volumes, stackListing?.kind === 'listed' ? stackListing : null)}
 				/>
 
 				<!-- Advanced -->
