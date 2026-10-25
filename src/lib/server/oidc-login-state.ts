@@ -118,7 +118,7 @@ export function encodeLoginState(
 	encrypt: (plaintext: string) => string | null
 ): string {
 	const encoded = encrypt(JSON.stringify(state));
-	if (!encoded) throw new Error('Could not protect the OIDC login state');
+	if (!encoded) throw new Error('无法保护 OIDC 登录状态数据');
 	return encoded;
 }
 
@@ -194,13 +194,13 @@ export function decodeLoginState(
 export function loginStateMessage(reason: LoginStateFailure): string {
 	switch (reason) {
 		case 'missing':
-			return 'Login session not found. Start the sign-in from the login page, and allow cookies for this site.';
+			return '未找到登录会话。请从登录页面发起登录，并为本网站允许 Cookie。';
 		case 'unreadable':
 		case 'malformed':
-			return 'Login session could not be read. Start the sign-in again.';
+			return '无法读取登录会话。请重新发起登录。';
 		case 'expired':
-			return 'Login took too long and expired. Start the sign-in again.';
+			return '登录耗时过长，会话已过期。请重新发起登录。';
 		case 'state-mismatch':
-			return 'Login response did not match the request. Start the sign-in again.';
+			return '登录响应与原始请求不匹配。请重新发起登录。';
 	}
 }

@@ -36,6 +36,7 @@
 	import { EmptyState } from '$lib/components/ui/empty-state';
 	import { m } from '$lib/paraglide/messages.js';
 	import { splitAtName } from '$lib/i18n/split';
+	import { getResticText } from '$lib/types';
 
 	interface Destination {
 		id: number;
@@ -270,7 +271,7 @@
 				const result = await watchJob(data.jobId, (line) => {
 					const d = line.data as any;
 					if (line.event === 'progress' && d?.message) {
-						actionLogLogs = [...actionLogLogs, d.message];
+						actionLogLogs = [...actionLogLogs, getResticText(d.message)];
 					}
 				}) as any;
 				if (result?.success === false) {
@@ -281,7 +282,7 @@
 				}
 			} else if (data.error) {
 				actionLogStatus = 'error';
-				actionLogError = data.error;
+				actionLogError = getResticText(data.error) || '操作执行失败';
 			} else {
 				// Backward-compat JSON path (Accept negotiated to one-shot): show result.
 				actionLogStatus = data.success ? 'success' : 'error';

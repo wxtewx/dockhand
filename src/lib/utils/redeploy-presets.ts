@@ -28,9 +28,9 @@ export interface RedeployPreset {
  * must not silently turn it on or off.
  */
 export const REDEPLOY_PRESETS: RedeployPreset[] = [
-	{ label: 'Only changed', pull: false, forceRecreate: false },
-	{ label: 'Recreate all', pull: false, forceRecreate: true },
-	{ label: 'Pull + recreate', pull: true, forceRecreate: true }
+	{ label: '仅变更项', pull: false, forceRecreate: false },
+	{ label: '全部重新创建', pull: false, forceRecreate: true },
+	{ label: '拉取镜像 + 重新创建', pull: true, forceRecreate: true }
 ];
 
 /** Whether a preset describes the current checkbox state, so it can be shown as active. */

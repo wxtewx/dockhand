@@ -26,10 +26,10 @@ export const POST: RequestHandler = async (event) => {
 	if (denied) return denied;
 
 	const id = parseInt(params.id);
-	if (isNaN(id)) return json({ error: 'Invalid ID' }, { status: 400 });
+	if (isNaN(id)) return json({ error: 'ID 格式非法' }, { status: 400 });
 
 	const dest = await getBackupDestination(id);
-	if (!dest) return json({ error: 'Destination not found' }, { status: 404 });
+	if (!dest) return json({ error: '未找到该存储位置' }, { status: 404 });
 
 	try {
 		await initRepository(id);
@@ -37,7 +37,7 @@ export const POST: RequestHandler = async (event) => {
 		// Repo init is a state change on the destination, treat it as an
 		// 'update' so it's distinguishable from create-destination events.
 		await auditBackupDestination(event, 'update', id, dest.name, { action: 'init', status: 'success' });
-		return json({ success: true, message: 'Repository initialized' });
+		return json({ success: true, message: '仓库初始化完成' });
 	} catch (error) {
 		const msg = error instanceof Error ? error.message : String(error);
 		await updateBackupDestinationTestStatus(id, 'failed', msg);

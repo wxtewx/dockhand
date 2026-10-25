@@ -57,7 +57,7 @@ async function readTags(registry: string, repo: string, credentials: { username:
 		tags.push(...(data.tags ?? []));
 		path = nextPagePath(response.headers.get('link'));
 	}
-	if (path) console.warn(`[Semver] Tag list for ${registry}/${repo}${after ? ` after ${after}` : ''} stopped at ${MAX_PAGES} pages; a newer version past them is not seen`);
+	if (path) console.warn(`[语义化版本] ${registry}/${repo} 的标签列表 ${after ? ` (从 ${after} 之后开始)` : ''} 已达到最大 ${MAX_PAGES} 页限制；超出该范围的新版本无法被扫描到`);
 	return { tags, ok: true, cut: path !== null };
 }
 

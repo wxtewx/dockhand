@@ -93,7 +93,7 @@ function createContainerStore() {
 		if (!cronExpression) return { label: m.containersstore_label_on(), tooltip: m.dashboard_status_auto_update() };
 
 		const parts = cronExpression.split(' ');
-		if (parts.length < 5) return { label: 'cron', tooltip: cronExpression };
+		if (parts.length < 5) return { label: '定时任务', tooltip: cronExpression };
 
 		const [min, hr, , , dow] = parts;
 		const hourNum = parseInt(hr);
@@ -102,7 +102,7 @@ function createContainerStore() {
 
 		let timeStr: string;
 		if (is12Hour) {
-			const ampm = hourNum >= 12 ? 'PM' : 'AM';
+			const ampm = hourNum >= 12 ? '下午' : '上午';
 			const hour12 = hourNum === 0 ? 12 : hourNum > 12 ? hourNum - 12 : hourNum;
 			timeStr = `${hour12}:${minNum.toString().padStart(2, '0')} ${ampm}`;
 		} else {
@@ -123,7 +123,7 @@ function createContainerStore() {
 			};
 		}
 
-		return { label: 'cron', tooltip: cronExpression };
+		return { label: '定时任务', tooltip: cronExpression };
 	}
 
 	async function checkScannerSettings(envId: number | null) {
@@ -194,7 +194,7 @@ function createContainerStore() {
 				}
 			}
 		} catch (err) {
-			console.error('Failed to fetch auto-update settings:', err);
+			console.error('获取自动更新设置失败:', err);
 		}
 
 		patch({ autoUpdateSettings: settings });
@@ -299,7 +299,7 @@ function createContainerStore() {
 			}
 		} catch (error: any) {
 			if (error?.name !== 'AbortError') {
-				console.error('Failed to fetch container stats:', error);
+				console.error('获取容器统计数据失败:', error);
 			}
 		} finally {
 			fetchingStats = false;

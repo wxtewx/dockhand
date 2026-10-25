@@ -18,24 +18,24 @@ import { authorize } from '$lib/server/authorize';
 export const POST: RequestHandler = async ({ params, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('git', 'edit')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const id = parseInt(params.id);
 		if (isNaN(id)) {
-			return json({ error: 'Invalid repository ID' }, { status: 400 });
+			return json({ error: '无效的仓库 ID' }, { status: 400 });
 		}
 
 		const repository = await getGitRepository(id);
 		if (!repository) {
-			return json({ error: 'Repository not found' }, { status: 404 });
+			return json({ error: '仓库不存在' }, { status: 404 });
 		}
 
 		const result = await syncRepository(id);
 		return json(result);
 	} catch (error: any) {
-		console.error('Failed to sync git repository:', error);
+		console.error('Git 仓库同步失败:', error);
 		return json({ success: false, error: error.message }, { status: 500 });
 	}
 };
@@ -54,25 +54,25 @@ export const POST: RequestHandler = async ({ params, cookies }) => {
 export const GET: RequestHandler = async ({ params, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('git', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Check for updates without syncing
 	try {
 		const id = parseInt(params.id);
 		if (isNaN(id)) {
-			return json({ error: 'Invalid repository ID' }, { status: 400 });
+			return json({ error: '无效的仓库 ID' }, { status: 400 });
 		}
 
 		const repository = await getGitRepository(id);
 		if (!repository) {
-			return json({ error: 'Repository not found' }, { status: 404 });
+			return json({ error: '仓库不存在' }, { status: 404 });
 		}
 
 		const result = await checkForUpdates(id);
 		return json(result);
 	} catch (error: any) {
-		console.error('Failed to check for updates:', error);
+		console.error('检查更新失败:', error);
 		return json({ hasUpdates: false, error: error.message }, { status: 500 });
 	}
 };

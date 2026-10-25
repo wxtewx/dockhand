@@ -136,7 +136,7 @@
 				envHasScanning = scanner !== 'none';
 			}
 		} catch (error) {
-			console.error('Failed to fetch scanner settings:', error);
+			console.error('获取扫描器设置失败:', error);
 		}
 	}
 
@@ -360,7 +360,7 @@
 									{:else}
 										<Server class="w-4 h-4 mr-2 text-muted-foreground" />
 									{/if}
-									<span class="flex-1 text-left">{targetRegistry.name}{targetRegistry.hasCredentials ? ' (auth)' : ''}</span>
+									<span class="flex-1 text-left">{targetRegistry.name}{targetRegistry.hasCredentials ? ' (已认证)' : ''}</span>
 								{:else}
 									<span class="text-muted-foreground">{m.images_push_select_registry()}</span>
 								{/if}
@@ -375,7 +375,7 @@
 										{/if}
 										{registry.name}
 										{#if registry.hasCredentials}
-											<Badge variant="outline" class="ml-2 text-xs">auth</Badge>
+											<Badge variant="outline" class="ml-2 text-xs">已认证</Badge>
 										{/if}
 									</Select.Item>
 								{/each}

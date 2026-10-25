@@ -393,7 +393,7 @@
 	// One-char badge for the active I/O sub-metric next to a sortCycle column's label.
 	// Char + colour mirror the cell glyphs (Disk r=green/w=yellow, Net d=blue/u=orange).
 	const IO_METRIC_LABELS: Record<string, string> = {
-		diskRead: 'r', diskWrite: 'w', netRx: 'd', netTx: 'u'
+		diskRead: '读', diskWrite: '写', netRx: '收', netTx: '发'
 	};
 	const IO_METRIC_COLORS: Record<string, string> = {
 		diskRead: 'text-green-400', diskWrite: 'text-yellow-400',

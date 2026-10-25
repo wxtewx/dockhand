@@ -213,7 +213,7 @@
 			// Fetch scanner status for all environments in background
 			fetchAllEnvScannerStatus();
 		} catch (error) {
-			console.error('Failed to fetch environments:', error);
+			console.error('获取环境信息失败:', error);
 		} finally {
 			envLoading = false;
 		}
@@ -224,7 +224,7 @@
 			const response = await fetch('/api/notifications');
 			notifications = await response.json();
 		} catch (error) {
-			console.error('Failed to fetch notifications:', error);
+			console.error('获取通知失败:', error);
 		}
 	}
 
@@ -385,14 +385,14 @@
 			} else {
 				const errorData = await response.json().catch(() => ({}));
 				if (errorData.details?.includes('already running')) {
-					console.warn('Prune already in progress, please wait');
+					console.warn('清理已在进行中，请稍后');
 				} else {
-					console.error('Prune failed:', response.status, errorData, errorData.details);
+					console.error('清理失败:', response.status, errorData, errorData.details);
 				}
 				pruneStatus[id] = 'error';
 			}
 		} catch (error) {
-			console.error('Prune error:', error);
+			console.error('清理错误:', error);
 			pruneStatus[id] = 'error';
 		}
 		pruneStatus = { ...pruneStatus };

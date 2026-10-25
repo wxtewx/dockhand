@@ -9,6 +9,7 @@
 	import ContainerTile from '../containers/ContainerTile.svelte';
 	import ContainerInspectModal from '../containers/ContainerInspectModal.svelte';
 	import { m } from '$lib/paraglide/messages.js';
+	import { getLabelText } from '$lib/types';
 
 	interface Props {
 		open: boolean;
@@ -51,7 +52,7 @@
 			networkData = await response.json();
 		} catch (err: any) {
 			error = err.message || m.networks_inspect_error_load();
-			console.error('Failed to fetch network inspect:', err);
+			console.error('获取网络详情失败:', err);
 		} finally {
 			loading = false;
 		}

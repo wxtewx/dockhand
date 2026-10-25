@@ -18,7 +18,7 @@
 	import AutoUpdateSettings from './AutoUpdateSettings.svelte';
 	import ScheduledActionsSettings from './ScheduledActionsSettings.svelte';
 	import type { VulnerabilityCriteria } from '$lib/components/VulnerabilityCriteriaSelector.svelte';
-	import type { SystemContainerType } from '$lib/types';
+	import type { SystemContainerType, getLabelText } from '$lib/types';
 	import { isSameNetwork } from '$lib/utils/network-identity';
 	import { m } from '$lib/paraglide/messages.js';
 
@@ -38,8 +38,8 @@
 
 	// Mode options for volumes
 	const volumeModeOptions = [
-		{ value: 'rw', label: 'RW' },
-		{ value: 'ro', label: 'RO' }
+		{ value: 'rw', label: '读写' },
+		{ value: 'ro', label: '只读' }
 	];
 
 	const commonCapabilities = [
@@ -266,7 +266,7 @@
 				availableNetworks = await response.json();
 			}
 		} catch (err) {
-			console.error('Failed to fetch networks:', err);
+			console.error('获取网络列表失败:', err);
 		}
 	}
 
@@ -286,7 +286,7 @@
 					.filter(c => c.name && c.name !== name);
 			}
 		} catch (err) {
-			console.error('Failed to fetch containers:', err);
+			console.error('获取容器列表失败:', err);
 		}
 	}
 
@@ -1554,7 +1554,7 @@
 					<div class="space-y-1.5">
 						<Label for="cpuShares" class="text-xs font-medium">{m.containers_settings_cpu_shares()}</Label>
 						<div class="flex items-center gap-1.5">
-							<Input id="cpuShares" bind:value={cpuShares} type="number" placeholder="1024" class="h-9" />
+							<Input id="cpuShares" bind:value={cpuShares} type="number" placeholder="例如：1024" class="h-9" />
 							{@render inlineApplyBtn('cpuShares', applyCpuShares)}
 						</div>
 					</div>

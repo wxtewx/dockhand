@@ -80,7 +80,7 @@
 				}
 			}
 		} catch (err) {
-			console.error('Failed to load environments:', err);
+			console.error('加载环境失败:', err);
 		} finally {
 			loadingEnvs = false;
 		}

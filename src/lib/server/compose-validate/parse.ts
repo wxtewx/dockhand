@@ -21,12 +21,12 @@ export function parseCompose(source: string): ParsedCompose {
 			? (loaded as Record<string, unknown>)
 			: null;
 		if (loaded !== null && loaded !== undefined && doc === null) {
-			parseError = { message: 'Compose file must be a YAML mapping at the top level' };
+			parseError = { message: 'Compose 文件顶层必须是 YAML 映射结构' };
 		}
 	} catch (e: unknown) {
 		const mark = (e as { mark?: { line?: number } })?.mark;
 		parseError = {
-			message: e instanceof Error ? e.message.split('\n')[0] : 'Invalid YAML',
+			message: e instanceof Error ? e.message.split('\n')[0] : '无效的 YAML',
 			line: typeof mark?.line === 'number' ? mark.line + 1 : undefined
 		};
 	}

@@ -45,7 +45,7 @@ export async function aggregateVulnerabilities(envIdNum: number): Promise<Aggreg
 		}
 	} catch (error) {
 		if (!(error instanceof DockerConnectionError) && !(error instanceof EnvironmentNotFoundError)) {
-			console.error('Error listing images for vulnerability summary:', error);
+			console.error('获取漏洞汇总的镜像列表时出错:', error);
 		}
 	}
 	try {
@@ -65,7 +65,7 @@ export async function aggregateVulnerabilities(envIdNum: number): Promise<Aggreg
 		}
 	} catch (error) {
 		if (!(error instanceof DockerConnectionError) && !(error instanceof EnvironmentNotFoundError)) {
-			console.error('Error listing containers for vulnerability enrichment:', error);
+			console.error('用于漏洞信息补充的容器列表获取失败:', error);
 		}
 	}
 
@@ -180,7 +180,7 @@ interface LiveImageState {
 /** An enrichment read that Docker refused is logged unless Docker is simply away. */
 function reportEnrichmentError(what: string, error: unknown): void {
 	if (error instanceof DockerConnectionError || error instanceof EnvironmentNotFoundError) return;
-	console.error(`Error listing ${what} for vulnerability summary:`, error);
+	console.error(`获取漏洞摘要所需的 ${what} 列表时出错:`, error);
 }
 
 /** Which images the daemon still has, and the display name each one goes by. */
@@ -414,11 +414,11 @@ async function buildMeta(envIdNum: number): Promise<VulnerabilitiesMeta> {
 	// than failing it: the header is a summary, not the data itself.
 	const [counts, imageNames] = await Promise.all([
 		countFindings(envIdNum, live.scannedIds).catch((error: unknown) => {
-			console.error('Error counting vulnerability findings:', error);
+			console.error('统计漏洞检测结果时出错:', error);
 			return { ...EMPTY_COUNTS };
 		}),
 		listScannedImageNames(envIdNum, live.scannedIds).catch((error: unknown) => {
-			console.error('Error listing scanned image names:', error);
+			console.error('获取已扫描镜像名称列表时出错:', error);
 			return [] as { imageId: string; imageName: string }[];
 		})
 	]);

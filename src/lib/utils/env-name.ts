@@ -32,16 +32,16 @@ export interface ValidationResult {
  * decide how to surface the error (server: 400 body, client: inline message).
  */
 export function validateEnvName(name: unknown): ValidationResult {
-	if (typeof name !== 'string') return { ok: false, reason: 'Name is required' };
-	if (name.length === 0) return { ok: false, reason: 'Name is required' };
+	if (typeof name !== 'string') return { ok: false, reason: '名称为必填项' };
+	if (name.length === 0) return { ok: false, reason: '名称为必填项' };
 	if (name.length > ENV_NAME_MAX_LENGTH) {
-		return { ok: false, reason: `Name must be ${ENV_NAME_MAX_LENGTH} characters or fewer` };
+		return { ok: false, reason: `名称长度不能超过 ${ENV_NAME_MAX_LENGTH} 个字符` };
 	}
 	if (!ENV_NAME_RE.test(name)) {
 		return {
 			ok: false,
 			reason:
-				'Name can\'t contain slashes, wildcards, or other shell-special characters, and can\'t start with whitespace or end with whitespace or a dot'
+				'名称不能包含斜杠、通配符或其他 shell 特殊字符，且不能以空白字符开头，也不能以空白字符或点号结尾'
 		};
 	}
 	return { ok: true };

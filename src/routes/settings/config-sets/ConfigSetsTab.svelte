@@ -11,6 +11,7 @@
 	import ConfigSetModal from './ConfigSetModal.svelte';
 	import { EmptyState } from '$lib/components/ui/empty-state';
 	import { m } from '$lib/paraglide/messages.js';
+	import { getLabelText } from '$lib/types';
 
 	// Config set types
 	interface ConfigSet {
@@ -40,7 +41,7 @@
 			const response = await fetch('/api/config-sets');
 			configSets = await response.json();
 		} catch (error) {
-			console.error('Failed to fetch config sets:', error);
+			console.error('获取配置集列表失败:', error);
 			toast.error(m.settings_configsets_toast_fetch_failed());
 		} finally {
 			cfgLoading = false;

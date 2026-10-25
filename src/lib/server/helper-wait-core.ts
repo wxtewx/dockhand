@@ -79,6 +79,6 @@ export function helperFailureDetail(
 	parts: { stderr?: string; stdout?: string; daemonError?: string },
 	limit = 1000
 ): string {
-	const detail = parts.stderr || parts.stdout || parts.daemonError || 'no output';
+	const detail = parts.stderr || parts.stdout || parts.daemonError || '无输出';
 	return detail.substring(0, limit);
 }

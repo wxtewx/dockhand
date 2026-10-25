@@ -62,9 +62,9 @@ classify_path() {
 
 _reason_text() {
     case "$1" in
-        outside) printf 'outside the old DATA_DIR - left as-is' ;;
-        oldexists) printf 'old file still exists - not stale, left as-is' ;;
-        newmissing) printf 'new file not found (copy the files across first)' ;;
+        outside) printf '不在旧 DATA_DIR 目录内 - 保持不变' ;;
+        oldexists) printf '旧文件仍然存在 - 无需变更，保持不变' ;;
+        newmissing) printf '未找到新文件 (请先迁移文件)' ;;
         *) printf '%s' "$1" ;;
     esac
 }
@@ -72,22 +72,20 @@ _reason_text() {
 # --- header ---
 print_header() {
     echo "========================================================================"
-    echo "  Dockhand - Relocate stack paths ($DB_LABEL)"
+    echo "  Dockhand - 迁移堆栈路径 ($DB_LABEL)"
     echo "========================================================================"
     echo ""
-    echo "  Updates where Dockhand LOOKS FOR each stack's compose/env files in its"
-    echo "  database, after you changed DATA_DIR."
+    echo "  修改 DATA_DIR 后，更新 Dockhand 在数据库中查找各堆栈 compose/env 文件的路径。"
     echo ""
-    echo "  >> It does NOT move, copy, or delete any files. Your files are untouched."
-    echo "     It only rewrites the stored path in the database. A pointer is changed"
-    echo "     only when the old file is gone AND the new file already exists on disk."
+    echo "  >> 本脚本不会移动、复制或删除任何文件，不会改动你的原始文件。"
+    echo "     仅修改数据库内存储的路径记录。只有旧文件已不存在且新文件已存在时，才会更新路径。"
     echo ""
-    echo "  Old DATA_DIR:  $OLD_DIR"
-    echo "  New DATA_DIR:  $NEW_DIR"
-    [ -n "$DB_DISPLAY" ] && echo "  Database:      $DB_DISPLAY"
+    echo "  旧 DATA_DIR:  $OLD_DIR"
+    echo "  新 DATA_DIR:  $NEW_DIR"
+    [ -n "$DB_DISPLAY" ] && echo "  数据库:      $DB_DISPLAY"
     echo ""
     if [ "$MODE" = "apply" ]; then
-        echo "  >> Make a database backup before proceeding if you want a safety net."
+        echo "  >> 如果需要安全回滚，请在执行前备份数据库。"
         echo ""
     fi
 }
@@ -111,10 +109,10 @@ run_relocation() {
         reason="$(printf '%s' "$res" | cut -f3)"
         if [ "$status" = "WILL_UPDATE" ]; then
             printf 'stack\t%s\t%s\t%s\t%s\t%s\n' "$id" "$field" "$label" "$stored" "$new" >> "$worklist"
-            printf '  %-22s %-8s WILL UPDATE\n' "$label" "$field"
+            printf '  %-22s %-8s 将更新\n' "$label" "$field"
             printf '     %s\n  -> %s\n' "$stored" "$new"
         else
-            printf '  %-22s %-8s SKIP  (%s)\n' "$label" "$field" "$(_reason_text "$reason")"
+            printf '  %-22s %-8s 跳过  (%s)\n' "$label" "$field" "$(_reason_text "$reason")"
             printf '     %s\n' "$stored"
         fi
     done
@@ -130,10 +128,10 @@ run_relocation() {
             # field is '-' (a placeholder) because a tab-IFS `read` collapses an EMPTY
             # field and would shift every later column.
             printf 'external\t%s\t-\texternal_stack_paths[%s]\t%s\t%s\n' "$idx" "$idx" "$stored" "$new" >> "$worklist"
-            printf '  %-22s %-8s WILL UPDATE\n' "external_stack_paths[$idx]" ""
+            printf '  %-22s %-8s 将更新\n' "external_stack_paths[$idx]" ""
             printf '     %s\n  -> %s\n' "$stored" "$new"
         else
-            printf '  %-22s %-8s SKIP  (%s)\n' "external_stack_paths[$idx]" "" "$(_reason_text "$reason")"
+            printf '  %-22s %-8s 跳过  (%s)\n' "external_stack_paths[$idx]" "" "$(_reason_text "$reason")"
             printf '     %s\n' "$stored"
         fi
     done
@@ -142,17 +140,17 @@ run_relocation() {
     will="$(wc -l < "$worklist" | tr -d ' ')"
 
     if [ "$MODE" = "dry" ]; then
-        echo "  Summary: $will will update."
+        echo "  汇总：共 $will 项待更新。"
         echo ""
-        echo "  This was a DRY RUN. Nothing was changed."
-        echo "  To apply, re-run with --apply (review each change), or --apply --all."
+        echo "  本次为试运行，未执行任何修改。"
+        echo "  如需生效，请使用 --apply (逐项确认) 或 --apply --all 执行。"
         echo "========================================================================"
         rm -f "$worklist"
         return 0
     fi
 
     if [ "$will" -eq 0 ]; then
-        echo "  Nothing to update."
+        echo "  无需更新任何内容。"
         echo "========================================================================"
         rm -f "$worklist"
         return 0
@@ -161,9 +159,9 @@ run_relocation() {
     # Interactive review needs a terminal. Without one (e.g. `docker exec` with no
     # -it), tell the user how to proceed instead of erroring on each prompt.
     if [ "$APPLY_ALL" -ne 1 ] && [ ! -r /dev/tty ]; then
-        echo "  No terminal available for interactive review."
-        echo "  Re-run with 'docker exec -it ...' to confirm each change, or add --all"
-        echo "  to apply all $will change(s) without prompting."
+        echo "  当前终端不可用于交互式确认。"
+        echo "  请使用 'docker exec -it ...' 来逐项确认变更，"
+        echo "  或添加 --all 参数直接应用全部 $will 项变更，无需确认。"
         echo "========================================================================"
         rm -f "$worklist"
         return 1
@@ -180,7 +178,7 @@ run_relocation() {
         if [ "$APPLY_ALL" -eq 1 ]; then
             ans="y"
         else
-            printf '        Apply this change? [y/n/q] '
+            printf '        应用此项变更？ [y/n/q] '
             read -r ans </dev/tty
         fi
         case "$ans" in
@@ -191,10 +189,10 @@ run_relocation() {
                     db_update_external_path "$key" "$new"
                 fi
                 applied=$((applied + 1))
-                echo "        ... updated."
+                echo "        ... 已更新。"
                 ;;
             q|Q)
-                echo "        ... quit."
+                echo "        ... 退出。"
                 break
                 ;;
             *)
@@ -205,8 +203,8 @@ run_relocation() {
     done 3< "$worklist"
 
     echo ""
-    echo "  Done. $applied applied, $declined skipped by you."
-    echo "  Restart Dockhand to pick up the changes."
+    echo "  执行完成。$applied 项已应用，$declined 项由你跳过。"
+    echo "  重启 Dockhand 使变更生效。"
     echo "========================================================================"
     rm -f "$worklist"
 }
@@ -218,19 +216,19 @@ parse_relocate_args() {
         case "$arg" in
             --apply) MODE="apply" ;;
             --all) APPLY_ALL=1 ;;
-            --*) echo "Unknown option: $arg"; exit 2 ;;
+            --*) echo "未知参数: $arg"; exit 2 ;;
             *)
                 if [ -z "$OLD_DIR" ]; then OLD_DIR="$arg"
                 elif [ -z "$NEW_DIR" ]; then NEW_DIR="$arg"
-                else echo "Unexpected argument: $arg"; exit 2
+                else echo "多余参数: $arg"; exit 2
                 fi
                 ;;
         esac
     done
     if [ -z "$OLD_DIR" ] || [ -z "$NEW_DIR" ]; then
-        echo "Usage: relocate-stack-paths.sh <old-data-dir> <new-data-dir> [--apply] [--all]"
+        echo "用法: relocate-stack-paths.sh <旧数据目录> <新数据目录> [--apply] [--all]"
         exit 2
     fi
-    case "$OLD_DIR" in /*) ;; *) echo "Error: old-data-dir must be an absolute path"; exit 2 ;; esac
-    case "$NEW_DIR" in /*) ;; *) echo "Error: new-data-dir must be an absolute path"; exit 2 ;; esac
+    case "$OLD_DIR" in /*) ;; *) echo "错误：旧数据目录必须为绝对路径"; exit 2 ;; esac
+    case "$NEW_DIR" in /*) ;; *) echo "错误：新数据目录必须为绝对路径"; exit 2 ;; esac
 }

@@ -132,7 +132,7 @@
 
 			if (!response.ok) {
 				const error = await response.json();
-				throw new Error(error.error || 'Request failed');
+				throw new Error(error.error || '请求执行失败');
 			}
 
 			const data = await response.json();
@@ -169,7 +169,7 @@
 				cancelledCount = cancelCount;
 			}
 		} catch (error: any) {
-			console.error('Batch operation error:', error);
+			console.error('批量操作错误:', error);
 		} finally {
 			isRunning = false;
 			isComplete = true;
@@ -332,7 +332,7 @@
 				</Button>
 			{:else}
 				<Button size="sm" onclick={handleOk}>
-					OK
+					确定
 				</Button>
 			{/if}
 		</div>

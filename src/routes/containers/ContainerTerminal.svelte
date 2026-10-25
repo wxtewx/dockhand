@@ -228,7 +228,7 @@
 				selectedShell = bestShell;
 			}
 		} catch (error) {
-			console.error('Failed to detect shells:', error);
+			console.error('检测终端失败:', error);
 		} finally {
 			detectingShells = false;
 		}

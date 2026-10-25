@@ -73,7 +73,7 @@
 			const response = await fetch('/api/environments');
 			environments = await response.json();
 		} catch (error) {
-			console.error('Failed to fetch environments:', error);
+			console.error('获取环境信息失败:', error);
 		} finally {
 			loading = false;
 		}

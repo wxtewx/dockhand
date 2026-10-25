@@ -33,7 +33,7 @@
 			const response = await fetch('/api/git/credentials');
 			credentials = await response.json();
 		} catch (error) {
-			console.error('Failed to fetch git credentials:', error);
+			console.error('获取 Git 凭证失败:', error);
 			toast.error(m.settings_git_credentials_fetch_failed());
 		} finally {
 			loading = false;
@@ -64,7 +64,7 @@
 				toast.error(m.settings_git_credential_delete_failed());
 			}
 		} catch (error) {
-			console.error('Failed to delete credential:', error);
+			console.error('删除凭证失败:', error);
 			toast.error(m.settings_git_credential_delete_failed());
 		}
 	}

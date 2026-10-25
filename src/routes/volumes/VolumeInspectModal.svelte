@@ -9,6 +9,7 @@
 	import ModalHeader from '$lib/components/ModalHeader.svelte';
 	import { formatDateTime } from '$lib/stores/settings';
 	import { m } from '$lib/paraglide/messages.js';
+	import { getLabelText } from '$lib/types';
 
 	interface Props {
 		open: boolean;
@@ -39,7 +40,7 @@
 			volumeData = await response.json();
 		} catch (err: any) {
 			error = err.message || m.volumes_inspect_error_load();
-			console.error('Failed to fetch volume inspect:', err);
+			console.error('获取数据卷详情失败:', err);
 		} finally {
 			loading = false;
 		}

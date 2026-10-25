@@ -100,20 +100,20 @@ export const LOAD_BEARING_FILES = new Set([
 export function skipReasonMessage(reason: DeletionSkipReason): string {
 	switch (reason) {
 		case 'locally-modified':
-			return 'deleted from the repository, but the file was modified on this machine since Dockhand deployed it — refusing to delete local changes';
-		case 'load-bearing':
-			return 'core stack file — never auto-deleted';
-		case 'invalid-path':
-			return 'invalid path outside the stack directory — ignored';
-		case 'already-absent':
-			return 'already absent';
-		case 'agent-no-support':
-			return 'the Hawser agent does not support file deletion sync — file left on the remote host (upgrade the agent to enable cleanup of future deletions)';
-		case 'apply-failed':
-			return 'could not be deleted — leaving the file in place';
-		default:
-			// Unknown reason (e.g., from a newer agent)
-			return 'could not be deleted — leaving the file in place';
+            return '文件已从代码仓库移除，但此机器上的文件在 Dockhand 部署后被修改 — 拒绝删除本地改动';
+        case 'load-bearing':
+            return '核心堆栈文件 — 不会自动删除';
+        case 'invalid-path':
+            return '路径无效，超出堆栈目录范围 — 已忽略';
+        case 'already-absent':
+            return '文件已不存在';
+        case 'agent-no-support':
+            return 'Hawser 代理不支持文件删除同步 — 文件保留在远程主机（升级代理以启用后续清理）';
+        case 'apply-failed':
+            return '无法删除 — 文件保留原样';
+        default:
+            // Unknown reason (e.g., from a newer agent)
+            return '无法删除 — 文件保留原样';
 	}
 }
 
@@ -241,10 +241,10 @@ export function deletionSafetyCheck(
 	if (Object.keys(manifestFiles).length === 0) return null; // nothing to delete anyway
 
 	if (Object.keys(newFiles).length === 0) {
-		return 'the new clone appears empty — skipping all deletions this sync (likely a sync problem, not repository changes)';
+		return '新克隆仓库为空 — 本次同步跳过全部删除操作 (大概率为同步异常，并非代码仓库变更)';
 	}
 	if (composeFileName && !(composeFileName in newFiles)) {
-		return `the compose file "${composeFileName}" is missing from the new clone walk — skipping all deletions this sync (likely a sync problem, not repository changes)`;
+		return `compose 文件 "${composeFileName}" 在新克隆目录扫描结果中缺失 — 本次同步跳过全部删除操作 (大概率为同步异常，并非代码仓库变更)`;
 	}
 	return null;
 }
@@ -454,7 +454,7 @@ export function formatChangeTable(summary: SyncChangeSummary): string[] {
 	const counts = { added: 0, updated: 0, removed: 0, skipped: 0 };
 	for (const c of changes) counts[c.status]++;
 
-	const header = `${counts.added} added, ${counts.updated} updated, ${counts.removed} removed, ${counts.skipped} skipped, ${unchangedCount} unchanged`;
+	const header = `${counts.added} 项新增，${counts.updated} 项更新，${counts.removed} 项移除，${counts.skipped} 项已跳过，${unchangedCount} 项无改动`;
 	if (changes.length === 0) {
 		return [header];
 	}

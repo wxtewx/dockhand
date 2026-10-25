@@ -35,7 +35,7 @@ export async function registryAuthHeader(
 		const parsed = deps.parseRegistryUrl(registryUrl);
 		const hostSafety = isSafeRegistryHost(parsed.host);
 		if (!hostSafety.ok) {
-			console.error(`[Registry] Refusing auth challenge for ${parsed.host}: ${hostSafety.reason}`);
+			console.error(`[镜像仓库] 拒绝为 ${parsed.host} 执行认证质询: ${hostSafety.reason}`);
 			return null;
 		}
 		const apiBaseUrl = `${parsed.protocol}://${parsed.host}`;
@@ -59,7 +59,7 @@ export async function registryAuthHeader(
 			// If not 401, something else is wrong
 			if (challengeResponse.status !== 401) {
 				await drainResponse(challengeResponse);
-				console.error(`Registry challenge failed: ${challengeResponse.status}`);
+				console.error(`镜像仓库质询失败: ${challengeResponse.status}`);
 				return { header: null, ttlMs: 0 };
 			}
 
@@ -79,7 +79,7 @@ export async function registryAuthHeader(
 
 			if (!challenge.startsWith('bearer')) {
 				await drainResponse(challengeResponse);
-				console.error(`Unsupported auth type: ${wwwAuth}`);
+				console.error(`不支持的认证类型: ${wwwAuth}`);
 				return { header: null, ttlMs: 0 };
 			}
 
@@ -91,7 +91,7 @@ export async function registryAuthHeader(
 			const serviceMatch = wwwAuth.match(/service="([^"]+)"/i);
 
 			if (!realmMatch) {
-				console.error('No realm in WWW-Authenticate header');
+				console.error('WWW-Authenticate 头部中缺少 realm');
 				return { header: null, ttlMs: 0 };
 			}
 
@@ -115,12 +115,12 @@ export async function registryAuthHeader(
 			if (!tokenResponse.ok) {
 				const errorBody = (await tokenResponse.text().catch(() => '')).slice(0, 300).replace(/\s+/g, ' ').trim();
 				const finalNote = tokenResponse.url && tokenResponse.url !== tokenUrl.toString()
-					? ` (final ${new URL(tokenResponse.url).origin})`
+					? ` (最终源 ${new URL(tokenResponse.url).origin})`
 					: '';
 				const identity = credentials
-					? ` as ${credentials.username.slice(0, 4)}...(len=${credentials.username.length})`
-					: ' anonymously';
-				console.error(`[Registry] Token request failed: ${tokenResponse.status} at ${tokenUrl.origin}${finalNote}, sent${identity}${errorBody ? ` - response: ${errorBody}` : ''}`);
+					? ` 以 ${credentials.username.slice(0, 4)}...(长度=${credentials.username.length})`
+					: ' 匿名';
+				console.error(`[镜像仓库] 令牌请求失败: ${tokenResponse.status}，地址 ${tokenUrl.origin}${finalNote}, 身份${identity}${errorBody ? ` - response: ${errorBody}` : ''}`);
 				return { header: null, ttlMs: 0 };
 			}
 
@@ -141,8 +141,8 @@ export async function registryAuthHeader(
 	} catch (e) {
 		const errorMsg = e instanceof Error ? e.message : String(e);
 		const cause = (e as any)?.cause;
-		const causeMsg = cause ? ` (cause: ${cause})` : '';
-		console.error('[Registry] Failed to get auth header:', errorMsg + causeMsg);
+		const causeMsg = cause ? ` (原因: ${cause})` : '';
+		console.error('[镜像仓库] 获取认证头部失败:', errorMsg + causeMsg);
 		return null;
 	}
 }
