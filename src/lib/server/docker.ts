@@ -15,7 +15,7 @@ import * as tls from 'node:tls';
 import { createHash } from 'node:crypto';
 import { pumpWebStreamToWritable } from './stream-pump';
 import { toWebReadableStream } from './node-readable-stream';
-import { buildImagePruneFilters } from './image-prune-core';
+import { buildImagePruneFilters, pruneAllUnused, holderFailureWarning, type ImagePruneResult } from './image-prune-core';
 import { demuxDockerStream } from './docker-demux-core';
 import { isExpectedConnectionError, isQuietDockerFailure, transportTimeoutError } from './docker-probe-core';
 import {
@@ -26,7 +26,7 @@ import {
 } from './backups/request-timeout';
 import { helperWaitDeadline, helperExitFromState, helperFailureDetail, needsDaemonErrorLookup } from './helper-wait-core';
 import { cancelReaderOnAbort } from './reader-abort-core';
-import { configuredMacAddress, endpointWithoutGeneratedMac } from './endpoint-mac-core';
+import { configuredMacAddress, endpointForRecreate } from './endpoint-mac-core';
 import { rescopeForPrimarySwitch } from './primary-network-switch-core';
 import { mapContainerNetworks } from '$lib/utils/network-identity';
 import type { Environment } from './db';
@@ -2558,9 +2558,9 @@ export async function recreateContainerFromInspect(
 	if (!isSharedNetwork && initialNetworkName && initialNetworkConfig) {
 		// An auto-assigned MAC must not follow the container: on daemons that derive it
 		// from the IP, the replacement gets a new address and the carried MAC then
-		// collides with whoever inherits the old one (#1618). Only a configured MAC
-		// survives; otherwise Docker derives a fresh one.
-		const endpointConfig = endpointWithoutGeneratedMac({ ...initialNetworkConfig });
+		// collides with whoever inherits the old one (#1618). Only a configured MAC, or one
+		// derived from an IP the endpoint pins, survives; otherwise Docker derives a fresh one.
+		const endpointConfig = endpointForRecreate({ ...initialNetworkConfig });
 		createConfig.NetworkingConfig = {
 			EndpointsConfig: {
 				[initialNetworkName]: endpointConfig
@@ -2599,8 +2599,8 @@ export async function recreateContainerFromInspect(
 			const nc = netConfig as any;
 			if (nc.NetworkID) {
 				try {
-					// Same rule as the creation endpoint above: never carry a generated MAC.
-					const settings = endpointWithoutGeneratedMac({ ...nc });
+					// Same rule as the creation endpoint above.
+					const settings = endpointForRecreate({ ...nc });
 					await connectContainerToNetworkRaw(nc.NetworkID, newContainerId, settings, envId);
 				} catch (netError: any) {
 					log?.(`Warning: Failed to connect to network "${netName}": ${netError.message}`);
@@ -4935,11 +4935,21 @@ export async function pruneContainers(envId?: number | null) {
 	return dockerJsonRequest('/containers/prune', { method: 'POST' }, envId);
 }
 
-export async function pruneImages(dangling = true, envId?: number | null) {
+function pruneAllUnusedImages(envId?: number | null): Promise<ImagePruneResult> {
+	return pruneAllUnused({
+		listImages: (filters) => dockerJsonRequest(filters ? `/images/json?filters=${filters}` : '/images/json', {}, envId),
+		listContainers: () => dockerJsonRequest('/containers/json?all=true', {}, envId),
+		prune: () => dockerJsonRequest<ImagePruneResult>(`/images/prune?filters=${buildImagePruneFilters(false)}`, { method: 'POST' }, envId),
+		remove: (ref) => dockerJsonRequest(`/images/${encodeURIComponent(ref)}`, { method: 'DELETE' }, envId),
+		log: (message) => console.log(`[Prune] env ${envId ?? 'local'}: ${message}`)
+	});
+}
+
+export async function pruneImages(dangling = true, envId?: number | null): Promise<ImagePruneResult> {
 	// dangling=true: only remove untagged images. Pass straight through —
 	// scanner images are always tagged so they can't be dangling anyway.
 	if (dangling) {
-		return dockerJsonRequest(
+		return dockerJsonRequest<ImagePruneResult>(
 			`/images/prune?filters=${buildImagePruneFilters(true)}`,
 			{ method: 'POST' },
 			envId
@@ -4953,11 +4963,7 @@ export async function pruneImages(dangling = true, envId?: number | null) {
 	// in a finally (#625). Scanner images are third-party so we can't label them.
 	const protect = (await getSetting('protect_scanner_images')) !== false;
 	if (!protect) {
-		return dockerJsonRequest(
-			`/images/prune?filters=${buildImagePruneFilters(false)}`,
-			{ method: 'POST' },
-			envId
-		);
+		return pruneAllUnusedImages(envId);
 	}
 
 	const { DEFAULT_GRYPE_IMAGE, DEFAULT_TRIVY_IMAGE } = await import('./scanner');
@@ -4982,17 +4988,14 @@ export async function pruneImages(dangling = true, envId?: number | null) {
 				envId
 			);
 			holderIds.push(created.Id);
-		} catch {
-			// Image not present locally → nothing to protect → no-op
+		} catch (err) {
+			const warning = holderFailureWarning(err, image, envId);
+			if (warning) console.warn(warning);
 		}
 	}
 
 	try {
-		return await dockerJsonRequest(
-			`/images/prune?filters=${buildImagePruneFilters(false)}`,
-			{ method: 'POST' },
-			envId
-		);
+		return await pruneAllUnusedImages(envId);
 	} finally {
 		for (const id of holderIds) {
 			try {

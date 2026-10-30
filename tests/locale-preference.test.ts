@@ -27,10 +27,11 @@ describe('asLocale', () => {
 	test('accepts a locale this build carries', () => {
 		expect(asLocale('pl')).toBe('pl');
 		expect(asLocale('zh-CN')).toBe('zh-CN');
+		expect(asLocale('es-ES')).toBe('es-ES');
 	});
 
 	test('refuses anything else, so a stale or hand-edited value cannot take effect', () => {
-		for (const bad of ['xx', 'PL', 'zh', '', 'en-US', null, undefined, 42, {}]) {
+		for (const bad of ['xx', 'PL', 'zh', 'ES', 'es', '', 'en-US', null, undefined, 42, {}]) {
 			expect(asLocale(bad)).toBeUndefined();
 		}
 	});
@@ -68,6 +69,22 @@ describe('fromNavigator', () => {
 
 	test('fr-CA is taken as itself rather than collapsing to fr-FR', () => {
 		expect(fromNavigator(['fr-CA'])).toBe('fr-CA');
+	});
+
+	test('a language carried only with a region resolves to that region', () => {
+		expect(fromNavigator(['es'])).toBe('es-ES');
+		expect(fromNavigator(['es-MX'])).toBe('es-ES');
+		expect(fromNavigator(['fr'])).toBe('fr-FR');
+		expect(fromNavigator(['fr-BE'])).toBe('fr-FR');
+	});
+
+	test('a sibling region of an earlier language beats a later exact match', () => {
+		expect(fromNavigator(['es-MX', 'de'])).toBe('es-ES');
+	});
+
+	test('a language prefix is not a sibling of a longer language code', () => {
+		// "e" must not match es-ES or en.
+		expect(fromNavigator(['e'])).toBeUndefined();
 	});
 
 	test('gives up when nothing matches', () => {

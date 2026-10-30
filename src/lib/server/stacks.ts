@@ -26,7 +26,7 @@ import {
 	type DeletionApplyResult,
 	type DeletionSkipReason
 } from './git-deletions';
-import { buildComposeOperationArgs, shouldRunSeparateBuildStep } from './compose-args';
+import { buildComposeOperationArgs, runsSeparateBuild, pullThenUp, pullBuildThenUp, stepOptions, deployPlan } from './compose-args';
 import { findStackNameCollision, getStackPathHintsFromContainers, moveStackFilePathCrossDevice, resolveStackDirForLayout } from './stack-path-utils';
 import { isValidStackName } from './stack-name-guard';
 import { db, environments, eq } from './db/drizzle.js';
@@ -187,6 +187,7 @@ export interface DeployStackOptions {
 	forceRecreate?: boolean;
 	build?: boolean; // Build images before starting (--build)
 	noBuildCache?: boolean; // Disable build cache (--no-cache, requires --build)
+	pullBase?: boolean; // Pull newer base images in a separate `build --pull` (requires build)
 	pullPolicy?: string; // Pull policy: 'always' | 'missing' | 'never'
 	composePath?: string; // Custom compose file path (for adopted/imported stacks)
 	envPath?: string; // Custom env file path (for adopted/imported stacks)
@@ -194,11 +195,10 @@ export interface DeployStackOptions {
 	envFileName?: string; // Env filename relative to compose dir (e.g., ".env") for git stacks
 	/** Git deletion sync (#966): files confirmed safe to delete from the stack dir */
 	filesToDelete?: FileToDelete[];
-	/** Set by deployGitStack: this deploy is a git sync, so deployStack must NOT emit
-	 * the stack_deployed/stack_deploy_failed notification — the caller emits the more
-	 * specific git_sync_success/git_sync_failed instead, avoiding a double notification
-	 * (Stack events and Git sync are separate user-facing groups). stack_events is
-	 * still recorded regardless. (#1295) */
+	/** Set by both git deploys (deployGitStack and deployGitStackWithProgress), which send
+	 * git_sync_success / git_sync_failed after the deploy: stack_deployed /
+	 * stack_deploy_failed then goes only to the channels not subscribed to that git_sync
+	 * event, so no channel gets both. */
 	isGitDeploy?: boolean;
 	/** Optional callback invoked per redacted output line as the compose command runs. */
 	onLine?: (line: string) => void;
@@ -1218,6 +1218,8 @@ interface ComposeCommandOptions {
 	forceRecreate?: boolean;
 	build?: boolean; // Build images before starting (--build)
 	noBuildCache?: boolean; // Disable build cache (--no-cache, requires --build)
+	pullBase?: boolean; // Pull newer base images in a separate `build --pull` (requires build)
+	noBuild?: boolean; // up only: --no-build, after the separate build step built the images
 	pullPolicy?: string; // Pull policy: 'always' | 'missing' | 'never'
 	removeVolumes?: boolean;
 	stackFiles?: Record<string, string>; // All files to send to Hawser
@@ -1237,6 +1239,9 @@ interface ComposeCommandOptions {
 	filesToDelete?: FileToDelete[];
 	/** On down: ask the Hawser agent to remove the stack directory entirely (#1162, stack deletion only) */
 	removeFiles?: boolean;
+	/** Direct env staging: stack-dir-relative bind sources to leave as they are on the host
+	 *  (an in-place restore has just written them there from the snapshot). */
+	keepOnHost?: string[];
 }
 
 /**
@@ -1299,6 +1304,8 @@ async function executeLocalCompose(
 	build?: boolean,
 	noBuildCache?: boolean,
 	pullPolicy?: string,
+	pullBase?: boolean,
+	noBuild?: boolean,
 	// direct-remote only: when the stack folder was staged to <remoteStackHostDir> on the target
 	// host, rewrite the compose's same-dir relative binds (`./x`) to <remoteStackHostDir>/x so the
 	// remote daemon binds the staged files. undefined = no staging, compose unchanged.
@@ -1539,7 +1546,7 @@ async function executeLocalCompose(
 		console.log(`${logPrefix} [HostPath] Using stdin for compose content (paths translated)`);
 	}
 
-	args.push(...buildComposeOperationArgs(operation, { forceRecreate, removeVolumes, build, noBuildCache, pullPolicy, serviceName }));
+	args.push(...buildComposeOperationArgs(operation, { forceRecreate, removeVolumes, build, noBuildCache, pullBase, noBuild, pullPolicy, serviceName }));
 
 	const commandStr = args.join(' ');
 
@@ -1560,8 +1567,8 @@ async function executeLocalCompose(
 		console.log(`${logPrefix} Env vars being injected (masked):`, JSON.stringify(redactEnvVarsForLog(envVars), null, 2));
 	}
 
-	// Login to registries before pulling images
-	if (operation === 'up' || operation === 'pull') {
+	// Login to registries before pulling images (a build pulls its base images)
+	if (operation === 'up' || operation === 'pull' || operation === 'build') {
 		await loginToRegistries(dockerHost, logPrefix, spawnEnv.DOCKER_API_VERSION,
 			tlsCertDir ? { certDir: tlsCertDir, skipVerify: tlsConfig?.skipVerify } : undefined);
 	}
@@ -1615,17 +1622,17 @@ async function executeLocalCompose(
 			console.log(`${logPrefix} Timed out:`, timedOut);
 			if (stdout) {
 				console.log(`${logPrefix} STDOUT:`);
-				console.log(stdout);
+				console.log(redactSecretVars(stdout, secretVars));
 			}
 			if (stderr) {
 				console.log(`${logPrefix} STDERR:`);
-				console.log(stderr);
+				console.log(redactSecretVars(stderr, secretVars));
 			}
 
 			if (timedOut) {
 				return {
 					success: false,
-					output: stdout,
+					output: redactSecretVars(stdout, secretVars),
 					error: `docker compose ${operation} timed out after ${COMPOSE_TIMEOUT_MS / 1000} seconds. If a service has a long stop_grace_period, raise the COMPOSE_TIMEOUT env var (seconds) above it.`,
 					command: commandStr
 				};
@@ -1634,7 +1641,7 @@ async function executeLocalCompose(
 			if (code === 0) {
 				return {
 					success: true,
-					output: stdout || stderr || `Stack "${stackName}" ${operation} completed successfully`,
+					output: redactSecretVars(stdout || stderr, secretVars) || `Stack "${stackName}" ${operation} completed successfully`,
 					command: commandStr,
 					exitCode: code
 				};
@@ -1654,7 +1661,7 @@ async function executeLocalCompose(
 			clearTimeout(timeoutId);
 		}
 	} catch (err: any) {
-		console.log(`${logPrefix} EXCEPTION in executeLocalCompose:`, err.message);
+		console.log(`${logPrefix} EXCEPTION in executeLocalCompose:`, redactSecretVars(err.message, secretVars));
 		return {
 			success: false,
 			output: '',
@@ -1711,6 +1718,7 @@ async function executeComposeViaHawser(
 	build?: boolean,
 	noBuildCache?: boolean,
 	pullPolicy?: string,
+	pullBase?: boolean,
 	filesToDelete?: FileToDelete[],
 	removeFiles?: boolean,
 	onLine?: (line: string) => void
@@ -1736,6 +1744,7 @@ async function executeComposeViaHawser(
 	console.log(`${logPrefix} Force recreate:`, forceRecreate ?? false);
 	console.log(`${logPrefix} Remove volumes:`, removeVolumes ?? false);
 	console.log(`${logPrefix} Service name:`, serviceName ?? '(all services)');
+	console.log(`${logPrefix} Build flags: build=${!!build}, noBuildCache=${!!noBuildCache}, pullBase=${!!pullBase}, pullPolicy=${pullPolicy || '(none)'}`);
 	console.log(`${logPrefix} Compose filename:`, composeFileName ?? '(auto-detect)');
 	console.log(`${logPrefix} Non-secret env vars count:`, envVars ? Object.keys(envVars).length : 0);
 	console.log(`${logPrefix} Secret env vars count:`, secretCount);
@@ -1796,6 +1805,8 @@ async function executeComposeViaHawser(
 			build: build || false,
 			noBuildCache: (build && noBuildCache) || false,
 			pullPolicy: pullPolicy || '',
+			// `build --pull`; an agent older than 0.2.51 has no build operation at all.
+			pullBase: pullBase || false,
 			registries, // Registry credentials for docker login
 			serviceName, // Target specific service only (with --no-deps)
 			// Git deletion sync (#966): agent re-verifies containment + content
@@ -1835,10 +1846,10 @@ async function executeComposeViaHawser(
 		console.log(`${logPrefix} ----------------------------------------`);
 		console.log(`${logPrefix} Success:`, result.success);
 		if (result.output) {
-			console.log(`${logPrefix} Output:`, result.output);
+			console.log(`${logPrefix} Output:`, redactSecretVars(result.output, secretVars));
 		}
 		if (result.error) {
-			console.log(`${logPrefix} Error:`, result.error);
+			console.log(`${logPrefix} Error:`, redactSecretVars(result.error, secretVars));
 		}
 
 		// Only reaches the operator when the agent streamed nothing -- otherwise they would
@@ -1868,7 +1879,8 @@ async function executeComposeViaHawser(
 					if (skip.reason === 'already-absent') continue;
 					console.warn(`${logPrefix} Agent kept "${skip.path}" — ${skipReasonMessage(skip.reason)}`);
 				}
-			} else {
+			} else if (operation !== 'build') {
+				// 0.2.51/0.2.52 delete only on up, so a build without a report says nothing yet.
 				deletion = {
 					deleted: [],
 					skipped: filesToDelete.map(f => ({ path: f.path, reason: 'agent-no-support' as DeletionSkipReason }))
@@ -1880,7 +1892,7 @@ async function executeComposeViaHawser(
 		if (result.success) {
 			return {
 				success: true,
-				output: result.output || `Stack "${stackName}" ${operation} completed via Hawser`,
+				output: redactSecretVars(result.output || '', secretVars) || `Stack "${stackName}" ${operation} completed via Hawser`,
 				deletion
 			};
 		} else {
@@ -1894,7 +1906,7 @@ async function executeComposeViaHawser(
 			};
 		}
 	} catch (err: any) {
-		console.log(`${logPrefix} EXCEPTION in executeComposeViaHawser:`, err.message);
+		console.log(`${logPrefix} EXCEPTION in executeComposeViaHawser:`, redactSecretVars(err.message, secretVars));
 		const isStringLength = err.message?.includes('Invalid string length');
 		return {
 			success: false,
@@ -1922,7 +1934,7 @@ async function executeComposeCommand(
 	secretVars?: Record<string, string>,
 	onLine?: (line: string) => void
 ): Promise<StackOperationResult> {
-	const { stackName, envId, forceRecreate, build, noBuildCache, pullPolicy, removeVolumes, stackFiles, workingDir, composePath, envPath, useOverrideFile, serviceName, composeFileName, filesToDelete, removeFiles } = options;
+	const { stackName, envId, forceRecreate, build, noBuildCache, pullBase, noBuild, pullPolicy, removeVolumes, stackFiles, workingDir, composePath, envPath, useOverrideFile, serviceName, composeFileName, filesToDelete, removeFiles, keepOnHost } = options;
 
 	// Stack deployments (including Git automation) are outside the container-update cooldown.
 
@@ -1950,6 +1962,8 @@ async function executeComposeCommand(
 			build,
 			noBuildCache,
 			pullPolicy,
+			pullBase,
+			noBuild,
 			undefined,    // remoteStackHostDir
 			onLine
 		);
@@ -1958,6 +1972,7 @@ async function executeComposeCommand(
 	switch (env.connectionType) {
 		case 'hawser-standard':
 		case 'hawser-edge': {
+			console.log(`[Stack:${stackName}] ${operation} via ${env.connectionType}, agent ${env.hawserVersion ?? 'unknown'}`);
 			// For Hawser deployments, we need to read the .env file and send variables via envVars
 			// because Docker Compose on the remote host may not auto-read the .env file reliably.
 			// Local deployments use --env-file flag, but Hawser needs variables injected via shell env.
@@ -2021,6 +2036,7 @@ async function executeComposeCommand(
 				build,
 				noBuildCache,
 				pullPolicy,
+				pullBase,
 				filesToDelete,
 				removeFiles,
 				onLine
@@ -2060,10 +2076,26 @@ async function executeComposeCommand(
 					operation, remoteStacksDir, stackName, composeContent, hasStackFiles: hasLocalDir,
 				});
 				if (plan.stage && plan.hostDir && workingDir) {
-					const { stageStackDirOnRemote } = await import('./stage-remote-stackfiles');
-					const { staged } = await stageStackDirOnRemote(envId!, plan.hostDir, workingDir);
-					console.log(`[Stack:${stackName}] direct env: staged ${staged} file(s) to ${plan.hostDir} on the remote host (${plan.reason})`);
-					remoteStackHostDir = plan.hostDir;
+					const { stagingDecision } = await import('./remote-staging-plan');
+					const { getOwnDockerHost, getCachedContainerMounts } = await import('./host-path');
+					let self = null;
+					try {
+						self = {
+							envDockerHost: dockerHost, ownDockerHost: getOwnDockerHost(), workingDir: realpathSync(workingDir),
+							hostDir: plan.hostDir, mounts: getCachedContainerMounts(),
+							realpath: (p: string) => { try { return realpathSync(p); } catch { return p; } },
+						};
+					} catch { self = null; }
+					const decision = stagingDecision(plan, self);
+					if (decision.copy) {
+						const { stageStackDirOnRemote } = await import('./stage-remote-stackfiles');
+						if (keepOnHost?.length) console.log(`[Stack:${stackName}] direct env: leaving restored bind source(s) as they are on the host: [${keepOnHost.join(', ')}]`);
+						const { staged } = await stageStackDirOnRemote(envId!, plan.hostDir, workingDir, keepOnHost ?? []);
+						console.log(`[Stack:${stackName}] direct env: staged ${staged} file(s) to ${plan.hostDir} on the remote host (${plan.reason})`);
+					} else {
+						console.log(`[Stack:${stackName}] direct env: ${plan.hostDir} is Dockhand's own stack folder on the same daemon, nothing to copy`);
+					}
+					remoteStackHostDir = decision.rewriteHostDir;
 				}
 			}
 
@@ -2086,6 +2118,8 @@ async function executeComposeCommand(
 				build,
 				noBuildCache,
 				pullPolicy,
+				pullBase,
+				noBuild,
 				remoteStackHostDir,
 				onLine
 			);
@@ -2120,6 +2154,8 @@ async function executeComposeCommand(
 				build,
 				noBuildCache,
 				pullPolicy,
+				pullBase,
+				noBuild,
 				undefined,    // remoteStackHostDir
 				onLine
 			);
@@ -2518,7 +2554,9 @@ export async function requireComposeFile(
  * Reproduces the stack 1:1 — `include:`, override files, and sibling configs
  * referenced by relative paths resolve from the extracted dir, and the compose
  * file keeps its real name (e.g. immich.yaml). For Hawser envs every file in the
- * dir is shipped as stackFiles so the remote host gets the full tree too.
+ * dir is shipped as stackFiles so the remote host gets the full tree too, except
+ * the bind sources in `keepOnHost` (an in-place restore has just written those on
+ * the host); a direct env's stager skips the same paths.
  *
  * The caller owns `stackDir`'s lifecycle (extract then remove). Throws if the
  * chosen compose file is missing from the dir.
@@ -2527,7 +2565,8 @@ export async function redeployStackFromDir(
 	stackName: string,
 	stackDir: string,
 	composeFileName: string,
-	envId?: number | null
+	envId?: number | null,
+	keepOnHost: string[] = []
 ): Promise<StackOperationResult> {
 	const composePath = join(stackDir, composeFileName);
 	if (!existsSync(composePath)) {
@@ -2565,8 +2604,10 @@ export async function redeployStackFromDir(
 	);
 	envVars = resolved.dbNonSecretVars;
 	secretVars = resolved.secretVars;
-	// For Hawser, ship the entire tree (compose + include:d files + sidecars + .env).
-	const stackFiles = await readDirFilesAsMap(stackDir);
+	// For Hawser, ship the entire tree (compose + include:d files + sidecars + .env), except the
+	// bind sources an in-place restore has just written on the host (`keepOnHost`).
+	const { withoutBindSources } = await import('./remote-staging-plan');
+	const stackFiles = withoutBindSources(await readDirFilesAsMap(stackDir), keepOnHost);
 	return await executeComposeCommand(
 		'up',
 		{
@@ -2580,7 +2621,8 @@ export async function redeployStackFromDir(
 			// stack. Force-recreate so the container is rebuilt fresh against the restored
 			// state; a plain `up` sees the unchanged compose and only restarts the stopped
 			// container, which can leave it not-yet-running after an in-place swap.
-			forceRecreate: true
+			forceRecreate: true,
+			keepOnHost
 		},
 		composeContent,
 		envVars,
@@ -3134,17 +3176,19 @@ export async function removeStack(
 }
 
 /**
- * Fire the stack_deployed / stack_deploy_failed notification for a completed deploy.
- * Called from the single deployStack() return point, so EVERY deploy path (local,
- * Hawser, git webhook/manual) dispatches it — previously nothing did, so these
- * notifications never fired (#1295). Best-effort: a notification failure never changes
- * the deploy outcome (mirrors backups/index.ts notify()).
+ * Fire stack_deployed / stack_deploy_failed. deployStack() calls it for every deploy, and
+ * git.ts for a git deploy that fails before deployStack runs. For a git deploy it skips the
+ * channels that get git_sync_success / git_sync_failed. Best-effort: never changes the outcome.
  */
-async function notifyStackDeploy(name: string, envId: number | null | undefined, result: StackOperationResult, isGitDeploy: boolean): Promise<void> {
+export async function notifyStackDeploy(
+	name: string,
+	envId: number | null | undefined,
+	result: { success: boolean; error?: string },
+	isGitDeploy = false
+): Promise<void> {
 	const eventType = result.success ? 'stack_deployed' : 'stack_deploy_failed';
-	// A git deploy suppresses the stack_* notification — deployGitStack emits the more
-	// specific git_sync_success/git_sync_failed instead (no double notification).
-	if (isGitDeploy) return;
+	const gitSyncEvent = result.success ? 'git_sync_success' : 'git_sync_failed';
+	const coveredBy = isGitDeploy ? gitSyncEvent : undefined;
 	try {
 		await sendEventNotification(eventType, {
 			title: result.success ? 'Stack deployed' : 'Stack deploy failed',
@@ -3152,8 +3196,11 @@ async function notifyStackDeploy(name: string, envId: number | null | undefined,
 				? `Stack "${name}" deployed successfully`
 				: `Stack "${name}" deploy failed: ${result.error || 'unknown error'}`,
 			type: result.success ? 'success' : 'error'
-		}, envId ?? undefined);
-	} catch { /* never changes the deploy outcome */ }
+		}, envId ?? undefined, coveredBy);
+	} catch (error) {
+		// Logged only: a notification never changes the deploy outcome.
+		console.error(`[Stack:${name}] ${eventType} notification failed:`, error instanceof Error ? error.message : String(error));
+	}
 }
 
 /**
@@ -3200,7 +3247,7 @@ async function reconcileStackPendingUpdates(stackName: string, envId: number): P
  * Uses stack locking to prevent concurrent deployments.
  */
 export async function deployStack(options: DeployStackOptions): Promise<StackOperationResult> {
-	const { name, compose, envId, sourceDir, forceRecreate, build, noBuildCache, pullPolicy, composePath, envPath, composeFileName, envFileName, filesToDelete, isGitDeploy, onLine } = options;
+	const { name, compose, envId, sourceDir, forceRecreate, build, noBuildCache, pullBase, pullPolicy, composePath, envPath, composeFileName, envFileName, filesToDelete, isGitDeploy, onLine } = options;
 	const logPrefix = `[Stack:${name}]`;
 
 	console.log(`${logPrefix} ========================================`);
@@ -3218,14 +3265,17 @@ export async function deployStack(options: DeployStackOptions): Promise<StackOpe
 	// Must also start with a letter or number
 	if (!isValidStackName(name)) {
 		console.log(`${logPrefix} ERROR: Invalid stack name format`);
-		return {
+		const invalid = {
 			success: false,
 			output: '',
 			error: 'Stack name must be lowercase, start with a letter or number, and contain only letters, numbers, hyphens, and underscores'
 		};
+		await notifyStackDeploy(name, envId, invalid, isGitDeploy);
+		return invalid;
 	}
 
-	return withStackLock(name, async () => {
+	try {
+	return await withStackLock(name, async () => {
 		// Determine working directory: use custom composePath directory if provided,
 		// otherwise fall back to internal stack directory
 		let workingDir: string;
@@ -3247,7 +3297,10 @@ export async function deployStack(options: DeployStackOptions): Promise<StackOpe
 			if (!existingGitSource && await usesFlatLocalStacksDir(envId)) {
 				const collisionError = await checkFlatLocalStackNameCollision(name, envId);
 				if (collisionError) {
-					return { success: false, output: '', error: collisionError };
+					console.log(`${logPrefix} ERROR: ${collisionError}`);
+					const collision = { success: false, output: '', error: collisionError };
+					await notifyStackDeploy(name, envId, collision, isGitDeploy);
+					return collision;
 				}
 			}
 			workingDir = await getStackDir(name, envId);
@@ -3363,7 +3416,10 @@ export async function deployStack(options: DeployStackOptions): Promise<StackOpe
 					if (!existing) {
 						const collisionError = await checkFlatLocalStackNameCollision(name, envId);
 						if (collisionError) {
-							return { success: false, output: '', error: collisionError };
+							console.log(`${logPrefix} ERROR: ${collisionError}`);
+							const collision = { success: false, output: '', error: collisionError };
+							await notifyStackDeploy(name, envId, collision, isGitDeploy);
+							return collision;
 						}
 					}
 				}
@@ -3446,6 +3502,7 @@ export async function deployStack(options: DeployStackOptions): Promise<StackOpe
 			forceRecreate,
 			build,
 			noBuildCache,
+			pullBase: build && pullBase,
 			pullPolicy,
 			stackFiles,
 			workingDir,
@@ -3458,26 +3515,27 @@ export async function deployStack(options: DeployStackOptions): Promise<StackOpe
 		};
 		const composeEnvVars = isGitStack ? dbNonSecretVars : undefined;
 
-		// `--no-cache` is a `build` flag, not an `up` flag (#1479). When a no-cache
-		// rebuild is requested, run a separate `docker compose build --no-cache` first,
-		// then a plain `up`. Skipped on Hawser (its agent has no build op) - the up below
-		// then omits --build for a no-cache request, so nothing crashes there.
-		const deployEnv = envId ? await getEnvironment(envId) : null;
-		if (shouldRunSeparateBuildStep(build, noBuildCache, deployEnv?.connectionType)) {
-			console.log(`${logPrefix} Running separate 'build --no-cache' step before up...`);
-			const buildResult = await executeComposeCommand('build', cmdOptions, compose, composeEnvVars, secretVars);
-			if (!buildResult.success) return buildResult;
-		}
-
+		const warn = (warning: string) => {
+			console.warn(`${logPrefix} ${warning}`);
+			onLine?.(warning);
+		};
+		console.log(`${logPrefix} Deploy plan: ${deployPlan(build, build && pullBase, noBuildCache, pullPolicy)}`);
 		console.log(`${logPrefix} Calling executeComposeCommand...`);
-		const result = await executeComposeCommand(
-			'up',
-			cmdOptions,
-			compose,
-			composeEnvVars,
-			secretVars,
-			onLine
-		);
+		// `--no-cache` and `--pull` are `build` flags that `up` lacks, so either one builds in its own step.
+		const result = runsSeparateBuild(build, pullBase, noBuildCache)
+			? await pullBuildThenUp(
+					pullPolicy,
+					// The Hawser agent's up has no --no-build and its pull takes no flags.
+					(operation, opts) =>
+						executeComposeCommand(operation, stepOptions(cmdOptions, opts), compose, composeEnvVars, secretVars, onLine),
+					warn
+				)
+			: await pullThenUp(
+					pullPolicy,
+					(operation, upPullPolicy) =>
+						executeComposeCommand(operation, { ...cmdOptions, pullPolicy: upPullPolicy }, compose, composeEnvVars, secretVars, onLine),
+					warn
+				);
 		// F4 fix: `secretVars` here is POST-resolveProviderEnvVars (line ~3059 above) --
 		// the same set executeComposeCommand just redacted streamed lines against. This
 		// is the single call site inside deployStack(), so setting it here covers both
@@ -3501,10 +3559,10 @@ export async function deployStack(options: DeployStackOptions): Promise<StackOpe
 		if (!result.deletion && localDeletionResult) {
 			result.deletion = localDeletionResult;
 		}
-		// Fire stack_deployed / stack_deploy_failed. This is the single point every deploy
-		// path funnels through, so all of them notify (#1295). A git deploy suppresses the
-		// stack_* notification (deployGitStack sends git_sync_*).
-		await notifyStackDeploy(name, envId, result, isGitDeploy ?? false);
+		// Fire stack_deployed / stack_deploy_failed. Every deploy path that gets this far
+		// funnels through here; the early returns above notify on their own. A git deploy
+		// skips the channels that get its git_sync_* event instead.
+		await notifyStackDeploy(name, envId, result, isGitDeploy);
 
 		// Clear stale pending-update badges (#1311). Fire-and-forget with a timeout so a
 		// slow Docker API can't delay or affect the already-succeeded deploy.
@@ -3517,6 +3575,11 @@ export async function deployStack(options: DeployStackOptions): Promise<StackOpe
 		}
 		return result;
 	});
+	} catch (error) {
+		// A throw (secret provider, env file decryption, database) is a failed deploy too.
+		await notifyStackDeploy(name, envId, { success: false, error: error instanceof Error ? error.message : String(error) }, isGitDeploy);
+		throw error;
+	}
 }
 
 /**

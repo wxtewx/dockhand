@@ -66,7 +66,7 @@
 	// Options picked in the RedeployPopover next to "Save & redeploy" / "Create & Start"
 	// (see the pull/build/forceRecreate contract RedeployPopover.svelte already uses for
 	// the stack-grid redeploy actions).
-	type DeployOptions = { pull: boolean; build: boolean; forceRecreate: boolean };
+	type DeployOptions = { pull: boolean; respectPullPolicy?: boolean; build: boolean; pullBase?: boolean; forceRecreate: boolean };
 
 	interface Props {
 		open: boolean;
@@ -1456,17 +1456,17 @@
 						console.error('Failed to fetch stack containers:', e);
 					}
 
-					// Load the stack's icon even when the compose isn't local (read-only git
-					// stack): the icon is Dockhand metadata, not repo content, so the header
-					// must still show a custom icon the user set.
+					// Load the stack's icon and secret provider even when the compose isn't local
+					// (read-only git stack): both are Dockhand metadata, not repo content.
 					try {
 						const sourcesRes = await fetch(appendEnvParam('/api/stacks/sources', envId));
 						if (sourcesRes.ok) {
 							const sourceMap = await sourcesRes.json();
 							formIcon = sourceMap?.[stackName]?.icon ?? null;
+							formSecretProviderId = sourceMap?.[stackName]?.secretProviderId ?? null;
 						}
 					} catch (e) {
-						console.warn('Failed to load stack icon:', e);
+						console.warn('Failed to load stack source (icon / secret provider):', e);
 					}
 					return;
 				}
@@ -1664,7 +1664,9 @@
 			// plain "Create" button, which never reaches deployStack server-side anyway.
 			if (start && deployOptions) {
 				requestBody.pull = deployOptions.pull;
+				requestBody.respectPullPolicy = deployOptions.respectPullPolicy;
 				requestBody.build = deployOptions.build;
+				requestBody.pullBase = deployOptions.pullBase;
 				requestBody.forceRecreate = deployOptions.forceRecreate;
 			}
 
@@ -1844,7 +1846,9 @@
 			// plain "Save" button, which never reaches deployStack server-side anyway.
 			if (restart && deployOptions) {
 				requestBody.pull = deployOptions.pull;
+				requestBody.respectPullPolicy = deployOptions.respectPullPolicy;
 				requestBody.build = deployOptions.build;
+				requestBody.pullBase = deployOptions.pullBase;
 				requestBody.forceRecreate = deployOptions.forceRecreate;
 			}
 
@@ -2632,6 +2636,7 @@
 									bind:secretProviderId={formSecretProviderId}
 									bind:envVars
 									providers={secretProviders}
+									{readonly}
 									onchange={() => { secretProviderTouched = true; markDirty(); debouncedValidate(); }}
 								/>
 								<StackEnvVarsPanel

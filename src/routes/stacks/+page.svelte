@@ -11,6 +11,8 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { SearchInput } from '$lib/components/ui/search-input';
+	import { initialWildcard, stackMatchesSearch } from '$lib/utils/wildcard-match';
+	import { loadLocalFlag, saveLocalFlag } from '$lib/utils/local-flag';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as Popover from '$lib/components/ui/popover';
@@ -473,6 +475,10 @@
 	const initialSearch = $page.url.searchParams.get('search') ?? '';
 	let searchInput = $state(initialSearch);
 	let searchQuery = $state(initialSearch);
+	// Wildcard mode for the search box: the user's choice is kept per browser, and a
+	// search arriving in the URL brings its own mode (a link from another page is plain).
+	const SEARCH_WILDCARD_KEY = 'dockhand-stacks-search-wildcard';
+	let searchWildcard = $state(initialWildcard($page.url.searchParams, !!initialSearch, loadLocalFlag(SEARCH_WILDCARD_KEY)));
 	let sortField = $state<SortField>('name');
 	let sortDirection = $state<SortDirection>('asc');
 
@@ -769,11 +775,7 @@
 
 		// Filter by search query
 		if (searchQuery.trim()) {
-			const query = searchQuery.toLowerCase();
-			result = result.filter(stack =>
-				stack.name.toLowerCase().includes(query) ||
-				getDisplayStatus(stack).toLowerCase().includes(query)
-			);
+			result = result.filter(stack => stackMatchesSearch(stack.name, getDisplayStatus(stack), searchQuery, searchWildcard));
 		}
 
 		// The cooling-down filter is synthetic (not a stack status), so apply it
@@ -985,6 +987,8 @@
 		const url = new URL($page.url);
 		if (q) url.searchParams.set('search', q);
 		else url.searchParams.delete('search');
+		if (q && searchWildcard) url.searchParams.set('wildcard', '1');
+		else url.searchParams.delete('wildcard');
 		if (url.toString() !== $page.url.toString()) {
 			goto(url.toString(), { replaceState: true, noScroll: true, keepFocus: true });
 		}
@@ -1029,6 +1033,7 @@
 	// Counts for the compact dismiss: stacks with a digest update, and total containers
 	// with a newer version tag - each shown with its icon, mirroring the containers page.
 	const stackDigestCount = $derived(stacks.filter((s) => s.updatesAvailable).length);
+	const stackContainerIds = $derived(new Set(stacks.flatMap((s) => (s.containerDetails ?? []).map((c) => c.id))));
 	// Containers waiting out the minimum image age, across every stack.
 	const stackCoolingDownCount = $derived(
 		stacks.reduce((sum, s) => sum + (s.coolingDownCount ?? 0), 0)
@@ -1273,7 +1278,7 @@
 		}
 	}
 
-	async function redeployStack(name: string, options: { pull: boolean; build: boolean; forceRecreate: boolean }) {
+	async function redeployStack(name: string, options: { pull: boolean; respectPullPolicy?: boolean; build: boolean; pullBase?: boolean; forceRecreate: boolean }) {
 		operationError = null;
 		stackActionLoading = name;
 		startComposeOutput(m.stacks_list_output_redeploying({ name }), name, 'deploy');
@@ -1281,7 +1286,9 @@
 		// otherwise visible once the popover closes).
 		const chosen = [
 			options.pull && m.stacks_list_output_option_pull(),
+			options.respectPullPolicy && m.stacks_redeploy_respect_pull_policy(),
 			options.build && m.stacks_list_output_option_build(),
+			options.pullBase && m.stacks_redeploy_pull_base_images(),
 			options.forceRecreate && m.stacks_list_output_option_force_recreate()
 		].filter(Boolean);
 		appendComposeOutputLine(m.stacks_list_output_options({ options: chosen.length ? chosen.join(', ') : m.stacks_list_output_option_none() }));
@@ -1796,7 +1803,7 @@
 			{/if}
 		</PageHeader>
 		<div class="flex flex-wrap items-center gap-2">
-			<SearchInput bind:value={searchInput} placeholder={m.stacks_list_search_placeholder()} class="h-8 w-48 text-sm" />
+			<SearchInput bind:value={searchInput} bind:wildcard={searchWildcard} onwildcardchange={(on) => saveLocalFlag(SEARCH_WILDCARD_KEY, on)} wildcardHint={m.ui_search_wildcard_stacks()} placeholder={m.stacks_list_search_placeholder()} class="h-8 w-48 text-sm" />
 			<MultiSelectFilter
 				bind:value={statusFilter}
 				options={filterOptions}
@@ -1813,6 +1820,7 @@
 			<CheckUpdatesButton
 				{envId}
 				hasPendingUpdates={stacks.some((s) => s.updatesAvailable)}
+				containerIds={loading ? undefined : stackContainerIds}
 				onComplete={(result) => {
 					// Record failed checks so stack containers show a "check failed" state
 					// instead of masquerading as up to date (#1255). Session-only.
