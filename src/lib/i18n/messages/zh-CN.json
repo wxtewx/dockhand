@@ -471,6 +471,7 @@
 	"containers_list_pinned_digest_heading": "已锁定到摘要",
 	"containers_list_pinned_digest_title": "标签已指向新摘要，但此镜像仍锁定在旧摘要上 - 请更新 compose 文件中的摘要以拉取",
 	"containers_list_update_held_title": "更新暂缓:距镜像最小存在时间还剩 {count} 小时",
+	"containers_list_cooldown_notes_title": "查看被暂缓更新的发行说明",
 	"containers_list_cooldown_hours": "{count} 小时",
 	"containers_list_filter_cooling_down": "等待冷却",
 	"containers_list_update_check_failed": "更新检查失败",
@@ -577,7 +578,6 @@
 	"containers_inspect_image": "镜像",
 	"containers_inspect_update_available": "有可用更新",
 	"containers_inspect_newer_image_available": "有更新的镜像可用",
-	"containers_inspect_update_held_hint": "有可用更新，但镜像尚未达到最小镜像期限",
 	"containers_inspect_update_held_short": "更新已暂缓 - 还剩 {hours} 小时",
 	"containers_inspect_command": "命令",
 	"containers_inspect_not_running": "容器未在运行",
@@ -1293,6 +1293,7 @@
 	"containers_backup_no_schedules_stack": "此堆栈未配置备份计划。",
 	"containers_backup_new_schedule": "新建备份计划",
 	"containers_backup_edit_schedule": "编辑计划",
+	"containers_backup_on_schedule": "按计划运行",
 	"containers_backup_enabled": "已启用",
 	"containers_backup_stop_container_during": "备份期间停止容器",
 	"containers_backup_stop_stack_during": "备份期间停止堆栈",
@@ -1602,6 +1603,8 @@
 	"updates_notes_not_inline": "这些版本的发行说明无法内联显示。",
 	"updates_no_source_before": "此镜像不发布 Dockhand 可读取的发行说明(没有",
 	"updates_no_source_after": "标签，指向 GitHub 或 Gitea/Forgejo 仓库）。",
+	"cooldown_notes_intro": "有可用更新，但因镜像最小保留期而被暂缓。请查看发行说明以决定是否立即应用。",
+	"cooldown_notes_update_now": "立即更新",
 	"updates_notes_from": "备注来自",
 	"tags_filter_all": "全部标签",
 	"tags_filter_untagged": "无标签",
@@ -1826,7 +1829,7 @@
 	"backupui_hawser_default_set_under": ",请在下方设置",
 	"backupui_hawser_default_after": "并重新打开此对话框。",
 	"backupui_backup_all_files": "备份所有文件（{count}）",
-	"backupui_captured_as_bind": "已在下方捕获为绑定挂载",
+	"backupui_captured_as_bind": "下方也作为绑定挂载",
 	"backupui_captured_as_volume": "已在下方捕获为数据卷",
 	"backupui_always_kept": "始终保留",
 	"backupui_helper_failed_title": "备份辅助程序无法在此环境上运行",
@@ -2950,6 +2953,10 @@
 	"stacks_redeploy_trigger_title": "重新部署",
 	"stacks_redeploy_more_options": "更多部署选项",
 	"stacks_redeploy_pull_images": "拉取镜像",
+	"stacks_redeploy_respect_pull_policy": "遵循 pull_policy",
+	"stacks_redeploy_respect_pull_policy_hint": "先运行 docker compose pull，按每个服务的 pull_policy 拉取：设为 never 或 build，或设为 missing 且镜像已存在的服务不会拉取。拉取失败会记录在日志中，部署继续进行，但它可能中断其他服务的拉取，这些服务将保留当前镜像。",
+	"stacks_redeploy_pull_base_images": "拉取基础镜像",
+	"stacks_redeploy_pull_base_images_hint": "先运行 docker compose build --pull，为每个 Dockerfile 的 FROM 镜像拉取更新版本；普通构建会复用缓存中的镜像。在 Hawser 上需要 0.2.51 或更新版本的代理；较旧的代理会使用本地基础镜像构建并记录警告。",
 	"stacks_redeploy_build_images": "构建镜像",
 	"stacks_redeploy_force_recreate": "强制重建",
 	"stacks_redeploy_deploying": "部署中...",
@@ -3104,6 +3111,7 @@
 	"stackenv_add_first": "添加您的第一个变量",
 	"secretprovider_label": "密钥提供商",
 	"secretprovider_unknown": "未知提供者",
+	"secretprovider_readonly_hint": "请在 Git 堆栈设置中选择提供商（编辑 Git 堆栈）。",
 	"secretprovider_none_disabled": "无——已禁用",
 	"secretprovider_none": "无",
 	"stacks_list_restart_stack": "重启堆栈 {name}",
@@ -3145,6 +3153,21 @@
 			"match": {
 				"countPlural=one": "已清理 {count} 个镜像,释放 {size}",
 				"countPlural=other": "已清理 {count} 个镜像,释放 {size}"
+			}
+		}
+	],
+	"images_list_toast_pruned_count": [
+		{
+			"declarations": [
+				"input count",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
+			"match": {
+				"countPlural=one": "已清理 {count} 个镜像",
+				"countPlural=other": "已清理 {count} 个镜像"
 			}
 		}
 	],
@@ -4137,6 +4160,7 @@
 	"backups_already_finishing": "备份已在收尾——它将正常完成。",
 	"backups_stop_failed": "停止备份失败",
 	"backups_load_failed": "加载备份失败",
+	"backups_diff_other_destination": "无法比较位于不同目标位置的快照",
 	"backups_log_title": "备份: {name}",
 	"backups_completed_with_warnings_for": "{name} 的备份已完成但有警告",
 	"backups_config_removed": "已移除 {name} 的备份配置",
@@ -4654,6 +4678,8 @@
 	"ui_sidebar_description": "显示移动端侧边栏。",
 	"ui_copy_error": "复制错误",
 	"ui_clear_search": "清除搜索",
+	"ui_search_wildcard": "通配符搜索：* 匹配任意字符，? 匹配一个字符，模式须完整匹配名称、镜像或标签",
+	"ui_search_wildcard_stacks": "通配符搜索：* 匹配任意字符，? 匹配一个字符，模式须完整匹配堆栈名称或状态",
 	"ui_date_picker_placeholder": "选择日期",
 	"apidocs_page_title": "Dockhand API 文档",
 	"profile_confirm_action_revoke": "吊销",
@@ -5137,6 +5163,7 @@
 	"settings_envs_prune_mode_all_hint": "删除未被任何容器使用的所有镜像(更激进)",
 	"settings_envs_prune_last_pruned": "上次清理：{date}",
 	"settings_envs_prune_last_result": "已移除 {count} 个镜像,回收 {size}",
+	"settings_envs_prune_last_result_count": "已移除 {count} 个镜像",
 	"settings_envs_prune_in_use_note": "正在使用或已停止的容器正在使用的镜像永远不会被删除。",
 	"settings_envs_timezone": "时区",
 	"settings_envs_timezone_hint": "用于调度自动更新、Git 同步和镜像清理",

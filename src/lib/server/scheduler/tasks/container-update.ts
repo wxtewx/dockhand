@@ -37,6 +37,7 @@ import {
 	recreateContainerFromInspect,
 	inspectImage
 } from '../../docker';
+import { withPullRetry, withCheckRetry } from '../../pull-retry';
 import type { ImageEnvLabels } from '../../container-env-merge';
 import { getScannerSettings, scanImage, type ScanResult, type VulnerabilitySeverity } from '../../scanner';
 import { sendEventNotification } from '../../notifications';
@@ -429,10 +430,10 @@ export async function runContainerUpdate(
 		}
 
 		log(`Checking registry for updates: ${imageNameFromConfig}`);
-		const registryCheck = await checkImageUpdateAvailable(
+		const registryCheck = await withCheckRetry(() => checkImageUpdateAvailable(
 			imageNameFromConfig, currentImageId, envId, true,
 			isCooldownSkippedByLabel(inspectData.Config?.Labels)
-		);
+		), { log, label: `${containerName} (${imageNameFromConfig})${envId ? `, env ${envId}` : ''}` });
 
 		if (registryCheck.isLocalImage) {
 			log(`Local image detected - skipping (auto-update requires registry)`);
@@ -494,7 +495,7 @@ export async function runContainerUpdate(
 			try {
 				// Pull new image
 				log(`Pulling new image: ${imageNameFromConfig}`);
-				const pulled = await pullImage(imageNameFromConfig, undefined, envId, true);
+				const pulled = await withPullRetry(() => pullImage(imageNameFromConfig, undefined, envId, true), { log, label: `${containerName} (${imageNameFromConfig})${envId ? `, env ${envId}` : ''}` });
 				verifiedImageId = pulled?.imageId;
 				verifiedImageReference = pulled?.reference;
 				if (pulled) newDigest = pulled.digest;
@@ -588,7 +589,7 @@ export async function runContainerUpdate(
 			// No scanning - simple pull
 			log(`Pulling update (no vulnerability scan)...`);
 			try {
-				const pulled = await pullImage(imageNameFromConfig, undefined, envId, true);
+				const pulled = await withPullRetry(() => pullImage(imageNameFromConfig, undefined, envId, true), { log, label: `${containerName} (${imageNameFromConfig})${envId ? `, env ${envId}` : ''}` });
 				verifiedImageId = pulled?.imageId;
 				verifiedImageReference = pulled?.reference;
 				if (pulled) newDigest = pulled.digest;

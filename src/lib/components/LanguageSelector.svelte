@@ -32,10 +32,12 @@
 	const NAMES: Record<string, string> = {
 		en: 'English',
 		de: 'Deutsch',
+		'es-ES': 'Español',
 		'fr-FR': 'Français',
 		'fr-CA': 'Français (Canada)',
 		pl: 'Polski',
-		'zh-CN': '简体中文'
+		'zh-CN': '简体中文',
+		ru: 'Русский'
 	};
 
 	/** What is stored, which is not what is rendered: absent means follow the browser. */
