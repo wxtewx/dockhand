@@ -19,7 +19,7 @@ import {
 export const GET: RequestHandler = async ({ cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !(await auth.can('secrets', 'view'))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -29,8 +29,8 @@ export const GET: RequestHandler = async ({ cookies }) => {
 		]);
 		return json({ providerId: resolveDefaultProviderId(raw, providers) });
 	} catch (error) {
-		console.error('Error reading default secret provider:', error);
-		return json({ error: 'Failed to read the default secret provider' }, { status: 500 });
+		console.error('读取默认密钥提供程序时出错:', error);
+		return json({ error: '读取默认密钥提供程序失败' }, { status: 500 });
 	}
 };
 
@@ -47,7 +47,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
 export const PUT: RequestHandler = async ({ request, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !(await auth.can('secrets', 'edit'))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -60,18 +60,18 @@ export const PUT: RequestHandler = async ({ request, cookies }) => {
 
 		const providerId = parseDefaultProviderId(body.providerId);
 		if (providerId === null) {
-			return json({ error: 'Invalid provider id' }, { status: 400 });
+			return json({ error: '无效的提供程序 ID' }, { status: 400 });
 		}
 
 		const providers = await getSecretProviders();
 		if (!providers.some((p) => p.id === providerId)) {
-			return json({ error: 'Secret provider not found' }, { status: 400 });
+			return json({ error: '未找到密钥提供程序' }, { status: 400 });
 		}
 
 		await setSetting(DEFAULT_SECRET_PROVIDER_SETTING, providerId);
 		return json({ providerId });
 	} catch (error) {
-		console.error('Error saving default secret provider:', error);
-		return json({ error: 'Failed to save the default secret provider' }, { status: 500 });
+		console.error('保存默认密钥提供程序时出错:', error);
+		return json({ error: '保存默认密钥提供程序失败' }, { status: 500 });
 	}
 };

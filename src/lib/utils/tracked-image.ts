@@ -31,8 +31,8 @@ export function portableImageReference(image: string, labels?: Record<string, st
 }
 
 export function trackedImageLabels(labels: Record<string, string> | undefined, reference: string, imageId: string, registryReference?: string): Record<string, string> {
-	if (!/^sha256:[a-f0-9]{64}$/.test(imageId)) throw new Error('Invalid verified image ID');
-	if (registryReference !== undefined && !validRegistryReference(reference, registryReference)) throw new Error('Invalid verified registry reference');
+	if (!/^sha256:[a-f0-9]{64}$/.test(imageId)) throw new Error('无效的已校验镜像 ID');
+	if (registryReference !== undefined && !validRegistryReference(reference, registryReference)) throw new Error('无效的已校验镜像仓库引用');
 	return { ...labels, [UPDATE_SOURCE_LABEL]: JSON.stringify({ reference, imageId, registryReference }) };
 }
 

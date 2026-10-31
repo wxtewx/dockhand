@@ -57,7 +57,7 @@ export class KeyedSerializer {
 				prev,
 				new Promise<never>((_, reject) => {
 					timer = setTimeout(
-						() => reject(new QueueTimeoutError(`timed out waiting for "${key}" after ${waitMs}ms`)),
+						() => reject(new QueueTimeoutError(`等待 "${key}" 超时，已等候 ${waitMs} 毫秒`)),
 						waitMs
 					);
 				})

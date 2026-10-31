@@ -102,11 +102,11 @@ export async function pruneAllUnused(docker: ImagePrunePorts): Promise<ImagePrun
 		withoutKept = await docker.listImages(buildKeepLabelFilter(true));
 	} catch (err) {
 		// Older engines (Docker 20.10) refuse `label!` on the image list but honour it in prune.
-		docker.log(`label! image listing failed (${failure(err)}); using the ordinary prune`);
+		docker.log(`label! 镜像列表查询失败 (${failure(err)}); 将使用原生修剪接口`);
 		return docker.prune();
 	}
 	if (!labelNegationBroken(all.length, withoutKept.length)) {
-		docker.log(`label! filter works (${all.length} images, ${withoutKept.length} without the keep label); using the engine prune`);
+		docker.log(`label! 过滤器可用 (${all.length} 共 ${all.length} 个镜像，${withoutKept.length} 个无保留标签)；使用引擎原生修剪`);
 		return docker.prune();
 	}
 
@@ -114,7 +114,7 @@ export async function pruneAllUnused(docker: ImagePrunePorts): Promise<ImagePrun
 	const containers = await docker.listContainers();
 	const usedIds = new Set(containers.map((c) => c.ImageID));
 	const targets = imageRefsToRemove(all, new Set(kept.map((i) => i.Id)), usedIds);
-	docker.log(`label! filter matches no image (${all.length} listed, ${kept.length} with the keep label, ${usedIds.size} in use by containers); removing ${targets.length} unused images one by one`);
+	docker.log(`label! 过滤器匹配不到任何镜像 (列出 ${all.length} 个镜像，${kept.length} 个带有保留标签，${usedIds.size} 个正在被容器使用); 逐个移除 ${targets.length} 个未使用镜像`);
 	const deleted: ImageDeleteEntry[] = [];
 	let refused = 0;
 	for (const refs of targets) {
@@ -124,13 +124,13 @@ export async function pruneAllUnused(docker: ImagePrunePorts): Promise<ImagePrun
 			} catch (err) {
 				// In use since the listing, or a parent of another image: Docker's refusal keeps it.
 				refused++;
-				if (refused <= MAX_LOGGED_REFUSALS) docker.log(`Kept image "${ref}" (${failure(err)})`);
+				if (refused <= MAX_LOGGED_REFUSALS) docker.log(`保留镜像 "${ref}" (${failure(err)})`);
 				break;
 			}
 		}
 	}
-	if (refused > MAX_LOGGED_REFUSALS) docker.log(`${refused - MAX_LOGGED_REFUSALS} more images kept by the engine`);
-	docker.log(`one-by-one prune done: ${targets.length - refused} of ${targets.length} images removed, ${refused} kept by the engine, space freed not known`);
+	if (refused > MAX_LOGGED_REFUSALS) docker.log(`另有 ${refused - MAX_LOGGED_REFUSALS} 个镜像被引擎保留，不再单独输出日志`);
+	docker.log(`逐个修剪完成: ${targets.length - refused} / ${targets.length} 个镜像已移除，${refused} 个被引擎保留，释放空间未知`);
 	return { ImagesDeleted: deleted.length ? deleted : null };
 }
 
@@ -145,7 +145,7 @@ export function holderFailureWarning(err: unknown, image: string, envId: number 
 	const status = (err as { statusCode?: number } | null)?.statusCode;
 	if (status === 404) return null;
 	const message = err instanceof Error ? err.message : String(err);
-	return `[Prune] env ${envId ?? 'local'}: could not protect ${image} from the prune (HTTP ${status ?? 'no response'}): ${message}`;
+	return `[修剪] 环境 ${envId ?? '本地'}: 无法保护 ${image} 不被修剪 (HTTP ${status ?? '无响应'}): ${message}`;
 }
 
 /** An engine error for the log: its HTTP status, when it has one, and its message. */

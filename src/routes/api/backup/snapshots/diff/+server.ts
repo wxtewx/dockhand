@@ -26,7 +26,7 @@ export const GET: RequestHandler = async ({ url, cookies, request }) => {
 	const snapB = url.searchParams.get('snapshotB');
 
 	if (!destId || !snapA || !snapB) {
-		return json({ error: 'Missing required params: destinationId, snapshotA, snapshotB' }, { status: 400 });
+		return json({ error: '缺少必填参数: destinationId, snapshotA, snapshotB' }, { status: 400 });
 	}
 
 	const invalidA = validateSnapshotId(snapA);

@@ -63,20 +63,20 @@ export const PUT: RequestHandler = async (event) => {
 
 	// Validate cron schedule if provided (audit #7)
 	if (typeof body.schedule === 'string' && body.schedule.trim() && !isValidCron(body.schedule.trim())) {
-		return json({ error: `Invalid cron expression: ${body.schedule}` }, { status: 400 });
+		return json({ error: `Cron 表达式无效: ${body.schedule}` }, { status: 400 });
 	}
 
 	// Validate retention keep-* values before persisting (audit medium #13).
 	const retentionCheck = validateRetention(body.retention);
 	if (!retentionCheck.ok) {
-		return json({ error: `Invalid retention: ${retentionCheck.reason}` }, { status: 400 });
+		return json({ error: `保留策略配置无效: ${retentionCheck.reason}` }, { status: 400 });
 	}
 
 	// (audit #56) Changing the destination while a backup is in flight would leave
 	// the running backup on the OLD destination's lock while the schedule re-arms
 	// under the new one — refuse the destination change until the run finishes.
 	if (body.destinationId !== undefined && body.destinationId !== existing.destinationId && isBackupRunning(id)) {
-		return json({ error: 'Cannot change the destination while a backup is running for this config' }, { status: 409 });
+		return json({ error: '该配置正在执行备份，暂时无法修改存储位置' }, { status: 409 });
 	}
 
 	// A local-path repo is allowed on any env; a wrong-host mount fails loud via
@@ -108,9 +108,9 @@ export const PUT: RequestHandler = async (event) => {
 			tags: body.tags ? JSON.stringify(body.tags) : body.tags
 		});
 
-		if (!updated) return json({ error: 'Update failed' }, { status: 500 });
-		const retentionSent = body.retention === undefined ? 'not sent' : body.retention === null ? 'none' : 'set';
-		console.log(`[Backup] config ${id} "${updated.targetName}" env=${updated.environmentId ?? 'none'} saved: schedule ${existing.schedule || 'manual'} -> ${updated.schedule || 'manual'}, enabled ${existing.enabled} -> ${updated.enabled} (sent ${body.enabled ?? 'nothing'}), retention ${retentionSent}`);
+		if (!updated) return json({ error: '更新失败' }, { status: 500 });
+		const retentionSent = body.retention === undefined ? '未发送' : body.retention === null ? '无' : '已设置';
+		console.log(`[备份] 配置 ${id} "${updated.targetName}" 环境=${updated.environmentId ?? '无'} 已保存: 调度 ${existing.schedule || '手动'} -> ${updated.schedule || '手动'}, 启用状态 ${existing.enabled} -> ${updated.enabled} (提交 ${body.enabled ?? '无数据'}), 保留策略 ${retentionSent}`);
 
 		// Update schedule registration
 		if (updated.enabled && updated.schedule) {
@@ -123,7 +123,7 @@ export const PUT: RequestHandler = async (event) => {
 		return json(updated);
 	} catch (error: any) {
 		// The driver's message, not error.message: a failed query's carries its params, the options JSON with webhook URLs.
-		console.error(`[Backup] config ${id}: saving failed:`, error?.cause instanceof Error ? error.cause.message : error?.message);
+		console.error(`[备份] 配置 ${id}: 保存失败:`, error?.cause instanceof Error ? error.cause.message : error?.message);
 		return json({ error: error.message }, { status: 500 });
 	}
 };
@@ -155,7 +155,7 @@ export const DELETE: RequestHandler = async (event) => {
 	// (audit #55) Don't delete a config out from under an in-flight backup — the
 	// run's helper containers + lock reference it; deleting mid-run is messy.
 	if (isBackupRunning(id)) {
-		return json({ error: 'A backup is currently running for this config — stop it before deleting' }, { status: 409 });
+		return json({ error: '该配置正在执行备份，请等待任务结束后再删除' }, { status: 409 });
 	}
 
 	// Optionally forget this config's snapshots too (opt-in; snapshots survive by default so

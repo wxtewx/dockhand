@@ -216,8 +216,8 @@ export class ComposeFileNotFoundError extends Error {
 
 	constructor(stackName: string) {
 		super(
-			`Compose file not found for stack "${stackName}". ` +
-				`The stack may have been deleted or was created outside of Dockhand.`
+			`未找到堆栈 "${stackName}" 的 Compose 文件。 ` +
+			`该堆栈可能已被删除或在 Dockhand 外部创建。`
 		);
 		this.name = 'ComposeFileNotFoundError';
 		this.stackName = stackName;
@@ -324,7 +324,7 @@ async function readDirFilesAsMap(dirPath: string): Promise<Record<string, string
 			return;
 		}
 		if (totalSize + fileSize > MAX_TOTAL_SIZE) {
-			skipped.push(`${relPath} (would exceed ${MAX_TOTAL_SIZE / 1024 / 1024} MB total limit)`);
+			skipped.push(`${relPath} (将超出 ${MAX_TOTAL_SIZE / 1024 / 1024} MB 总上限)`);
 			return;
 		}
 		const bytes = readFileSync(fullPath);
@@ -350,7 +350,7 @@ async function readDirFilesAsMap(dirPath: string): Promise<Record<string, string
 			if (entry.isSymbolicLink()) {
 				let target = '?';
 				try { target = readlinkSync(fullPath); } catch { /* keep the placeholder */ }
-				skipped.push(`${relPath} -> ${target} (symlink; only regular files are sent)`);
+				skipped.push(`${relPath} -> ${target} (符号链接；仅发送普通文件)`);
 				continue;
 			}
 
@@ -367,7 +367,7 @@ async function readDirFilesAsMap(dirPath: string): Promise<Record<string, string
 	await scanDir(dirPath);
 
 	if (skipped.length > 0) {
-		console.log(`[readDirFilesAsMap] Skipped ${skipped.length} file(s) exceeding size limits: ${skipped.join(', ')}`);
+		console.log(`[readDirFilesAsMap] 已跳过 ${skipped.length} 个超出大小限制的文件：${skipped.join(', ')}`);
 	}
 
 	return files;
@@ -543,7 +543,7 @@ export interface StackPathValidation {
  */
 export async function validateStackPath(input: string): Promise<StackPathValidation> {
 	if (!input || typeof input !== 'string') {
-		return { ok: false, error: 'Path is required' };
+		return { ok: false, error: '路径为必填项' };
 	}
 
 	const resolvedPath = resolveStackPath(input);
@@ -551,19 +551,19 @@ export async function validateStackPath(input: string): Promise<StackPathValidat
 	// Normalized form must not contain a .. segment.
 	const segments = pathNormalize(resolvedPath).split(pathSep);
 	if (segments.includes('..')) {
-		return { ok: false, error: 'Path traversal not allowed' };
+		return { ok: false, error: '不允许路径穿越' };
 	}
 
 	const filename = basename(resolvedPath);
 	if (!isAllowedStackFilename(filename)) {
 		return {
 			ok: false,
-			error: `File "${filename}" is not an allowed stack filename (must end in .yml, .yaml, or .env)`
+			error: `文件 "${filename}" 不是合法的堆栈文件名 (后缀必须为 .yml, .yaml, 或 .env)`
 		};
 	}
 
 	if (isForbiddenStackPath(resolvedPath)) {
-		return { ok: false, error: 'Path is not allowed' };
+		return { ok: false, error: '该路径不允许访问' };
 	}
 
 	return { ok: true, resolved: resolvedPath };
@@ -714,12 +714,12 @@ export function validateStacksDirAtStartup(): void {
 		if (!statSync(resolved).isDirectory()) throw new Error('not a directory');
 		accessSync(resolved, fsConstants.W_OK);
 	} catch {
-		console.warn(`[StacksDir] STACKS_DIR="${raw}" (resolved: ${resolved}) is missing, not a directory, or not writable; falling back to $DATA_DIR/stacks.`);
+		console.warn(`[堆栈目录] STACKS_DIR="${raw}" (解析后: ${resolved}) 不存在、不是目录或无写入权限；将回退至 $DATA_DIR/stacks。`);
 		delete process.env.STACKS_DIR;
 		return;
 	}
 
-	console.log(`[StacksDir] Using STACKS_DIR=${resolved}`);
+	console.log(`[堆栈目录] 使用 STACKS_DIR=${resolved}`);
 }
 
 // =============================================================================
@@ -768,7 +768,7 @@ export async function getStackComposeFile(
 		return {
 			success: false,
 			needsFileLocation: true,
-			error: `Select the compose file location for stack "${stackName}"`
+			error: `请为堆栈 "${stackName}" 选择 Compose 文件位置`
 		};
 	}
 
@@ -776,13 +776,13 @@ export async function getStackComposeFile(
 	if (source.composePath) {
 		// Checked on every read, so a path stored before the check existed is refused too.
 		if (isForbiddenStackPath(source.composePath)) {
-			return { success: false, error: 'Compose path is not allowed', composePath: source.composePath, envPath: source.envPath };
+			return { success: false, error: 'Compose 路径不被允许', composePath: source.composePath, envPath: source.envPath };
 		}
 		try {
 			if (!existsSync(source.composePath)) {
 				return {
 					success: false,
-					error: `Compose file no longer accessible at ${source.composePath}. The file may have been moved or deleted.`,
+					error: `Compose 文件在 ${source.composePath} 已不可访问，文件可能已被移动或删除。`,
 					composePath: source.composePath,
 					envPath: source.envPath
 				};
@@ -807,10 +807,10 @@ export async function getStackComposeFile(
 				sourceType: source.sourceType
 			};
 		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Unknown error';
+			const message = error instanceof Error ? error.message : '未知错误';
 			return {
 				success: false,
-				error: `Failed to read compose file: ${message}`,
+				error: `读取 Compose 文件失败：${message}`,
 				composePath: source.composePath,
 				envPath: source.envPath
 			};
@@ -849,7 +849,7 @@ export async function getStackComposeFile(
 	return {
 		success: false,
 		needsFileLocation: true,
-		error: `Select the compose file location for stack "${stackName}"`
+		error: `请为堆栈 "${stackName}" 选择 Compose 文件位置`
 	};
 }
 
@@ -888,7 +888,7 @@ export async function saveStackComposeFile(
 	if (!isValidStackName(name)) {
 		return {
 			success: false,
-			error: 'Stack name must be lowercase, start with a letter or number, and contain only letters, numbers, hyphens, and underscores'
+			error: '堆栈名称必须为小写，以字母或数字开头，且仅包含字母、数字、连字符和下划线'
 		};
 	}
 
@@ -920,7 +920,7 @@ export async function saveStackComposeFile(
 			(options.oldEnvPath && !own(options.oldEnvPath, source?.envPath)) ||
 			(options.moveFromDir && (!currentDir || resolve(options.moveFromDir) !== resolve(currentDir)))
 		) {
-			return { success: false, error: 'Path is not allowed' };
+			return { success: false, error: '该路径不允许访问' };
 		}
 	}
 
@@ -935,7 +935,7 @@ export async function saveStackComposeFile(
 			try {
 				mkdirSync(newDir, { recursive: true });
 			} catch (err: any) {
-				console.warn(`[Stack] Failed to create directory ${newDir}: ${err.message}`);
+				console.warn(`[堆栈] 创建目录 ${newDir} 失败：${err.message}`);
 			}
 		}
 
@@ -953,7 +953,7 @@ export async function saveStackComposeFile(
 			try {
 				mkdirSync(newDir, { recursive: true });
 			} catch (err: any) {
-				console.warn(`[Stack] Failed to create directory ${newDir}: ${err.message}`);
+				console.warn(`[堆栈] 创建目录 ${newDir} 失败：${err.message}`);
 			}
 		}
 
@@ -966,7 +966,7 @@ export async function saveStackComposeFile(
 
 	// Every entry of moveFromDir is moved, so neither directory may hold a protected location.
 	if (options?.moveFromDir && newDir && (holdsForbiddenStackPath(options.moveFromDir) || holdsForbiddenStackPath(newDir))) {
-		return { success: false, error: 'Path is not allowed' };
+		return { success: false, error: '该路径不允许访问' };
 	}
 	if (options?.moveFromDir && newDir && options.moveFromDir !== newDir && existsSync(options.moveFromDir)) {
 		try {
@@ -984,13 +984,13 @@ export async function saveStackComposeFile(
 				try {
 					// Use rename for atomic move (same filesystem) or copy+delete for cross-filesystem
 					renameSync(oldFilePath, newFilePath);
-					console.log(`[Stack] Moved file: ${oldFilePath} -> ${newFilePath}`);
+					console.log(`[堆栈] 已移动文件：${oldFilePath} -> ${newFilePath}`);
 				} catch (renameErr: any) {
 					// If rename fails (e.g., cross-filesystem), try copy+delete
 					if (renameErr.code === 'EXDEV') {
 						// The copy follows a link at either end; the stack's own .git or .ssh is copied.
 						if (linksIntoForbidden(oldFilePath) || linksIntoForbidden(newFilePath)) {
-							console.warn(`[Stack] Skipped ${file}: path is not allowed`);
+							console.warn(`[堆栈] 已移动文件 ${file}: 该路径不允许访问`);
 							continue;
 						}
 						const stat = statSync(oldFilePath);
@@ -1004,7 +1004,7 @@ export async function saveStackComposeFile(
 							writeFileSync(newFilePath, data);
 							unlinkSync(oldFilePath);
 						}
-						console.log(`[Stack] Copied file (cross-fs): ${oldFilePath} -> ${newFilePath}`);
+						console.log(`[堆栈] 已复制文件 (跨文件系统)：${oldFilePath} -> ${newFilePath}`);
 					} else {
 						throw renameErr;
 					}
@@ -1016,13 +1016,13 @@ export async function saveStackComposeFile(
 				const remaining = readdirSync(options.moveFromDir);
 				if (remaining.length === 0) {
 					rmSync(options.moveFromDir, { recursive: true, force: true });
-					console.log(`[Stack] Removed empty old directory: ${options.moveFromDir}`);
+					console.log(`[堆栈] 已删除空的旧目录：${options.moveFromDir}`);
 				}
 			} catch {
 				// Ignore errors when checking/removing old directory
 			}
 		} catch (err: any) {
-			console.warn(`[Stack] Failed to move files from ${options.moveFromDir} to ${newDir}: ${err.message}`);
+			console.warn(`[堆栈] 从 ${options.moveFromDir} 移动文件到 ${newDir} 失败：${err.message}`);
 			// Continue with save even if move fails - new files will be written anyway
 		}
 	}
@@ -1054,14 +1054,14 @@ export async function saveStackComposeFile(
 			try {
 				mkdirSync(parentDir, { recursive: true });
 			} catch (err: any) {
-				return { success: false, error: `Failed to create directory for compose file: ${err.message}` };
+				return { success: false, error: `为 Compose 文件创建目录失败：${err.message}` };
 			}
 		}
 		try {
 			writeFileSync(composePath, content);
 			return { success: true };
 		} catch (err: any) {
-			return { success: false, error: `Failed to save compose file: ${err.message}` };
+			return { success: false, error: `保存 Compose 文件失败：${err.message}` };
 		}
 	}
 
@@ -1078,7 +1078,7 @@ export async function saveStackComposeFile(
 	} else {
 		const existingDir = await findStackDir(name, envId);
 		if (!existingDir) {
-			return { success: false, error: `Stack "${name}" not found` };
+			return { success: false, error: `未找到堆栈 "${name}"` };
 		}
 		stackDir = existingDir;
 	}
@@ -1090,16 +1090,16 @@ export async function saveStackComposeFile(
 		// Creating new stack - if directory exists, it's orphaned (clean it up)
 		if (exists) {
 			try {
-				console.log(`Cleaning up orphaned stack directory: ${stackDir}`);
+				console.log(`正在清理孤立的堆栈目录：${stackDir}`);
 				rmSync(stackDir, { recursive: true, force: true });
 			} catch (err: any) {
-				return { success: false, error: `Stack directory exists and cleanup failed: ${err.message}` };
+				return { success: false, error: `堆栈目录已存在且清理失败：${err.message}` };
 			}
 		}
 		try {
 			mkdirSync(stackDir, { recursive: true });
 		} catch (err: any) {
-			return { success: false, error: `Failed to create stack directory: ${err.message}` };
+			return { success: false, error: `创建堆栈目录失败：${err.message}` };
 		}
 	}
 
@@ -1110,7 +1110,7 @@ export async function saveStackComposeFile(
 		// exists at the default location - #1515).
 		return { success: true, composePath: composeFile };
 	} catch (err: any) {
-		return { success: false, error: `Failed to ${create ? 'create' : 'save'} compose file: ${err.message}` };
+		return { success: false, error: `失败 ${create ? '创建' : '保存'} Compose 文件：${err.message}` };
 	}
 }
 
@@ -1119,13 +1119,13 @@ async function checkFlatLocalStackNameCollision(stackName: string, envId?: numbe
 	const conflict = findStackNameCollision(allSources, stackName, envId);
 	if (conflict) {
 		const conflictEnv = conflict.environmentId ? await getEnvironment(conflict.environmentId) : undefined;
-		return `Stack name "${stackName}" is already used by environment "${conflictEnv?.name ?? conflict.environmentId}". With STACKS_DIR set, local stack names must be unique across environments.`;
+		return `堆栈名称 "${stackName}" 已被环境 "${conflictEnv?.name ?? conflict.environmentId}" 占用。当配置 STACKS_DIR 时，本地堆栈名称必须在所有环境中保持唯一。`;
 	}
 	const flatDir = join(getLocalStacksDir(), stackName);
 	if (existsSync(flatDir)) {
 		const existing = await getStackSource(stackName, envId);
 		if (!existing) {
-			return `Stack directory "${flatDir}" already exists. With STACKS_DIR set, local stack names must be unique across environments.`;
+			return `堆栈目录 "${flatDir}" 已存在。当配置 STACKS_DIR 时，本地堆栈名称必须在所有环境中保持唯一。`;
 		}
 	}
 	return null;
@@ -1147,7 +1147,7 @@ interface LoginTlsOptions {
 	skipVerify?: boolean;
 }
 
-async function loginToRegistries(dockerHost?: string, logPrefix = '[Stack]', apiVersion?: string, tls?: LoginTlsOptions): Promise<void> {
+async function loginToRegistries(dockerHost?: string, logPrefix = '[堆栈]', apiVersion?: string, tls?: LoginTlsOptions): Promise<void> {
 	const { getRegistries } = await import('./db.js');
 	const registries = await getRegistries();
 
@@ -1175,12 +1175,11 @@ async function loginToRegistries(dockerHost?: string, logPrefix = '[Stack]', api
 		}
 
 		try {
-			// Extract registry host from URL (parseRegistryUrl handles bare hostnames like 'ghcr.io')
-			const { parseRegistryUrl } = await import('./docker.js');
-			const { host } = parseRegistryUrl(reg.url);
-			const registryHost = host;
+			// Extract registry host from URL
+			const url = new URL(reg.url);
+			const registryHost = url.host;
 
-			console.log(`${logPrefix} Logging into registry: ${registryHost}`);
+			console.log(`${logPrefix} 正在登录镜像仓库：${registryHost}`);
 
 			const proc = nodeSpawn(
 				'docker', ['login', '-u', reg.username, '--password-stdin', registryHost],
@@ -1197,13 +1196,13 @@ async function loginToRegistries(dockerHost?: string, logPrefix = '[Stack]', api
 			const { exitCode, stderr } = await collectProcess(proc);
 
 			if (exitCode === 0) {
-				console.log(`${logPrefix} Successfully logged into ${registryHost}`);
+				console.log(`${logPrefix} 成功登录到 ${registryHost}`);
 			} else {
-				console.error(`${logPrefix} Failed to login to ${registryHost}: ${stderr}`);
+				console.error(`${logPrefix} 登录 ${registryHost} 失败：${stderr}`);
 			}
 		} catch (e) {
 			const errorMsg = e instanceof Error ? e.message : String(e);
-			console.error(`${logPrefix} Error logging into registry ${reg.name}:`, errorMsg);
+			console.error(`${logPrefix} 登录仓库 ${reg.name} 时出错：`, errorMsg);
 		}
 	}
 }
@@ -1312,7 +1311,7 @@ async function executeLocalCompose(
 	remoteStackHostDir?: string,
 	onLine?: (line: string) => void
 ): Promise<StackOperationResult> {
-	const logPrefix = `[Stack:${stackName}]`;
+	const logPrefix = `[堆栈:${stackName}]`;
 
 	// Determine working directory and compose file path
 	// For imported stacks (custom paths), use the provided workingDir and composePath
@@ -1356,16 +1355,16 @@ async function executeLocalCompose(
 		const rewriteResult = rewriteComposeVolumePaths(composeContent, composeFileDir);
 		if (rewriteResult.modified) {
 			finalComposeContent = rewriteResult.content;
-			console.log(`${logPrefix} [HostPath] Translating relative volume paths for Docker host:`);
+			console.log(`${logPrefix}  [主机路径] 正在为 Docker 主机转换相对数据卷路径：`);
 			for (const change of rewriteResult.changes) {
-				console.log(`${logPrefix} [HostPath]${change}`);
+				console.log(`${logPrefix} [主机路径]${change}`);
 			}
-			console.log(`${logPrefix} [HostPath] Translated compose content:`);
-			console.log(`${logPrefix} [HostPath] ----------------------------------------`);
+			console.log(`${logPrefix} [主机路径] 已转换的 Compose 内容：`);
+			console.log(`${logPrefix} [主机路径] ----------------------------------------`);
 			for (const line of finalComposeContent.split('\n')) {
-				console.log(`${logPrefix} [HostPath] ${line}`);
+				console.log(`${logPrefix} [主机路径] ${line}`);
 			}
-			console.log(`${logPrefix} [HostPath] ----------------------------------------`);
+			console.log(`${logPrefix} [主机路径] ----------------------------------------`);
 		}
 	}
 
@@ -1377,7 +1376,7 @@ async function executeLocalCompose(
 		const rw = rewriteBindsToHostDir(finalComposeContent, remoteStackHostDir);
 		if (rw.modified) {
 			finalComposeContent = rw.content;
-			console.log(`${logPrefix} direct env: rewrote ${rw.changes.length} relative bind(s) to the staged host dir:`);
+			console.log(`${logPrefix} 直接环境：已将 ${rw.changes.length} 个相对绑定重写为暂存主机目录:`);
 			for (const change of rw.changes) console.log(`${logPrefix}${change}`);
 		}
 	}
@@ -1423,14 +1422,14 @@ async function executeLocalCompose(
 	// in the log — the mismatch is usually obvious. The "subdir=yes" flag
 	// is the canary for the case where stackDir and composeFileDir diverge.
 	console.log(
-		`${logPrefix} [PathAudit] ` +
-		`stackDir=${stackDir} ` +
-		`composeFile=${composeFile} ` +
-		`composeFileDir=${composeFileDir} ` +
-		`subdir=${composeFileDir !== stackDir ? 'yes' : 'no'} ` +
-		`defaultEnvPath=${defaultEnvPath} (exists=${existsSync(defaultEnvPath)}) ` +
-		`customEnvPath=${customEnvPath ?? '(none)'}` +
-		(customEnvPath ? ` (exists=${existsSync(customEnvPath)})` : '')
+		`${logPrefix} [路径审计] ` +
+		`堆栈目录=${stackDir} ` +
+		`Compose 文件=${composeFile} ` +
+		`Compose 文件目录=${composeFileDir} ` +
+		`子目录=${composeFileDir !== stackDir ? '是' : '否'} ` +
+		`默认环境变量路径=${defaultEnvPath} (存在=${existsSync(defaultEnvPath)}) ` +
+		`自定义环境变量路径=${customEnvPath ?? '(无)'}` +
+		(customEnvPath ? ` (存在=${existsSync(customEnvPath)})` : '')
 	);
 
 	// LEGACY SUPPORT: Only inject envVars via shell if NO .env file exists
@@ -1477,7 +1476,7 @@ async function executeLocalCompose(
 		// Set Docker TLS environment variables (shared with the registry-login spawn, #1557)
 		Object.assign(spawnEnv, dockerTlsEnv(tlsCertDir, tlsConfig.skipVerify));
 
-		console.log(`${logPrefix} TLS enabled: DOCKER_CERT_PATH=${tlsCertDir}, DOCKER_TLS_VERIFY=${spawnEnv.DOCKER_TLS_VERIFY}`);
+		console.log(`${logPrefix} 已启用 TLS：DOCKER_CERT_PATH=${tlsCertDir}, DOCKER_TLS_VERIFY=${spawnEnv.DOCKER_TLS_VERIFY}`);
 	}
 
 	// Build command based on operation
@@ -1504,7 +1503,7 @@ async function executeLocalCompose(
 			tempOverridePath = join(composeFileDir, '.compose.override.translated.yaml');
 			writeFileSync(tempOverridePath, overrideContent);
 			args.push('-f', tempOverridePath);
-			console.log(`${logPrefix} Including override file (path-translated): ${basename(overrideFile)}`);
+			console.log(`${logPrefix} 正在包含覆盖文件 (路径已转换)：${basename(overrideFile)}`);
 		}
 	} else if (customComposePath) {
 		// Custom path (imported/adopted stacks): must use -f to point to non-standard location
@@ -1512,7 +1511,7 @@ async function executeLocalCompose(
 		const overrideFile = findComposeOverrideFile(composeFileDir, basename(composeFile));
 		if (overrideFile) {
 			args.push('-f', overrideFile);
-			console.log(`${logPrefix} Including override file: ${basename(overrideFile)}`);
+			console.log(`${logPrefix} 正在包含覆盖文件：${basename(overrideFile)}`);
 		}
 	}
 	// else: internal stack without path translation - no -f needed.
@@ -1543,7 +1542,7 @@ async function executeLocalCompose(
 	}
 
 	if (useStdin) {
-		console.log(`${logPrefix} [HostPath] Using stdin for compose content (paths translated)`);
+		console.log(`${logPrefix} [主机路径] 正在使用标准输入传递 Compose 内容 (路径已转换)`);
 	}
 
 	args.push(...buildComposeOperationArgs(operation, { forceRecreate, removeVolumes, build, noBuildCache, pullBase, noBuild, pullPolicy, serviceName }));
@@ -1551,20 +1550,20 @@ async function executeLocalCompose(
 	const commandStr = args.join(' ');
 
 	console.log(`${logPrefix} ----------------------------------------`);
-	console.log(`${logPrefix} EXECUTE LOCAL COMPOSE`);
+	console.log(`${logPrefix} 执行本地 Compose 命令`);
 	console.log(`${logPrefix} ----------------------------------------`);
-	console.log(`${logPrefix} Operation:`, operation);
-	console.log(`${logPrefix} Command:`, commandStr);
-	console.log(`${logPrefix} Working directory:`, stackDir);
-	console.log(`${logPrefix} Compose file:`, composeFile);
-	console.log(`${logPrefix} DOCKER_HOST:`, dockerHost || '(local socket)');
-	console.log(`${logPrefix} DOCKER_API_VERSION:`, spawnEnv.DOCKER_API_VERSION || '(not set - native negotiation)');
-	console.log(`${logPrefix} Force recreate:`, forceRecreate ?? false);
-	console.log(`${logPrefix} Remove volumes:`, removeVolumes ?? false);
-	console.log(`${logPrefix} Service name:`, serviceName ?? '(all services)');
-	console.log(`${logPrefix} Env vars count:`, envVars ? Object.keys(envVars).length : 0);
+	console.log(`${logPrefix} 操作：`, operation);
+	console.log(`${logPrefix} 命令：`, commandStr);
+	console.log(`${logPrefix} 工作目录：`, stackDir);
+	console.log(`${logPrefix} Compose 文件：`, composeFile);
+	console.log(`${logPrefix} DOCKER_HOST:`, dockerHost || '(本地 socket)');
+	console.log(`${logPrefix} DOCKER_API_VERSION:`, spawnEnv.DOCKER_API_VERSION || '(未设置 - 自动协商)');
+	console.log(`${logPrefix} 强制重建：`, forceRecreate ?? false);
+	console.log(`${logPrefix} 删除数据卷：`, removeVolumes ?? false);
+	console.log(`${logPrefix} 服务名称：`, serviceName ?? '(所有服务)');
+	console.log(`${logPrefix} 环境变量数量：`, envVars ? Object.keys(envVars).length : 0);
 	if (envVars && Object.keys(envVars).length > 0) {
-		console.log(`${logPrefix} Env vars being injected (masked):`, JSON.stringify(redactEnvVarsForLog(envVars), null, 2));
+		console.log(`${logPrefix} 正在注入的环境变量 (已脱敏):`, JSON.stringify(redactEnvVarsForLog(envVars), null, 2));
 	}
 
 	// Login to registries before pulling images (a build pulls its base images)
@@ -1574,7 +1573,7 @@ async function executeLocalCompose(
 	}
 
 	try {
-		console.log(`${logPrefix} Spawning docker compose process from ${composeFileDir}: ${args.join(' ')}`);
+		console.log(`${logPrefix} 启动 docker compose 进程，工作目录：${composeFileDir}，执行参数：${args.join(' ')}`);
 		const proc = nodeSpawn(args[0], args.slice(1), {
 			cwd: composeFileDir,
 			env: spawnEnv,
@@ -1591,13 +1590,13 @@ async function executeLocalCompose(
 		let timedOut = false;
 		const timeoutId = setTimeout(() => {
 			timedOut = true;
-			console.log(`${logPrefix} TIMEOUT: Process exceeded ${COMPOSE_TIMEOUT_MS / 1000} seconds, sending SIGTERM`);
+			console.log(`${logPrefix} 超时：进程超过 ${COMPOSE_TIMEOUT_MS / 1000} 秒，正在发送 SIGTERM`);
 			proc.kill('SIGTERM');
 			// Give process grace period to terminate cleanly before SIGKILL
 			setTimeout(() => {
 				try {
 					proc.kill('SIGKILL');
-					console.log(`${logPrefix} TIMEOUT: Sent SIGKILL after grace period`);
+					console.log(`${logPrefix} 超时：宽限期后已发送 SIGKILL`);
 				} catch {
 					// Process may already be dead
 				}
@@ -1616,16 +1615,16 @@ async function executeLocalCompose(
 			);
 
 			console.log(`${logPrefix} ----------------------------------------`);
-			console.log(`${logPrefix} COMPOSE PROCESS COMPLETE`);
+			console.log(`${logPrefix} Compose 进程执行完成`);
 			console.log(`${logPrefix} ----------------------------------------`);
-			console.log(`${logPrefix} Exit code:`, code);
-			console.log(`${logPrefix} Timed out:`, timedOut);
+			console.log(`${logPrefix} 退出码：`, code);
+			console.log(`${logPrefix} 已超时：`, timedOut);
 			if (stdout) {
-				console.log(`${logPrefix} STDOUT:`);
+				console.log(`${logPrefix} 标准输出:`);
 				console.log(redactSecretVars(stdout, secretVars));
 			}
 			if (stderr) {
-				console.log(`${logPrefix} STDERR:`);
+				console.log(`${logPrefix} 标准错误:`);
 				console.log(redactSecretVars(stderr, secretVars));
 			}
 
@@ -1633,7 +1632,7 @@ async function executeLocalCompose(
 				return {
 					success: false,
 					output: redactSecretVars(stdout, secretVars),
-					error: `docker compose ${operation} timed out after ${COMPOSE_TIMEOUT_MS / 1000} seconds. If a service has a long stop_grace_period, raise the COMPOSE_TIMEOUT env var (seconds) above it.`,
+					error: `docker compose ${operation} 在 ${COMPOSE_TIMEOUT_MS / 1000} 秒后超时。如果某个服务设置了较长的 stop_grace_period，请将环境变量 COMPOSE_TIMEOUT 的值 (秒) 设置为大于该时长。`,
 					command: commandStr
 				};
 			}
@@ -1641,7 +1640,7 @@ async function executeLocalCompose(
 			if (code === 0) {
 				return {
 					success: true,
-					output: redactSecretVars(stdout || stderr, secretVars) || `Stack "${stackName}" ${operation} completed successfully`,
+					output: redactSecretVars(stdout || stderr, secretVars) || `堆栈 "${stackName}" ${operation} 已成功完成`,
 					command: commandStr,
 					exitCode: code
 				};
@@ -1652,7 +1651,7 @@ async function executeLocalCompose(
 				return {
 					success: false,
 					output: redactSecretVars(stdout, secretVars),
-					error: redactSecretVars(stderr, secretVars) || `docker compose ${operation} exited with code ${code}`,
+					error: redactSecretVars(stderr, secretVars) || `docker compose ${operation} 退出，退出码 ${code}`,
 					command: commandStr,
 					exitCode: code
 				};
@@ -1661,11 +1660,11 @@ async function executeLocalCompose(
 			clearTimeout(timeoutId);
 		}
 	} catch (err: any) {
-		console.log(`${logPrefix} EXCEPTION in executeLocalCompose:`, redactSecretVars(err.message, secretVars));
+		console.log(`${logPrefix} executeLocalCompose 发生异常:`, redactSecretVars(err.message, secretVars));
 		return {
 			success: false,
 			output: '',
-			error: redactSecretVars(`Failed to run docker compose ${operation}: ${err.message}`, secretVars),
+			error: redactSecretVars(`执行 docker compose ${operation} 失败: ${err.message}`, secretVars),
 			command: commandStr
 		};
 	} finally {
@@ -1683,7 +1682,7 @@ async function executeLocalCompose(
 			activeTlsDirs.delete(tlsCertDir);
 			try {
 				rmSync(tlsCertDir, { recursive: true, force: true });
-				console.log(`${logPrefix} Cleaned up TLS temp directory: ${tlsCertDir}`);
+				console.log(`${logPrefix} 已清理 TLS 临时目录：${tlsCertDir}`);
 			} catch {
 				// Ignore cleanup errors
 			}
@@ -1723,7 +1722,7 @@ async function executeComposeViaHawser(
 	removeFiles?: boolean,
 	onLine?: (line: string) => void
 ): Promise<StackOperationResult> {
-	const logPrefix = `[Stack:${stackName}]`;
+	const logPrefix = `[堆栈:${stackName}]`;
 	// Import dockerFetch dynamically to avoid circular dependency
 	const { dockerFetch } = await import('./docker.js');
 
@@ -1737,24 +1736,24 @@ async function executeComposeViaHawser(
 	const lines = makeRedactedLineSink(onLine, secrets);
 
 	console.log(`${logPrefix} ----------------------------------------`);
-	console.log(`${logPrefix} EXECUTE COMPOSE VIA HAWSER`);
+	console.log(`${logPrefix} 通过 Hawser 执行 Compose 命令`);
 	console.log(`${logPrefix} ----------------------------------------`);
-	console.log(`${logPrefix} Operation:`, operation);
-	console.log(`${logPrefix} Environment ID:`, envId);
-	console.log(`${logPrefix} Force recreate:`, forceRecreate ?? false);
-	console.log(`${logPrefix} Remove volumes:`, removeVolumes ?? false);
-	console.log(`${logPrefix} Service name:`, serviceName ?? '(all services)');
-	console.log(`${logPrefix} Build flags: build=${!!build}, noBuildCache=${!!noBuildCache}, pullBase=${!!pullBase}, pullPolicy=${pullPolicy || '(none)'}`);
-	console.log(`${logPrefix} Compose filename:`, composeFileName ?? '(auto-detect)');
-	console.log(`${logPrefix} Non-secret env vars count:`, envVars ? Object.keys(envVars).length : 0);
-	console.log(`${logPrefix} Secret env vars count:`, secretCount);
+	console.log(`${logPrefix} 操作:`, operation);
+	console.log(`${logPrefix} 环境 ID:`, envId);
+	console.log(`${logPrefix} 强制重建:`, forceRecreate ?? false);
+	console.log(`${logPrefix} 删除数据卷:`, removeVolumes ?? false);
+	console.log(`${logPrefix} 服务名称:`, serviceName ?? '(所有服务)');
+	console.log(`${logPrefix} 构建参数=${!!build}, noBuildCache=${!!noBuildCache}, pullBase=${!!pullBase}, pullPolicy=${pullPolicy || '(none)'}`);
+	console.log(`${logPrefix} Compose 文件名称:`, composeFileName ?? '(自动检测)');
+	console.log(`${logPrefix} 非保密环境变量数量:`, envVars ? Object.keys(envVars).length : 0);
+	console.log(`${logPrefix} 保密环境变量数量:`, secretCount);
 	if (allEnvVars && Object.keys(allEnvVars).length > 0) {
-		console.log(`${logPrefix} All env vars being sent (masked):`, JSON.stringify(redactEnvVarsForLog(allEnvVars), null, 2));
+		console.log(`${logPrefix} 正在发送的全部环境变量 (已脱敏):`, JSON.stringify(redactEnvVarsForLog(allEnvVars), null, 2));
 	}
-	console.log(`${logPrefix} Compose content length:`, composeContent.length, 'chars');
-	console.log(`${logPrefix} Stack files count:`, stackFiles ? Object.keys(stackFiles).length : 0);
+	console.log(`${logPrefix} Compose 内容长度：`, composeContent.length, '字符');
+	console.log(`${logPrefix} 堆栈文件数量：`, stackFiles ? Object.keys(stackFiles).length : 0);
 	if (stackFiles && Object.keys(stackFiles).length > 0) {
-		console.log(`${logPrefix} Stack files:`, Object.keys(stackFiles).join(', '));
+		console.log(`${logPrefix} 堆栈文件：`, Object.keys(stackFiles).join(', '));
 	}
 
 	try {
@@ -1765,7 +1764,7 @@ async function executeComposeViaHawser(
 			if (files['.env']) {
 				// stackFiles already has .env (e.g., from git repo with comments)
 				// Don't overwrite - the envVars are already passed separately for variable substitution
-				console.log(`${logPrefix} Preserving existing .env from stackFiles (${files['.env'].length} chars), envVars passed separately for substitution`);
+				console.log(`${logPrefix} 保留 stackFiles 中已有的 (${files['.env'].length} 字符)，环境变量单独传递用于替换`);
 			} else {
 				// No .env in stackFiles - generate one from NON-SECRET envVars only
 				// Compose interpolates this file when it reads it. Quoting the whole value
@@ -1775,7 +1774,7 @@ async function executeComposeViaHawser(
 					.map(([key, value]) => `${key}=${quoteForEnvFile(value)}`)
 					.join('\n');
 				files['.env'] = envContent;
-				console.log(`${logPrefix} Generated .env file with ${Object.keys(envVars).length} non-secret variables`);
+				console.log(`${logPrefix} 已生成 .env 文件，包含 ${Object.keys(envVars).length} 个非机密变量`);
 			}
 		}
 
@@ -1790,7 +1789,7 @@ async function executeComposeViaHawser(
 				password: r.password!
 			}));
 		if (registries.length > 0) {
-			console.log(`${logPrefix} Sending ${registries.length} registry credentials to Hawser`);
+			console.log(`${logPrefix} 正在向 Hawser 发送 ${registries.length} 个仓库凭证`);
 		}
 
 		const body = JSON.stringify({
@@ -1821,7 +1820,7 @@ async function executeComposeViaHawser(
 			streamOutput: !!onLine
 		});
 
-		console.log(`${logPrefix} Sending request to Hawser agent...`);
+		console.log(`${logPrefix} 正在向 Hawser 代理发送请求...`);
 		const response = await dockerFetch(
 			'/_hawser/compose',
 			{
@@ -1842,14 +1841,14 @@ async function executeComposeViaHawser(
 		};
 
 		console.log(`${logPrefix} ----------------------------------------`);
-		console.log(`${logPrefix} HAWSER RESPONSE`);
+		console.log(`${logPrefix} Hawser 响应`);
 		console.log(`${logPrefix} ----------------------------------------`);
-		console.log(`${logPrefix} Success:`, result.success);
+		console.log(`${logPrefix} 成功：`, result.success);
 		if (result.output) {
-			console.log(`${logPrefix} Output:`, redactSecretVars(result.output, secretVars));
+			console.log(`${logPrefix} 输出:`, redactSecretVars(result.output, secretVars));
 		}
 		if (result.error) {
-			console.log(`${logPrefix} Error:`, redactSecretVars(result.error, secretVars));
+			console.log(`${logPrefix} 错误:`, redactSecretVars(result.error, secretVars));
 		}
 
 		// Only reaches the operator when the agent streamed nothing -- otherwise they would
@@ -1873,11 +1872,11 @@ async function executeComposeViaHawser(
 					}))
 				};
 				for (const path of deletion.deleted) {
-					console.log(`${logPrefix} Agent removed "${path}" — deleted from the repository`);
+					console.log(`${logPrefix} 代理已移除 "${path}" — 该文件已从仓库中删除`);
 				}
 				for (const skip of deletion.skipped) {
 					if (skip.reason === 'already-absent') continue;
-					console.warn(`${logPrefix} Agent kept "${skip.path}" — ${skipReasonMessage(skip.reason)}`);
+					console.warn(`${logPrefix} 代理保留 "${skip.path}" — ${skipReasonMessage(skip.reason)}`);
 				}
 			} else if (operation !== 'build') {
 				// 0.2.51/0.2.52 delete only on up, so a build without a report says nothing yet.
@@ -1885,14 +1884,14 @@ async function executeComposeViaHawser(
 					deleted: [],
 					skipped: filesToDelete.map(f => ({ path: f.path, reason: 'agent-no-support' as DeletionSkipReason }))
 				};
-				console.warn(`${logPrefix} ${skipReasonMessage('agent-no-support')} (${filesToDelete.length} file(s) affected)`);
+				console.warn(`${logPrefix} ${skipReasonMessage('agent-no-support')} (共 ${filesToDelete.length} 个文件受影响)`);
 			}
 		}
 
 		if (result.success) {
 			return {
 				success: true,
-				output: redactSecretVars(result.output || '', secretVars) || `Stack "${stackName}" ${operation} completed via Hawser`,
+				output: redactSecretVars(result.output || '', secretVars) || `堆栈 "${stackName}" ${operation} 通过 Hawser 完成`,
 				deletion
 			};
 		} else {
@@ -1901,19 +1900,19 @@ async function executeComposeViaHawser(
 			return {
 				success: false,
 				output: redactSecretVars(result.output || '', secretVars),
-				error: redactSecretVars(result.error || `Compose ${operation} failed`, secretVars),
+				error: redactSecretVars(result.error || `Compose ${operation} 执行失败`, secretVars),
 				deletion
 			};
 		}
 	} catch (err: any) {
-		console.log(`${logPrefix} EXCEPTION in executeComposeViaHawser:`, redactSecretVars(err.message, secretVars));
+		console.log(`${logPrefix} executeComposeViaHawser 发生异常:`, redactSecretVars(err.message, secretVars));
 		const isStringLength = err.message?.includes('Invalid string length');
 		return {
 			success: false,
 			output: '',
 			error: isStringLength
-				? `Stack files too large to send via Hawser. The repository may contain large binary files. Consider using a .dockerignore or moving large files out of the compose directory.`
-				: redactSecretVars(`Failed to ${operation} via Hawser: ${err.message}`, secretVars)
+				? `堆栈文件过大，无法通过 Hawser 发送。该仓库可能包含大型二进制文件。可考虑使用 .dockerignore，或将大文件移出 compose 目录。`
+        		: redactSecretVars(`通过 Hawser ${operation} 操作失败: ${err.message}`, secretVars)
 		};
 	}
 }
@@ -1989,9 +1988,9 @@ async function executeComposeCommand(
 					// Merge: envFileVars (lowest) < envVars (DB overrides)
 					// secretVars are handled separately in executeComposeViaHawser
 					hawserEnvVars = { ...envFileVars, ...(envVars || {}) };
-					console.log(`[Stack:${stackName}] Read ${Object.keys(envFileVars).length} vars from .env file for Hawser injection`);
+					console.log(`[堆栈:${stackName}] 从 .env 文件读取 ${Object.keys(envFileVars).length} 个变量用于 Hawser 注入`);
 				} catch (err) {
-					console.warn(`[Stack:${stackName}] Failed to read .env file at ${envPath}:`, err);
+					console.warn(`[堆栈:${stackName}] 读取 .env 文件 ${envPath} 失败：`, err);
 				}
 			}
 
@@ -2005,9 +2004,9 @@ async function executeComposeCommand(
 					try {
 						const overrideContent = readFileSync(overridePath, 'utf-8');
 						hawserStackFiles = { ...(hawserStackFiles || {}), [basename(overridePath)]: overrideContent };
-						console.log(`[Stack:${stackName}] Including override file for Hawser: ${basename(overridePath)}`);
+						console.log(`[堆栈:${stackName}] 正在为 Hawser 包含覆盖文件：${basename(overridePath)}`);
 					} catch (err) {
-						console.warn(`[Stack:${stackName}] Failed to read override file at ${overridePath}:`, err);
+						console.warn(`[堆栈:${stackName}] 读取覆盖文件 ${overridePath} 失败：`, err);
 					}
 				}
 			}
@@ -2018,7 +2017,7 @@ async function executeComposeCommand(
 			// blank a subdir compose's own .env interpolation (#1136).
 			if (useOverrideFile && envVars && Object.keys(envVars).length > 0) {
 				hawserStackFiles = { ...(hawserStackFiles || {}), '.env.dockhand': buildDockhandOverrideFile(envVars) };
-				console.log(`[Stack:${stackName}] Including .env.dockhand override file for Hawser (${Object.keys(envVars).length} vars)`);
+				console.log(`[堆栈:${stackName}] 已为 Hawser 加载 .env.dockhand 覆盖文件(${Object.keys(envVars).length} 个变量)`);
 			}
 
 			return executeComposeViaHawser(
@@ -2089,11 +2088,11 @@ async function executeComposeCommand(
 					const decision = stagingDecision(plan, self);
 					if (decision.copy) {
 						const { stageStackDirOnRemote } = await import('./stage-remote-stackfiles');
-						if (keepOnHost?.length) console.log(`[Stack:${stackName}] direct env: leaving restored bind source(s) as they are on the host: [${keepOnHost.join(', ')}]`);
+						if (keepOnHost?.length) console.log(`[堆栈:${stackName}] 直接环境: 保留宿主机上已恢复的绑定源: [${keepOnHost.join(', ')}]`);
 						const { staged } = await stageStackDirOnRemote(envId!, plan.hostDir, workingDir, keepOnHost ?? []);
-						console.log(`[Stack:${stackName}] direct env: staged ${staged} file(s) to ${plan.hostDir} on the remote host (${plan.reason})`);
+						console.log(`[堆栈:${stackName}] 直接环境: 已将 ${staged} 个文件暂存至远程主机的 ${plan.hostDir} (${plan.reason})`);
 					} else {
-						console.log(`[Stack:${stackName}] direct env: ${plan.hostDir} is Dockhand's own stack folder on the same daemon, nothing to copy`);
+						console.log(`[堆栈:${stackName}] 直接环境: ${plan.hostDir} 是 Dockhand 在同一守护进程上的自身堆栈目录，无需复制`);
 					}
 					remoteStackHostDir = decision.rewriteHostDir;
 				}
@@ -2365,11 +2364,11 @@ async function cleanupOrphanStackContainers(
 		const failures = results.filter((r) => r.status === 'rejected');
 		if (failures.length > 0) {
 			console.warn(
-				`[stacks] ${failures.length} orphan container(s) failed to ${operation} for stack "${stackName}"`
+				`[堆栈] 堆栈 "${stackName}" 有 ${failures.length} 个孤立容器 ${operation} 失败`
 			);
 		}
 	} catch (err) {
-		console.warn(`[stacks] Failed to cleanup orphan containers for stack "${stackName}":`, err);
+		console.warn(`[堆栈] 清理堆栈 "${stackName}" 的孤立容器失败：`, err);
 	}
 }
 
@@ -2387,7 +2386,7 @@ async function withContainerFallback(
 
 	const containers = await getStackContainers(stackName, envId);
 	if (containers.length === 0) {
-		return { success: false, error: `No containers found for stack "${stackName}"` };
+		return { success: false, error: `未找到堆栈 "${stackName}" 的容器` };
 	}
 
 	// Execute all container operations in parallel
@@ -2422,7 +2421,7 @@ async function withContainerFallback(
 		if (result.status === 'fulfilled') {
 			successes.push(result.value);
 		} else {
-			errors.push(`${containerName}: ${result.reason?.message || 'Unknown error'}`);
+			errors.push(`${containerName}: ${result.reason?.message || '未知错误'}`);
 		}
 	});
 
@@ -2430,13 +2429,13 @@ async function withContainerFallback(
 		return {
 			success: successes.length > 0,
 			error: errors.join('; '),
-			output: successes.length > 0 ? `Partial success: ${successes.join(', ')}` : undefined
+			output: successes.length > 0 ? `部分成功：${successes.join(', ')}` : undefined
 		};
 	}
 
 	return {
 		success: true,
-		output: `${operation} completed for ${successes.length} container(s): ${successes.join(', ')}`
+		output: `${operation} 操作完成，共 ${successes.length} 个容器：${successes.join(', ')}`
 	};
 }
 
@@ -2492,7 +2491,7 @@ export async function requireComposeFile(
 		}
 		return {
 			success: false,
-			error: composeResult.error || `Compose file not found for stack "${stackName}"`
+			error: composeResult.error || `未找到堆栈 "${stackName}" 的 Compose 文件`
 		};
 	}
 
@@ -2530,7 +2529,7 @@ export async function requireComposeFile(
 	// The env file reaches compose (--env-file, or read into the Hawser request), so a stored
 	// or derived path into a protected location is refused like the compose path itself.
 	if (envFilePath && isForbiddenStackPath(envFilePath)) {
-		return { success: false, error: 'Env file path is not allowed' };
+		return { success: false, error: '环境变量文件路径不允许访问' };
 	}
 
 	// Docker Compose reads non-secrets from the .env file via --env-file.
@@ -2570,11 +2569,11 @@ export async function redeployStackFromDir(
 ): Promise<StackOperationResult> {
 	const composePath = join(stackDir, composeFileName);
 	if (!existsSync(composePath)) {
-		throw new Error(`compose file "${composeFileName}" not found in restored stack dir`);
+		throw new Error(`恢复目录内未找到 compose 文件 "${composeFileName}"`);
 	}
 	const composeContent = readFileSync(composePath, 'utf-8');
 	if (!composeContent || composeContent.trim().length === 0) {
-		throw new Error('restored compose file is empty; cannot redeploy');
+		throw new Error('恢复得到的 compose 文件为空，无法重新部署');
 	}
 	const envPath = join(stackDir, '.env');
 	// A restored .env can be a link; never read one into a protected location.
@@ -2596,11 +2595,11 @@ export async function redeployStackFromDir(
 	const resolved = await resolveProviderEnvVars(
 		{ ...(envVars ?? {}) },
 		{ ...secretVars },
-		`[Stack:${stackName}]`,
+		`[堆栈:${stackName}]`,
 		source?.secretProviderId,
 		envFileContent,
 		{ stackName, envId: envId ?? undefined },
-		readConfiguredGitEnvFile(source, stackDir, envPath, `[Stack:${stackName}]`)
+		readConfiguredGitEnvFile(source, stackDir, envPath, `[堆栈:${stackName}]`)
 	);
 	envVars = resolved.dbNonSecretVars;
 	secretVars = resolved.secretVars;
@@ -2646,8 +2645,8 @@ async function notifyStackLifecycle(stackName: string, envId: number | null | un
 	const started = event === 'stack_started';
 	try {
 		await sendEventNotification(event, {
-			title: started ? 'Stack started' : 'Stack stopped',
-			message: `Stack "${stackName}" ${started ? 'started' : 'stopped'}`,
+			title: started ? '堆栈已启动' : '堆栈已停止',
+			message: `堆栈 "${stackName}" ${started ? '已启动' : '已停止'}`,
 			type: 'success'
 		}, envId ?? undefined);
 	} catch { /* never changes the outcome */ }
@@ -2684,7 +2683,7 @@ export async function startStack(
 	// parses and interpolates the compose file too, so a stack with required
 	// provider secrets (${VAR:?required}) fails to start without them - e.g. the
 	// post-backup restart of a stopped stack (#1579).
-	await applyProviderSecretsToComposeResult(result, stackName, envId, `[Stack:${stackName}]`);
+	await applyProviderSecretsToComposeResult(result, stackName, envId, `[堆栈:${stackName}]`);
 
 	const startResult = await executeComposeCommand(
 		operation,
@@ -2726,7 +2725,7 @@ export async function stopStack(
 	// provider secrets (${VAR:?required}) fails to stop without them - e.g. the
 	// stop-during-backup path (#1579). bestEffort: stopping a stack must not be blocked
 	// by an unreachable provider, so a resolve failure falls back to on-disk/DB vars.
-	await applyProviderSecretsToComposeResult(result, stackName, envId, `[Stack:${stackName}]`, true);
+	await applyProviderSecretsToComposeResult(result, stackName, envId, `[堆栈:${stackName}]`, true);
 
 	const composeResult = await executeComposeCommand(
 		'stop',
@@ -2785,7 +2784,7 @@ export async function restartStack(
 	// required provider secrets (${VAR:?required}) fails without them (#1579). bestEffort:
 	// restarting a running stack must not be blocked by an unreachable provider, so a
 	// resolve failure falls back to on-disk/DB vars rather than aborting the restart.
-	await applyProviderSecretsToComposeResult(result, stackName, envId, `[Stack:${stackName}]`, true);
+	await applyProviderSecretsToComposeResult(result, stackName, envId, `[堆栈:${stackName}]`, true);
 
 	if (mode === 'recreate') {
 		// Stop first, then bring up with --force-recreate to ensure new container IDs
@@ -2830,7 +2829,7 @@ export async function downStack(
 	// `docker compose down` interpolates the compose file too, so a stack with required
 	// provider secrets (${VAR:?required}) fails to come down without them (#1579).
 	// bestEffort: an unreachable provider must not block tearing a stack down.
-	await applyProviderSecretsToComposeResult(result, stackName, envId, `[Stack:${stackName}]`, true);
+	await applyProviderSecretsToComposeResult(result, stackName, envId, `[堆栈:${stackName}]`, true);
 
 	const composeResult = await executeComposeCommand(
 		'down',
@@ -2916,7 +2915,7 @@ export async function removeStack(
 	// traversal name (e.g. "..") would make getStackDir resolve to DATA_DIR's parent and
 	// rmSync it; the create/deploy paths already enforce this same shape.
 	if (!isValidStackName(stackName)) {
-		return { success: false, error: 'Invalid stack name' };
+		return { success: false, error: '无效的堆栈名称' };
 	}
 	return withStackLock(stackName, async () => {
 		// Get compose file (may not exist for external stacks)
@@ -2943,7 +2942,7 @@ export async function removeStack(
 				await getNonSecretEnvVarsAsRecord(stackName, envId),
 				await getSecretEnvVarsAsRecord(stackName, envId),
 				composeResult.envPath ?? composeResult.suggestedEnvPath,
-				`[Stack:${stackName}]`,
+				`[堆栈:${stackName}]`,
 				true
 			);
 			const envVars = resolved.nonSecretVars;
@@ -3004,7 +3003,7 @@ export async function removeStack(
 					if (env?.connectionType === 'direct') {
 						const remoteStacksDir = await getEnvSetting('remote_stacks_dir', envId);
 						const base = typeof remoteStacksDir === 'string' && remoteStacksDir.trim() ? normalizeBaseDir(remoteStacksDir) : '';
-						if (base) console.log(`[Stack:${stackName}] leaving staged files at ${stackDirIn(base, stackName)} on the remote host (not deleting - may hold user data)`);
+						if (base) console.log(`[堆栈:${stackName}] 将暂存文件保留在远程主机的 ${stackDirIn(base, stackName)} (不执行删除 - 可能包含用户数据)`);
 					}
 				} catch { /* log-only, never blocks removal */ }
 			}
@@ -3022,7 +3021,7 @@ export async function removeStack(
 			removalResults.forEach((result, index) => {
 				if (result.status === 'rejected') {
 					const containerName = stackContainers[index].name || stackContainers[index].id;
-					errors.push(`Failed to remove ${containerName}: ${result.reason?.message || 'Unknown error'}`);
+					errors.push(`删除 ${containerName} 失败：${result.reason?.message || '未知错误'}`);
 				}
 			});
 
@@ -3112,11 +3111,11 @@ export async function removeStack(
 					lastErr = err.message;
 				}
 				if (!existsSync(stackDir)) { lastErr = ''; break; }
-				lastErr = lastErr || 'Directory still exists after deletion attempt';
+				lastErr = lastErr || '尝试删除后目录仍然存在';
 				await new Promise((r) => setTimeout(r, 200));
 			}
 			if (lastErr) {
-				console.error(`Failed to delete stack directory: ${lastErr}`);
+				console.error(`删除堆栈目录失败: ${lastErr}`);
 				// A residual dir under Dockhand's own stacks tree blocks nothing when the
 				// caller forced removal: the containers are gone and a same-name recreate
 				// re-clones over it (syncGitStack rmSyncs the path first). So it is a
@@ -3128,13 +3127,13 @@ export async function removeStack(
 		try {
 			await deleteStackSource(stackName, envId);
 		} catch (err: any) {
-			cleanupErrors.push(`stack source: ${err.message}`);
+			cleanupErrors.push(`堆栈源：${err.message}`);
 		}
 
 		try {
 			await deleteStackEnvVars(stackName, envId);
 		} catch (err: any) {
-			cleanupErrors.push(`env vars: ${err.message}`);
+			cleanupErrors.push(`环境变量：${err.message}`);
 		}
 
 		// If git stack, clean up git stack record. The DB record always goes (the stack is
@@ -3154,22 +3153,22 @@ export async function removeStack(
 				}
 			}
 		} catch (err: any) {
-			cleanupErrors.push(`git stack: ${err.message}`);
+			cleanupErrors.push(`Git 堆栈：${err.message}`);
 		}
 
 		// Check if directory deletion failed - this blocks stack recreation
-		const directoryError = cleanupErrors.find(e => e.startsWith('directory:'));
+		const directoryError = cleanupErrors.find(e => e.startsWith('目录：'));
 		if (directoryError) {
 			return {
 				success: false,
-				error: `Stack containers stopped but directory cleanup failed (${directoryError}). Cannot recreate stack with same name until directory is manually removed.`
+				error: `堆栈容器已停止，但目录清理失败（${directoryError}）。手动删除目录前无法使用同名重建堆栈。`
 			};
 		}
 
 		// Return success with optional cleanup warnings for non-critical errors
 		const output = cleanupErrors.length > 0
-			? `Stack "${stackName}" removed with cleanup warnings: ${cleanupErrors.join('; ')}`
-			: `Stack "${stackName}" removed successfully`;
+			? `堆栈 "${stackName}" 已删除，附带清理警告：${cleanupErrors.join('; ')}`
+			: `堆栈 "${stackName}" 已成功删除`;
 
 		return { success: true, output };
 	});
@@ -3191,10 +3190,10 @@ export async function notifyStackDeploy(
 	const coveredBy = isGitDeploy ? gitSyncEvent : undefined;
 	try {
 		await sendEventNotification(eventType, {
-			title: result.success ? 'Stack deployed' : 'Stack deploy failed',
+			title: result.success ? '堆栈已部署' : '堆栈部署失败',
 			message: result.success
-				? `Stack "${name}" deployed successfully`
-				: `Stack "${name}" deploy failed: ${result.error || 'unknown error'}`,
+				? `堆栈 "${name}" 部署成功`
+				: `堆栈 "${name}" 部署失败：${result.error || '未知错误'}`,
 			type: result.success ? 'success' : 'error'
 		}, envId ?? undefined, coveredBy);
 	} catch (error) {
@@ -3248,27 +3247,27 @@ async function reconcileStackPendingUpdates(stackName: string, envId: number): P
  */
 export async function deployStack(options: DeployStackOptions): Promise<StackOperationResult> {
 	const { name, compose, envId, sourceDir, forceRecreate, build, noBuildCache, pullBase, pullPolicy, composePath, envPath, composeFileName, envFileName, filesToDelete, isGitDeploy, onLine } = options;
-	const logPrefix = `[Stack:${name}]`;
+	const logPrefix = `[堆栈:${name}]`;
 
 	console.log(`${logPrefix} ========================================`);
-	console.log(`${logPrefix} DEPLOY STACK START`);
+	console.log(`${logPrefix} 开始部署堆栈`);
 	console.log(`${logPrefix} ========================================`);
-	console.log(`${logPrefix} Environment ID:`, envId ?? '(none - local)');
-	console.log(`${logPrefix} Force recreate:`, forceRecreate ?? false);
-	console.log(`${logPrefix} Source directory:`, sourceDir ?? '(none)');
-	console.log(`${logPrefix} Custom compose path:`, composePath ?? '(none)');
-	console.log(`${logPrefix} Custom env path:`, envPath ?? '(none)');
-	console.log(`${logPrefix} Compose filename:`, composeFileName ?? '(none)');
-	console.log(`${logPrefix} Env filename:`, envFileName ?? '(none)');
+	console.log(`${logPrefix} 环境 ID：`, envId ?? '(无 - 本地)');
+	console.log(`${logPrefix} 强制重建：`, forceRecreate ?? false);
+	console.log(`${logPrefix} 源目录：`, sourceDir ?? '(无)');
+	console.log(`${logPrefix} 自定义 Compose 路径：`, composePath ?? '(无)');
+	console.log(`${logPrefix} 自定义环境变量路径：`, envPath ?? '(无)');
+	console.log(`${logPrefix} Compose 文件名：`, composeFileName ?? '(无)');
+	console.log(`${logPrefix} 环境变量文件名：`, envFileName ?? '(无)');
 
 	// Validate stack name - Docker Compose requires lowercase alphanumeric, hyphens, underscores
 	// Must also start with a letter or number
 	if (!isValidStackName(name)) {
-		console.log(`${logPrefix} ERROR: Invalid stack name format`);
+		console.log(`${logPrefix} 错误: 堆栈名称格式无效`);
 		const invalid = {
 			success: false,
 			output: '',
-			error: 'Stack name must be lowercase, start with a letter or number, and contain only letters, numbers, hyphens, and underscores'
+			error: '堆栈名称必须为小写，以字母或数字开头，且仅包含字母、数字、连字符和下划线'
 		};
 		await notifyStackDeploy(name, envId, invalid, isGitDeploy);
 		return invalid;
@@ -3290,14 +3289,14 @@ export async function deployStack(options: DeployStackOptions): Promise<StackOpe
 			// Files are NOT copied - we use them in-place at their original location
 			workingDir = dirname(composePath);
 			actualComposePath = composePath;
-			console.log(`${logPrefix} Using custom compose path, workingDir:`, workingDir);
+			console.log(`${logPrefix} 使用自定义 Compose 路径，工作目录：`, workingDir);
 		} else if (sourceDir && existsSync(sourceDir)) {
 			// Git stack: copy entire source directory to internal stack directory.
 			const existingGitSource = await getStackSource(name, envId);
 			if (!existingGitSource && await usesFlatLocalStacksDir(envId)) {
 				const collisionError = await checkFlatLocalStackNameCollision(name, envId);
 				if (collisionError) {
-					console.log(`${logPrefix} ERROR: ${collisionError}`);
+					console.log(`${logPrefix} 错误: ${collisionError}`);
 					const collision = { success: false, output: '', error: collisionError };
 					await notifyStackDeploy(name, envId, collision, isGitDeploy);
 					return collision;
@@ -3308,14 +3307,14 @@ export async function deployStack(options: DeployStackOptions): Promise<StackOpe
 			// Set actualComposePath using the provided compose filename from git stack config
 			if (composeFileName) {
 				actualComposePath = join(workingDir, composeFileName);
-				console.log(`${logPrefix} Using compose filename from git config:`, composeFileName);
+				console.log(`${logPrefix} 使用 Git 配置中的 Compose 文件名：`, composeFileName);
 			} else {
 				// Detect compose file in source directory
 				const composeNames = ['docker-compose.yaml', 'docker-compose.yml', 'compose.yaml', 'compose.yml'];
 				for (const cn of composeNames) {
 					if (existsSync(join(sourceDir, cn))) {
 						actualComposePath = join(workingDir, cn);
-						console.log(`${logPrefix} Detected compose file:`, cn);
+						console.log(`${logPrefix} 检测到 Compose 文件：`, cn);
 						break;
 					}
 				}
@@ -3325,19 +3324,19 @@ export async function deployStack(options: DeployStackOptions): Promise<StackOpe
 			// Only if envFileName is provided (env file is optional for git stacks)
 			if (envFileName) {
 				actualEnvPath = join(workingDir, envFileName);
-				console.log(`${logPrefix} Using env filename from git config:`, envFileName);
-				console.log(`${logPrefix} Actual env path will be:`, actualEnvPath);
+				console.log(`${logPrefix} 使用 Git 配置中的环境变量文件名：`, envFileName);
+				console.log(`${logPrefix} 实际环境变量路径为：`, actualEnvPath);
 			}
 
 			// Read all files for Hawser deployments
 			stackFiles = await readDirFilesAsMap(sourceDir);
-			console.log(`${logPrefix} Read ${Object.keys(stackFiles).length} files from source directory`);
-			console.log(`${logPrefix} Files:`, Object.keys(stackFiles).join(', '));
+			console.log(`${logPrefix} 从源目录读取 ${Object.keys(stackFiles).length} 个文件`);
+			console.log(`${logPrefix} 文件：`, Object.keys(stackFiles).join(', '));
 
 			// Copy git source files to stack directory (overlay, not replace).
 			// Do NOT rmSync first — relative volume mounts (e.g., ./data) live here
 			// and would be destroyed, causing data loss (#831).
-			console.log(`${logPrefix} Copying source directory to stack directory...`);
+			console.log(`${logPrefix} 正在将源目录复制到堆栈目录...`);
 			mkdirSync(workingDir, { recursive: true });
 			// Links are copied verbatim so a relative one stays relative: resolving it
 			// writes an absolute path into the clone, and the next deploy then finds the
@@ -3361,19 +3360,19 @@ export async function deployStack(options: DeployStackOptions): Promise<StackOpe
 					}
 					const verdict = judgeSymlink(src, target, sourceDir, existsSync);
 					if (verdict.kind === 'refuse') {
-						refused.push(`  ${relative(sourceDir, src)} -> ${target} (skipped: ${verdict.reason})`);
+						refused.push(`  ${relative(sourceDir, src)} -> ${target} (已跳过: ${verdict.reason})`);
 						return false;
 					}
 					return true;
 				}
 			});
 			if (refused.length > 0) {
-				console.log(`${logPrefix} Skipped ${refused.length} symlink(s):`);
+				console.log(`${logPrefix} 已跳过 ${refused.length} 个符号链接:`);
 				for (const line of refused) console.log(`${logPrefix} ${line}`);
-				onLine?.(`Skipped ${refused.length} symlink(s):`);
+				onLine?.(`已跳过 ${refused.length} 个符号链接:`);
 				for (const line of refused) onLine?.(line);
 			}
-			console.log(`${logPrefix} Copied ${sourceDir} -> ${workingDir}`);
+			console.log(`${logPrefix} 已复制 ${sourceDir} -> ${workingDir}`);
 
 			// Git deletion sync (#966): remove files that were deleted from the
 			// repository. The list is manifest entries absent from the new clone;
@@ -3382,11 +3381,11 @@ export async function deployStack(options: DeployStackOptions): Promise<StackOpe
 			if (filesToDelete && filesToDelete.length > 0) {
 				localDeletionResult = applyFileDeletions(workingDir, filesToDelete);
 				for (const path of localDeletionResult.deleted) {
-					console.log(`${logPrefix} Removed "${path}" — deleted from the repository`);
+					console.log(`${logPrefix} 已移除 "${path}" — 该文件已从仓库中删除`);
 				}
 				for (const skip of localDeletionResult.skipped) {
 					if (skip.reason === 'already-absent') continue;
-					console.warn(`${logPrefix} Kept "${skip.path}" — ${skipReasonMessage(skip.reason)}`);
+					console.warn(`${logPrefix} 保留 "${skip.path}" — ${skipReasonMessage(skip.reason)}`);
 				}
 			}
 		} else {
@@ -3408,7 +3407,7 @@ export async function deployStack(options: DeployStackOptions): Promise<StackOpe
 					actualEnvPath = join(workingDir, '.env');
 				}
 				// source.envPath === '' -> leave actualEnvPath undefined (no env file)
-				console.log(`${logPrefix} Using custom path from DB:`, workingDir);
+				console.log(`${logPrefix} 使用数据库中的自定义路径:`, workingDir);
 			} else {
 				// Default: compose file should already exist (written by saveStackComposeFile)
 				if (await usesFlatLocalStacksDir(envId)) {
@@ -3416,7 +3415,7 @@ export async function deployStack(options: DeployStackOptions): Promise<StackOpe
 					if (!existing) {
 						const collisionError = await checkFlatLocalStackNameCollision(name, envId);
 						if (collisionError) {
-							console.log(`${logPrefix} ERROR: ${collisionError}`);
+							console.log(`${logPrefix} 错误: ${collisionError}`);
 							const collision = { success: false, output: '', error: collisionError };
 							await notifyStackDeploy(name, envId, collision, isGitDeploy);
 							return collision;
@@ -3427,7 +3426,7 @@ export async function deployStack(options: DeployStackOptions): Promise<StackOpe
 				// Point at the default .env in the stack dir so its content (e.g. a
 				// bulk secret selector) reaches resolveProviderEnvVars below.
 				actualEnvPath = join(workingDir, '.env');
-				console.log(`${logPrefix} Using internal stack directory:`, workingDir);
+				console.log(`${logPrefix} 使用内部堆栈目录：`, workingDir);
 			}
 
 		}
@@ -3440,7 +3439,7 @@ export async function deployStack(options: DeployStackOptions): Promise<StackOpe
 		const composeFilename = actualComposePath ? basename(actualComposePath) : 'compose.yaml';
 		if (!stackFiles[composeFilename]) {
 			stackFiles[composeFilename] = compose;
-			console.log(`${logPrefix} Added ${composeFilename} to stackFiles for Hawser (${compose.length} chars)`);
+			console.log(`${logPrefix}  已为 Hawser 添加 ${composeFilename} 到堆栈文件 (${compose.length} 字符)`);
 		}
 
 		let envFileContent: string | undefined = stackFiles['.env'];
@@ -3448,14 +3447,14 @@ export async function deployStack(options: DeployStackOptions): Promise<StackOpe
 			try {
 				envFileContent = readFileSync(actualEnvPath, 'utf-8');
 				stackFiles['.env'] = envFileContent;
-				console.log(`${logPrefix} Added .env to stackFiles for Hawser (${envFileContent.length} chars)`);
+				console.log(`${logPrefix} 已为 Hawser 将 .env 添加至 stackFiles (${envFileContent.length} 字符)`);
 			} catch (err) {
-				console.warn(`${logPrefix} Failed to read .env file at ${actualEnvPath}:`, err);
+				console.warn(`${logPrefix} 读取 .env 文件 ${actualEnvPath} 失败：`, err);
 			}
 		}
 
-		console.log(`${logPrefix} Compose content length:`, compose.length, 'chars');
-		console.log(`${logPrefix} Compose content (full):`);
+		console.log(`${logPrefix} Compose 内容长度：`, compose.length, '字符');
+		console.log(`${logPrefix} Compose 内容 (完整)：`);
 		console.log(compose);
 
 		// Fetch overrides and secrets from DB
@@ -3471,7 +3470,7 @@ export async function deployStack(options: DeployStackOptions): Promise<StackOpe
 			try {
 				configuredEnvFileContent = readFileSync(actualEnvPath, 'utf-8');
 			} catch (err) {
-				console.warn(`${logPrefix} Failed to read env file at ${actualEnvPath}:`, err);
+				console.warn(`${logPrefix} 读取环境变量文件 ${actualEnvPath} 失败:`, err);
 			}
 		}
 
@@ -3486,8 +3485,8 @@ export async function deployStack(options: DeployStackOptions): Promise<StackOpe
 			{ stackName: name, envId },
 			configuredEnvFileContent
 		);
-		console.log(`${logPrefix} DB non-secret override vars:`, Object.keys(dbNonSecretVars).length);
-		console.log(`${logPrefix} DB secret vars:`, Object.keys(secretVars).length);
+		console.log(`${logPrefix} 数据库非密钥覆盖变量：`, Object.keys(dbNonSecretVars).length);
+		console.log(`${logPrefix} 数据库密钥变量:`, Object.keys(secretVars).length);
 
 		// For git stacks (sourceDir provided), use the override file (.env.dockhand)
 		// to layer editor overrides on top of the repo's .env file.
@@ -3519,8 +3518,8 @@ export async function deployStack(options: DeployStackOptions): Promise<StackOpe
 			console.warn(`${logPrefix} ${warning}`);
 			onLine?.(warning);
 		};
-		console.log(`${logPrefix} Deploy plan: ${deployPlan(build, build && pullBase, noBuildCache, pullPolicy)}`);
-		console.log(`${logPrefix} Calling executeComposeCommand...`);
+		console.log(`${logPrefix} 部署方案: ${deployPlan(build, build && pullBase, noBuildCache, pullPolicy)}`);
+		console.log(`${logPrefix} 正在调用 executeComposeCommand...`);
 		// `--no-cache` and `--pull` are `build` flags that `up` lacks, so either one builds in its own step.
 		const result = runsSeparateBuild(build, pullBase, noBuildCache)
 			? await pullBuildThenUp(
@@ -3545,14 +3544,14 @@ export async function deployStack(options: DeployStackOptions): Promise<StackOpe
 		// comment and deploy-run-record.ts.
 		attachResolvedSecrets(result, Object.values(secretVars));
 		console.log(`${logPrefix} ========================================`);
-		console.log(`${logPrefix} DEPLOY STACK RESULT`);
+		console.log(`${logPrefix} 部署堆栈结果`);
 		console.log(`${logPrefix} ========================================`);
-		console.log(`${logPrefix} Success:`, result.success);
+		console.log(`${logPrefix} 成功：`, result.success);
 		if (result.output) {
-			console.log(`${logPrefix} Output:`, result.output);
+			console.log(`${logPrefix} 输出：`, result.output);
 		}
 		if (result.error) {
-			console.log(`${logPrefix} Error:`, result.error);
+			console.log(`${logPrefix} 错误：`, result.error);
 		}
 		// Deletion result: the remote (Hawser) result is authoritative when present;
 		// for local deployments the local applier's result is the truth.
@@ -3594,7 +3593,7 @@ export async function pullStackImages(
 	if (!result.success) {
 		return {
 			success: false,
-			error: result.error || 'Compose file not found'
+			error: result.error || '未找到 Compose 文件'
 		};
 	}
 
@@ -3627,7 +3626,7 @@ export async function pullStackService(
 	if (!result.success) {
 		return {
 			success: false,
-			error: result.error || `Compose file not found for stack "${stackName}"`
+			error: result.error || `未找到堆栈 "${stackName}" 的 Compose 文件`
 		};
 	}
 
@@ -3670,7 +3669,7 @@ export async function updateStackService(
 	if (!result.success) {
 		return {
 			success: false,
-			error: result.error || `Compose file not found for stack "${stackName}"`
+			error: result.error || `未找到堆栈 "${stackName}" 的 Compose 文件`
 		};
 	}
 
@@ -3728,7 +3727,7 @@ export async function writeStackEnvFile(
 ): Promise<void> {
 	if (customEnvPath) {
 		const v = await validateStackPath(customEnvPath);
-		if (!v.ok) throw new Error(v.error || 'Invalid env path');
+		if (!v.ok) throw new Error(v.error || '环境文件路径无效');
 	}
 	let envFilePath: string;
 	if (customEnvPath) {
@@ -3749,7 +3748,7 @@ export async function writeStackEnvFile(
 
 	// The derived path (stored, or the .env beside the compose file) can be a link into a
 	// protected location; it is checked here, where it is finally known.
-	if (isForbiddenStackPath(envFilePath)) throw new Error('Path is not allowed');
+	if (isForbiddenStackPath(envFilePath)) throw new Error('该路径不允许访问');
 	// Ensure parent directory exists
 	const dir = dirname(envFilePath);
 	if (!existsSync(dir)) {
@@ -3780,7 +3779,7 @@ export async function writeRawStackEnvFile(
 ): Promise<void> {
 	if (customEnvPath) {
 		const v = await validateStackPath(customEnvPath);
-		if (!v.ok) throw new Error(v.error || 'Invalid env path');
+		if (!v.ok) throw new Error(v.error || '环境文件路径无效');
 	}
 	let envFilePath: string;
 	if (customEnvPath) {
@@ -3801,7 +3800,7 @@ export async function writeRawStackEnvFile(
 
 	// The derived path (stored, or the .env beside the compose file) can be a link into a
 	// protected location; it is checked here, where it is finally known.
-	if (isForbiddenStackPath(envFilePath)) throw new Error('Path is not allowed');
+	if (isForbiddenStackPath(envFilePath)) throw new Error('该路径不允许访问');
 	// Ensure parent directory exists
 	const dir = dirname(envFilePath);
 	if (!existsSync(dir)) {
@@ -3888,7 +3887,7 @@ async function resolveProviderEnvVars(
 		try {
 			await setStackInjectedSecretKeys(persistTo.stackName, persistTo.envId, injectedProviderKeys());
 		} catch (err) {
-			console.warn(`${logPrefix} Failed to persist injected secret key names:`, err);
+			console.warn(`${logPrefix} 保存注入的密钥名称失败:`, err);
 		}
 	};
 
@@ -3907,7 +3906,7 @@ async function resolveProviderEnvVars(
 	);
 	if (envFiles.some(isSopsDotenv)) {
 		if (!providerRow || !provider?.decryptEnvFile) {
-			console.warn(`${logPrefix} The env file is SOPS-encrypted but no SOPS secret provider is bound to this stack; its values stay encrypted`);
+			console.warn(`${logPrefix} 该环境变量文件为 SOPS 加密，但此堆栈未绑定 SOPS 密钥提供程序；内容将保持加密状态`);
 		} else {
 			const definedByPlainFile = new Set<string>();
 			for (const content of envFiles) {
@@ -3920,11 +3919,11 @@ async function resolveProviderEnvVars(
 					decrypted = await provider.decryptEnvFile(providerRow.config, content, logPrefix);
 				} catch (e: unknown) {
 					const msg = e instanceof Error ? e.message : String(e);
-					throw new Error(`Failed to decrypt the env file: ${msg}`);
+					throw new Error(`解密环境变量文件失败: ${msg}`);
 				}
 				for (const key of definedByPlainFile) delete decrypted[key];
 				const injected = mergeDecryptedEnvFile(decrypted, dbNonSecretVars, secretVars);
-				console.log(`${logPrefix} ${provider.label} decrypted ${injected} secret(s) from the env file`);
+				console.log(`${logPrefix} ${provider.label} 从环境变量文件解密出 ${injected} 个密钥`);
 			}
 		}
 	}
@@ -3948,22 +3947,22 @@ async function resolveProviderEnvVars(
 				delete secretVars[selectorVar];
 				delete dbNonSecretVars[selectorVar];
 
-				console.log(`${logPrefix} Resolving bulk selector via "${providerRow.name}" (${provider.label})`);
+				console.log(`${logPrefix} 通过"${providerRow.name}"(${provider.label})解析批量选择器`);
 				const bulkVars = await provider.resolveBulk(providerRow.config, selector);
-				console.log(`${logPrefix} ${provider.label} injected ${Object.keys(bulkVars).length} secret(s)`);
+				console.log(`${logPrefix} ${provider.label} 注入 ${Object.keys(bulkVars).length} 个密钥`);
 
 				// Bulk values merged underneath, with explicit DB secrets keeping priority
 				secretVars = Object.assign(bulkVars, secretVars);
 			} else if (!providerRow) {
-				console.warn(`${logPrefix} ${selectorVar} is set but no secret provider is bound to this stack`);
+				console.warn(`${logPrefix} ${selectorVar} 已设置，但此堆栈未绑定密钥提供程序`);
 			} else if (!provider) {
-				console.warn(`${logPrefix} ${selectorVar} is set but bound provider type "${providerRow.type}" is not registered`);
+				console.warn(`${logPrefix} ${selectorVar} 已设置，但绑定的提供程序类型 "${providerRow.type}" 未注册`);
 			} else {
-				console.warn(`${logPrefix} ${selectorVar} is set but provider "${providerRow.name}" (${provider.label}) does not support bulk pull`);
+				console.warn(`${logPrefix} ${selectorVar} 已设置，但提供程序 "${providerRow.name}" (${provider.label}) 不支持批量拉取`);
 			}
 		} catch (e: unknown) {
 			const msg = e instanceof Error ? e.message : String(e);
-			throw new Error(`Failed to load secrets from provider: ${msg}`);
+			throw new Error(`从提供程序加载密钥失败: ${msg}`);
 		}
 	}
 
@@ -3998,7 +3997,7 @@ async function resolveProviderEnvVars(
 	}
 
 	if (!providerRow || !provider) {
-		console.warn(`${logPrefix} Found ${refs.size} reference(s) but no usable secret provider is bound to this stack; leaving them as literals`);
+		console.warn(`${logPrefix} 发现 ${refs.size} 个引用，但未绑定可用的密钥提供程序；将保留原始文本`);
 		await persistInjectedKeys();
 		return { dbNonSecretVars, secretVars, injectedProviderKeys: injectedProviderKeys() };
 	}
@@ -4008,7 +4007,7 @@ async function resolveProviderEnvVars(
 		refMap = await provider.resolveSecretReferences(providerRow.config, Array.from(refs), logPrefix);
 	} catch (e: unknown) {
 		const msg = e instanceof Error ? e.message : String(e);
-		throw new Error(`Failed to resolve secret references: ${msg}`);
+		throw new Error(`解析密钥引用失败: ${msg}`);
 	}
 
 	let promotedFromDb = 0;
@@ -4041,7 +4040,7 @@ async function resolveProviderEnvVars(
 		}
 	}
 
-	console.log(`${logPrefix} ${provider.label} resolved ${refMap.size}/${refs.size} reference(s) (promoted from DB: ${promotedFromDb}, from .env: ${promotedFromEnvFile})`);
+	console.log(`${logPrefix} ${provider.label} 已解析 ${refMap.size}/${refs.size} 个引用(从数据库提升: ${promotedFromDb}，从.env提升: ${promotedFromEnvFile})`);
 
 	await persistInjectedKeys();
 	return { dbNonSecretVars, secretVars, injectedProviderKeys: injectedProviderKeys() };
@@ -4067,7 +4066,7 @@ function readConfiguredGitEnvFile(
 	try {
 		return readFileSync(path, 'utf-8');
 	} catch (err) {
-		console.warn(`${logPrefix} Failed to read env file at ${path}:`, err);
+		console.warn(`${logPrefix} 读取环境变量文件 ${path} 失败:`, err);
 		return undefined;
 	}
 }
@@ -4094,7 +4093,7 @@ async function resolveProviderVarsBestEffort(
 		try {
 			envFileContent = readFileSync(envPath, 'utf-8');
 		} catch (err) {
-			console.warn(`${logPrefix} Failed to read .env at ${envPath}:`, err);
+			console.warn(`${logPrefix} 读取 ${envPath} 处的 .env 文件失败:`, err);
 		}
 	}
 
@@ -4115,7 +4114,7 @@ async function resolveProviderVarsBestEffort(
 		return { nonSecretVars: resolved.dbNonSecretVars, secretVars: resolved.secretVars };
 	} catch (err) {
 		if (!bestEffort) throw err;
-		console.warn(`${logPrefix} Provider secret resolution failed, proceeding without provider secrets:`, err);
+		console.warn(`${logPrefix} 密钥提供程序解析失败，将不使用提供程序密钥继续执行:`, err);
 		return { nonSecretVars, secretVars };
 	}
 }

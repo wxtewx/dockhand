@@ -23,6 +23,7 @@
 	import { buildSftpRepository, isSftpRepository, parseSftpRepository } from '$lib/shared/sftp-repository';
 	import { m } from '$lib/paraglide/messages.js';
 	import { splitAtName } from '$lib/i18n/split';
+	import { getResticText } from '$lib/types';
 
 	interface Destination {
 		id: number;

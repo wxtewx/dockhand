@@ -137,7 +137,7 @@
 						logLines = [...logLines, (isGitStage ? GIT_LINE_MARKER : '') + data.message];
 					}
 				} catch (e) {
-					console.error('Failed to process job line:', e);
+					console.error('处理任务日志失败:', e);
 				}
 			});
 
@@ -146,7 +146,7 @@
 				deployFinished = true;
 			}
 		} catch (error: any) {
-			console.error('Failed to deploy git stack:', error);
+			console.error('部署 Git 堆栈失败:', error);
 			overallStatus = 'error';
 			errorMessage = error.message || m.stacks_git_deploy_failed_fallback();
 			deployFinished = true;

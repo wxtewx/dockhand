@@ -16,6 +16,7 @@
 	import SnapshotHeader from '$lib/components/backup/SnapshotHeader.svelte';
 	import FileBrowserPanel from './FileBrowserPanel.svelte';
 	import { m } from '$lib/paraglide/messages.js';
+	import { getLabelText } from '$lib/types';
 
 	interface Props {
 		open: boolean;
@@ -259,7 +260,7 @@
 							<section class="space-y-2 border-t pt-4">
 								<h4 class="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
 									<Box class="w-3 h-3" />
-									{(containerInspect.Name || metadata.targetName || '').replace(/^\//, '')}
+									容器配置 {((containerInspect.Name || metadata.targetName || '').replace(/^\//, ''))}
 								</h4>
 								<dl class="grid grid-cols-[130px_1fr] gap-y-1.5 text-sm">
 									<dt class="text-muted-foreground">{m.containers_snapshot_image()}</dt>

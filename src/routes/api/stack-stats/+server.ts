@@ -29,11 +29,11 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 		auth.authEnabled &&
 		(!(await auth.can('stacks', 'view', envIdNum)) || !(await auth.can('containers', 'view', envIdNum)))
 	) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	if (envIdNum && auth.isEnterprise && !(await auth.canAccessEnvironment(envIdNum))) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问该环境' }, { status: 403 });
 	}
 
 	if (!(await hasEnvironments()) || !envIdNum) {
@@ -54,9 +54,9 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 		return json(groupStackStats(running, statsById));
 	} catch (error: any) {
 		if (error instanceof EnvironmentNotFoundError) {
-			return json({ error: 'Environment not found' }, { status: 404 });
+			return json({ error: '未找到该环境' }, { status: 404 });
 		}
-		console.error('Failed to get stack stats:', error.message || error);
+		console.error('获取堆栈统计信息失败:', error.message || error);
 		return json([]);
 	}
 };

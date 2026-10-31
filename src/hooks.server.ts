@@ -106,7 +106,7 @@ async function cleanupOrphanedScannerContainers() {
 			} catch { /* ignore */ }
 		}
 		if (orphaned.length > 0) {
-			console.log(`[Startup] Cleaned up ${orphaned.length} orphaned scanner containers`);
+			console.log(`[启动初始化] 已清理 ${orphaned.length} 个遗留扫描器容器`);
 		}
 	} catch (error) {
 		// Silently ignore - Docker may not be available yet or no containers to clean
@@ -140,7 +140,7 @@ if (!initialized) {
 						const path = join(tmpDir, entry);
 						try {
 							rmSync(path, { recursive: true, force: true });
-							console.log(`[Startup] Cleaned orphaned TLS temp dir: ${entry}`);
+							console.log(`[启动初始化] 清理遗留 TLS 临时目录: ${entry}`);
 						} catch { /* ignore */ }
 					}
 				}
@@ -157,35 +157,35 @@ if (!initialized) {
 		// anything that decrypts credentials (the scheduler's backups, subprocesses)
 		// must not run until this settles — gate them on this promise below.
 		const credentialsReady = migrateCredentials().catch(err => {
-			console.error('[Startup] Failed to migrate credentials:', err);
+			console.error('[启动初始化] 迁移凭据失败:', err);
 		});
 
 		// Log hostname for license validation (set by entrypoint in Docker, or os.hostname() outside)
-		console.log('Hostname for license validation:', getHostname());
+		console.log('用于许可证校验的主机名:', getHostname());
 
 		// Detect host data directory for path translation
 		// This allows Dockhand to translate container paths to host paths for compose volume mounts
 		detectHostDataDir().then(hostPath => {
 			if (hostPath) {
-				console.log(`[Startup] Host data directory detected: ${hostPath}`);
+				console.log(`[启动初始化] 已检测宿主机数据目录: ${hostPath}`);
 			} else {
-				console.warn('[Startup] Could not detect host data path.');
-				console.warn('[Startup] Git stacks with relative volume paths may not work correctly.');
-				console.warn('[Startup] Consider setting HOST_DATA_DIR or using matching volume paths (-v /app/data:/app/data)');
+				console.warn('[启动初始化] 无法自动识别宿主机数据路径。');
+				console.warn('[启动初始化] 使用相对数据卷路径的 Git 堆栈可能无法正常工作。');
+				console.warn('[启动初始化] 建议配置 HOST_DATA_DIR 环境变量，或使用一致挂载路径 (-v /app/data:/app/data)');
 			}
 		}).catch(err => {
-			console.error('[Startup] Failed to detect host data directory:', err);
+			console.error('[启动初始化] 宿主机数据目录检测失败:', err);
 		});
 		// Cleanup orphaned scanner containers from previous runs (non-blocking).
 		cleanupOrphanedScannerContainers().catch(err => {
-			console.error('Failed to cleanup orphaned scanner containers:', err);
+			console.error('遗留扫描器容器清理失败:', err);
 		});
 		// Warn once at startup if this instance is listening beyond localhost with auth
 		// off and the Docker socket writable - the config that makes it one request from
 		// host takeover. The UI shows the same warning; this covers headless operators.
 		evaluateExposure(process.env.HOST || '0.0.0.0').then(warn => {
 			if (warn) {
-				console.warn('[SECURITY] Dockhand is listening beyond localhost with authentication disabled and the Docker socket mounted read-write. If this instance is reachable from the internet, enable authentication (Settings > Authentication) or keep Dockhand behind a firewall or VPN.');
+				console.warn('[安全] Dockhand 正在 localhost 以外地址监听，认证已关闭且 Docker socket 以读写方式挂载。如果该实例可从公网访问，请启用认证 (设置 > 认证) 或将 Dockhand 部署在防火墙或 VPN 后方。');
 			}
 		}).catch(() => { /* best-effort */ });
 		// Start background subprocesses and the scheduler only AFTER credential
@@ -193,7 +193,7 @@ if (!initialized) {
 		// destination password mid-rotation (new key against old-key ciphertext).
 		credentialsReady.then(() => {
 			startSubprocesses().catch(err => {
-				console.error('Failed to start background subprocesses:', err);
+				console.error('启动后台子进程失败:', err);
 			});
 			startScheduler(); // Start unified scheduler for auto-updates and git syncs (async)
 		});
@@ -201,19 +201,19 @@ if (!initialized) {
 
 		// Check license expiry on startup and then daily (with HMR guard)
 		checkLicenseExpiry().catch(err => {
-			console.error('Failed to check license expiry:', err);
+			console.error('许可证有效期检测失败:', err);
 		});
 		if (!globalThis.__licenseCheckInterval) {
 			globalThis.__licenseCheckInterval = setInterval(() => {
 				checkLicenseExpiry().catch(err => {
-					console.error('Failed to check license expiry:', err);
+					console.error('许可证有效期定时检测失败:', err);
 				});
 			}, LICENSE_CHECK_INTERVAL);
 		}
 
 		// Graceful shutdown handling
 		const shutdown = async () => {
-			console.log('[Server] Shutting down...');
+			console.log('[服务] 正在关闭服务...');
 			stopRssTracker();
 			await stopSubprocesses();
 			process.exit(0);
@@ -223,7 +223,7 @@ if (!initialized) {
 
 		initialized = true;
 	} catch (error) {
-		console.error('Failed to initialize database:', error);
+		console.error('数据库初始化失败:', error);
 	}
 }
 
@@ -340,7 +340,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 				// Rate limit failed Bearer attempts
 				if (isBearerRateLimited(clientIp)) {
 					return new Response(
-						JSON.stringify({ error: 'Too many failed authentication attempts' }),
+						JSON.stringify({ error: '认证失败次数过多，请稍后重试' }),
 						{ status: 429, headers: { 'Content-Type': 'application/json', 'Retry-After': '300' } }
 					);
 				}
@@ -379,7 +379,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 			// /metrics returns a plain 401 (Prometheus scrape) — never a login redirect.
 			if (event.url.pathname === '/metrics') {
-				return new Response('Unauthorized', {
+				return new Response('未授权访问', {
 					status: 401,
 					headers: { 'WWW-Authenticate': 'Bearer' }
 				});
@@ -388,7 +388,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 			// API routes return 401
 			if (event.url.pathname.startsWith('/api/')) {
 				return new Response(
-					JSON.stringify({ error: 'Unauthorized', message: 'Authentication required' }),
+					JSON.stringify({ error: '未授权访问', message: '需要完成身份验证' }),
 					{
 						status: 401,
 						headers: { 'Content-Type': 'application/json' }
@@ -412,14 +412,14 @@ export const handleError: HandleServerError = ({ error, event }) => {
 	const status = (error as { status?: number })?.status;
 	if (status === 404) {
 		return {
-			message: 'Not found',
+			message: '资源不存在',
 			code: 'NOT_FOUND'
 		};
 	}
 
 	// Log only essential error info without code snippets
-	const message = error instanceof Error ? error.message : 'Unknown error';
-	console.error(`[Error] ${event.url.pathname}: ${message}`);
+	const message = error instanceof Error ? error.message : '未知服务异常';
+	console.error(`[错误] ${event.url.pathname}: ${message}`);
 
 	return {
 		message,

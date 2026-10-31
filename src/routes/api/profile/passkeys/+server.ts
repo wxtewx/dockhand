@@ -14,9 +14,9 @@ const NO_STORE = { 'Cache-Control': 'no-store' };
  * resp-401: Not authenticated
  */
 export const GET: RequestHandler = async ({ cookies }) => {
-	if (!(await isAuthEnabled())) return json({ error: 'Authentication is not enabled' }, { status: 400, headers: NO_STORE });
+	if (!(await isAuthEnabled())) return json({ error: '未启用身份认证' }, { status: 400, headers: NO_STORE });
 	const user = await validateSession(cookies);
-	if (!user) return json({ error: 'Not authenticated' }, { status: 401, headers: NO_STORE });
+	if (!user) return json({ error: '未通过身份认证' }, { status: 401, headers: NO_STORE });
 
 	const [credentials, enabled] = await Promise.all([
 		getPasskeyCredentialsForUser(user.id),

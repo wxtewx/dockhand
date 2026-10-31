@@ -95,13 +95,13 @@ export function envFileFormVars(content: string): Record<string, string> {
  * is found, without echoing the input.
  */
 export function normalizeAgeIdentities(raw: unknown): string {
-	if (typeof raw !== 'string' || !raw.trim()) throw new Error('SOPS age key is required');
+	if (typeof raw !== 'string' || !raw.trim()) throw new Error('SOPS age 密钥为必填项');
 	const identities = [...new Set(raw.match(AGE_IDENTITY_RE) ?? [])];
 	if (identities.length === 0) {
 		if (PLUGIN_IDENTITY_RE.test(raw)) {
-			throw new Error('SOPS age key: plugin identities (AGE-PLUGIN-...) are not supported');
+			throw new Error('SOPS age 密钥：不支持插件身份标识 (AGE-PLUGIN-...)');
 		}
-		throw new Error('SOPS age key must contain at least one AGE-SECRET-KEY-... identity');
+		throw new Error('SOPS age 密钥必须至少包含一个 AGE-SECRET-KEY-... 身份标识');
 	}
 	return identities.join('\n');
 }

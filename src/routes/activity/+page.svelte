@@ -114,7 +114,7 @@
 				filterToDate = parsed.toDate || '';
 			}
 		} catch (e) {
-			console.error('Failed to load activity filters from localStorage:', e);
+			console.error('从本地存储加载活动筛选器失败:', e);
 		}
 	}
 
@@ -131,7 +131,7 @@
 				toDate: filterToDate
 			}));
 		} catch (e) {
-			console.error('Failed to save activity filters to localStorage:', e);
+			console.error('保存活动筛选器到本地存储失败:', e);
 		}
 	}
 
@@ -309,7 +309,7 @@
 				signal: fetchController.signal
 			});
 			if (!response.ok) {
-				throw new Error('Failed to fetch events');
+				throw new Error('获取事件失败');
 			}
 			const data = await response.json();
 
@@ -340,7 +340,7 @@
 			if (error?.name === 'AbortError') {
 				return;
 			}
-			console.error('Failed to fetch events:', error);
+			console.error('获取事件失败:', error);
 			if (!append && !silent) {
 				events = [];
 				total = 0;
@@ -363,7 +363,7 @@
 				containers = await response.json();
 			}
 		} catch (error) {
-			console.error('Failed to fetch containers:', error);
+			console.error('获取容器列表失败:', error);
 		}
 	}
 
@@ -374,7 +374,7 @@
 				environments = await response.json();
 			}
 		} catch (error) {
-			console.error('Failed to fetch environments:', error);
+			console.error('获取环境列表失败:', error);
 		}
 	}
 
@@ -449,6 +449,26 @@
 			case 'oom': return AlertTriangle;
 			case 'health_status': return Heart;
 			default: return Activity;
+		}
+	}
+
+	function getActionLabel(action: string): string {
+		switch (action) {
+			case 'create': return '创建';
+			case 'start': return '启动';
+			case 'stop': return '停止';
+			case 'die': return '退出';
+			case 'kill': return '终止';
+			case 'restart': return '重启';
+			case 'pause': return '暂停';
+			case 'unpause': return '恢复';
+			case 'destroy': return '销毁';
+			case 'rename': return '重命名';
+			case 'update': return '更新';
+			case 'deploy': return '部署';
+			case 'oom': return '内存溢出';
+			case 'health_status': return '健康状态';
+			default: return '未知操作';
 		}
 	}
 
@@ -627,7 +647,7 @@
 			connectSSE();
 			initialLoadDone = true;
 		}).catch((err) => {
-			console.error('[Activity] Init chain failed:', err);
+			console.error('[活动日志] 初始化失败:', err);
 			// Connect SSE anyway so live events still work
 			connectSSE();
 			initialLoadDone = true;
@@ -650,7 +670,7 @@
 	<!-- Header with inline filters -->
 	<div class="shrink-0 flex flex-wrap justify-between items-center gap-3 min-h-8">
 		<div class="flex items-center gap-3">
-			<PageHeader icon={Activity} title={m.nav_activity()} count={visibleEnd > 0 ? `${visibleStart}-${visibleEnd}` : undefined} total={total > 0 ? total : undefined} countClass="min-w-32" />
+			<PageHeader icon={Activity} title={m.nav_activity()} count={visibleEnd > 0 && total > 0 ? `${visibleStart}-${visibleEnd} 条 / 共 ${total} 条` : undefined} total={undefined} countClass="min-w-32" />
 			<Badge variant="outline" class="gap-1.5 {($appSettings.eventCollectionMode || 'stream') === 'stream' ? 'text-green-500 border-green-500/50' : 'text-amber-500 border-amber-500/50'}">
 				{#if ($appSettings.eventCollectionMode || 'stream') === 'stream'}
 					<Wifi class="w-3 h-3" />
@@ -823,7 +843,7 @@
 					{/if}
 				{:else if column.id === 'action'}
 					<div class="flex justify-center">
-						<Badge class="{getActionColor(event.action)} py-0.5 px-1" title={event.action.charAt(0).toUpperCase() + event.action.slice(1)}>
+						<Badge class="{getActionColor(event.action)} py-0.5 px-1" title={getActionLabel(event.action)}>
 							<svelte:component this={getActionIcon(event.action)} class="w-3 h-3" />
 						</Badge>
 					</div>
@@ -904,7 +924,7 @@
 						<p>
 							<Badge class="{getActionColor(selectedEvent.action)} gap-1">
 								<svelte:component this={getActionIcon(selectedEvent.action)} class="w-3 h-3" />
-								{selectedEvent.action}
+								{getActionLabel(selectedEvent.action)}
 							</Badge>
 						</p>
 					</div>

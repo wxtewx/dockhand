@@ -25,15 +25,15 @@ export function expiryText(msRemaining: number): string {
 	const parts = expiryParts(msRemaining);
 	switch (parts.unit) {
 		case 'expired':
-			return 'License expired';
+			return '许可证已过期';
 		case 'minutes':
-			return `License expires in ${parts.count} ${plural(parts.count, 'minute')}`;
+			return `许可证将在 ${parts.count} ${plural(parts.count, 'minute')} 后到期`;
 		case 'hours':
-			return `License expires in ${parts.count} ${plural(parts.count, 'hour')}`;
+			return `许可证将在 ${parts.count} ${plural(parts.count, 'hour')} 后到期`;
 		case 'tomorrow':
-			return 'License expires tomorrow';
+			return '许可证将于明天到期';
 		case 'days':
-			return `License expires in ${parts.count} days`;
+			return `许可证将在 ${parts.count} 天后到期`;
 	}
 }
 
@@ -100,7 +100,7 @@ export function licenceHeaderText(state: {
 	const parts = licenceHeaderParts(state);
 	if (!parts) return null;
 	if (parts.kind === 'expiry') return expiryText(parts.msRemaining);
-	return parts.kind === 'problem' ? `License problem: ${parts.problem}` : 'License is not valid';
+	return parts.kind === 'problem' ? `许可证异常: ${parts.problem}` : '许可证无效';
 }
 
 export type LicenceHeaderParts =

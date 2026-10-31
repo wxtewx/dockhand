@@ -378,14 +378,14 @@
 											<Select.Item value="bridge" label={m.networks_create_mode_default({ mode: 'Bridge' })}>
 												<Layers class="w-3 h-3 mr-1.5 text-muted-foreground" />{m.networks_create_mode_default({ mode: 'Bridge' })}
 											</Select.Item>
-											<Select.Item value="private" label="Private">
-												<Layers class="w-3 h-3 mr-1.5 text-muted-foreground" />Private
+											<Select.Item value="private" label="私有">
+												<Layers class="w-3 h-3 mr-1.5 text-muted-foreground" />私有
 											</Select.Item>
 											<Select.Item value="vepa" label="VEPA">
 												<Layers class="w-3 h-3 mr-1.5 text-muted-foreground" />VEPA
 											</Select.Item>
-											<Select.Item value="passthru" label="Passthru">
-												<Layers class="w-3 h-3 mr-1.5 text-muted-foreground" />Passthru
+											<Select.Item value="passthru" label="直通">
+												<Layers class="w-3 h-3 mr-1.5 text-muted-foreground" />直通
 											</Select.Item>
 										</Select.Content>
 									</Select.Root>

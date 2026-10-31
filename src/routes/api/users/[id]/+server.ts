@@ -35,11 +35,11 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 	const auth = await authorize(cookies);
 
 	if (auth.authEnabled && !auth.isAuthenticated) {
-		return json({ error: 'Authentication required' }, { status: 401 });
+		return json({ error: '需要登录' }, { status: 401 });
 	}
 
 	if (!params.id) {
-		return json({ error: 'User ID is required' }, { status: 400 });
+		return json({ error: '用户 ID 为必填项' }, { status: 400 });
 	}
 
 	// Ids are sequential, so leaving this open would rebuild the whole directory a
@@ -55,7 +55,7 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 		const user = await getUser(id);
 
 		if (!user) {
-			return json({ error: 'User not found' }, { status: 404 });
+			return json({ error: '用户不存在' }, { status: 404 });
 		}
 
 		// Derive isAdmin from role assignment
@@ -74,8 +74,8 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 			updatedAt: user.updatedAt
 		});
 	} catch (error) {
-		console.error('Failed to get user:', error);
-		return json({ error: 'Failed to get user' }, { status: 500 });
+		console.error('获取用户信息失败：', error);
+		return json({ error: '获取用户信息失败' }, { status: 500 });
 	}
 };
 
@@ -100,14 +100,14 @@ export const PUT: RequestHandler = async (event) => {
 	const auth = await authorize(cookies);
 
 	if (!params.id) {
-		return json({ error: 'User ID is required' }, { status: 400 });
+		return json({ error: '用户 ID 为必填项' }, { status: 400 });
 	}
 
 	const userId = parseInt(params.id);
 
 	// Require an authenticated caller when auth is enabled.
 	if (auth.authEnabled && !auth.isAuthenticated) {
-		return json({ error: 'Authentication required' }, { status: 401 });
+		return json({ error: '需要身份验证' }, { status: 401 });
 	}
 
 	// With auth enabled: allow a user to edit their own profile, otherwise require the
@@ -117,7 +117,7 @@ export const PUT: RequestHandler = async (event) => {
 	if (auth.authEnabled) {
 		const isSelfEdit = auth.user?.id === userId;
 		if (!isSelfEdit && !await auth.can('users', 'edit')) {
-			return json({ error: 'Permission denied' }, { status: 403 });
+			return json({ error: '权限不足' }, { status: 403 });
 		}
 	}
 
@@ -126,7 +126,7 @@ export const PUT: RequestHandler = async (event) => {
 		const existingUser = await getUser(userId);
 
 		if (!existingUser) {
-			return json({ error: 'User not found' }, { status: 404 });
+			return json({ error: '用户不存在' }, { status: 404 });
 		}
 
 		// Check if user is currently an admin (via role)
@@ -163,11 +163,11 @@ export const PUT: RequestHandler = async (event) => {
 					const confirmDisableAuth = data.confirmDisableAuth === true;
 					if (!confirmDisableAuth) {
 						return json({
-							error: 'This is the last admin user',
+							error: '这是最后一个管理员用户',
 							isLastAdmin: true,
 							message: isDemoting
-								? 'Removing admin privileges from this user will disable authentication.'
-								: 'Deactivating this user will disable authentication.'
+								? '移除此用户的管理员权限将禁用身份验证。'
+								: '停用此用户将禁用身份验证。'
 						}, { status: 409 });
 					}
 
@@ -185,7 +185,7 @@ export const PUT: RequestHandler = async (event) => {
 					// Update user first
 					const user = await dbUpdateUser(userId, updateData);
 					if (!user) {
-						return json({ error: 'Failed to update user' }, { status: 500 });
+						return json({ error: '更新用户失败' }, { status: 500 });
 					}
 
 					// Remove Admin role if demoting
@@ -234,7 +234,7 @@ export const PUT: RequestHandler = async (event) => {
 		// Handle password change
 		if (data.password) {
 			if (data.password.length < 8) {
-				return json({ error: 'Password must be at least 8 characters' }, { status: 400 });
+				return json({ error: '密码长度至少为 8 位' }, { status: 400 });
 			}
 			updateData.passwordHash = await hashPassword(data.password);
 			// Invalidate all sessions and token cache on password change
@@ -245,7 +245,7 @@ export const PUT: RequestHandler = async (event) => {
 		const user = await dbUpdateUser(userId, updateData);
 
 		if (!user) {
-			return json({ error: 'Failed to update user' }, { status: 500 });
+			return json({ error: '更新用户失败' }, { status: 500 });
 		}
 
 		// Handle Admin role assignment/removal
@@ -285,11 +285,11 @@ export const PUT: RequestHandler = async (event) => {
 			updatedAt: user.updatedAt
 		});
 	} catch (error: any) {
-		console.error('Failed to update user:', error);
+		console.error('更新用户失败：', error);
 		if (error.message?.includes('UNIQUE constraint failed') || (error as any).cause?.code === '23505') {
-			return json({ error: 'Username already exists' }, { status: 409 });
+			return json({ error: '用户名已存在' }, { status: 409 });
 		}
-		return json({ error: 'Failed to update user' }, { status: 500 });
+		return json({ error: '更新用户失败' }, { status: 500 });
 	}
 };
 
@@ -314,16 +314,16 @@ export const DELETE: RequestHandler = async (event) => {
 
 	// Require an authenticated caller when auth is enabled, before the permission check.
 	if (auth.authEnabled && !auth.isAuthenticated) {
-		return json({ error: 'Authentication required' }, { status: 401 });
+		return json({ error: '需要身份验证' }, { status: 401 });
 	}
 
 	// When auth is enabled, check permission (free edition allows all, enterprise checks RBAC)
 	if (auth.authEnabled && auth.isAuthenticated && !await auth.can('users', 'remove')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	if (!params.id) {
-		return json({ error: 'User ID is required' }, { status: 400 });
+		return json({ error: '用户ID为必填项' }, { status: 400 });
 	}
 
 	const confirmDisableAuth = url.searchParams.get('confirmDisableAuth') === 'true';
@@ -334,7 +334,7 @@ export const DELETE: RequestHandler = async (event) => {
 
 		const user = await getUser(id);
 		if (!user) {
-			return json({ error: 'User not found' }, { status: 404 });
+			return json({ error: '用户不存在' }, { status: 404 });
 		}
 
 		// Check if user is admin via role
@@ -348,12 +348,12 @@ export const DELETE: RequestHandler = async (event) => {
 				// This is the last admin - require confirmation (whether self or other)
 				if (!confirmDisableAuth) {
 					return json({
-						error: 'This is the last admin user',
+						error: '这是最后一个管理员用户',
 						isLastAdmin: true,
 						isSelf: isSelfDeletion,
 						message: isSelfDeletion
-							? 'This is the only admin account. Deleting it will disable authentication and allow anyone to access Dockhand.'
-							: 'This is the only admin account. Deleting it will disable authentication and allow anyone to access Dockhand.'
+							? '这是唯一的管理员账户。删除后将禁用身份验证，允许任何人访问系统。'
+							: '这是唯一的管理员账户。删除后将禁用身份验证，允许任何人访问系统。'
 					}, { status: 409 });
 				}
 
@@ -362,7 +362,7 @@ export const DELETE: RequestHandler = async (event) => {
 				invalidateTokenCacheForUser(id);
 				const deleted = await dbDeleteUser(id);
 				if (!deleted) {
-					return json({ error: 'Failed to delete user' }, { status: 500 });
+					return json({ error: '删除用户失败' }, { status: 500 });
 				}
 
 				// Disable authentication
@@ -381,7 +381,7 @@ export const DELETE: RequestHandler = async (event) => {
 
 		const deleted = await dbDeleteUser(id);
 		if (!deleted) {
-			return json({ error: 'Failed to delete user' }, { status: 500 });
+			return json({ error: '删除用户失败' }, { status: 500 });
 		}
 
 		// Audit log
@@ -389,7 +389,7 @@ export const DELETE: RequestHandler = async (event) => {
 
 		return json({ success: true });
 	} catch (error) {
-		console.error('Failed to delete user:', error);
-		return json({ error: 'Failed to delete user' }, { status: 500 });
+		console.error('删除用户失败：', error);
+		return json({ error: '删除用户失败' }, { status: 500 });
 	}
 };

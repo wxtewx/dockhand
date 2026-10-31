@@ -15,7 +15,7 @@
 	import { dndzone, type DndEvent } from 'svelte-dnd-action';
 	import { flip } from 'svelte/animate';
 	import { cubicOut } from 'svelte/easing';
-	import { TAG_COLORS, tagHex, normalizeTag, type Tag, type TagColor } from '$lib/utils/tags-core';
+	import { TAG_COLORS, tagHex, getColorLocalName, normalizeTag, type Tag, type TagColor } from '$lib/utils/tags-core';
 	import { Tag as TagIcon } from 'lucide-svelte';
 	import { m } from '$lib/paraglide/messages.js';
 
@@ -164,7 +164,7 @@
 					<Popover.Content class="w-auto p-2">
 						<div class="grid grid-cols-8 gap-1">
 							{#each TAG_COLORS as c}
-								<button type="button" title={c} onclick={() => (newColor = c)}
+								<button type="button" title={getColorLocalName(c)} onclick={() => (newColor = c)}
 									class="h-5 w-5 rounded-full ring-offset-1 ring-offset-background {newColor === c ? 'ring-2 ring-foreground' : ''}"
 									style="background-color: {tagHex(c)};"></button>
 							{/each}
@@ -228,7 +228,7 @@
 									<Popover.Content class="w-auto p-2">
 										<div class="grid grid-cols-8 gap-1">
 											{#each TAG_COLORS as c}
-												<button type="button" title={c} onclick={() => setColor(tag, c)}
+												<button type="button" title={getColorLocalName(c)} onclick={() => setColor(tag, c)}
 													class="h-5 w-5 rounded-full ring-offset-1 ring-offset-background {tag.color === c ? 'ring-2 ring-foreground' : ''}"
 													style="background-color: {tagHex(c)};"></button>
 											{/each}

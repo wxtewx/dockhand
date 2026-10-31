@@ -98,7 +98,7 @@ function recoverOne(live: string): string {
 	const say = (m: string) => `echo ${sq(`[dockhand] ${m}`)} >&2`;
 	return [
 		`if [ -f ${phaseQ} ]; then`,
-		`  ${say(`Recovering ${live}: rolling back an interrupted previous restore`)};`,
+		`  ${say(`正在恢复 ${live}：回滚上一次中断的还原操作`)};`,
 		`  if [ "$(cat ${phaseQ})" = "3" ]; then ${removeEntries(liveQ)}; fi;`,
 		`  if [ -d ${oldQ} ]; then ${moveEntries(oldQ, liveQ)}; fi;`,
 		`  rm -rf ${newQ} ${oldQ}; rm -f ${phaseQ};`,
@@ -128,15 +128,15 @@ function swapOne(live: string): string {
 		`  rm -rf ${oldQ}; rm -f ${phaseQ};`,
 		`  mkdir -p ${oldQ};`,
 		// marker 2: move live entries aside (reversible).
-		`  ${say(`Swapping ${live}: moving live data aside`)};`,
+		`  ${say(`正在执行交换 ${live}: 将当前数据移至备份目录`)};`,
 		`  printf 2 > ${phaseQ};`,
 		`  ${moveEntries(liveQ, oldQ)};`,
 		// marker 3: move restored entries up into the live root.
-		`  ${say(`Swapping ${live}: committing restored data`)};`,
+		`  ${say(`正在执行交换 ${live}: 将恢复的数据切换为正式数据`)};`,
 		`  printf 3 > ${phaseQ};`,
 		`  ${moveEntries(newQ, liveQ)};`,
 		// committed: drop the marker, the now-empty NEW, and the old content.
-		`  ${say(`Swapping ${live}: removing the previous data`)};`,
+		`  ${say(`正在执行交换 ${live}: 清理旧数据备份目录`)};`,
 		`  rm -f ${phaseQ}; rmdir ${newQ}; rm -rf ${oldQ};`,
 		`fi`,
 	].join(' ');

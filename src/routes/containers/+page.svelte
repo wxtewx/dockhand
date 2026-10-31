@@ -95,6 +95,7 @@
 	import { isKnownIconName } from '$lib/utils/icons';
 	import { tagOrder } from '$lib/stores/tag-order';
 	import { applyOrder } from '$lib/utils/apply-order';
+	import { getLabelText } from '$lib/types';
 	import TagChips from '$lib/components/TagChips.svelte';
 	import TagEditPopover from '$lib/components/TagEditPopover.svelte';
 	import TagFilter from '$lib/components/TagFilter.svelte';
@@ -962,7 +963,7 @@
 				terminalShell = bestShell;
 			}
 		} catch (error) {
-			console.error('Failed to detect shells:', error);
+			console.error('检测命令行 shell 失败:', error);
 		} finally {
 			detectingShellsFor = null;
 		}
@@ -1275,7 +1276,7 @@
 			toast.success(m.containers_list_toast_started({ name }));
 			await containerStore.refreshContainers(envId);
 		} catch (error) {
-			console.error('Failed to start container:', error);
+			console.error('启动容器失败:', error);
 			operationError = { id, message: m.containers_list_error_start() };
 			toast.error(m.containers_list_toast_start_failed({ name }));
 			clearErrorAfterDelay(id);
@@ -1299,7 +1300,7 @@
 			toast.success(m.containers_list_toast_stopped({ name }));
 			await containerStore.refreshContainers(envId);
 		} catch (error) {
-			console.error('Failed to stop container:', error);
+			console.error('停止容器失败:', error);
 			operationError = { id, message: m.containers_list_error_stop() };
 			toast.error(m.containers_list_toast_stop_failed({ name }));
 			clearErrorAfterDelay(id);
@@ -1324,7 +1325,7 @@
 			toast.success(m.containers_list_toast_paused({ name }));
 			await containerStore.refreshContainers(envId);
 		} catch (error) {
-			console.error('Failed to pause container:', error);
+			console.error('停止容器失败:', error);
 			operationError = { id, message: m.containers_list_error_pause() };
 			toast.error(m.containers_list_toast_pause_failed({ name }));
 			clearErrorAfterDelay(id);
@@ -1347,7 +1348,7 @@
 			toast.success(m.containers_list_toast_resumed({ name }));
 			await containerStore.refreshContainers(envId);
 		} catch (error) {
-			console.error('Failed to unpause container:', error);
+			console.error('恢复容器失败:', error);
 			operationError = { id, message: m.containers_list_error_unpause() };
 			toast.error(m.containers_list_toast_unpause_failed({ name }));
 			clearErrorAfterDelay(id);
@@ -1371,7 +1372,7 @@
 			toast.success(m.containers_list_toast_restarted({ name }));
 			await containerStore.refreshContainers(envId);
 		} catch (error) {
-			console.error('Failed to restart container:', error);
+			console.error('重启容器失败:', error);
 			operationError = { id, message: m.containers_list_error_restart() };
 			toast.error(m.containers_list_toast_restart_failed({ name }));
 			clearErrorAfterDelay(id);
@@ -1396,7 +1397,7 @@
 			toast.success(m.containers_list_toast_removed({ name }));
 			await containerStore.refreshContainers(envId);
 		} catch (error) {
-			console.error('Failed to remove container:', error);
+			console.error('删除容器失败:', error);
 			operationError = { id, message: m.containers_list_error_remove() };
 			toast.error(m.containers_list_toast_remove_failed({ name }));
 			clearErrorAfterDelay(id);
@@ -2246,7 +2247,7 @@
 							{#if containerStats.get(container.id)}
 								{@const stats = containerStats.get(container.id)}
 								<span class="text-xs font-mono text-muted-foreground" title={m.containers_list_disk_title({ read: formatBytes(stats.blockRead), written: formatBytes(stats.blockWrite) })}>
-									<span class="text-2xs text-green-400">r</span>{formatBytesCompact(stats.blockRead, 0)} <span class="text-2xs text-yellow-400">w</span>{formatBytesCompact(stats.blockWrite, 0)}
+									<span class="text-2xs text-green-400">读</span>{formatBytesCompact(stats.blockRead, 0)} <span class="text-2xs text-yellow-400">写</span>{formatBytesCompact(stats.blockWrite, 0)}
 								</span>
 							{:else if container.state === 'running'}
 								<span class="text-xs text-muted-foreground/50">...</span>

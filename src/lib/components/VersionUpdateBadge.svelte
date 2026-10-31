@@ -3,6 +3,7 @@
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import type { NewerVersion } from '$lib/types';
 	import { m } from '$lib/paraglide/messages.js';
+	import { getLabelText } from '$lib/types';
 
 	interface Props {
 		/** The newer-version suggestion for this container (target tag + how many were skipped). */
@@ -51,7 +52,7 @@
 			<p class="text-xs">
 				<span class="text-muted-foreground">{m.updates_move_to()}</span>
 				<code class="mx-0.5 rounded bg-muted px-1 py-0.5 font-mono">{newerVersion.tag}</code>
-				<span class="font-semibold uppercase {bumpColor}">{newerVersion.bump}</span>
+				<span class="font-semibold {bumpColor}">{getLabelText(newerVersion.bump)}</span>
 			</p>
 			{#if behind > 1}
 				<p class="text-xs text-muted-foreground">{m.updates_versions_ahead_of_running({ count: behind })}</p>

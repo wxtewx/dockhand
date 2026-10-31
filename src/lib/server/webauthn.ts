@@ -33,7 +33,7 @@ export class WebAuthnChallengeStore {
 	): WebAuthnChallenge {
 		this.removeExpired();
 		if (this.challenges.size >= this.maxPending) {
-			throw new Error('Too many pending WebAuthn ceremonies');
+			throw new Error('待处理的 WebAuthn 交互流程过多');
 		}
 
 		const entry: WebAuthnChallenge = {
@@ -88,23 +88,23 @@ export function getWebAuthnConfig(): WebAuthnConfig {
 	const configuredOrigin = process.env.ORIGIN;
 	const origin = configuredOrigin || (process.env.NODE_ENV !== 'production' ? 'http://localhost:5173' : '');
 	if (!origin) {
-		throw new Error('ORIGIN must be configured to enable Passkeys');
+		throw new Error('必须配置 ORIGIN 才能启用通行密钥 (Passkeys)');
 	}
 
 	let url: URL;
 	try {
 		url = new URL(origin);
 	} catch {
-		throw new Error('ORIGIN must be a valid absolute URL to enable Passkeys');
+		throw new Error('ORIGIN 必须是有效的绝对 URL 才能启用通行密钥 (Passkeys)');
 	}
 
 	if (url.username || url.password || url.pathname !== '/' || url.search || url.hash) {
-		throw new Error('ORIGIN must contain only scheme, host, and optional port');
+		throw new Error('ORIGIN 仅允许包含协议、主机和可选端口');
 	}
 
 	const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '[::1]';
 	if (url.protocol !== 'https:' && !(url.protocol === 'http:' && isLocalhost)) {
-		throw new Error('Passkeys require an HTTPS ORIGIN (HTTP is allowed only for localhost)');
+		throw new Error('通行密钥需要 HTTPS 类型的 ORIGIN (仅 localhost 允许使用 HTTP)');
 	}
 
 	return { expectedOrigin: url.origin, rpId: url.hostname };

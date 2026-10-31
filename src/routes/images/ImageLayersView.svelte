@@ -61,7 +61,7 @@
 			lastFetchedId = imageId;
 		} catch (err: any) {
 			error = err.message || m.images_layers_error_load();
-			console.error('Failed to fetch image history:', err);
+			console.error('获取镜像历史层信息失败:', err);
 		} finally {
 			loading = false;
 		}

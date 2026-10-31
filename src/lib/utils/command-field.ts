@@ -24,7 +24,7 @@ function asStringArray(trimmed: string): string[] | null {
 export function commandTextError(text: string): string | null {
 	const trimmed = text.trim();
 	if (looksLikeJsonArray(trimmed) && asStringArray(trimmed) === null) {
-		return 'Not a valid JSON array of strings. Fix the quoting or clear the field.';
+		return '不是有效的字符串 JSON 数组。请修正引号格式或清空此字段。';
 	}
 	return null;
 }

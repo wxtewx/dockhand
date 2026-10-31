@@ -200,7 +200,7 @@ export async function multiArchVerdict(opts: {
 	if (indexChildDigests(current.body).length === 0) return { kind: 'different' };
 
 	const platform = await opts.platform();
-	if (!platform) return { kind: 'unknown', reason: 'could not read the daemon platform' };
+	if (!platform) return { kind: 'unknown', reason: '无法读取守护进程平台信息' };
 	let failure: string | null = null;
 	for (const digest of opts.localDigests) {
 		const local = await opts.readIndex(digest);
@@ -228,7 +228,7 @@ export function shouldBlockUpdate(
 			if (totalVulns > 0) {
 				return {
 					blocked: true,
-					reason: `Found ${totalVulns} vulnerabilities (${newScanSummary.critical} critical, ${newScanSummary.high} high, ${newScanSummary.medium} medium, ${newScanSummary.low} low)`
+					reason: `发现 ${totalVulns} 个漏洞 (严重 ${newScanSummary.critical} 个，高危 ${newScanSummary.high} 个，中危 ${newScanSummary.medium} 个，低危 ${newScanSummary.low} 个)`
 				};
 			}
 			break;
@@ -236,7 +236,7 @@ export function shouldBlockUpdate(
 			if (newScanSummary.critical > 0 || newScanSummary.high > 0) {
 				return {
 					blocked: true,
-					reason: `Found ${newScanSummary.critical} critical and ${newScanSummary.high} high severity vulnerabilities`
+					reason: `发现 ${newScanSummary.critical} 个严重级别和 ${newScanSummary.high} 个高危级别漏洞`
 				};
 			}
 			break;
@@ -244,7 +244,7 @@ export function shouldBlockUpdate(
 			if (newScanSummary.critical > 0) {
 				return {
 					blocked: true,
-					reason: `Found ${newScanSummary.critical} critical vulnerabilities`
+					reason: `发现 ${newScanSummary.critical} 个严重级别漏洞`
 				};
 			}
 			break;
@@ -254,7 +254,7 @@ export function shouldBlockUpdate(
 				if (totalVulns > currentTotal) {
 					return {
 						blocked: true,
-						reason: `New image has ${totalVulns} vulnerabilities vs ${currentTotal} in current image`
+						reason: `新镜像存在 ${totalVulns} 个漏洞，当前镜像存在 ${currentTotal} 个漏洞`
 					};
 				}
 			}

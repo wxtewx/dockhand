@@ -146,7 +146,7 @@
 		}
 
 		if (!cropData) {
-			throw new Error('No crop data available');
+			throw new Error('无可用裁剪数据');
 		}
 
 		return new Promise((resolve, reject) => {
@@ -158,7 +158,7 @@
 				const ctx = canvas.getContext('2d');
 
 				if (!ctx) {
-					reject(new Error('Failed to get canvas context'));
+					reject(new Error('获取画布上下文失败'));
 					return;
 				}
 
@@ -191,7 +191,7 @@
 			};
 
 			image.onerror = () => {
-				reject(new Error('Failed to load image'));
+				reject(new Error('加载图片失败'));
 			};
 		});
 	}
@@ -202,7 +202,7 @@
 			const dataUrl = await getCroppedImage();
 			onSave(dataUrl);
 		} catch (err) {
-			console.error('Failed to crop image:', err);
+			console.error('裁剪图片失败:', err);
 		} finally {
 			saving = false;
 		}

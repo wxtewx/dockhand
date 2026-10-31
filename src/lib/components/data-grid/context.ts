@@ -22,7 +22,7 @@ export function setDataGridContext<T>(ctx: DataGridContext<T>): void {
 export function getDataGridContext<T = unknown>(): DataGridContext<T> {
 	const ctx = getContext<DataGridContext<T>>(DATA_GRID_CONTEXT_KEY);
 	if (!ctx) {
-		throw new Error('DataGrid context not found. Ensure component is used within a DataGrid.');
+		throw new Error('未找到 DataGrid 上下文。请确保组件在 DataGrid 内部使用。');
 	}
 	return ctx;
 }

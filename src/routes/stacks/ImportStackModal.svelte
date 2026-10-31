@@ -105,7 +105,7 @@
 				}
 			}
 		} catch (e) {
-			console.error('Failed to load preview:', e);
+			console.error('加载预览失败:', e);
 		} finally {
 			loadingPreview = false;
 		}
@@ -156,7 +156,7 @@
 						}
 					}
 				} catch (e) {
-					console.error('Failed to detect running stacks:', e);
+					console.error('检测运行中堆栈失败:', e);
 				}
 			}
 
