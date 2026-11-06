@@ -28,6 +28,9 @@ describe('asLocale', () => {
 		expect(asLocale('pl')).toBe('pl');
 		expect(asLocale('zh-CN')).toBe('zh-CN');
 		expect(asLocale('es-ES')).toBe('es-ES');
+		expect(asLocale('uk')).toBe('uk');
+		expect(asLocale('pt-BR')).toBe('pt-BR');
+		expect(asLocale('tr')).toBe('tr');
 	});
 
 	test('refuses anything else, so a stale or hand-edited value cannot take effect', () => {
@@ -65,6 +68,8 @@ describe('fromNavigator', () => {
 
 	test('a region whose bare language is carried still resolves', () => {
 		expect(fromNavigator(['pl-PL'])).toBe('pl');
+		expect(fromNavigator(['uk-UA', 'en'])).toBe('uk');
+		expect(fromNavigator(['tr-TR', 'en'])).toBe('tr');
 	});
 
 	test('fr-CA is taken as itself rather than collapsing to fr-FR', () => {
@@ -76,6 +81,12 @@ describe('fromNavigator', () => {
 		expect(fromNavigator(['es-MX'])).toBe('es-ES');
 		expect(fromNavigator(['fr'])).toBe('fr-FR');
 		expect(fromNavigator(['fr-BE'])).toBe('fr-FR');
+	});
+
+	test('Portuguese resolves to Brazilian Portuguese with the existing regional fallback', () => {
+		expect(fromNavigator(['pt-BR', 'en'])).toBe('pt-BR');
+		expect(fromNavigator(['pt', 'en'])).toBe('pt-BR');
+		expect(fromNavigator(['pt-PT', 'en'])).toBe('pt-BR');
 	});
 
 	test('a sibling region of an earlier language beats a later exact match', () => {
