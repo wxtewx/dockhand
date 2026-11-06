@@ -8,6 +8,7 @@
 import { homedir } from 'node:os';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { assertSafeContainerPath } from './container-path-core';
 import * as http from 'node:http';
 import * as https from 'node:https';
 import { Readable } from 'node:stream';
@@ -61,7 +62,7 @@ import {
 	type RegistryPorts
 } from './registry/manifest-digest';
 import { classifyManifest, type ArtifactKind } from './semver/manifest-artifact';
-import { isSystemContainer, classifyEmptyDigestImage, indexChildDigests, multiArchVerdict, readWithRetry, cachedIndexReader, type MultiArchVerdict } from './scheduler/tasks/update-utils';
+import { isSystemContainer, classifyEmptyDigestImage, indexChildDigests, multiArchVerdict, runningPlatformChildDigest, readWithRetry, cachedIndexReader, type MultiArchVerdict, type RunningDigestResult } from './scheduler/tasks/update-utils';
 import { deepDiff } from '../utils/diff.js';
 import { getInstanceId } from './backups/identity';
 import { isOwnedBackupHelper } from './backups/reap-core';
@@ -3503,6 +3504,37 @@ export async function imageManifestDigest(id: string, envId?: number | null): Pr
 
 
 /**
+ * The digest of the image a container is ACTUALLY running, for the daemon's platform, read
+ * from `GET /images/{id}/json?manifests=true` (containerd image store, API 1.48+). Unlike the
+ * image's RepoDigests index, this does not float when a sibling tag is later pulled, so the
+ * update check uses it as the authoritative local side. Tri-state (`RunningDigestResult`):
+ * - `{ digest }`      the running platform child was resolved.
+ * - `{ noSignal }`    the daemon answered but reports no per-arch manifest for this platform
+ *                     (classic store / API < 1.48 answer 200 with no `Manifests`) - the caller
+ *                     falls back to the RepoDigests-index comparison. This is NOT an error.
+ * - `{ unknown }`     the request FAILED (a transient 5xx / connection error); the read is
+ *                     undecidable, so the caller must surface `unknown`, never guess `same`.
+ */
+export async function runningPlatformDigest(
+	id: string,
+	platform: { os: string; architecture: string; variant?: string },
+	envId?: number | null
+): Promise<RunningDigestResult> {
+	let data: { Manifests?: unknown };
+	try {
+		data = await dockerJsonRequest<{ Manifests?: unknown }>(
+			`/images/${encodeURIComponent(id)}/json?manifests=true`, {}, envId
+		);
+	} catch (e) {
+		// A genuine failure (daemon reachable but 5xx, or connection error) is undecidable, not
+		// "no signal" - do not let it collapse into the RepoDigests fallback and guess "same".
+		return { unknown: true, reason: e instanceof Error ? e.message : String(e) };
+	}
+	const digest = runningPlatformChildDigest(data?.Manifests, platform);
+	return digest ? { digest } : { noSignal: true };
+}
+
+/**
  * Find registry credentials from Dockhand's stored registries for an image's registry
  * host and repo. Matching rules: pickRegistryCredentials (longest stored path wins).
  */
@@ -3595,6 +3627,14 @@ export async function getRegistryAuth(
 	// Parse registry URL to extract host and organization path
 	const parsed = parseRegistryUrl(registry.url);
 
+	// SSRF guard: a registry URL is user-supplied, so block a host that points at
+	// loopback or cloud metadata before any browsing request is built. A self-hosted
+	// registry on a LAN is still allowed (same policy as the update-check path).
+	const hostSafety = isSafeRegistryHost(parsed.host);
+	if (!hostSafety.ok) {
+		throw new Error(`Registry host is not allowed: ${hostSafety.reason}`);
+	}
+
 	// V2 API endpoints are always at the registry host root
 	const baseUrl = `${parsed.protocol}://${parsed.host}`;
 
@@ -3635,6 +3675,13 @@ export interface HarborCatalogResult {
 export async function isHarborRegistry(registryUrl: string): Promise<boolean> {
 	const parsed = parseRegistryUrl(registryUrl);
 	const host = parsed.host;
+
+	// This is the first registry-browsing fetch, so apply the SSRF guard here too: a host
+	// pointing at loopback or cloud metadata is never probed (treated as not-Harbor; the
+	// token flow refuses it as well). A LAN host stays allowed.
+	if (!isSafeRegistryHost(host).ok) {
+		return false;
+	}
 
 	const cached = harborDetectionCache.get(host);
 	if (cached && Date.now() - cached.ts < HARBOR_CACHE_TTL) {
@@ -3777,6 +3824,7 @@ export async function harborListRepositories(
 	pageSize: number = 100
 ): Promise<HarborCatalogResult> {
 	const parsed = parseRegistryUrl(registry.url);
+	if (!isSafeRegistryHost(parsed.host).ok) throw new Error('Registry host is not allowed');
 	const baseUrl = `${parsed.protocol}://${parsed.host}/api/v2.0`;
 	const headers = harborHeaders(registry);
 
@@ -3823,6 +3871,7 @@ export async function harborSearchRepositories(
 	limit: number = 25
 ): Promise<string[]> {
 	const parsed = parseRegistryUrl(registry.url);
+	if (!isSafeRegistryHost(parsed.host).ok) throw new Error('Registry host is not allowed');
 	const baseUrl = `${parsed.protocol}://${parsed.host}/api/v2.0`;
 	const headers = harborHeaders(registry);
 
@@ -3986,7 +4035,8 @@ async function localImageMatchesRegistry(
 	imageName: string,
 	localDigests: string[],
 	envId?: number | null,
-	registryDigest?: string
+	registryDigest?: string,
+	runningImageId?: string
 ): Promise<MultiArchVerdict> {
 	const { registry, repo, tag } = parseImageReference(imageName);
 	if (!isSafeRegistryHost(registry).ok) return { kind: 'unknown', reason: describeRegistryFailure({ kind: 'blocked-host', registry }) };
@@ -3998,19 +4048,27 @@ async function localImageMatchesRegistry(
 		const [token, scheme] = await credentials();
 		return readWithRetry(() => readManifestIndex(registry, repo, reference, token, scheme), sleep);
 	}, indexByDigest, `${registry}/${repo}`);
+	// Read the daemon platform once, cached, shared across the verdict's reads.
+	let platformResult: { os: string; architecture: string; variant?: string } | null | undefined;
+	const platform = async () => {
+		if (platformResult !== undefined) return platformResult;
+		try {
+			const info = await dockerJsonRequest('/info', { signal: AbortSignal.timeout(8000) }, envId) as { OSType?: string; Architecture?: string };
+			platformResult = imagePlatform(info?.OSType, info?.Architecture);
+		} catch {
+			platformResult = null;
+		}
+		return platformResult;
+	};
 	return multiArchVerdict({
 		tag,
 		currentDigest: registryDigest,
 		localDigests,
+		// Resolved LAZILY inside the verdict, only after the child-match short-circuit, and only
+		// for a running image we were given - so an up-to-date pin costs no ?manifests=true call.
+		runningDigest: runningImageId ? (p) => runningPlatformDigest(runningImageId, p, envId) : undefined,
 		readIndex,
-		platform: async () => {
-			try {
-				const info = await dockerJsonRequest('/info', { signal: AbortSignal.timeout(8000) }, envId) as { OSType?: string; Architecture?: string };
-				return imagePlatform(info?.OSType, info?.Architecture);
-			} catch {
-				return null;
-			}
-		}
+		platform
 	});
 }
 
@@ -4168,7 +4226,7 @@ async function checkTagForUpdate(
 		// child digest never equals the index digest, and an index that moved while the
 		// daemon-platform image stayed the same is not an update either. A registry that
 		// cannot be read to decide is an error, never a guessed update.
-		const multiArch = await localImageMatchesRegistry(imageName, localDigests, envId, registryDigest);
+		const multiArch = await localImageMatchesRegistry(imageName, localDigests, envId, registryDigest, currentImageId);
 		if (multiArch.kind === 'same') {
 			return { hasUpdate: false, currentDigest: currentRepoDigests[0], localDigests };
 		}
@@ -6124,8 +6182,8 @@ export async function listContainerDirectory(
 	envId?: number | null,
 	useSimpleLs?: boolean
 ): Promise<{ path: string; entries: FileEntry[] }> {
-	// Sanitize path to prevent command injection
-	const safePath = path.replace(/[;&|`$(){}[\]<>'"\\]/g, '');
+	// Reject a malformed path (null byte, ".." traversal); legal filename characters pass through.
+	const safePath = assertSafeContainerPath(path);
 
 	// Commands to try in order of preference (includes /usr/sbin/ls for Wolfi/busybox images)
 	const commands = useSimpleLs
@@ -6168,8 +6226,8 @@ export async function getContainerArchive(
 	path: string,
 	envId?: number | null
 ): Promise<Response> {
-	// Sanitize path
-	const safePath = path.replace(/[;&|`$(){}[\]<>'"\\]/g, '');
+	// Reject a malformed path (null byte, ".." traversal); legal filename characters pass through.
+	const safePath = assertSafeContainerPath(path);
 
 	const response = await dockerFetch(
 		`/containers/${containerId}/archive?path=${encodeURIComponent(safePath)}`,
@@ -6194,8 +6252,8 @@ export async function putContainerArchive(
 	tarData: ArrayBuffer | Uint8Array,
 	envId?: number | null
 ): Promise<void> {
-	// Sanitize path
-	const safePath = path.replace(/[;&|`$(){}[\]<>'"\\]/g, '');
+	// Reject a malformed path (null byte, ".." traversal); legal filename characters pass through.
+	const safePath = assertSafeContainerPath(path);
 
 	const response = await dockerFetch(
 		`/containers/${containerId}/archive?path=${encodeURIComponent(safePath)}`,
@@ -6224,8 +6282,8 @@ export async function statContainerPath(
 	path: string,
 	envId?: number | null
 ): Promise<{ name: string; size: number; mode: number; mtime: string; linkTarget?: string; isDir: boolean }> {
-	// Sanitize path
-	const safePath = path.replace(/[;&|`$(){}[\]<>'"\\]/g, '');
+	// Reject a malformed path (null byte, ".." traversal); legal filename characters pass through.
+	const safePath = assertSafeContainerPath(path);
 
 	const response = await dockerFetch(
 		`/containers/${containerId}/archive?path=${encodeURIComponent(safePath)}`,
@@ -6260,8 +6318,8 @@ export async function readContainerFile(
 	path: string,
 	envId?: number | null
 ): Promise<string> {
-	// Sanitize path to prevent command injection
-	const safePath = path.replace(/[;&|`$(){}[\]<>'"\\]/g, '');
+	// Reject a malformed path (null byte, ".." traversal); legal filename characters pass through.
+	const safePath = assertSafeContainerPath(path);
 
 	// Use cat to read file content
 	const output = await execInContainer(containerId, ['cat', safePath], envId);
@@ -6278,8 +6336,8 @@ export async function writeContainerFile(
 	content: string,
 	envId?: number | null
 ): Promise<void> {
-	// Sanitize path
-	const safePath = path.replace(/[;&|`$(){}[\]<>'"\\]/g, '');
+	// Reject a malformed path (null byte, ".." traversal); legal filename characters pass through.
+	const safePath = assertSafeContainerPath(path);
 
 	// Get directory and filename
 	const parts = safePath.split('/');
@@ -6361,8 +6419,8 @@ export async function createContainerFile(
 	path: string,
 	envId?: number | null
 ): Promise<void> {
-	// Sanitize path to prevent command injection
-	const safePath = path.replace(/[;&|`$(){}[\]<>'"\\]/g, '');
+	// Reject a malformed path (null byte, ".." traversal); legal filename characters pass through.
+	const safePath = assertSafeContainerPath(path);
 
 	// Use touch to create empty file
 	await execInContainer(containerId, ['touch', safePath], envId);
@@ -6376,8 +6434,8 @@ export async function createContainerDirectory(
 	path: string,
 	envId?: number | null
 ): Promise<void> {
-	// Sanitize path to prevent command injection
-	const safePath = path.replace(/[;&|`$(){}[\]<>'"\\]/g, '');
+	// Reject a malformed path (null byte, ".." traversal); legal filename characters pass through.
+	const safePath = assertSafeContainerPath(path);
 
 	// Use mkdir -p to create directory (and parents if needed)
 	await execInContainer(containerId, ['mkdir', '-p', safePath], envId);
@@ -6391,8 +6449,8 @@ export async function deleteContainerPath(
 	path: string,
 	envId?: number | null
 ): Promise<void> {
-	// Sanitize path to prevent command injection
-	const safePath = path.replace(/[;&|`$(){}[\]<>'"\\]/g, '');
+	// Reject a malformed path (null byte, ".." traversal); legal filename characters pass through.
+	const safePath = assertSafeContainerPath(path);
 
 	// Safety check: don't allow deleting root or critical paths
 	const dangerousPaths = ['/', '/bin', '/sbin', '/usr', '/lib', '/lib64', '/etc', '/var', '/root', '/home'];
@@ -6413,9 +6471,9 @@ export async function renameContainerPath(
 	newPath: string,
 	envId?: number | null
 ): Promise<void> {
-	// Sanitize paths to prevent command injection
-	const safeOldPath = oldPath.replace(/[;&|`$(){}[\]<>'"\\]/g, '');
-	const safeNewPath = newPath.replace(/[;&|`$(){}[\]<>'"\\]/g, '');
+	// Reject a malformed path (null byte, ".." traversal); legal filename characters pass through.
+	const safeOldPath = assertSafeContainerPath(oldPath);
+	const safeNewPath = assertSafeContainerPath(newPath);
 
 	// Use mv to rename
 	await execInContainer(containerId, ['mv', safeOldPath, safeNewPath], envId);
@@ -6431,8 +6489,8 @@ export async function chmodContainerPath(
 	recursive: boolean = false,
 	envId?: number | null
 ): Promise<void> {
-	// Sanitize path to prevent command injection
-	const safePath = path.replace(/[;&|`$(){}[\]<>'"\\]/g, '');
+	// Reject a malformed path (null byte, ".." traversal); legal filename characters pass through.
+	const safePath = assertSafeContainerPath(path);
 
 	// Validate mode (should be octal like 755 or symbolic like u+x)
 	if (!/^[0-7]{3,4}$/.test(mode) && !/^[ugoa]*[+-=][rwxXst]+$/.test(mode)) {
@@ -6455,7 +6513,7 @@ export async function chownContainerPath(
 	recursive: boolean = false,
 	envId?: number | null
 ): Promise<void> {
-	const safePath = path.replace(/[;&|`$(){}[\]<>'"\\]/g, '');
+	const safePath = assertSafeContainerPath(path);
 	// `--` stops chown reading a path that begins with `-` as an option.
 	const cmd = recursive ? ['chown', '-R', owner, '--', safePath] : ['chown', owner, '--', safePath];
 	await execInContainer(containerId, cmd, envId, 'root');
@@ -6819,8 +6877,8 @@ export async function listVolumeDirectory(
 ): Promise<{ path: string; entries: FileEntry[]; containerId: string }> {
 	const containerId = await getOrCreateVolumeHelperContainer(volumeName, envId, readOnly);
 
-	// Sanitize path
-	const safePath = path.replace(/[;&|`$(){}[\]<>'"\\]/g, '');
+	// Reject a malformed path (null byte, ".." traversal); legal filename characters pass through.
+	const safePath = assertSafeContainerPath(path);
 	const fullPath = `${VOLUME_MOUNT_PATH}${safePath.startsWith('/') ? safePath : '/' + safePath}`;
 
 	// Use simple ls since busybox doesn't support --time-style
@@ -6848,8 +6906,8 @@ export async function getVolumeArchive(
 ): Promise<{ response: Response; containerId: string }> {
 	const containerId = await getOrCreateVolumeHelperContainer(volumeName, envId, readOnly);
 
-	// Sanitize path
-	const safePath = path.replace(/[;&|`$(){}[\]<>'"\\]/g, '');
+	// Reject a malformed path (null byte, ".." traversal); legal filename characters pass through.
+	const safePath = assertSafeContainerPath(path);
 	const fullPath = `${VOLUME_MOUNT_PATH}${safePath.startsWith('/') ? safePath : '/' + safePath}`;
 
 	const response = await dockerFetch(
@@ -6878,7 +6936,7 @@ export async function statVolumePath(
 	readOnly: boolean = true
 ): Promise<{ name: string; size: number; mode: number; mtime: string; linkTarget?: string; isDir: boolean }> {
 	const containerId = await getOrCreateVolumeHelperContainer(volumeName, envId, readOnly);
-	const safePath = path.replace(/[;&|`$(){}[\]<>'"\\]/g, '');
+	const safePath = assertSafeContainerPath(path);
 	const fullPath = `${VOLUME_MOUNT_PATH}${safePath.startsWith('/') ? safePath : '/' + safePath}`;
 	return statContainerPath(containerId, fullPath, envId);
 }
@@ -6895,8 +6953,8 @@ export async function readVolumeFile(
 ): Promise<string> {
 	const containerId = await getOrCreateVolumeHelperContainer(volumeName, envId, readOnly);
 
-	// Sanitize path
-	const safePath = path.replace(/[;&|`$(){}[\]<>'"\\]/g, '');
+	// Reject a malformed path (null byte, ".." traversal); legal filename characters pass through.
+	const safePath = assertSafeContainerPath(path);
 	const fullPath = `${VOLUME_MOUNT_PATH}${safePath.startsWith('/') ? safePath : '/' + safePath}`;
 
 	// Use cat to read file content
