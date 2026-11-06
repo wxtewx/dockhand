@@ -82,7 +82,7 @@
 				passkeysConfigurable = data.passkeysConfigurable !== false;
 			}
 		} catch (error) {
-			console.error('Failed to fetch auth settings:', error);
+			console.error('获取身份验证设置失败:', error);
 		} finally {
 			authLoading = false;
 		}
@@ -95,7 +95,7 @@
 				roles = await response.json();
 			}
 		} catch (error) {
-			console.error('Failed to fetch roles:', error);
+			console.error('获取角色失败:', error);
 		}
 	}
 
@@ -119,7 +119,7 @@
 				authEnabled = !checked;
 			}
 		} catch (error) {
-			console.error('Failed to update auth settings:', error);
+			console.error('更新认证设置失败:', error);
 			toast.error(m.settings_auth_toast_update_failed());
 			// Revert toggle on error
 			authEnabled = !checked;
@@ -139,11 +139,11 @@
 			if (response.ok) {
 				toast.success(m.settings_auth_toast_saved());
 			} else {
-				console.error('Failed to save auth settings');
+				console.error('保存认证设置失败');
 				toast.error(m.settings_auth_toast_save_failed());
 			}
 		} catch (error) {
-			console.error('Failed to save auth settings:', error);
+			console.error('保存认证设置失败:', error);
 			toast.error(m.settings_auth_toast_save_failed());
 		} finally {
 			authSaving = false;

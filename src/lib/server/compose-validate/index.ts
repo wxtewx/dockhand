@@ -66,7 +66,7 @@ export function runValidate(
 			ruleId: 'YAML_PARSE_ERROR',
 			severity: 'error',
 			message: parsed.parseError.message,
-			hint: 'Fix the YAML syntax; nothing else can be checked until it parses.',
+			hint: '修复 YAML 语法；在解析成功前无法执行其他检查。',
 			line: parsed.parseError.line
 		});
 	}

@@ -192,7 +192,6 @@
 						name="totp"
 						placeholder={m.profile_mfa_code_placeholder()}
 						maxlength={6}
-						autocomplete="one-time-code"
 					/>
 					<p class="text-xs text-muted-foreground">
 						{m.profile_mfa_code_hint()}

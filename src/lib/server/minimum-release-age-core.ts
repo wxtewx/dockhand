@@ -6,10 +6,10 @@ export function verifiedImagePullPlan(imageName: string, digest: string): {
 	reference: string;
 	tag: { repo: string; tag: string } | null;
 } {
-	if (!/^sha256:[a-f0-9]{64}$/i.test(digest)) throw new Error('Registry returned an invalid image digest');
+	if (!/^sha256:[a-f0-9]{64}$/i.test(digest)) throw new Error('镜像仓库返回了无效的镜像摘要');
 	if (imageName.includes('@')) {
 		const requestedDigest = imageName.slice(imageName.lastIndexOf('@') + 1);
-		if (requestedDigest.toLowerCase() !== digest.toLowerCase()) throw new Error('Registry digest does not match the requested image digest');
+		if (requestedDigest.toLowerCase() !== digest.toLowerCase()) throw new Error('仓库摘要与请求的镜像摘要不匹配');
 		return { reference: imageName, tag: null };
 	}
 
@@ -30,14 +30,14 @@ export interface ReleaseAgeObservation {
 /** Explain an active cooldown without preventing a user-requested image pull. */
 export function manualPullAgeWarning(image: string, hours: number, observation: ReleaseAgeObservation | null): string | null {
 	if (hours <= 0) return null;
-	if (!observation) return `Update cooldown for ${image} could not be determined. Pulling it anyway because this was requested manually.`;
+	if (!observation) return `无法确定 ${image} 的更新冷却时间。由于是手动请求，仍将执行拉取。`;
 	if (observation.remainingMs <= 0) return null;
 	const elapsedMinutes = Math.max(0, Math.floor((Date.now() - Date.parse(observation.observedAt)) / 60000));
 	const remainingMinutes = Math.ceil(observation.remainingMs / 60000);
 	const basis = observation.source === 'created'
-		? `This image digest of ${image} was created at ${observation.observedAt}`
-		: `Creation time is unavailable. Dockhand first observed this digest of ${image} at ${observation.observedAt}`;
-	return `${basis} (${elapsedMinutes} minutes ago); ${remainingMinutes} minutes remain in the automatic-update cooldown. Pulling it anyway because this was requested manually.`;
+		? `${image} 的该镜像摘要创建于 ${observation.observedAt}`
+		: `无法获取创建时间。Dockhand 首次观测到 ${image} 的该摘要是在 ${observation.observedAt}`;
+	return `${basis} (${elapsedMinutes} 分钟前)；自动更新冷却还剩 ${remainingMinutes} 分钟。由于是手动请求，仍将执行拉取。`;
 }
 
 export function parseMinimumReleaseAgeHours(value: unknown): number | null {
@@ -58,7 +58,7 @@ export function resolveMinimumReleaseAgeConfig(
 ): MinimumReleaseAgeConfig {
 	if (environmentVariable !== undefined && environmentVariable.trim() !== '') {
 		const hours = parseMinimumReleaseAgeHours(environmentVariable);
-		if (hours === null) throw new Error('MINIMUM_RELEASE_AGE_HOURS must be a whole number from 0 to 720');
+		if (hours === null) throw new Error('MINIMUM_RELEASE_AGE_HOURS 必须是 0 到 720 之间的整数');
 		return { hours, overridden: true, inherited: true };
 	}
 	const specific = parseMinimumReleaseAgeHours(environmentSetting);

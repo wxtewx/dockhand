@@ -22,7 +22,7 @@ async function getLabelColors(): Promise<Record<string, string>> {
 export const GET: RequestHandler = async ({ cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('environments', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -52,8 +52,8 @@ export const GET: RequestHandler = async ({ cookies }) => {
 
 		return json({ labels: result, colors: customColors });
 	} catch (error) {
-		console.error('Failed to get labels:', error);
-		return json({ error: 'Failed to get labels' }, { status: 500 });
+		console.error('获取标签失败:', error);
+		return json({ error: '获取标签失败' }, { status: 500 });
 	}
 };
 
@@ -76,7 +76,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('environments', 'edit')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -86,11 +86,11 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		if (action === 'rename') {
 			const { oldLabel, newLabel } = body;
 			if (!oldLabel || !newLabel || typeof oldLabel !== 'string' || typeof newLabel !== 'string') {
-				return json({ error: 'oldLabel and newLabel are required' }, { status: 400 });
+				return json({ error: '必须提供原标签和新标签' }, { status: 400 });
 			}
 			const trimmed = newLabel.trim();
 			if (!trimmed) {
-				return json({ error: 'New label cannot be empty' }, { status: 400 });
+				return json({ error: '新标签不能为空' }, { status: 400 });
 			}
 
 			const environments = await getEnvironments();
@@ -127,7 +127,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		if (action === 'delete') {
 			const { label } = body;
 			if (!label || typeof label !== 'string') {
-				return json({ error: 'label is required' }, { status: 400 });
+				return json({ error: '必须提供标签' }, { status: 400 });
 			}
 
 			const environments = await getEnvironments();
@@ -156,10 +156,10 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		if (action === 'add') {
 			const { label, environmentIds } = body;
 			if (!label || typeof label !== 'string' || !label.trim()) {
-				return json({ error: 'label is required' }, { status: 400 });
+				return json({ error: '必须提供标签' }, { status: 400 });
 			}
 			if (!Array.isArray(environmentIds) || environmentIds.length === 0) {
-				return json({ error: 'environmentIds array is required' }, { status: 400 });
+				return json({ error: '必须提供环境 ID 数组' }, { status: 400 });
 			}
 
 			const trimmed = label.trim();
@@ -184,7 +184,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		if (action === 'set-color') {
 			const { label, color } = body;
 			if (!label || typeof label !== 'string') {
-				return json({ error: 'label is required' }, { status: 400 });
+				return json({ error: '必须提供标签' }, { status: 400 });
 			}
 
 			const customColors = await getLabelColors();
@@ -198,9 +198,9 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			return json({ success: true });
 		}
 
-		return json({ error: 'Invalid action. Use "rename", "delete", "add", or "set-color"' }, { status: 400 });
+		return json({ error: '无效操作，请使用 "rename", "delete", "add" 或 "set-color"' }, { status: 400 });
 	} catch (error) {
-		console.error('Failed to manage labels:', error);
-		return json({ error: 'Failed to manage labels' }, { status: 500 });
+		console.error('管理标签失败:', error);
+		return json({ error: '管理标签失败' }, { status: 500 });
 	}
 };

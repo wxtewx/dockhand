@@ -26,18 +26,18 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 	// Identity-provider config is admin-only (it carries adminClaim, which decides who
 	// becomes admin on login) - same gate as the LDAP provider endpoints.
 	if (auth.authEnabled && (!auth.isAuthenticated || !auth.isAdmin)) {
-		return json({ error: 'Unauthorized' }, { status: 401 });
+		return json({ error: '未授权' }, { status: 401 });
 	}
 
 	const id = parseInt(params.id || '');
 	if (isNaN(id)) {
-		return json({ error: 'Invalid configuration ID' }, { status: 400 });
+		return json({ error: '无效的配置ID' }, { status: 400 });
 	}
 
 	try {
 		const config = await getOidcConfig(id);
 		if (!config) {
-			return json({ error: 'OIDC configuration not found' }, { status: 404 });
+			return json({ error: '未找到OIDC配置' }, { status: 404 });
 		}
 
 		return json({
@@ -45,8 +45,8 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 			clientSecret: config.clientSecret ? '********' : ''
 		});
 	} catch (error) {
-		console.error('Failed to get OIDC config:', error);
-		return json({ error: 'Failed to get OIDC configuration' }, { status: 500 });
+		console.error('获取OIDC配置失败:', error);
+		return json({ error: '获取OIDC配置失败' }, { status: 500 });
 	}
 };
 
@@ -70,18 +70,18 @@ export const PUT: RequestHandler = async (event) => {
 	// adminClaim decides who becomes admin on OIDC login, so provider edits are admin-only
 	// (a settings:edit user must not be able to grant themselves admin) - same gate as LDAP.
 	if (auth.authEnabled && (!auth.isAuthenticated || !auth.isAdmin)) {
-		return json({ error: 'Unauthorized' }, { status: 401 });
+		return json({ error: '未授权' }, { status: 401 });
 	}
 
 	const id = parseInt(params.id || '');
 	if (isNaN(id)) {
-		return json({ error: 'Invalid configuration ID' }, { status: 400 });
+		return json({ error: '无效的配置ID' }, { status: 400 });
 	}
 
 	try {
 		const existing = await getOidcConfig(id);
 		if (!existing) {
-			return json({ error: 'OIDC configuration not found' }, { status: 404 });
+			return json({ error: '未找到 OIDC 配置' }, { status: 404 });
 		}
 
 		const data = await request.json();
@@ -107,7 +107,7 @@ export const PUT: RequestHandler = async (event) => {
 
 		const config = await updateOidcConfig(id, updateData);
 		if (!config) {
-			return json({ error: 'Failed to update OIDC configuration' }, { status: 500 });
+			return json({ error: '更新 OIDC 配置失败' }, { status: 500 });
 		}
 
 		// Compute diff for audit (exclude sensitive fields)
@@ -123,8 +123,8 @@ export const PUT: RequestHandler = async (event) => {
 			clientSecret: config.clientSecret ? '********' : ''
 		});
 	} catch (error: any) {
-		console.error('Failed to update OIDC config:', error);
-		return json({ error: error.message || 'Failed to update OIDC configuration' }, { status: 500 });
+		console.error('更新 OIDC 配置失败:', error);
+		return json({ error: error.message || '更新 OIDC 配置失败' }, { status: 500 });
 	}
 };
 
@@ -145,24 +145,24 @@ export const DELETE: RequestHandler = async (event) => {
 
 	// Identity-provider config is admin-only - same gate as the LDAP provider endpoints.
 	if (auth.authEnabled && (!auth.isAuthenticated || !auth.isAdmin)) {
-		return json({ error: 'Unauthorized' }, { status: 401 });
+		return json({ error: '未授权' }, { status: 401 });
 	}
 
 	const id = parseInt(params.id || '');
 	if (isNaN(id)) {
-		return json({ error: 'Invalid configuration ID' }, { status: 400 });
+		return json({ error: '无效的配置 ID' }, { status: 400 });
 	}
 
 	try {
 		// Get config before deletion for audit
 		const config = await getOidcConfig(id);
 		if (!config) {
-			return json({ error: 'OIDC configuration not found' }, { status: 404 });
+			return json({ error: '未找到 OIDC 配置' }, { status: 404 });
 		}
 
 		const deleted = await deleteOidcConfig(id);
 		if (!deleted) {
-			return json({ error: 'Failed to delete OIDC configuration' }, { status: 500 });
+			return json({ error: '删除 OIDC 配置失败' }, { status: 500 });
 		}
 
 		// Audit log
@@ -170,7 +170,7 @@ export const DELETE: RequestHandler = async (event) => {
 
 		return json({ success: true });
 	} catch (error) {
-		console.error('Failed to delete OIDC config:', error);
-		return json({ error: 'Failed to delete OIDC configuration' }, { status: 500 });
+		console.error('删除 OIDC 配置失败:', error);
+		return json({ error: '删除 OIDC 配置失败' }, { status: 500 });
 	}
 };

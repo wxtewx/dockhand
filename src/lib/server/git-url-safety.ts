@@ -13,17 +13,17 @@ import { isForbiddenStackPath, safeResolve } from './fs-guard';
 
 export function assertSafeRepoUrl(url: string): void {
 	const u = (url || '').trim();
-	if (!u) throw new Error('Repository URL is required');
+	if (!u) throw new Error('必须填写仓库地址');
 	// A value starting with '-' is consumed by git as an option (e.g. --upload-pack=).
-	if (u.startsWith('-')) throw new Error('Invalid repository URL');
+	if (u.startsWith('-')) throw new Error('无效的仓库地址');
 	// git's ext::/fd:: transports execute a command; file:// reads local paths.
 	const lower = u.toLowerCase();
 	if (lower.startsWith('ext::') || lower.startsWith('fd::') || lower.startsWith('file://')) {
-		throw new Error('Unsupported repository URL transport');
+		throw new Error('不支持该仓库地址传输协议');
 	}
 	// A bare local filesystem path (no scheme, no scp-like host:) is not a remote.
 	if (u.startsWith('/') || u.startsWith('./') || u.startsWith('../')) {
-		throw new Error('Repository URL must be a remote (https/ssh/git), not a local path');
+		throw new Error('仓库地址必须为远程地址 (https/ssh/git)，不能使用本地路径');
 	}
 }
 
@@ -54,7 +54,7 @@ export function stripUrlCredentials(url: string, authType: string | null | undef
  *  (callers fall back to a default like HEAD). */
 export function assertSafeGitRef(ref: string | null | undefined): void {
 	const r = (ref || '').trim();
-	if (r && r.startsWith('-')) throw new Error('Invalid branch/ref name');
+	if (r && r.startsWith('-')) throw new Error('无效的分支/引用名称');
 }
 
 /**
@@ -72,7 +72,7 @@ export function repoFilePath(repoPath: string, userRel: string, label: string): 
 	const rel = userRel.replace(/^\/+/, '');
 	const abs = resolve(repoPath, rel);
 	if (abs !== repoPath && !abs.startsWith(repoPath + sep)) {
-		throw new Error(`${label} must be a path inside the repository (got "${userRel}")`);
+		throw new Error(`${label} 路径必须位于仓库内部 (输入值: "${userRel}")`);
 	}
 	// The containment above is LEXICAL on the link path, but readFileSync follows a
 	// committed symlink to its target. Resolve the real path and require it to stay in the
@@ -95,14 +95,14 @@ function assertResolvedWithinRepo(repoPath: string, abs: string, label: string, 
 	const resolved = safeResolve(abs);
 	const root = safeResolve(repoPath) ?? resolve(repoPath);
 	if (resolved === null || (resolved !== root && !resolved.startsWith(root + sep))) {
-		throw new Error(`${label} "${shown}" leads outside the repository`);
+		throw new Error(`${label} "${shown}" 指向仓库目录之外`);
 	}
 }
 
 /** Throws when a path, its symlinks followed, reaches a location stacks may never use. */
 function assertNotForbidden(abs: string, label: string, shown: string): void {
 	if (isForbiddenStackPath(abs)) {
-		throw new Error(`${label} "${shown}" leads to a location that is not allowed`);
+		throw new Error(`${label} "${shown}" 指向不允许访问的位置`);
 	}
 }
 

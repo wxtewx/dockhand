@@ -24,9 +24,9 @@ export function normalizeSftpPrivateKey(privateKey: string): string {
 }
 
 export function classifySftpKeygenExecutionError(error: NodeJS.ErrnoException): string {
-	if (error.code === 'ETIMEDOUT') return 'SSH private key validation timed out';
-	if (error.code === 'ENOENT') return 'SSH private key could not be validated because OpenSSH ssh-keygen is unavailable';
-	return 'SSH private key could not be validated with OpenSSH';
+	if (error.code === 'ETIMEDOUT') return 'SSH 私钥验证超时';
+	if (error.code === 'ENOENT') return '无法验证 SSH 私钥：未找到 OpenSSH ssh-keygen';
+	return '使用 OpenSSH 验证 SSH 私钥失败';
 }
 
 /** The subset of spawnSync's result this validation reads. */
@@ -61,9 +61,9 @@ export function validateSftpPrivateKey(
 		if (result.status === 0) return null;
 		const stderr = (result.stderr ?? '').toLowerCase();
 		if (stderr.includes('incorrect passphrase') || stderr.includes('bad passphrase')) {
-			return 'SSH private key must not be passphrase-protected';
+			return 'SSH 私钥不能设置密钥口令保护';
 		}
-		return 'SSH private key is invalid or unsupported by OpenSSH';
+		return 'SSH 私钥无效或不受 OpenSSH 支持';
 	} finally {
 		rmSync(dir, { recursive: true, force: true });
 	}
@@ -71,8 +71,8 @@ export function validateSftpPrivateKey(
 
 function requireSftpCredentials(repository: string, credentials: SftpCredentials): void {
 	if (!isSftpRepository(repository)) return;
-	if (!credentials.privateKey?.trim()) throw new Error('SFTP destination is missing its SSH private key');
-	if (!credentials.knownHosts?.trim()) throw new Error('SFTP destination is missing its verified SSH known_hosts data');
+	if (!credentials.privateKey?.trim()) throw new Error('SFTP 目标缺少 SSH 私钥');
+	if (!credentials.knownHosts?.trim()) throw new Error('SFTP 目标缺少已验证的 SSH known_hosts 数据');
 }
 
 function buildSshArgs(files: SftpCredentialFiles): string {
@@ -100,7 +100,7 @@ export function buildSftpResticOptionArgs(
 	files: SftpCredentialFiles | null
 ): string[] {
 	if (!isSftpRepository(repository)) return [];
-	if (!files) throw new Error('SFTP credential files were not materialized');
+	if (!files) throw new Error('SFTP 凭据文件未生成');
 	return ['-o', `sftp.args=${buildSshArgs(files)}`];
 }
 

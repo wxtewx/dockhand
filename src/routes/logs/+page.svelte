@@ -92,7 +92,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 	const tailOptions = [
 		{ value: '100', label: '100' },
 		{ value: '500', label: '500' },
-		{ value: '1000', label: '1K' }
+		{ value: '1000', label: '1000' }
 	];
 	const VALID_TAIL_VALUES = new Set(tailOptions.map(o => o.value));
 	let tailCount = $state('500');
@@ -664,7 +664,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 
 			return loggableContainers;
 		} catch (error) {
-			console.error('Failed to fetch containers:', error);
+			console.error('获取容器列表失败:', error);
 			return [];
 		}
 	}
@@ -679,7 +679,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 			const data = await response.json();
 			favorites = data.favorites ?? [];
 		} catch (error) {
-			console.error('Failed to fetch favorites:', error);
+			console.error('获取容器列表失败:', error);
 			favorites = [];
 		} finally {
 			favoritesLoading = false;
@@ -696,7 +696,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 			const data = await response.json();
 			favoriteGroups = data.groups ?? [];
 		} catch (error) {
-			console.error('Failed to fetch favorite groups:', error);
+			console.error('获取收藏组失败:', error);
 			favoriteGroups = [];
 		} finally {
 			favoriteGroupsLoading = false;
@@ -733,7 +733,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 				showSaveGroupInput = false;
 			}
 		} catch (error) {
-			console.error('Failed to save favorite group:', error);
+			console.error('保存收藏分组失败:', error);
 		}
 	}
 
@@ -757,7 +757,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 				favoriteGroups = data.groups;
 			}
 		} catch (error) {
-			console.error('Failed to delete favorite group:', error);
+			console.error('删除收藏分组失败:', error);
 		}
 	}
 
@@ -816,7 +816,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 				favorites = data.favorites;
 			}
 		} catch (error) {
-			console.error('Failed to toggle favorite:', error);
+			console.error('切换收藏状态失败:', error);
 			// Revert on error
 			if (isFavorite) {
 				favorites = [...favorites, containerName];
@@ -897,7 +897,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 				favorites = data.favorites;
 			}
 		} catch (error) {
-			console.error('Failed to reorder favorites:', error);
+			console.error('收藏排序失败:', error);
 			// Refresh from server on error
 			await fetchFavorites();
 		}
@@ -917,7 +917,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 			logs = entries;
 			scrollToBottom(true);
 		} catch (error) {
-			console.error('Failed to fetch logs:', error);
+			console.error('获取日志失败:', error);
 			connectionError = m.logs_fetch_failed({ error: String(error) });
 			logs = [];
 		} finally {
@@ -992,7 +992,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 				handleStreamError();
 			};
 		} catch (error) {
-			console.error('Failed to start streaming:', error);
+			console.error('启动流读取失败:', error);
 			connectionError = m.logs_streaming_start_failed();
 			isConnected = false;
 			loading = false;
@@ -1033,7 +1033,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 					mergedLogs = compact(sortByTimestampStable([...mergedLogs, ...entries]), getMaxLines());
 				}
 			} catch (error) {
-				console.error(`Failed to fetch logs for stopped container ${containerId}:`, error);
+				console.error(`获取已停止容器 ${containerId} 的日志失败:`, error);
 				// Still add to header even on error
 				const containerName = container.name;
 				const color = getContainerColor(containerId);
@@ -1192,7 +1192,7 @@ import type { FavoriteGroup } from '../api/preferences/favorite-groups/+server';
 				handleStreamError();
 			};
 		} catch (error) {
-			console.error('Failed to start grouped streaming:', error);
+			console.error('启动分组流读取失败:', error);
 			connectionError = m.logs_streaming_start_failed();
 			isConnected = false;
 			loading = false;

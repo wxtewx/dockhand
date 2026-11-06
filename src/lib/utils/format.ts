@@ -51,19 +51,19 @@ export function formatRelativeTime(date: Date | string | number): string {
 	if (!parts) return '';
 	switch (parts.unit) {
 		case 'future':
-			return 'in the future';
+			return '尚未发生';
 		case 'now':
-			return 'just now';
+			return '刚刚';
 		case 'minutes':
-			return `${parts.count}m ago`;
+			return `${parts.count} 分钟前`;
 		case 'hours':
-			return `${parts.count}h ago`;
+			return `${parts.count} 小时前`;
 		case 'days':
-			return `${parts.count}d ago`;
+			return `${parts.count} 天前`;
 		case 'months':
-			return `${parts.count}mo ago`;
+			return `${parts.count} 个月前`;
 		case 'years':
-			return `${parts.count}y ago`;
+			return `${parts.count} 年前`;
 	}
 }
 

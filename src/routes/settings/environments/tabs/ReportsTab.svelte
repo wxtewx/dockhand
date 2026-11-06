@@ -62,7 +62,7 @@
 			link.click();
 			URL.revokeObjectURL(url);
 		} catch (error) {
-			console.error('Failed to download the report:', error);
+			console.error('下载报表失败:', error);
 			toast.error(m.settings_envs_report_build_failed());
 		} finally {
 			downloading = false;

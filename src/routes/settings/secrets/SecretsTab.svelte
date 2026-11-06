@@ -51,7 +51,7 @@
 			const response = await fetch('/api/secret-providers');
 			providers = await response.json();
 		} catch (e) {
-			console.error('Failed to fetch secret providers:', e);
+			console.error('获取密钥提供程序列表失败:', e);
 			toast.error(m.settings_secrets_toast_fetch_failed());
 		} finally {
 			loading = false;
@@ -65,7 +65,7 @@
 			const data = await response.json();
 			defaultProviderId = data.providerId ?? null;
 		} catch (e) {
-			console.warn('Failed to load the default secret provider:', e);
+			console.warn('加载默认密钥提供程序失败:', e);
 		}
 	}
 

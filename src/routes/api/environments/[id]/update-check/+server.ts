@@ -25,7 +25,7 @@ import { parseMinimumReleaseAgeHours } from '$lib/server/minimum-release-age-cor
 export const GET: RequestHandler = async ({ params, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('environments', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 	const id = parseInt(params.id);
 	const envAccessDenied = await auth.requireEnvAccess(id);
@@ -35,7 +35,7 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 		// Verify environment exists
 		const env = await getEnvironment(id);
 		if (!env) {
-			return json({ error: 'Environment not found' }, { status: 404 });
+			return json({ error: '环境不存在' }, { status: 404 });
 		}
 
 		const settings = await getEnvUpdateCheckSettings(id);
@@ -50,8 +50,8 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 			}), minimumReleaseAgeHours: age.hours, minimumReleaseAgeOverridden: age.overridden, minimumReleaseAgeOverride: !age.inherited }
 		});
 	} catch (error) {
-		console.error('Failed to get update check settings:', error);
-		return json({ error: 'Failed to get update check settings' }, { status: 500 });
+		console.error('获取更新检查设置失败:', error);
+		return json({ error: '获取更新检查设置失败' }, { status: 500 });
 	}
 };
 
@@ -72,7 +72,7 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 export const POST: RequestHandler = async ({ params, request, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('environments', 'edit')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 	const id = parseInt(params.id);
 	const envAccessDenied = await auth.requireEnvAccess(id);
@@ -82,7 +82,7 @@ export const POST: RequestHandler = async ({ params, request, cookies }) => {
 		// Verify environment exists
 		const env = await getEnvironment(id);
 		if (!env) {
-			return json({ error: 'Environment not found' }, { status: 404 });
+			return json({ error: '环境不存在' }, { status: 404 });
 		}
 
 		const data = await request.json();
@@ -90,7 +90,7 @@ export const POST: RequestHandler = async ({ params, request, cookies }) => {
 		const ageHours = data.minimumReleaseAgeOverride === true
 			? parseMinimumReleaseAgeHours(data.minimumReleaseAgeHours)
 			: age.hours;
-		if (ageHours === null) return json({ error: 'Minimum image age must be a whole number from 0 to 720 hours' }, { status: 400 });
+		if (ageHours === null) return json({ error: '镜像最小存放时长必须是 0 至 720 小时之间的整数' }, { status: 400 });
 
 		const settings = {
 			enabled: data.enabled ?? false,
@@ -114,7 +114,7 @@ export const POST: RequestHandler = async ({ params, request, cookies }) => {
 		const effectiveAge = await getMinimumReleaseAgeConfig(id);
 		return json({ success: true, settings: { ...settings, minimumReleaseAgeHours: effectiveAge.hours, minimumReleaseAgeOverridden: effectiveAge.overridden, minimumReleaseAgeOverride: !effectiveAge.inherited } });
 	} catch (error) {
-		console.error('Failed to save update check settings:', error);
-		return json({ error: 'Failed to save update check settings' }, { status: 500 });
+		console.error('保存更新检查设置失败:', error);
+		return json({ error: '保存更新检查设置失败' }, { status: 500 });
 	}
 };

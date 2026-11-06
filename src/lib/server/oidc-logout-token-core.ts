@@ -67,7 +67,7 @@ export async function verifyLogoutTokenWithKeys(
 	// the same aud/azp validation of a logout_token.
 	const audiences = payload.aud;
 	if (Array.isArray(audiences) && audiences.length > 1 && payload.azp !== expected.clientId) {
-		throw new Error('the logout token names several applications and was not authorised for this one');
+		throw new Error('注销令牌指定了多个应用，未授权当前应用');
 	}
 
 	// The events claim is what distinguishes a logout_token from any other token signed
@@ -75,24 +75,24 @@ export async function verifyLogoutTokenWithKeys(
 	// be accepted as a logout instruction.
 	const events = payload.events;
 	if (typeof events !== 'object' || events === null || Array.isArray(events)) {
-		throw new Error('the logout token has no events claim');
+		throw new Error('注销令牌缺少 events 声明');
 	}
 	if (!Object.prototype.hasOwnProperty.call(events, BACKCHANNEL_LOGOUT_EVENT)) {
-		throw new Error('the logout token events claim does not name a back-channel logout');
+		throw new Error('注销令牌的 events 声明未指定后端通道注销事件');
 	}
 
 	// A logout_token must forbid nonce: its presence means the token was minted for an
 	// interactive login (an id_token), not a logout, so it is rejected to stop an
 	// id_token being replayed as a logout instruction.
 	if ('nonce' in payload) {
-		throw new Error('the logout token carries a nonce, which a logout token must not');
+		throw new Error('注销令牌包含 nonce，注销令牌不允许携带该字段');
 	}
 
 	const sub = typeof payload.sub === 'string' ? payload.sub : undefined;
 	const sid = typeof payload.sid === 'string' ? payload.sid : undefined;
 	// At least one is required: with neither, the token names no session to end.
 	if (sub === undefined && sid === undefined) {
-		throw new Error('the logout token names neither a subject nor a session');
+		throw new Error('注销令牌既未指定主体也未指定会话');
 	}
 
 	const jti = typeof payload.jti === 'string' ? payload.jti : undefined;
@@ -105,19 +105,19 @@ export function describeLogoutTokenFailure(error: unknown): string {
 	switch (code) {
 		case 'ERR_JWT_CLAIM_VALIDATION_FAILED': {
 			const claim = (error as { claim?: string })?.claim;
-			if (claim === 'iss') return 'the logout token came from a different issuer than configured';
-			if (claim === 'aud') return 'the logout token was issued for a different application';
-			if (claim === 'iat') return 'the logout token carries no issued-at time, which the spec requires';
-			return `the logout token failed its ${claim ?? 'claim'} check`;
+			if (claim === 'iss') return '该注销令牌来自与配置不同的签发方';
+			if (claim === 'aud') return '注销令牌是为其他应用签发的';
+			if (claim === 'iat') return '注销令牌缺少规范要求的签发时间';
+			return `注销令牌的 ${claim ?? '声明'} 校验失败`;
 		}
 		case 'ERR_JWS_SIGNATURE_VERIFICATION_FAILED':
-			return 'the logout token signature does not match the provider signing keys';
+			return '注销令牌签名与密钥提供方的签名密钥不匹配';
 		case 'ERR_JWKS_NO_MATCHING_KEY':
-			return 'the logout token was signed with a key the provider does not publish';
+			return '用于签署该注销令牌的密钥未在提供方发布的密钥集中找到';
 		case 'ERR_JOSE_ALG_NOT_ALLOWED':
 		case 'ERR_JOSE_NOT_SUPPORTED':
-			return 'the logout token uses a signing algorithm the provider keys do not allow';
+			return '注销令牌使用了提供方密钥不支持的签名算法';
 		default:
-			return `the logout token could not be verified (${error instanceof Error ? error.message : String(error)})`;
+			return `无法验证该注销令牌 (${error instanceof Error ? error.message : String(error)})`;
 	}
 }

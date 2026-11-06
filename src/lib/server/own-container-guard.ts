@@ -30,7 +30,7 @@ export async function refuseOwnContainer(
 
 	if (!targetsOwnContainer(resolvedId, { id: ownId })) return null;
 	return json(
-		{ error: 'Only an administrator can change the networks of the Dockhand container' },
+		{ error: '仅管理员可以修改 Dockhand 容器的网络设置' },
 		{ status: 403 }
 	);
 }

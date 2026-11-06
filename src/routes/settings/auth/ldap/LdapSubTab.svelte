@@ -88,7 +88,7 @@
 				roles = await response.json();
 			}
 		} catch (error) {
-			console.error('Failed to fetch roles:', error);
+			console.error('获取角色失败:', error);
 		}
 	}
 
@@ -118,7 +118,7 @@
 				toast.error(m.settings_ldap_toast_delete_failed());
 			}
 		} catch (error) {
-			console.error('Failed to delete LDAP config:', error);
+			console.error('删除 LDAP 配置失败:', error);
 			toast.error(m.settings_ldap_toast_delete_failed());
 		} finally {
 			confirmDeleteLdapId = null;
@@ -159,7 +159,7 @@
 				toast.error(m.settings_ldap_toast_toggle_failed());
 			}
 		} catch (error) {
-			console.error('Failed to toggle LDAP config:', error);
+			console.error('切换 LDAP 配置状态失败:', error);
 			toast.error(m.settings_ldap_toast_toggle_failed());
 		}
 	}

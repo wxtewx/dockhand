@@ -41,11 +41,11 @@
 	let showLayoutMenu = $state(false);
 
 	const layoutOptions: { value: LayoutType; label: string; icon: string }[] = [
-		{ value: 'breadthfirst', label: 'Tree', icon: 'tree' },
-		{ value: 'grid', label: 'Grid', icon: 'grid' },
-		{ value: 'circle', label: 'Circle', icon: 'circle' },
-		{ value: 'concentric', label: 'Radial', icon: 'radial' },
-		{ value: 'cose', label: 'Force', icon: 'force' }
+		{ value: 'breadthfirst', label: '树状', icon: 'tree' },
+		{ value: 'grid', label: '网格', icon: 'grid' },
+		{ value: 'circle', label: '圆形', icon: 'circle' },
+		{ value: 'concentric', label: '放射状', icon: 'radial' },
+		{ value: 'cose', label: '力导向', icon: 'force' }
 	];
 
 	// Connection mode state (for service dependencies)
@@ -223,7 +223,7 @@
 			const dependsOn = config.depends_on
 				? (Array.isArray(config.depends_on) ? config.depends_on : Object.keys(config.depends_on))
 				: [];
-			const imageStr = config.image || (config.build ? 'build' : 'custom');
+			const imageStr = config.image || (config.build ? '构建' : '自定义');
 			// Truncate long image names
 			const shortImage = imageStr.length > 25 ? imageStr.substring(0, 22) + '...' : imageStr;
 
@@ -233,11 +233,11 @@
 					label: name,
 					caption: shortImage,
 					type: 'service',
-					image: config.image || config.build || 'custom',
+					image: config.image || config.build || '自定义',
 					ports: ports.map((p: any) => typeof p === 'string' ? p : `${p.published}:${p.target}`),
 					envCount,
 					replicas: config.deploy?.replicas || 1,
-					restart: config.restart || 'no',
+					restart: config.restart || '不重启',
 					healthcheck: !!config.healthcheck,
 					dependsOn,
 					config: config
@@ -253,7 +253,7 @@
 						source: `service-${dep}`,
 						target: `service-${name}`,
 						type: 'dependency',
-						label: 'depends on',
+						label: '依赖于',
 						isError: !depExists,
 						missingTarget: !depExists ? dep : undefined
 					}
@@ -270,7 +270,7 @@
 							source: `service-${linkName}`,
 							target: `service-${name}`,
 							type: 'link',
-							label: 'links'
+							label: '链接'
 						}
 					});
 				});
@@ -290,14 +290,14 @@
 						data: {
 							id: `service-${dep}`,
 							label: dep,
-							caption: 'missing',
+							caption: '缺失',
 							type: 'service',
 							isMissing: true,
 							image: '',
 							ports: [],
 							envCount: 0,
 							replicas: 0,
-							restart: 'no',
+							restart: '不重启',
 							healthcheck: false,
 							dependsOn: [],
 							config: {}
@@ -309,7 +309,7 @@
 
 		// Add network nodes
 		Object.entries(networks).forEach(([name, config]) => {
-			const driver = (config as any)?.driver || 'bridge';
+			const driver = getNetworkDriverLabel((config as any)?.driver || 'bridge');
 			elements.push({
 				data: {
 					id: `network-${name}`,
@@ -339,9 +339,9 @@
 								elements.push({
 									data: {
 										id: 'network-default',
-										label: 'default',
+										label: '默认',
 										type: 'network',
-										driver: 'bridge',
+										driver: '桥接',
 										external: false
 									}
 								});
@@ -362,7 +362,7 @@
 
 		// Add volume nodes
 		Object.entries(volumes).forEach(([name, config]) => {
-			const driver = (config as any)?.driver || 'local';
+			const driver = (config as any)?.driver || '本地';
 			elements.push({
 				data: {
 					id: `volume-${name}`,
@@ -401,7 +401,7 @@
 				data: {
 					id: `config-${name}`,
 					label: name,
-					caption: 'config',
+					caption: '配置',
 					type: 'config',
 					external: (config as any)?.external || false,
 					config: config
@@ -434,7 +434,7 @@
 				data: {
 					id: `secret-${name}`,
 					label: name,
-					caption: 'secret',
+					caption: '密钥',
 					type: 'secret',
 					external: (config as any)?.external || false,
 					config: config
@@ -868,7 +868,7 @@
 		// Handle node selection
 		cy.on('tap', 'node', (evt) => {
 			const nodeData = evt.target.data();
-			console.log('Node tapped:', nodeData);
+			console.log('节点已点击:', nodeData);
 
 			if (connectionMode && nodeData.type === 'service') {
 				handleConnectionClick(nodeData);
@@ -877,7 +877,7 @@
 			} else {
 				selectedNode = nodeData;
 				selectedEdge = null;
-				console.log('selectedNode set to:', selectedNode);
+				console.log('已设置选中节点:', selectedNode);
 			}
 		});
 
@@ -1118,7 +1118,7 @@
 			case 'network':
 				if (!composeData.networks) composeData.networks = {};
 				composeData.networks[name] = {
-					driver: 'bridge'
+					driver: '桥接'
 				};
 				break;
 			case 'volume':
@@ -1462,6 +1462,18 @@
 			case 'secret': return 'bg-red-500';
 			default: return 'bg-slate-500';
 		}
+	}
+
+	function getNetworkDriverLabel(driver: string): string {
+  		switch (driver) {
+    		case 'bridge': return '桥接';
+    		case 'host': return '主机';
+    		case 'overlay': return '覆盖';
+    		case 'macvlan': return 'Macvlan';
+    		case 'ipvlan': return 'IPvlan';
+    		case 'none': return '无';
+    		default: return driver;
+  		}
 	}
 
 	function getElementTypeLabel(type: string) {
@@ -2656,31 +2668,31 @@
 												{:else}
 													<CircleOff class="w-3.5 h-3.5 text-muted-foreground" />
 												{/if}
-												<span class="capitalize">{editNetworkDriver}</span>
+												<span class="capitalize">{getNetworkDriverLabel(editNetworkDriver)}</span>
 											</span>
 										</Select.Trigger>
 										<Select.Content>
-											<Select.Item value="bridge" label="Bridge">
+											<Select.Item value="bridge" label="桥接">
 												{#snippet children()}
 													<div class="flex items-center gap-2">
 														<Share2 class="w-3.5 h-3.5 text-emerald-500" />
-														<span>Bridge</span>
+														<span>桥接</span>
 													</div>
 												{/snippet}
 											</Select.Item>
-											<Select.Item value="host" label="Host">
+											<Select.Item value="host" label="主机">
 												{#snippet children()}
 													<div class="flex items-center gap-2">
 														<Server class="w-3.5 h-3.5 text-sky-500" />
-														<span>Host</span>
+														<span>主机</span>
 													</div>
 												{/snippet}
 											</Select.Item>
-											<Select.Item value="overlay" label="Overlay">
+											<Select.Item value="overlay" label="覆盖">
 												{#snippet children()}
 													<div class="flex items-center gap-2">
 														<Globe class="w-3.5 h-3.5 text-violet-500" />
-														<span>Overlay</span>
+														<span>覆盖</span>
 													</div>
 												{/snippet}
 											</Select.Item>
@@ -2700,11 +2712,11 @@
 													</div>
 												{/snippet}
 											</Select.Item>
-											<Select.Item value="none" label="None">
+											<Select.Item value="none" label="无">
 												{#snippet children()}
 													<div class="flex items-center gap-2">
 														<CircleOff class="w-3.5 h-3.5 text-muted-foreground" />
-														<span>None</span>
+														<span>无</span>
 													</div>
 												{/snippet}
 											</Select.Item>

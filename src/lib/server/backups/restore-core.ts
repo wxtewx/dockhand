@@ -160,6 +160,6 @@ function keyIsKnownBind(metadata: SnapshotMetadata | null, key: string): boolean
 function bindSourceError(key: string): BackupError {
 	return new BackupError(
 		'VALIDATION',
-		`cannot resolve the original location for volume '${key}' from the snapshot metadata; restore aborted to avoid writing to the wrong place`,
+		`无法从快照元数据解析数据卷 '${key}' 的原始挂载路径；已终止恢复操作，避免写入错误位置`,
 	);
 }

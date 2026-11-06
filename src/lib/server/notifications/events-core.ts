@@ -51,14 +51,14 @@ export function deliveryLogLine(
 	channelType: string | null | undefined,
 	result: { success: boolean; error?: string }
 ): string {
-	const to = `[Notifications] ${eventType} -> ${channelName} (${channelType})`;
-	return result.success ? `${to}: sent` : `${to}: failed: ${(result.error || 'no error given').slice(0, 300)}`;
+	const to = `[通知] ${eventType} -> ${channelName} (${channelType})`;
+	return result.success ? `${to}: 已发送` : `${to}: 发送失败: ${(result.error || '未提供错误信息').slice(0, 300)}`;
 }
 
 /** The log line for the channels withoutSubscribersOf dropped, or null when it dropped none. */
 export function coveredLogLine(eventType: string, coveredBy: string | undefined, skipped: Array<string | null | undefined>): string | null {
 	if (skipped.length === 0) return null;
-	return `[Notifications] ${eventType}: skipped ${skipped.join(', ')} (subscribed to ${coveredBy}, which they get instead)`;
+	return `[通知] ${eventType}: 跳过 ${skipped.join(', ')} (已订阅 ${coveredBy}，将接收该事件)`;
 }
 
 /**

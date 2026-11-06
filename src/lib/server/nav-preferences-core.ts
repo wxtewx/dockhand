@@ -26,14 +26,14 @@ export function parseNavPatch(data: any): Partial<NavPreferences> {
 		const p = data.landingPage;
 		if (p === '' || p === null) out.landingPage = null;
 		else if ((PAGE_SLUGS as readonly string[]).includes(p)) out.landingPage = p;
-		else throw new Error('Invalid landingPage');
+		else throw new Error('无效的默认启动页面');
 	}
 	if (data.envClickPage !== undefined) {
 		const p = data.envClickPage;
 		// env-click is always a concrete page, never dashboard (you already clicked an env).
 		if (p === '' || p === null) out.envClickPage = null;
 		else if ((PAGE_SLUGS as readonly string[]).includes(p) && p !== 'dashboard') out.envClickPage = p;
-		else throw new Error('Invalid envClickPage');
+		else throw new Error('无效的环境点击跳转页面');
 	}
 	return out;
 }

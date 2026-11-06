@@ -27,26 +27,26 @@ export const POST: RequestHandler = async (event) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('images', 'remove', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	return createJobResponse(async (send) => {
 		try {
 			const result = await pruneImages(danglingOnly, envIdNum);
-			const space = result?.SpaceReclaimed === undefined ? 'space freed not known' : `${result.SpaceReclaimed} bytes freed`;
-			console.log(`[Prune] env ${envIdNum ?? 'local'}: manual ${danglingOnly ? 'dangling' : 'all unused'} image prune removed ${prunedImageCount(result?.ImagesDeleted)} images, ${space}`);
+			const space = result?.SpaceReclaimed === undefined ? '释放空间未知' : `${result.SpaceReclaimed} 字节已释放`;
+			console.log(`[修剪] 环境 ${envIdNum ?? '本地'}: 手动 ${danglingOnly ? '悬空' : '全部未使用'} 镜像修剪移除了 ${prunedImageCount(result?.ImagesDeleted)} 个镜像, ${space}`);
 
 			// Audit log
 			await audit(event, 'prune', 'image', {
 				environmentId: envIdNum,
-				description: `Pruned ${danglingOnly ? 'dangling' : 'unused'} images`,
+				description: `已清理 ${danglingOnly ? '悬空' : '未使用'} 镜像`,
 				details: { danglingOnly, result }
 			});
 
 			send('result', { success: true, result });
 		} catch (error) {
-			console.error(`[Prune] env ${envIdNum ?? 'local'}: manual image prune failed:`, error);
-			send('result', { success: false, error: 'Failed to prune images' });
+			console.error(`[修剪] 环境 ${envIdNum ?? '本地'}: 手动镜像修剪失败:`, error);
+			send('result', { success: false, error: '镜像修剪失败' });
 		}
 	}, event.request);
 };

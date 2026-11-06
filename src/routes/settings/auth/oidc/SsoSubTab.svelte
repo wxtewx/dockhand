@@ -73,7 +73,7 @@
 				oidcConfigs = await response.json();
 			}
 		} catch (error) {
-			console.error('Failed to fetch OIDC configs:', error);
+			console.error('获取 OIDC 配置失败:', error);
 			toast.error(m.settings_oidc_toast_fetch_failed());
 		} finally {
 			oidcLoading = false;
@@ -106,7 +106,7 @@
 				toast.error(m.settings_oidc_toast_delete_failed());
 			}
 		} catch (error) {
-			console.error('Failed to delete OIDC config:', error);
+			console.error('删除 OIDC 配置失败:', error);
 			toast.error(m.settings_oidc_toast_delete_failed());
 		} finally {
 			confirmDeleteOidcId = null;
@@ -147,7 +147,7 @@
 				toast.error(m.settings_oidc_toast_toggle_failed());
 			}
 		} catch (error) {
-			console.error('Failed to toggle OIDC config:', error);
+			console.error('切换 OIDC 配置状态失败:', error);
 			toast.error(m.settings_oidc_toast_toggle_failed());
 		}
 	}

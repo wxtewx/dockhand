@@ -41,6 +41,7 @@
 	import ContainerIcon from '$lib/components/ContainerIcon.svelte';
 	import BatchOperationModal from '$lib/components/BatchOperationModal.svelte';
 	import type { ComposeStackInfo, ContainerStats, StackContainer } from '$lib/types';
+	import { getLabelText } from '$lib/types';
 	import { showsManagementActions } from '$lib/utils/stack-actions';
 	import { sumStackStats, type StackStats } from '$lib/utils/stack-stats';
 	import StackModal from './StackModal.svelte';
@@ -448,7 +449,7 @@
 			}
 		} catch (error: any) {
 			if (error?.name !== 'AbortError') {
-				console.error('Failed to fetch container stats:', error);
+				console.error('获取容器统计信息失败:', error);
 			}
 		} finally {
 			statsFetching = false;
@@ -1094,7 +1095,7 @@
 
 			// Handle stale environment ID (e.g., after database reset)
 			if (stacksRes.status === 404 && envId) {
-				console.warn(`[Stacks] Got 404 for env ${envId}, refreshing environments`);
+				console.warn(`[堆栈] 环境 ${envId} 返回 404，正在刷新环境列表`);
 				clearStaleEnvironment(envId);
 				environments.refresh();
 				return;
@@ -1105,7 +1106,7 @@
 				try {
 					return await res.json();
 				} catch {
-					console.warn(`[Stacks] Failed to parse response from ${res.url}`);
+					console.warn(`[堆栈] 解析接口 ${res.url} 响应失败`);
 					return fallback;
 				}
 			};
@@ -1116,7 +1117,7 @@
 
 			// Debug logging
 			if (gitStacksData?.error) {
-				console.error('Git stacks API error:', gitStacksData.error, 'Status:', gitStacksRes.status);
+				console.error('Git 堆栈接口错误:', gitStacksData.error, '状态码:', gitStacksRes.status);
 			}
 
 			// Ensure responses are valid before using them
@@ -1152,7 +1153,7 @@
 			}
 			stackEnvVarCounts = counts;
 		} catch (error) {
-			console.error('Failed to fetch stacks:', error);
+			console.error('获取堆栈列表失败:', error);
 			toast.error(m.stacks_list_toast_load_failed());
 		} finally {
 			loading = false;
@@ -1176,7 +1177,7 @@
 
 	function getDisplayStatus(stack: ComposeStackInfo): string {
 		if (stack.status === 'created' && getStackSource(stack.name).sourceType === 'git') {
-			return 'not deployed';
+			return '未部署';
 		}
 		return stack.status;
 	}
@@ -1194,7 +1195,7 @@
 			gitRepositories = await reposRes.json();
 			gitCredentials = await credsRes.json();
 		} catch (error) {
-			console.error('Failed to fetch git data:', error);
+			console.error('获取 Git 数据失败:', error);
 			gitRepositories = [];
 			gitCredentials = [];
 		}
@@ -1225,7 +1226,7 @@
 			editingGitStack = null;
 			await fetchStacks();
 		} catch (error) {
-			console.error('Failed to convert stack to local source:', error);
+			console.error('将堆栈转换为本地源失败:', error);
 			const errorMsg = error instanceof Error ? error.message : m.stacks_git_error_convert_local_failed();
 			showErrorDialog(m.stacks_git_error_convert_title({ name: stackName }), errorMsg);
 		}
@@ -1262,7 +1263,7 @@
 			toast.success(m.containers_list_toast_started({ name }));
 			await fetchStacks();
 		} catch (error) {
-			console.error('Failed to start stack:', error);
+			console.error('启动堆栈失败:', error);
 			const errorMsg = error instanceof Error ? error.message : m.stacks_list_error_start();
 			finishComposeOutput(undefined, false, undefined, errorMsg);
 			toast.error(m.containers_list_toast_start_failed({ name }));
@@ -1291,7 +1292,7 @@
 			toast.success(m.containers_list_toast_stopped({ name }));
 			await fetchStacks();
 		} catch (error) {
-			console.error('Failed to stop stack:', error);
+			console.error('停止堆栈失败:', error);
 			const errorMsg = error instanceof Error ? error.message : m.stacks_list_error_stop();
 			finishComposeOutput(undefined, false, undefined, errorMsg);
 			toast.error(m.containers_list_toast_stop_failed({ name }));
@@ -1326,7 +1327,7 @@
 			toast.success(mode === 'recreate' ? m.stacks_list_toast_recreated({ name }) : m.containers_list_toast_restarted({ name }));
 			await fetchStacks();
 		} catch (error) {
-			console.error('Failed to restart stack:', error);
+			console.error('重启堆栈失败:', error);
 			const errorMsg = error instanceof Error ? error.message : m.stacks_list_error_restart();
 			finishComposeOutput(undefined, false, undefined, errorMsg);
 			toast.error(m.containers_list_toast_restart_failed({ name }));
@@ -1371,7 +1372,7 @@
 			toast.success(m.stacks_list_toast_redeployed({ name }));
 			await fetchStacks();
 		} catch (error) {
-			console.error('Failed to redeploy stack:', error);
+			console.error('重新部署堆栈失败:', error);
 			const errorMsg = error instanceof Error ? error.message : m.stacks_list_error_redeploy();
 			// A throw before any output streams would otherwise leave the window with
 			// only the Options line and a red status, so put the error text in it.
@@ -1403,7 +1404,7 @@
 			toast.success(m.stacks_list_toast_brought_down({ name }));
 			await fetchStacks();
 		} catch (error) {
-			console.error('Failed to bring down stack:', error);
+			console.error('销毁堆栈失败:', error);
 			const errorMsg = error instanceof Error ? error.message : m.stacks_list_error_down();
 			finishComposeOutput(undefined, false, undefined, errorMsg);
 			toast.error(m.stacks_list_toast_down_failed({ name }));
@@ -1441,7 +1442,7 @@
 			toast.success(m.stacks_list_toast_removed({ name, details: bits.join(', ') }));
 			await fetchStacks();
 		} catch (error) {
-			console.error('Failed to remove stack:', error);
+			console.error('移除堆栈失败:', error);
 			const errorMsg = error instanceof Error ? error.message : m.stacks_list_error_remove();
 			showErrorDialog(m.containers_list_toast_remove_failed({ name }), errorMsg);
 		}
@@ -1557,7 +1558,7 @@
 			toast.success(m.stacks_list_toast_container_started());
 			await fetchStacks();
 		} catch (error) {
-			console.error('Failed to start container:', error);
+			console.error('启动容器失败:', error);
 			const errorMsg = error instanceof Error ? error.message : m.containers_list_error_start();
 			operationError = { id: containerId, message: errorMsg };
 			toast.error(errorMsg);
@@ -1583,7 +1584,7 @@
 			toast.success(m.stacks_list_toast_container_stopped());
 			await fetchStacks();
 		} catch (error) {
-			console.error('Failed to stop container:', error);
+			console.error('停止容器失败:', error);
 			const errorMsg = error instanceof Error ? error.message : m.containers_list_error_stop();
 			operationError = { id: containerId, message: errorMsg };
 			toast.error(errorMsg);
@@ -1609,7 +1610,7 @@
 			toast.success(m.stacks_list_toast_container_restarted());
 			await fetchStacks();
 		} catch (error) {
-			console.error('Failed to restart container:', error);
+			console.error('重启容器失败:', error);
 			const errorMsg = error instanceof Error ? error.message : m.containers_list_error_restart();
 			operationError = { id: containerId, message: errorMsg };
 			toast.error(errorMsg);
@@ -1635,7 +1636,7 @@
 			toast.success(m.stacks_list_toast_container_paused());
 			await fetchStacks();
 		} catch (error) {
-			console.error('Failed to pause container:', error);
+			console.error('暂停容器失败:', error);
 			const errorMsg = error instanceof Error ? error.message : m.containers_list_error_pause();
 			operationError = { id: containerId, message: errorMsg };
 			toast.error(errorMsg);
@@ -1662,7 +1663,7 @@
 			toast.success(m.stacks_list_toast_container_unpaused());
 			await fetchStacks();
 		} catch (error) {
-			console.error('Failed to unpause container:', error);
+			console.error('恢复容器失败:', error);
 			const errorMsg = error instanceof Error ? error.message : m.containers_list_error_unpause();
 			operationError = { id: containerId, message: errorMsg };
 			toast.error(errorMsg);
@@ -1688,7 +1689,7 @@
 			toast.success(m.stacks_list_toast_container_removed());
 			await fetchStacks();
 		} catch (error) {
-			console.error('Failed to remove container:', error);
+			console.error('删除容器失败:', error);
 			const errorMsg = error instanceof Error ? error.message : m.containers_list_error_remove();
 			operationError = { id: containerId, message: errorMsg };
 			toast.error(errorMsg);
@@ -2427,7 +2428,7 @@
 					<div class="text-right whitespace-nowrap">
 						{#if stats}
 							<span class="text-xs font-mono text-muted-foreground" title={m.containers_list_disk_title({ read: formatBytes(stats.blockRead), written: formatBytes(stats.blockWrite) })}>
-								<span class="text-2xs text-green-400">r</span>{formatBytesCompact(stats.blockRead, 0)} <span class="text-2xs text-yellow-400">w</span>{formatBytesCompact(stats.blockWrite, 0)}
+								<span class="text-2xs text-green-400">读</span>{formatBytesCompact(stats.blockRead, 0)} <span class="text-2xs text-yellow-400">写</span>{formatBytesCompact(stats.blockWrite, 0)}
 							</span>
 						{:else if stack.status === 'running' || stack.status === 'partial' || stack.status === 'restarting'}
 							<span class="text-xs text-muted-foreground/50">...</span>

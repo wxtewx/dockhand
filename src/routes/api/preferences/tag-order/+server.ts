@@ -19,8 +19,8 @@ export const GET: RequestHandler = async ({ cookies }) => {
 	try {
 		return json({ order: await getTagOrder(await ownerId(cookies)) });
 	} catch (error) {
-		console.error('Failed to get tag order:', error);
-		return json({ error: 'Failed to get the tag order' }, { status: 500 });
+		console.error('获取标签排序失败:', error);
+		return json({ error: '获取标签排序失败' }, { status: 500 });
 	}
 };
 
@@ -38,19 +38,19 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 	try {
 		const { order } = await request.json();
 		if (!Array.isArray(order) || order.some((id) => !Number.isInteger(id))) {
-			return json({ error: 'order must be an array of tag ids' }, { status: 400 });
+			return json({ error: 'order 必须为标签 ID 组成的数组' }, { status: 400 });
 		}
 		// A repeated id would put one tag in a keyed list twice, which throws on render.
 		if (new Set(order).size !== order.length) {
-			return json({ error: 'order must not repeat a tag id' }, { status: 400 });
+			return json({ error: 'order 内不允许重复的标签 ID' }, { status: 400 });
 		}
 
 		const userId = await ownerId(cookies);
 		await setTagOrder(order, userId);
 		return json({ order: await getTagOrder(userId) });
 	} catch (error) {
-		console.error('Failed to save tag order:', error);
-		return json({ error: 'Failed to save the tag order' }, { status: 500 });
+		console.error('保存标签排序失败:', error);
+		return json({ error: '保存标签排序失败' }, { status: 500 });
 	}
 };
 
@@ -66,7 +66,7 @@ export const DELETE: RequestHandler = async ({ cookies }) => {
 		await deleteTagOrder(userId);
 		return json({ order: await getTagOrder(userId) });
 	} catch (error) {
-		console.error('Failed to reset tag order:', error);
-		return json({ error: 'Failed to reset the tag order' }, { status: 500 });
+		console.error('重置标签排序失败:', error);
+		return json({ error: '重置标签排序失败' }, { status: 500 });
 	}
 };

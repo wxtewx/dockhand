@@ -34,20 +34,20 @@ function fromHex(value: string, what: string): Uint8Array {
 	// An odd length or a stray character means the server did not send what we
 	// think it did; failing here beats handing garbage to the cipher.
 	if (!hex || hex.length % 2 !== 0 || !HEX.test(hex)) {
-		throw new Error(`Psono: ${what} is not valid hex`);
+		throw new Error(`Psono: ${what} 不是有效的十六进制数据`);
 	}
 	return Uint8Array.from(Buffer.from(hex, 'hex'));
 }
 
 /** Opens one secretbox, naming what failed rather than leaking the bytes. */
 function open(key: Uint8Array, nonce: Uint8Array, box: Uint8Array, what: string): Uint8Array {
-	if (key.length !== 32) throw new Error(`Psono: ${what} key must be 32 bytes`);
-	if (nonce.length !== 24) throw new Error(`Psono: ${what} nonce must be 24 bytes`);
+	if (key.length !== 32) throw new Error(`Psono: ${what} 密钥长度必须为 32 字节`);
+	if (nonce.length !== 24) throw new Error(`Psono: ${what} 随机数长度必须为 24 字节`);
 	try {
 		return xsalsa20poly1305(key, nonce).decrypt(box);
 	} catch {
 		// Authentication failure: a wrong API key secret, or a tampered payload.
-		throw new Error(`Psono: could not decrypt the ${what} - check the API key secret`);
+		throw new Error(`Psono: 无法解密 ${what} - 请检查 API 密钥密钥`);
 	}
 }
 
@@ -76,7 +76,7 @@ export function decryptSecret(secret: PsonoEncryptedSecret, apiKeySecretKey: str
 	try {
 		return JSON.parse(new TextDecoder().decode(plain));
 	} catch {
-		throw new Error('Psono: the decrypted secret is not JSON');
+		throw new Error('Psono: 解密后的密钥内容不是 JSON 格式');
 	}
 }
 
@@ -298,16 +298,16 @@ export function referenceValue(decrypted: unknown, field: string | null): string
  */
 export function keyPermissionWarning(inspection: PsonoKeyInspection): string | null {
 	if (inspection.read === false) {
-		return 'The API key cannot read secrets. Enable read access on it in Psono.';
+		return '该 API 密钥无法读取密钥。请在 Psono 中开启读取权限。';
 	}
 	if (inspection.allow_insecure_access) {
-		return 'The API key allows insecure access. Turn that off in Psono - Dockhand always decrypts locally and never sends the secret key to the server.';
+		return '该 API 密钥允许不安全访问。请在 Psono 中将其关闭——Dockhand 始终在本地解密，不会将密钥发送至服务器。';
 	}
 	if (inspection.write) {
-		return 'The API key can write secrets. Dockhand only reads, so a read-only key is safer.';
+		return '该 API 密钥具备写入密钥权限。Dockhand 仅做读取操作，使用只读密钥会更加安全。';
 	}
 	if (inspection.restrict_to_secrets === false) {
-		return 'The API key is not restricted to specific secrets, so it can reach the whole vault. A restricted key is safer.';
+		return '该 API 密钥未限定可访问密钥范围，可以访问整个密钥库。使用限定范围的密钥会更加安全。';
 	}
 	return null;
 }

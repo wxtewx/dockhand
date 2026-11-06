@@ -80,7 +80,7 @@ export function createJobResponse(
 		const encoder = new TextEncoder();
 		const stream = new ReadableStream({
 			async start(controller) {
-				let resultData: unknown = { success: false, error: 'No result' };
+				let resultData: unknown = { success: false, error: '无结果' };
 				let sentResult = false;
 				const send = (event: string, data: unknown) => {
 					if (recorder && shouldRecord(event, data)) {
@@ -110,7 +110,7 @@ export function createJobResponse(
 						try {
 							await recorder.end(ok, undefined, error);
 						} catch (e) {
-							console.error('Failed to close deploy run recorder (JSON path):', e);
+							console.error('关闭部署运行记录器失败 (JSON 路径):', e);
 						}
 					}
 				}
@@ -164,7 +164,7 @@ export function createJobResponse(
 				try {
 					await recorder.end(ok, undefined, error);
 				} catch (e) {
-					console.error('Failed to close deploy run recorder (stream path):', e);
+					console.error('关闭部署运行记录器失败 (流路径):', e);
 				}
 			}
 		})
@@ -175,7 +175,7 @@ export function createJobResponse(
 				try {
 					await recorder.end(false, undefined, message);
 				} catch (e) {
-					console.error('Failed to close deploy run recorder (stream error path):', e);
+					console.error('关闭部署运行记录器失败 (流异常路径):', e);
 				}
 			}
 		});

@@ -26,14 +26,14 @@ import type { RequestHandler } from './$types';
  */
 export const GET: RequestHandler = async ({ cookies }) => {
 	if (!METRICS_ENABLED) {
-		return new Response('Not found', { status: 404 });
+		return new Response('未找到该资源', { status: 404 });
 	}
 
 	// EXPORT_METRICS_PUBLIC leaves the scrape reachable without auth even when app
 	// auth is on (#1698); otherwise a session or bearer token is required.
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !auth.isAuthenticated && !METRICS_PUBLIC) {
-		return new Response('Unauthorized', {
+		return new Response('未授权访问', {
 			status: 401,
 			headers: { 'WWW-Authenticate': 'Bearer' }
 		});
@@ -46,8 +46,8 @@ export const GET: RequestHandler = async ({ cookies }) => {
 			headers: { 'Content-Type': metricsContentType }
 		});
 	} catch (error) {
-		console.error('[metrics] render failed:', error);
-		return new Response('# metrics collection failed\n', {
+		console.error('[指标采集] 渲染失败:', error);
+		return new Response('# 指标采集失败\n', {
 			status: 500,
 			headers: { 'Content-Type': 'text/plain' }
 		});

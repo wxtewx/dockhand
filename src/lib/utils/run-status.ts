@@ -13,15 +13,15 @@ export interface RunStatus {
 }
 
 export function formatRunStatus(status: RunStatus): string {
-	if (status.running) return 'Running…';
+	if (status.running) return '运行中…';
 
 	const seconds = typeof status.ms === 'number' ? `${(status.ms / 1000).toFixed(1)}s` : undefined;
 
 	if (status.ok) {
-		return seconds ? `Succeeded · ${seconds}` : 'Succeeded';
+		return seconds ? `已成功 · ${seconds}` : '已成功';
 	}
 
-	const exitPart = typeof status.exitCode === 'number' ? `exit ${status.exitCode}` : undefined;
-	const parts = ['Failed', exitPart, seconds].filter((p): p is string => p !== undefined);
+	const exitPart = typeof status.exitCode === 'number' ? `退出码 ${status.exitCode}` : undefined;
+	const parts = ['失败', exitPart, seconds].filter((p): p is string => p !== undefined);
 	return parts.join(' · ');
 }

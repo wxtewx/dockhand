@@ -9,11 +9,11 @@
 
 /** One-line form of an X.509 name, or a placeholder when the cert omits it. */
 export function formatCertName(name: string | undefined | null): string {
-	if (typeof name !== 'string') return '(none)';
+	if (typeof name !== 'string') return '(无)';
 	// Trim FIRST: a name that is only newlines would otherwise collapse to a
 	// string of separators rather than reading as absent.
 	const trimmed = name.trim();
-	return trimmed === '' ? '(none)' : trimmed.replace(/\n/g, ', ');
+	return trimmed === '' ? '(无)' : trimmed.replace(/\n/g, ', ');
 }
 
 /**
@@ -29,12 +29,12 @@ export function daysUntilExpiry(validTo: string | undefined, now: number): numbe
 
 /** The expiry line to log, and whether it deserves the operator's attention. */
 export function expiryLine(daysLeft: number | null): { text: string; warn: boolean } {
-	if (daysLeft === null) return { text: 'cert expiry:  (unknown)', warn: false };
+	if (daysLeft === null) return { text: '证书有效期:  (未知)', warn: false };
 	if (daysLeft < 0) {
-		return { text: `WARNING: certificate expired ${-daysLeft} day(s) ago`, warn: true };
+		return { text: `警告：证书已于 ${-daysLeft} 天前过期`, warn: true };
 	}
 	if (daysLeft < 30) {
-		return { text: `WARNING: certificate expires in ${daysLeft} day(s)`, warn: true };
+		return { text: `警告：证书将在 ${daysLeft} 天后过期`, warn: true };
 	}
-	return { text: `cert expires in ${daysLeft} day(s)`, warn: false };
+	return { text: `证书将在 ${daysLeft} 天后过期`, warn: false };
 }

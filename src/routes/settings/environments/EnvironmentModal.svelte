@@ -1075,7 +1075,7 @@
 				formStorageDriver = data.storageDriver ?? null;
 			}
 		} catch (error) {
-			console.error('Failed to load disk warning settings:', error);
+			console.error('加载磁盘警告设置失败:', error);
 		}
 	}
 
@@ -1087,7 +1087,7 @@
 				formRemoteStacksDir = data.remoteStacksDir ?? '';
 			}
 		} catch (error) {
-			console.error('Failed to load remote stacks dir:', error);
+			console.error('加载远程堆栈目录失败:', error);
 		}
 	}
 
@@ -1099,7 +1099,7 @@
 				body: JSON.stringify({ remoteStacksDir: formRemoteStacksDir.trim() || null })
 			});
 		} catch (error) {
-			console.error('Failed to save remote stacks dir:', error);
+			console.error('保存远程堆栈目录失败:', error);
 		}
 	}
 
@@ -1116,7 +1116,7 @@
 				})
 			});
 		} catch (error) {
-			console.error('Failed to save disk warning settings:', error);
+			console.error('保存磁盘警告设置失败:', error);
 		}
 	}
 
@@ -1129,7 +1129,7 @@
 				formTimezone = data.timezone || 'UTC';
 			}
 		} catch (error) {
-			console.error('Failed to load timezone:', error);
+			console.error('加载时区失败:', error);
 			formTimezone = 'UTC';
 		}
 	}
@@ -1142,7 +1142,7 @@
 				formTimezone = data.defaultTimezone || 'UTC';
 			}
 		} catch (error) {
-			console.error('Failed to load default timezone:', error);
+			console.error('加载默认时区失败:', error);
 			formTimezone = 'UTC';
 		}
 	}
@@ -1156,10 +1156,10 @@
 			});
 			if (!response.ok) {
 				const data = await response.json().catch(() => ({}));
-				console.error('Failed to save timezone:', data.error || response.status);
+				console.error('保存时区失败:', data.error || response.status);
 			}
 		} catch (error) {
-			console.error('Failed to save timezone:', error);
+			console.error('保存时区失败:', error);
 		}
 	}
 
@@ -1181,7 +1181,7 @@
 			scannerLoading = false;
 			loadScannerVersionsAsync(envId);
 		} catch (error) {
-			console.error('Failed to load scanner settings:', error);
+			console.error('加载扫描器设置失败:', error);
 			scannerLoading = false;
 		}
 	}
@@ -1199,7 +1199,7 @@
 				scannerVersions = fullData.versions;
 			}
 		} catch (error) {
-			console.error('Failed to load scanner versions:', error);
+			console.error('加载扫描器版本失败:', error);
 		} finally {
 			loadingScannerVersions = false;
 		}
@@ -1225,7 +1225,7 @@
 				onScannerStatusChange?.(envId, scannerEnabled);
 			}
 		} catch (error) {
-			console.error('Failed to save scanner settings:', error);
+			console.error('保存扫描器设置失败:', error);
 		}
 	}
 
@@ -1243,7 +1243,7 @@
 				.filter((c: { type?: string; enabled?: boolean }) => c.type === 'smtp' && c.enabled !== false)
 				.map((c: { id: number; name: string }) => ({ id: c.id, name: c.name }));
 		} catch (error) {
-			console.error('Failed to load notification channels:', error);
+			console.error('加载通知通道失败:', error);
 		}
 	}
 
@@ -1283,7 +1283,7 @@
 				}
 			}
 		} catch (error) {
-			console.error('Failed to load report settings:', error);
+			console.error('加载报表设置失败:', error);
 		} finally {
 			reportLoading = false;
 		}
@@ -1309,7 +1309,7 @@
 			}
 			return true;
 		} catch (error) {
-			console.error('Failed to save report settings:', error);
+			console.error('保存报表配置失败:', error);
 			toast.error(m.envmodal_toast_report_save_failed());
 			return false;
 		}
@@ -1342,7 +1342,7 @@
 				}
 			}
 		} catch (error) {
-			console.error('Failed to load update check settings:', error);
+			console.error('加载更新检查设置失败:', error);
 		} finally {
 			updateCheckLoading = false;
 		}
@@ -1390,7 +1390,7 @@
 				}
 			}
 		} catch (error) {
-			console.error('Failed to load image prune settings:', error);
+			console.error('加载镜像清理设置失败:', error);
 		} finally {
 			imagePruneLoading = false;
 		}
@@ -1408,7 +1408,7 @@
 				})
 			});
 		} catch (error) {
-			console.error('Failed to save image prune settings:', error);
+			console.error('保存镜像清理设置失败:', error);
 		}
 	}
 
@@ -1425,7 +1425,7 @@
 				scannerVersions = { ...scannerVersions, grype: null };
 			}
 		} catch (error) {
-			console.error('Failed to remove Grype:', error);
+			console.error('卸载 Grype 失败:', error);
 		} finally {
 			removingGrype = false;
 		}
@@ -1444,7 +1444,7 @@
 				scannerVersions = { ...scannerVersions, trivy: null };
 			}
 		} catch (error) {
-			console.error('Failed to remove Trivy:', error);
+			console.error('卸载 Trivy 失败:', error);
 		} finally {
 			removingTrivy = false;
 		}
@@ -1467,7 +1467,7 @@
 				if (!grypeNewerVersion) setTimeout(() => { grypeUpdateStatus = 'idle'; }, 3000);
 			}
 		} catch (error) {
-			console.error('Failed to check Grype update:', error);
+			console.error('检查 Grype 更新失败:', error);
 		} finally {
 			checkingGrypeUpdate = false;
 		}
@@ -1490,7 +1490,7 @@
 				if (!trivyNewerVersion) setTimeout(() => { trivyUpdateStatus = 'idle'; }, 3000);
 			}
 		} catch (error) {
-			console.error('Failed to check Trivy update:', error);
+			console.error('检查 Trivy 更新失败:', error);
 		} finally {
 			checkingTrivyUpdate = false;
 		}
@@ -1541,7 +1541,7 @@
 		} catch (error) {
 			// Surface it: a refused image change (admin only) or a failed pull leaves
 			// the button looking like it did nothing at all.
-			console.error('Failed to pull Grype image:', error);
+			console.error('拉取 Grype 镜像失败:', error);
 			toast.error(error instanceof Error ? error.message : m.envmodal_toast_scanner_update_failed({ scanner: 'Grype' }));
 		} finally {
 			pullingGrype = false;
@@ -1593,7 +1593,7 @@
 		} catch (error) {
 			// Surface it: a refused image change (admin only) or a failed pull leaves
 			// the button looking like it did nothing at all.
-			console.error('Failed to pull Trivy image:', error);
+			console.error('拉取 Trivy 镜像失败:', error);
 			toast.error(error instanceof Error ? error.message : m.envmodal_toast_scanner_update_failed({ scanner: 'Trivy' }));
 		} finally {
 			pullingTrivy = false;
@@ -1609,7 +1609,7 @@
 				envNotifications = await response.json();
 			}
 		} catch (error) {
-			console.error('Failed to load environment notifications:', error);
+			console.error('加载环境通知失败:', error);
 		} finally {
 			envNotifLoading = false;
 		}
@@ -1640,7 +1640,7 @@
 				toast.error(data.error || m.envmodal_toast_channel_add_failed());
 			}
 		} catch (error) {
-			console.error('Failed to add environment notification:', error);
+			console.error('添加环境通知渠道失败:', error);
 			toast.error(m.envmodal_toast_channel_add_failed());
 		}
 	}
@@ -1659,7 +1659,7 @@
 				body: JSON.stringify(data)
 			});
 		} catch (error) {
-			console.error('Failed to update environment notification:', error);
+			console.error('更新环境通知失败:', error);
 			await loadEnvNotifications(envId);
 		}
 	}
@@ -1673,7 +1673,7 @@
 				await loadEnvNotifications(envId);
 			}
 		} catch (error) {
-			console.error('Failed to delete environment notification:', error);
+			console.error('删除环境通知失败:', error);
 		}
 	}
 
@@ -1688,7 +1688,7 @@
 				hawserToken = tokens.length > 0 ? tokens[0] : null;
 			}
 		} catch (error) {
-			console.error('Failed to load Hawser token:', error);
+			console.error('加载 Hawser 令牌失败:', error);
 		} finally {
 			hawserTokenLoading = false;
 		}
@@ -1715,7 +1715,7 @@
 				toast.error(data.error || m.envmodal_toast_token_generate_failed());
 			}
 		} catch (error) {
-			console.error('Failed to generate Hawser token:', error);
+			console.error('生成 Hawser 令牌失败:', error);
 			toast.error(m.envmodal_toast_token_generate_failed());
 		} finally {
 			generatingToken = false;
@@ -1728,7 +1728,7 @@
 			try {
 				await fetch(`/api/hawser/tokens?id=${hawserToken.id}`, { method: 'DELETE' });
 			} catch (error) {
-				console.error('Failed to revoke old token:', error);
+				console.error('吊销旧令牌失败:', error);
 			}
 		}
 		await generateHawserToken(envId);

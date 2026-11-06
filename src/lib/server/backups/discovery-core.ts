@@ -89,7 +89,7 @@ export function discoverVolumesFromMounts(containers: Array<{ name: string; moun
 				skipped.push({
 					type: mount.Type || '(unknown)',
 					destination: mount.Destination ?? '',
-					reason: `${mount.Type || 'unknown'} mounts are not backed up`,
+					reason: `${mount.Type || 'unknown'} 类型挂载不支持备份`,
 				});
 				continue;
 			}
@@ -113,7 +113,7 @@ export function discoverVolumesFromMounts(containers: Array<{ name: string; moun
 					skipped.push({
 						type: 'bind',
 						destination: mount.Destination,
-						reason: `${mount.Source} is a socket or host system path, not backed up`,
+						reason: `${mount.Source} 属于 socket 或主机系统路径，不执行备份`,
 					});
 					continue;
 				}
@@ -158,7 +158,7 @@ export type InspectMounts = (id: string, envId: number | null | undefined) => Pr
  * a transient warning: proceeding would take a partial backup. */
 export class DiscoveryInspectError extends Error {
 	constructor(readonly container: string, cause: string) {
-		super(`Could not inspect container "${container}" during volume discovery: ${cause}. Refusing to take a partial backup that could omit its volumes.`);
+		super(`扫描数据卷时无法查询容器 "${container}": ${cause}。拒绝创建不完整备份，防止丢失该容器挂载数据。`);
 		this.name = 'DiscoveryInspectError';
 	}
 }

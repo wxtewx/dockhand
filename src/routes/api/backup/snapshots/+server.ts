@@ -15,7 +15,7 @@ import { redactUrlCredentials } from '$lib/utils/rest-repository';
 const PER_DEST_MS = Number(process.env.SNAPSHOT_LIST_TIMEOUT_MS ?? 30_000);
 const listWithTimeout = (destinationId: number, configId?: number) =>
 	logListingFailure(destinationId, configId, () =>
-		withAbortTimeout((signal) => listSnapshots(destinationId, configId, signal), PER_DEST_MS, `timed out after ${PER_DEST_MS}ms`));
+		withAbortTimeout((signal) => listSnapshots(destinationId, configId, signal), PER_DEST_MS, `在 ${PER_DEST_MS} 毫秒后超时`));
 
 /** A listing that fails reaches only the browser otherwise; the server log gets it too. */
 async function logListingFailure<T>(destinationId: number, configId: number | undefined, list: () => Promise<T>): Promise<T> {
@@ -23,7 +23,7 @@ async function logListingFailure<T>(destinationId: number, configId: number | un
 		return await list();
 	} catch (err) {
 		const msg = err instanceof Error ? err.message : String(err);
-		console.warn(`[Backup] snapshots dest=${destinationId}${configId != null ? ` config=${configId}` : ''}: listing failed: ${redactUrlCredentials(msg)}`);
+		console.warn(`[备份] 快照 目标=${destinationId}${configId != null ? ` 配置=${configId}` : ''}: 列表获取失败: ${redactUrlCredentials(msg)}`);
 		throw err;
 	}
 }
@@ -50,14 +50,14 @@ export const GET: RequestHandler = async ({ url, cookies, request }) => {
 
 	if (configIdParam) {
 		const configId = parseInt(configIdParam);
-		if (isNaN(configId)) return json({ error: 'Invalid configId' }, { status: 400 });
+		if (isNaN(configId)) return json({ error: '无效的 configId' }, { status: 400 });
 		const config = await getBackupConfig(configId);
-		if (!config) return json({ error: 'Config not found' }, { status: 404 });
+		if (!config) return json({ error: '未找到配置' }, { status: 404 });
 
 		// (audit #41) The config is environment-scoped; enforce env access before
 		// listing snapshots (ids/sizes/paths/tags reveal the env-B workload).
 		if (config.environmentId && auth.isEnterprise && !await auth.canAccessEnvironment(config.environmentId)) {
-			return json({ error: 'Environment access denied' }, { status: 403 });
+			return json({ error: '无权访问该环境' }, { status: 403 });
 		}
 
 		// Narrow to THIS config's identity by its stable config-id tag so a sibling
@@ -96,7 +96,7 @@ export const GET: RequestHandler = async ({ url, cookies, request }) => {
 				});
 				allSnapshots.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
 				if (failed.length > 0) {
-					console.warn(`[Backup] Snapshot search for config ${config.id} incomplete - ${results.length - failed.length} of ${results.length} destination(s) listed; failed: ${redactUrlCredentials(failed.join('; '))}`);
+					console.warn(`[备份] 配置 ${config.id} 的快照搜索未完成 - ${results.length - failed.length}/${results.length} 个目标已列出；失败项: ${redactUrlCredentials(failed.join('; '))}`);
 				}
 				return allSnapshots;
 			});
@@ -106,7 +106,7 @@ export const GET: RequestHandler = async ({ url, cookies, request }) => {
 		return jobResult(request, () => logListingFailure(config.destinationId, config.id, () => listSnapshots(config.destinationId, config.id)));
 	} else if (destIdParam) {
 		const destinationId = parseInt(destIdParam);
-		if (isNaN(destinationId)) return json({ error: 'Invalid destinationId' }, { status: 400 });
+		if (isNaN(destinationId)) return json({ error: '无效的 destinationId' }, { status: 400 });
 
 		// Job-polling: `restic snapshots` would otherwise be aborted at the proxy's ~15s cap.
 		// Returns a bare snapshot array (unchanged contract). The per-snapshot dockhand:instance=
@@ -125,6 +125,6 @@ export const GET: RequestHandler = async ({ url, cookies, request }) => {
 			return snapshots;
 		});
 	} else {
-		return json({ error: 'configId or destinationId parameter is required' }, { status: 400 });
+		return json({ error: '必须提供 configId 或 destinationId 参数' }, { status: 400 });
 	}
 };

@@ -23,7 +23,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
 	// Identity-provider config is admin-only (it carries adminClaim, which decides who
 	// becomes admin on login) - same gate as the LDAP provider endpoints.
 	if (auth.authEnabled && (!auth.isAuthenticated || !auth.isAdmin)) {
-		return json({ error: 'Unauthorized' }, { status: 401 });
+		return json({ error: '未授权' }, { status: 401 });
 	}
 
 	try {
@@ -35,8 +35,8 @@ export const GET: RequestHandler = async ({ cookies }) => {
 		}));
 		return json(sanitized);
 	} catch (error) {
-		console.error('Failed to get OIDC configs:', error);
-		return json({ error: 'Failed to get OIDC configurations' }, { status: 500 });
+		console.error('获取 OIDC 配置失败:', error);
+		return json({ error: '获取 OIDC 配置失败' }, { status: 500 });
 	}
 };
 
@@ -59,7 +59,7 @@ export const POST: RequestHandler = async (event) => {
 	// adminClaim decides who becomes admin on OIDC login, so creating a provider is
 	// admin-only (a settings:edit user must not be able to grant themselves admin).
 	if (auth.authEnabled && (!auth.isAuthenticated || !auth.isAdmin)) {
-		return json({ error: 'Unauthorized' }, { status: 401 });
+		return json({ error: '未授权' }, { status: 401 });
 	}
 
 	try {
@@ -69,7 +69,7 @@ export const POST: RequestHandler = async (event) => {
 		const required = ['name', 'issuerUrl', 'clientId', 'clientSecret', 'redirectUri'];
 		for (const field of required) {
 			if (!data[field]) {
-				return json({ error: `Missing required field: ${field}` }, { status: 400 });
+				return json({ error: `缺少必填字段：${field}` }, { status: 400 });
 			}
 		}
 
@@ -98,7 +98,7 @@ export const POST: RequestHandler = async (event) => {
 			clientSecret: '********'
 		}, { status: 201 });
 	} catch (error: any) {
-		console.error('Failed to create OIDC config:', error);
-		return json({ error: error.message || 'Failed to create OIDC configuration' }, { status: 500 });
+		console.error('创建 OIDC 配置失败:', error);
+		return json({ error: error.message || '创建 OIDC 配置失败' }, { status: 500 });
 	}
 };

@@ -77,7 +77,7 @@ export function planLabelSync(containers: LabelSyncContainer[], rows: LabelSyncR
 		for (const error of errors) plan.warnings.push(`${container.name}: ${error}`);
 
 		if (labelled && isSystemContainer(container.image)) {
-			plan.warnings.push(`${container.name}: system containers cannot be scheduled; labels ignored`);
+			plan.warnings.push(`${container.name}: 系统容器不支持定时操作；标签已忽略`);
 			if (row?.source === 'label') plan.deletes.push(row.id);
 			continue;
 		}

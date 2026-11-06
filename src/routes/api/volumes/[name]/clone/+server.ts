@@ -30,7 +30,7 @@ export const POST: RequestHandler = async (event) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('volumes', 'create', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -39,7 +39,7 @@ export const POST: RequestHandler = async (event) => {
 		const newName = body.name;
 
 		if (!newName) {
-			return json({ error: 'New volume name is required' }, { status: 400 });
+			return json({ error: '新数据卷名称为必填项' }, { status: 400 });
 		}
 
 		// Get source volume info
@@ -88,7 +88,7 @@ export const POST: RequestHandler = async (event) => {
 			const waitRes = await dockerFetch(`/containers/${copyCtrId}/wait`, { method: 'POST' }, envIdNum);
 			const waitBody = await waitRes.json().catch(() => ({ StatusCode: -1 }));
 			if (waitBody.StatusCode !== 0) {
-				throw new Error(`Volume copy failed with exit code ${waitBody.StatusCode}`);
+				throw new Error(`数据卷复制失败，退出码：${waitBody.StatusCode}`);
 			}
 		} finally {
 			if (copyCtrId) {
@@ -106,9 +106,9 @@ export const POST: RequestHandler = async (event) => {
 
 		return json({ success: true, name: newVolume.Name });
 	} catch (error: any) {
-		console.error('Failed to clone volume:', error);
+		console.error('克隆数据卷失败：', error);
 		return json({
-			error: 'Failed to clone volume',
+			error: '克隆数据卷失败',
 			details: error.message || String(error)
 		}, { status: 500 });
 	}

@@ -57,7 +57,7 @@ function collectSources(rootDir: string, keepOnHost: string[]): TarFileSource[] 
 	};
 	walk(rootDir);
 	if (skipped.length > 0) {
-		console.log(`[StageRemote] ${skipped.length} symlink(s) not staged (only regular files are): ${skipped.join(', ')}`);
+		console.log(`[远程打包] ${skipped.length} 个符号链接未加入打包 (仅支持普通文件): ${skipped.join(', ')}`);
 	}
 	return sources;
 }
@@ -99,7 +99,7 @@ export async function stageStackDirOnRemote(
 			const tar = buildTarStream(sources);
 			const { streamed } = await putContainerArchiveStreaming(containerId, remoteDir, tar, envId);
 			// direct always streams; a false here would mean a transport we don't stage on.
-			if (!streamed) throw new Error(`remote staging: transport for env ${envId} cannot stream the stack dir`);
+			if (!streamed) throw new Error(`远程暂存失败：环境 ${envId} 的传输通道不支持堆栈目录流式上传`);
 		},
 	});
 

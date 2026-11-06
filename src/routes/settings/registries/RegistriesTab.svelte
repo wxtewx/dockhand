@@ -48,7 +48,7 @@
 			const response = await fetch('/api/registries');
 			registries = await response.json();
 		} catch (error) {
-			console.error('Failed to fetch registries:', error);
+			console.error('获取镜像仓库列表失败:', error);
 			toast.error(m.settings_registries_fetch_failed());
 		} finally {
 			regLoading = false;
@@ -115,7 +115,7 @@
 				toast.error(m.settings_registries_set_default_failed());
 			}
 		} catch (error) {
-			console.error('Failed to set default registry:', error);
+			console.error('设置默认镜像仓库失败:', error);
 			toast.error(m.settings_registries_set_default_failed());
 		}
 	}

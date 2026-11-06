@@ -15,7 +15,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
 	// database, so gating here costs nothing elsewhere.
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('settings', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 	return json(await getGlobalSemverConfig());
 };
@@ -33,7 +33,7 @@ const MAX_BUMPS = new Set(['patch', 'minor', 'major']);
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('settings', 'edit')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const data = await request.json().catch(() => ({}));
