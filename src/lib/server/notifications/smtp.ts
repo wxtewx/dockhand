@@ -1,11 +1,19 @@
 /** SMTP email notifications via nodemailer. */
 import nodemailer from 'nodemailer';
 import type { SmtpConfig } from '../db';
-import type { NotificationPayload, NotificationResult } from './shared';
-import { buildSmtpHtml } from './smtp-core';
+import { resolvedHostReason, type NotificationPayload, type NotificationResult } from './shared';
+import { buildSmtpHtml, smtpHostReason } from './smtp-core';
 
 export async function sendSmtpNotification(config: SmtpConfig, payload: NotificationPayload): Promise<NotificationResult> {
 	try {
+		// Reject link-local metadata and reserved ranges, by address and by where a name
+		// points; a relay on loopback or the LAN is allowed. The connection is the sink,
+		// so the guard sits here too, not only at save time.
+		const hostReason = smtpHostReason(config.host) ?? await resolvedHostReason(config.host, undefined, { allowLoopback: true });
+		if (hostReason) {
+			return { success: false, error: `SMTP error: ${hostReason}` };
+		}
+
 		const transporter = nodemailer.createTransport({
 			host: config.host,
 			port: config.port,
