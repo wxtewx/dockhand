@@ -16,7 +16,7 @@ import { join } from 'node:path';
 export const GET: RequestHandler = async ({ url, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !auth.isAuthenticated) {
-		return json({ error: 'Not authenticated' }, { status: 401 });
+		return json({ error: '未进行身份验证' }, { status: 401 });
 	}
 	try {
 		const licensePath = join(process.cwd(), 'LICENSE.txt');
@@ -31,7 +31,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 		return json({ content });
 	} catch (error) {
-		console.error('Failed to read LICENSE.txt:', error);
-		return json({ error: 'License file not found' }, { status: 404 });
+		console.error('读取 LICENSE.txt 失败:', error);
+		return json({ error: '未找到许可证文件' }, { status: 404 });
 	}
 };

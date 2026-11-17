@@ -16,7 +16,7 @@ import type { RunRecorder } from './sse';
  * error message is unfortunate; a run with a leaked secret in a widely-readable field
  * is a security incident, so the row still closes "failed", just without the text.
  */
-const ERROR_WITHHELD_MESSAGE = 'Deploy failed (error message withheld: contained a secret value)';
+const ERROR_WITHHELD_MESSAGE = '部署失败 (错误信息已屏蔽：包含机密内容)';
 
 /**
  * The database-touching half of the stack_deploy run record. Split from
@@ -36,7 +36,7 @@ const ERROR_WITHHELD_MESSAGE = 'Deploy failed (error message withheld: contained
  * deploy-log-store.ts's SizeBudgetTracker doc comment for the full explanation.
  */
 
-const TRUNCATION_NOTICE = '\n[deploy log truncated: size budget exceeded]\n';
+const TRUNCATION_NOTICE = '\n[部署日志已截断：超出大小配额]\n';
 
 export class DeployRunRecorder implements RunRecorder {
 	private readonly executionId: number;
@@ -194,7 +194,7 @@ export class DeployRunRecorder implements RunRecorder {
 		// gets the same redaction the streamed lines already got before it's stored.
 		const errorMessage = ok
 			? null
-			: (redactLine(error ?? 'Deploy failed', this.secrets) ?? ERROR_WITHHELD_MESSAGE);
+			: (redactLine(error ?? '部署失败', this.secrets) ?? ERROR_WITHHELD_MESSAGE);
 
 		await updateScheduleExecution(this.executionId, {
 			status: ok ? 'success' : 'failed',

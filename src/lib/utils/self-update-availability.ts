@@ -78,7 +78,7 @@ export function checkByVersionOnly(
 		return {
 			updateAvailable: false,
 			versionOnly: true,
-			error: 'This build does not report a version, so it cannot be compared with the latest release'
+			error: '当前构建未上报版本号，无法与最新版本进行比对'
 		};
 	}
 
@@ -88,7 +88,7 @@ export function checkByVersionOnly(
 			updateAvailable: false,
 			currentVersion: current,
 			versionOnly: true,
-			error: 'No released version found in the changelog'
+			error: '更新日志内未找到已发布版本'
 		};
 	}
 
@@ -98,7 +98,7 @@ export function checkByVersionOnly(
 			updateAvailable: false,
 			currentVersion: current,
 			versionOnly: true,
-			error: 'The latest release is not a plain version number, so it cannot be compared'
+			error: '最新发布版本不是标准版本号，无法进行比对'
 		};
 	}
 	return {

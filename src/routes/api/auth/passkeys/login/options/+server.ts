@@ -21,18 +21,18 @@ const NO_STORE = { 'Cache-Control': 'no-store' };
  * resp-503: Passkeys are not configured (ORIGIN missing or not HTTPS)
  */
 export const POST: RequestHandler = async ({ request }) => {
-	if (!(await isAuthEnabled())) return json({ error: 'Authentication is not enabled' }, { status: 400, headers: NO_STORE });
+	if (!(await isAuthEnabled())) return json({ error: '未启用身份认证' }, { status: 400, headers: NO_STORE });
 	// Hiding the button is not switching the feature off: the endpoints answer a
 	// direct request too, so the administrator's setting is enforced here.
-	if (!(await getPasskeysEnabled())) return json({ error: 'Passkeys are disabled on this instance' }, { status: 403, headers: NO_STORE });
+	if (!(await getPasskeysEnabled())) return json({ error: '此实例已禁用通行密钥' }, { status: 403, headers: NO_STORE });
 
 	let config;
 	try {
 		config = getWebAuthnConfig();
 	} catch (error) {
-		return json({ error: error instanceof Error ? error.message : 'Passkeys are not configured' }, { status: 503, headers: NO_STORE });
+		return json({ error: error instanceof Error ? error.message : '通行密钥未配置' }, { status: 503, headers: NO_STORE });
 	}
-	if (!hasExactWebAuthnOrigin(request)) return json({ error: 'Invalid request origin' }, { status: 403, headers: NO_STORE });
+	if (!hasExactWebAuthnOrigin(request)) return json({ error: '无效的请求源' }, { status: 403, headers: NO_STORE });
 
 	const options = await generateAuthenticationOptions({
 		rpID: config.rpId,
@@ -42,6 +42,6 @@ export const POST: RequestHandler = async ({ request }) => {
 		const ceremony = webAuthnChallenges.issue(options.challenge, 'authentication');
 		return json({ ceremonyId: ceremony.id, options }, { headers: NO_STORE });
 	} catch {
-		return json({ error: 'Too many pending Passkey requests; try again shortly' }, { status: 503, headers: NO_STORE });
+		return json({ error: '通行密钥待处理请求过多，请稍后重试' }, { status: 503, headers: NO_STORE });
 	}
 };

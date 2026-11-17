@@ -31,7 +31,7 @@ export const POST: RequestHandler = async ({ params, request, url, cookies }) =>
 	const envId = url.searchParams.get('env');
 	const envIdNum = envId ? parseInt(envId) : undefined;
 	if (auth.authEnabled && !(await auth.can('stacks', 'edit', envIdNum))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 	const envAccessDenied = await auth.requireEnvAccess(envIdNum ?? null);
 	if (envAccessDenied) return envAccessDenied;
@@ -41,7 +41,7 @@ export const POST: RequestHandler = async ({ params, request, url, cookies }) =>
 		const { oldDir, newComposePath, newEnvPath } = body;
 
 		if (!oldDir || !newComposePath) {
-			return json({ error: 'oldDir and newComposePath are required' }, { status: 400 });
+			return json({ error: 'oldDir 和 newComposePath 为必填项' }, { status: 400 });
 		}
 
 		const newDir = dirname(newComposePath);
@@ -56,13 +56,13 @@ export const POST: RequestHandler = async ({ params, request, url, cookies }) =>
 		// is then view/edit/relocate-locked, the consistent cost of blocking the write vector.
 		for (const p of [oldDir, newComposePath, newDir, newEnvPath].filter(Boolean)) {
 			if (isForbiddenStackPath(p) || isProtectedPath(p)) {
-				return json({ error: 'Path is not allowed' }, { status: 403 });
+				return json({ error: '路径不允许使用' }, { status: 403 });
 			}
 		}
 		// Every entry of oldDir is moved into newDir, so neither may hold a protected
 		// location (DATA_DIR holds db/ and the key; / holds /proc).
 		if (holdsForbiddenStackPath(oldDir) || holdsForbiddenStackPath(newDir)) {
-			return json({ error: 'Path is not allowed' }, { status: 403 });
+			return json({ error: '路径不允许访问' }, { status: 403 });
 		}
 
 		// Relocate only manages an existing stack's own source row. Reject an unknown
@@ -70,18 +70,18 @@ export const POST: RequestHandler = async ({ params, request, url, cookies }) =>
 		// against an arbitrary route name.
 		const source = await getStackSource(name, envIdNum ?? null);
 		if (!source) {
-			return json({ error: 'Stack not found' }, { status: 404 });
+			return json({ error: '未找到该堆栈' }, { status: 404 });
 		}
 
 		// Only this stack's own directory can be moved; the target may be anywhere allowed.
 		const currentDir = source.composePath ? dirname(source.composePath) : await findStackDir(name, envIdNum ?? null);
 		if (!currentDir || resolve(oldDir) !== resolve(currentDir)) {
-			return json({ error: 'oldDir must be the stack\'s current directory' }, { status: 403 });
+			return json({ error: 'oldDir 必须为堆栈当前所在目录' }, { status: 403 });
 		}
 
 		// Verify old directory exists
 		if (!existsSync(oldDir)) {
-			return json({ error: 'Source directory does not exist' }, { status: 400 });
+			return json({ error: '源目录不存在' }, { status: 400 });
 		}
 
 		// Create new directory if it doesn't exist
@@ -138,7 +138,7 @@ export const POST: RequestHandler = async ({ params, request, url, cookies }) =>
 			envVars
 		});
 	} catch (error: any) {
-		console.error(`Error relocating stack ${name}:`, error);
-		return json({ error: error.message || 'Failed to relocate stack' }, { status: 500 });
+		console.error(`迁移堆栈 ${name} 时出错：`, error);
+		return json({ error: error.message || '迁移堆栈失败' }, { status: 500 });
 	}
 };

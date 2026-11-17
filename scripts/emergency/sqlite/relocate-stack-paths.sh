@@ -13,8 +13,8 @@ if [ ! -f "$DB_PATH" ] && [ -f "./data/db/dockhand.db" ]; then
     DB_PATH="./data/db/dockhand.db"
 fi
 if [ ! -f "$DB_PATH" ]; then
-    echo "Error: SQLite database not found at $DB_PATH"
-    echo "Set DOCKHAND_DB to the database path."
+    echo "错误：在 $DB_PATH 未找到 SQLite 数据库"
+    echo "请通过 DOCKHAND_DB 指定数据库路径。"
     exit 1
 fi
 DB_DISPLAY="$DB_PATH"

@@ -52,6 +52,37 @@ export function tagHex(color: string): string {
 	return TAG_HEX[color] ?? TAG_HEX[DEFAULT_TAG_COLOR];
 }
 
+export const TAG_COLOR_LOCALE: Record<string, string> = {
+    slate: "石板灰",
+    graphite: "石墨灰",
+    ruby: "红宝石",
+    red: "红色",
+    coral: "珊瑚红",
+    orange: "橙色",
+    amber: "琥珀色",
+    gold: "金色",
+    lime: "青柠绿",
+    green: "绿色",
+    emerald: "翡翠绿",
+    forest: "森林绿",
+    teal: "水鸭青",
+    cyan: "青色",
+    sky: "天蓝",
+    blue: "蓝色",
+    indigo: "靛蓝",
+    royal: "皇家蓝",
+    violet: "紫罗兰",
+    purple: "紫色",
+    grape: "葡萄紫",
+    fuchsia: "海棠紫",
+    magenta: "洋紫红",
+    pink: "粉红色"
+};
+
+export function getColorLocalName(key:string):string {
+    return TAG_COLOR_LOCALE[key] ?? key;
+}
+
 /** A tag as stored/returned: catalog id, name, colour, and an optional lucide icon. */
 export interface Tag {
 	id: number;

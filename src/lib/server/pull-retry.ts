@@ -79,12 +79,12 @@ export async function withPullRetry<T>(
 			if (!isTooManyRequests(message)) throw error;
 			if (attempt >= delays.length) {
 				await say(delays.length
-					? `Registry rate limit${on}: giving up after ${delays.length + 1} attempts`
-					: `Registry rate limit${on}: the registry kept refusing earlier in this run, not retrying the pull`);
+					? `镜像仓库限流${on}: 共尝试 ${delays.length + 1} 次，停止重试`
+					: `镜像仓库限流${on}: 本次运行中仓库持续拒绝，不再重试拉取`);
 				throw error;
 			}
 			const { wait, source } = retryWait(message, delays[attempt]);
-			await say(`Registry rate limit${on}, retrying the pull in ${Math.round(wait / 1000)}s (${source}; attempt ${attempt + 2} of ${delays.length + 1})`);
+			await say(`镜像仓库限流${on}, 将在 ${Math.round(wait / 1000)} 秒后重试拉取 (${source}; 第 ${attempt + 2} / ${delays.length + 1})`);
 			await sleep(wait);
 		}
 	}
@@ -128,17 +128,17 @@ export async function withCheckRetry<T extends { error?: string }>(
 		if (!isRateLimitedCheck(result.error)) return result;
 		const requested = checkRetryAfterMs(result.error!);
 		if (requested !== null && requested > MAX_RETRY_AFTER_MS) {
-			await say(`Registry rate limit${on}: the registry asks to wait ${Math.round(requested / 1000)}s, not retrying the check`);
+			await say(`镜像仓库限流${on}: 仓库要求等待 ${Math.round(requested / 1000)} 秒，不进行重试检测`);
 			return result;
 		}
 		if (attempt >= delays.length) {
 			await say(delays.length
-				? `Registry rate limit${on}: giving up the check after ${delays.length + 1} attempts`
-				: `Registry rate limit${on}: the registry kept refusing earlier in this run, not retrying the check`);
+				? `镜像仓库限流${on}: 共尝试 ${delays.length + 1} 次，停止检测重试`
+				: `镜像仓库限流${on}: 本次运行中仓库持续拒绝，不再重试检测`);
 			return result;
 		}
 		const wait = Math.max(delays[attempt], requested ?? 0);
-		await say(`Registry rate limit${on}, checking again in ${Math.round(wait / 1000)}s (attempt ${attempt + 2} of ${delays.length + 1})`);
+		await say(`镜像仓库限流${on}, 将在 ${Math.round(wait / 1000)} 秒后重新检测 (第 ${attempt + 2} / ${delays.length + 1}) 次尝试`);
 		await sleep(wait);
 	}
 }

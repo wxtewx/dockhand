@@ -29,9 +29,9 @@ export async function containerActionScheduleRows() {
 			out.push({
 				id: row.id,
 				type,
-				name: `${type === 'container_start' ? 'Start' : 'Stop'} container: ${row.containerName}`,
+				name: `${type === 'container_start' ? '启动' : '停止'} 容器: ${row.containerName}`,
 				entityName: row.containerName,
-				description: row.source === 'label' ? 'Set by container labels' : undefined,
+				description: row.source === 'label' ? '由容器标签设置' : undefined,
 				environmentId: row.environmentId,
 				environmentName: env?.name ?? null,
 				enabled: row.enabled,

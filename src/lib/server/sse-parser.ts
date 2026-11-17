@@ -82,7 +82,7 @@ export async function sseToJSON(sseResponse: Response): Promise<Response> {
 		reader.releaseLock();
 	}
 
-	const body = resultData ?? { success: false, error: 'No result' };
+	const body = resultData ?? { success: false, error: '未获取到结果' };
 	return new Response(JSON.stringify(body), {
 		headers: { 'content-type': 'application/json' }
 	});

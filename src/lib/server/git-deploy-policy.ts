@@ -50,7 +50,7 @@ export function shouldForceRecreateGitStack(input: {
  * three places write it - and only a failed deploy leaves containers out of step
  * with the recorded commit.
  */
-export const DEPLOY_FAILURE_PREFIX = 'Deploy failed: ';
+export const DEPLOY_FAILURE_PREFIX = '部署失败: ';
 
 /** Whether a stack's stored error came from a deploy rather than from the sync. */
 export function isDeployFailure(syncStatus: string | null | undefined, syncError: string | null | undefined): boolean {
@@ -58,7 +58,7 @@ export function isDeployFailure(syncStatus: string | null | undefined, syncError
 }
 
 /** Error a git sync returns when another sync of the same stack or repository is still running. */
-export const SYNC_IN_PROGRESS_ERROR = 'Sync already in progress';
+export const SYNC_IN_PROGRESS_ERROR = '同步操作正在进行中';
 
 /**
  * Whether a failed sync was only skipped because another sync of the stack is still

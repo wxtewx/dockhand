@@ -35,7 +35,7 @@ export const POST: RequestHandler = async (event) => {
 	const { limited, retryAfter } = isRateLimited(rateLimitKey);
 	if (limited) {
 		return json(
-			{ error: 'too many logout attempts' },
+			{ error: '注销尝试次数过多' },
 			{ status: 429, headers: { 'Cache-Control': 'no-store', ...(retryAfter ? { 'Retry-After': String(retryAfter) } : {}) } }
 		);
 	}
@@ -45,14 +45,14 @@ export const POST: RequestHandler = async (event) => {
 	// which makes a misconfigured IdP logout impossible to debug.
 	const bad = (reason: string) => {
 		recordFailedAttempt(rateLimitKey);
-		console.warn(`[Auth] back-channel logout rejected (${clientIp}): ${reason}`);
+		console.warn(`[认证] 后端通道注销被拒绝 (${clientIp}): ${reason}`);
 		return json({ error: reason }, { status: 400, headers: { 'Cache-Control': 'no-store' } });
 	};
 
 	const form = await request.formData().catch(() => null);
 	const logoutToken = form?.get('logout_token');
 	if (typeof logoutToken !== 'string' || logoutToken === '') {
-		return bad('missing logout_token');
+		return bad('缺少 logout_token');
 	}
 
 	// Read the claimed issuer WITHOUT trusting it, only to pick which provider's keys to
@@ -62,12 +62,12 @@ export const POST: RequestHandler = async (event) => {
 		const claim = decodeJwt(logoutToken).iss;
 		claimedIssuer = typeof claim === 'string' ? claim : undefined;
 	} catch {
-		return bad('the logout token is not a decodable JWT');
+		return bad('注销令牌不是可解析的 JWT');
 	}
-	if (!claimedIssuer) return bad('the logout token names no issuer');
+	if (!claimedIssuer) return bad('注销令牌未指定签发方');
 
 	const contexts = await getOidcVerificationContexts(claimedIssuer);
-	if (contexts.length === 0) return bad('the logout token issuer matches no configured provider');
+	if (contexts.length === 0) return bad('注销令牌签发方与任何已配置的身份提供商不匹配');
 
 	// Try each provider sharing this issuer. With different client ids only the one the
 	// token was addressed to (aud/azp) verifies. When several verify (the same IdP
@@ -91,7 +91,7 @@ export const POST: RequestHandler = async (event) => {
 		}
 	}
 	if (!result || verifiedProviders.length === 0) {
-		return bad(lastError instanceof Error ? lastError.message : 'the logout token could not be verified');
+		return bad(lastError instanceof Error ? lastError.message : '注销令牌校验失败');
 	}
 
 	// The token is verified: a real IdP sent it, so this client is not an attacker.
@@ -123,8 +123,8 @@ export const POST: RequestHandler = async (event) => {
 		// Release the jti reservation so the IdP's retry performs the logout rather than
 		// being treated as an already-seen replay.
 		if (result.jti) jtiGuard.unmark(result.jti);
-		console.error('[Auth] back-channel logout delete failed:', error instanceof Error ? error.message : error);
-		return json({ error: 'logout could not be completed' }, { status: 500, headers: { 'Cache-Control': 'no-store' } });
+		console.error('[认证] 后端通道注销会话删除失败:', error instanceof Error ? error.message : error);
+		return json({ error: '无法完成注销操作' }, { status: 500, headers: { 'Cache-Control': 'no-store' } });
 	}
 
 	const affectedUserIds = [...affected];
@@ -138,6 +138,6 @@ export const POST: RequestHandler = async (event) => {
 		sessions: affectedUserIds.length
 	});
 
-	console.log(`[Auth] back-channel logout accepted: provider=${verifiedProviders.join(',')} by=${result.sid ? 'sid' : 'sub'} sessions=${affectedUserIds.length}`);
+	console.log(`[认证] 后端通道注销已接受: provider=${verifiedProviders.join(',')} by=${result.sid ? 'sid' : 'sub'} sessions=${affectedUserIds.length}`);
 	return json({ success: true }, { headers: { 'Cache-Control': 'no-store' } });
 };

@@ -66,7 +66,7 @@
 				customColors = data.colors || {};
 			}
 		} catch (e) {
-			console.error('Failed to fetch labels:', e);
+			console.error('获取标签失败:', e);
 		} finally {
 			loading = false;
 		}

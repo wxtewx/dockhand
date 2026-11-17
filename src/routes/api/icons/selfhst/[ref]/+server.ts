@@ -31,11 +31,11 @@ const PLACEHOLDER_SVG =
 export const GET: RequestHandler = async ({ params, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !auth.isAuthenticated) {
-		return json({ error: 'Not authenticated' }, { status: 401 });
+		return json({ error: '未进行身份验证' }, { status: 401 });
 	}
 	const ref = params.ref;
 	if (!isValidSelfhstRef(ref)) {
-		return json({ error: 'Invalid icon reference' }, { status: 400 });
+		return json({ error: '无效的图标引用' }, { status: 400 });
 	}
 	const icon = await getSelfhstIcon(ref);
 	if (!icon) {

@@ -80,7 +80,7 @@ function cacheDir(): string {
  * invalid ref (never builds a path from junk). The ext is from a fixed internal set.
  */
 export function selfhstCachePath(ref: string, ext: IconFormat['ext'] = 'svg'): string {
-	if (!isValidSelfhstRef(ref)) throw new Error('Invalid selfh.st icon reference');
+	if (!isValidSelfhstRef(ref)) throw new Error('无效的 selfh.st 图标引用');
 	return join(cacheDir(), `${ref}.${ext}`);
 }
 

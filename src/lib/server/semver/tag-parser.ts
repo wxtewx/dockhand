@@ -271,19 +271,19 @@ export function hasTooManyQuantifiers(source: string): boolean {
 export function versionPatternRejection(value: string | undefined | null): string | null {
 	if (!value) return null; // no label is not a rejection
 	const trimmed = value.trim();
-	if (!trimmed.startsWith(VERSION_PATTERN_SCHEME)) return `missing the "${VERSION_PATTERN_SCHEME}" prefix`;
+	if (!trimmed.startsWith(VERSION_PATTERN_SCHEME)) return `缺少 "${VERSION_PATTERN_SCHEME}" 前缀`;
 
 	const source = trimmed.slice(VERSION_PATTERN_SCHEME.length);
-	if (source.length === 0) return 'the pattern is empty';
-	if (source.length > MAX_PATTERN_LENGTH) return `too long (${source.length} > ${MAX_PATTERN_LENGTH} characters)`;
-	if (!source.includes('(?<major>')) return 'no (?<major>) group, so it yields no version';
-	if (NESTED_QUANTIFIER_RE.test(source)) return 'a quantified group inside a quantifier can backtrack catastrophically';
-	if (ALTERNATION_QUANTIFIER_RE.test(source)) return 'a quantified alternation can backtrack catastrophically';
-	if (hasTooManyQuantifiers(source)) return `too many quantifiers (more than ${MAX_QUANTIFIERS})`;
+	if (source.length === 0) return '该表达式为空';
+	if (source.length > MAX_PATTERN_LENGTH) return `表达式过长 (${source.length} > ${MAX_PATTERN_LENGTH} 字符)`;
+	if (!source.includes('(?<major>')) return '未定义 (?<major>) 分组，无法提取版本号';
+	if (NESTED_QUANTIFIER_RE.test(source)) return '量词内部嵌套量词，会引发灾难性回溯';
+	if (ALTERNATION_QUANTIFIER_RE.test(source)) return '带量词的分支选择会引发灾难性回溯';
+	if (hasTooManyQuantifiers(source)) return `量词数量过多 (超过 ${MAX_QUANTIFIERS} 个)`;
 	try {
 		new RegExp(source);
 	} catch (e) {
-		return `it does not compile: ${e instanceof Error ? e.message : String(e)}`;
+		return `正则编译失败: ${e instanceof Error ? e.message : String(e)}`;
 	}
 	return null;
 }

@@ -13,9 +13,9 @@ import { ipCategory } from '../url-safety';
  */
 export function smtpHostReason(host: string | null | undefined): string | null {
 	const h = (host || '').trim().toLowerCase().replace(/^\[|\]$/g, '');
-	if (!h) return 'missing SMTP host';
+	if (!h) return '缺少 SMTP 主机地址';
 	const cat = ipCategory(h);
-	return cat === 'metadata' || cat === 'reserved' ? `${cat} address (${h}) blocked` : null;
+	return cat === 'metadata' || cat === 'reserved' ? `${cat} 地址 (${h}) 已被阻止` : null;
 }
 
 /**

@@ -51,6 +51,25 @@
 		}
 	}
 
+	function getActionLabel(action: string): string {
+		switch (action) {
+			case 'create': return '创建';
+			case 'start': return '启动';
+			case 'stop': return '停止';
+			case 'die': return '退出';
+			case 'kill': return '终止';
+			case 'restart': return '重启';
+			case 'pause': return '暂停';
+			case 'unpause': return '恢复';
+			case 'destroy': return '销毁';
+			case 'rename': return '重命名';
+			case 'update': return '更新';
+			case 'oom': return '内存溢出';
+			case 'health_status': return '健康状态';
+			default: return '未知操作';
+		}
+	}
+
 	function getActionColor(action: string): string {
 		switch (action) {
 			case 'create':
@@ -122,7 +141,7 @@
 				</span>
 				{@const ActionIcon = getActionIcon(event.action)}
 				<!-- Action icon -->
-				<div class="flex items-center justify-center {getActionColor(event.action)}" title={event.action}>
+				<div class="flex items-center justify-center {getActionColor(event.action)}" title={getActionLabel(event.action)}>
 					<ActionIcon class="w-3 h-3" />
 				</div>
 				<!-- Container name -->

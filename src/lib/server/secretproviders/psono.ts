@@ -49,7 +49,7 @@ const BULK_CONCURRENCY = 8;
  */
 function baseUrl(config: PsonoConfig): string {
 	const raw = (config.serverUrl ?? '').trim().replace(/\/+$/, '');
-	if (!raw) throw new Error('Psono: the server URL is empty');
+	if (!raw) throw new Error('Psono: 服务器地址不能为空');
 	assertSafeProviderHost(raw, 'Psono');
 	return /\/server$/.test(raw) ? raw : `${raw}/server`;
 }
@@ -70,7 +70,7 @@ async function psonoPost<T>(
 			return {
 				ok: false,
 				status: statusCode,
-				error: 'Psono did not return a JSON response - check that the server URL points at a Psono server'
+				error: 'Psono 未返回 JSON 响应 - 请确认服务器地址指向有效的 Psono 服务端'
 			};
 		}
 		return { ok: true, data: JSON.parse(raw) as T };
@@ -121,12 +121,12 @@ function readFailure(status: number, error: string): string {
 	if (status === 400 && /NO_PERMISSION_OR_NOT_EXIST/i.test(error)) {
 		// Psono deliberately conflates "wrong id", "not attached to this key" and
 		// "no rights", so the message has to name all three.
-		return 'Psono refused the read: the secret is not attached to this API key, the id is wrong, or the key has no rights on it';
+		return 'Psono 拒绝读取：该密钥未绑定到此 API 密钥、ID 错误，或者该密钥没有对应访问权限';
 	}
 	if (status === 400 && /INSECURE_ACCESS_NOT_ALLOWED/i.test(error)) {
-		return 'Psono rejected the request as insecure access - this is a bug in Dockhand, which must never send the API key secret';
+		return 'Psono 将本次请求判定为不安全访问 - 这属于 Dockhand 内部异常，本程序绝不应该发送 API 密钥密钥';
 	}
-	return `Psono returned HTTP ${status}${error ? `: ${error}` : ''}`;
+	return `Psono 返回 HTTP ${status}${error ? `: ${error}` : ''}`;
 }
 
 /** Fetches one secret, still sealed. */
@@ -192,10 +192,10 @@ async function inspect(
 	if (res.status === 400) {
 		return {
 			ok: false,
-			error: 'Psono did not recognise the API key id, or the key is inactive'
+			error: 'Psono 无法识别该 API 密钥 ID，或者该密钥已停用'
 		};
 	}
-	return { ok: false, error: `Psono returned HTTP ${res.status}${res.error ? `: ${res.error}` : ''}` };
+	return { ok: false, error: `Psono 返回 HTTP ${res.status}${res.error ? `: ${res.error}` : ''}` };
 }
 
 export const psonoProvider: SecretProvider<PsonoConfig> = {
@@ -209,9 +209,9 @@ export const psonoProvider: SecretProvider<PsonoConfig> = {
 	},
 
 	async testConnection(config: PsonoConfig): Promise<TestConnectionResult> {
-		if (!config.serverUrl?.trim()) return { ok: false, error: 'Server URL is empty' };
-		if (!config.apiKeyId?.trim()) return { ok: false, error: 'API key id is empty' };
-		if (!config.apiKeySecretKey?.trim()) return { ok: false, error: 'API key secret key is empty' };
+		if (!config.serverUrl?.trim()) return { ok: false, error: '服务器地址为空' };
+		if (!config.apiKeyId?.trim()) return { ok: false, error: 'API 密钥 ID 为空' };
+		if (!config.apiKeySecretKey?.trim()) return { ok: false, error: 'API 密钥密钥为空' };
 		try {
 			const res = await inspect(config);
 			if (!res.ok) return { ok: false, error: res.error };
@@ -222,7 +222,7 @@ export const psonoProvider: SecretProvider<PsonoConfig> = {
 			if (ids.length === 0) {
 				return {
 					ok: false,
-					error: 'The API key grants no secrets. Attach the secrets it should read in Psono.'
+					error: '该 API 密钥没有被授予任何密钥，请在 Psono 中绑定需要读取的密钥'
 				};
 			}
 			// Reading can fail for two different reasons and they need different advice:
@@ -230,14 +230,14 @@ export const psonoProvider: SecretProvider<PsonoConfig> = {
 			// succeeded and then would not open is the secret key.
 			const fetched = await fetchSecret(config, ids[0], '[Psono] testConnection');
 			if (!fetched.ok) {
-				return { ok: false, error: `Connected, but ${fetched.error}` };
+				return { ok: false, error: `连接成功，但 ${fetched.error}` };
 			}
 			try {
 				decryptSecret(fetched.data, config.apiKeySecretKey.trim());
 			} catch {
 				return {
 					ok: false,
-					error: 'Connected and the secret was fetched, but it could not be decrypted - check the API key secret key'
+					error: '连接成功且密钥已拉取，但解密失败 - 请检查 API 密钥密钥'
 				};
 			}
 
@@ -245,7 +245,7 @@ export const psonoProvider: SecretProvider<PsonoConfig> = {
 			return warning ? { ok: true, warning } : { ok: true };
 		} catch (e: unknown) {
 			const message = e instanceof Error ? e.message : String(e);
-			return { ok: false, error: message || 'Connection failed' };
+			return { ok: false, error: message || '连接失败' };
 		}
 	},
 
@@ -262,24 +262,24 @@ export const psonoProvider: SecretProvider<PsonoConfig> = {
 		if (!res.ok) throw new Error(res.error);
 		const ids = inspectedSecretIds(res.data);
 		if (ids.length === 0) {
-			console.warn('[Psono] bulk: the API key grants no secrets');
+			console.warn('[Psono] 批量拉取：该 API 密钥没有被授予任何密钥');
 			return {};
 		}
 		const decrypted = await mapLimit(ids, BULK_CONCURRENCY, (id) =>
-			readSecret(config, id, '[Psono] bulk').then((d) => ({ id, d }))
+			readSecret(config, id, '[Psono] 批量拉取').then((d) => ({ id, d }))
 		);
 		// Every single read failing is a configuration fault (a wrong secret key, a key
 		// whose grants were revoked), not a vault that happens to be empty. Returning {}
 		// would deploy the stack with its secrets missing and report success.
 		if (decrypted.every((e) => e.d === null)) {
 			throw new Error(
-				`Psono: none of the ${ids.length} secret(s) this API key grants could be read - check the API key secret key`
+				`Psono: 该 API 密钥授予的 ${ids.length} 个密钥全部读取失败 - 请检查 API 密钥密钥`
 			);
 		}
 		const out: Record<string, string> = {};
 		const take = (name: string, value: string) => {
 			if (out[name] !== undefined) {
-				console.warn(`[Psono] bulk: ${name} appears more than once, keeping the first`);
+				console.warn(`[Psono] 批量拉取：${name} 重复出现，保留第一个`);
 				return;
 			}
 			out[name] = value;
@@ -290,14 +290,14 @@ export const psonoProvider: SecretProvider<PsonoConfig> = {
 			const envVars = envVarsSecretToEntries(d);
 			if (envVars !== null) {
 				for (const key of envVars.skipped) {
-					console.warn(`[Psono] bulk: ${id} env_vars key ${safeKeyForLog(key)} is not a valid variable name, skipped`);
+					console.warn(`[Psono] 批量拉取：密钥 ${id} 内的 env_vars 键 ${safeKeyForLog(key)} 不是合法变量名，已跳过`);
 				}
 				for (const { name, value } of envVars.entries) take(name, value);
 				continue;
 			}
 			const pair = secretToEnvVar(d);
 			if (!pair) {
-				console.warn(`[Psono] bulk: ${id} has no usable name/value pair, skipped`);
+				console.warn(`[Psono] 批量拉取：密钥 ${id} 没有可用的名称/值对，已跳过`);
 				continue;
 			}
 			take(pair.name, pair.value);
@@ -331,7 +331,7 @@ export const psonoProvider: SecretProvider<PsonoConfig> = {
 			const value = referenceValue(decrypted, p.field);
 			if (value === null) {
 				console.warn(
-					`${logPrefix} ${ref}: the secret has no ${p.field ?? 'value'} field, left as a literal`
+					`${logPrefix} ${ref}: 该密钥不存在 ${p.field ?? '值'} 字段，保留原始文本`
 				);
 				continue;
 			}

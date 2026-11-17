@@ -1242,7 +1242,7 @@
 											title={m.containers_files_readonly_file_title()}
 										>
 											<Lock class="w-2.5 h-2.5" />
-											RO
+											只读
 										</span>
 									{/if}
 								</button>

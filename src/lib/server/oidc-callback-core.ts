@@ -48,8 +48,8 @@ export function describeTokenExchangeFailure(status: number, body: string): stri
 	// is whether the provider is up.
 	const lead =
 		status >= 500
-			? 'The provider could not be reached to exchange the authorization code'
-			: 'The provider refused the authorization code';
+			? '无法连接身份提供程序以交换授权码'
+			: '身份提供程序拒绝了该授权码';
 
 	const detail = oneLine(description) ?? oneLine(code);
 	return detail ? `${lead}: ${detail}` : `${lead} (HTTP ${status})`;
@@ -85,7 +85,7 @@ export function requireIdToken(tokens: { id_token?: string } | null | undefined)
 	if (!tokens?.id_token) {
 		return {
 			proceed: false,
-			error: 'The provider returned no ID token, so the sign-in could not be verified'
+			error: '身份提供程序未返回 ID 令牌，因此无法验证本次登录'
 		};
 	}
 	return { proceed: true, claims: {} };
@@ -94,7 +94,7 @@ export function requireIdToken(tokens: { id_token?: string } | null | undefined)
 /** How a rejected token is reported: the reason travels, so support can act on it. */
 export function rejectedToken(reason: unknown): CallbackStep {
 	const message = reason instanceof Error ? reason.message : String(reason);
-	return { proceed: false, error: `Sign-in rejected: ${message}` };
+	return { proceed: false, error: `登录被拒绝: ${message}` };
 }
 
 /**
@@ -113,7 +113,7 @@ export function applyUserinfo(
 	if (!merged.ok) {
 		return {
 			proceed: false,
-			error: 'Sign-in rejected: the provider described a different account'
+			error: '登录被拒绝：身份提供程序返回了另一个账号的信息'
 		};
 	}
 
@@ -121,7 +121,7 @@ export function applyUserinfo(
 		return {
 			proceed: true,
 			claims: merged.claims,
-			warn: `[OIDC] ${providerName} returned userinfo naming no subject; continuing on the token claims`
+			warn: `[OIDC] ${providerName} 的 userinfo 未返回主体标识；将继续使用令牌中的声明`
 		};
 	}
 

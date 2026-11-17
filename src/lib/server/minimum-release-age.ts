@@ -52,7 +52,7 @@ export async function imageReleaseAgeStatus(
 	await db.insert(settings).values({ key, value: JSON.stringify({ firstObservedAt: new Date().toISOString() }) }).onConflictDoNothing();
 	async function readObservation() {
 		const [row] = await db.select({ value: settings.value }).from(settings).where(eq(settings.key, key));
-		if (!row) throw new Error('Could not record when the image was first seen');
+		if (!row) throw new Error('无法记录该镜像的首次观测时间');
 		const value = JSON.parse(row.value) as string | PersistedObservation;
 		return { raw: row.value, record: typeof value === 'string' ? { firstObservedAt: value } : value };
 	}

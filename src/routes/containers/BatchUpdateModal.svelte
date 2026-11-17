@@ -16,6 +16,7 @@
 	import ScannerSeverityPills from '$lib/components/ScannerSeverityPills.svelte';
 	import { watchJob } from '$lib/utils/sse-fetch';
 	import { m } from '$lib/paraglide/messages.js';
+	import { getLabelText } from '$lib/types';
 
 	interface Props {
 		open: boolean;
@@ -120,6 +121,7 @@
 	function formatPullLog(entry: PullLogEntry): string {
 		// Clarify potentially confusing Docker messages
 		let status = entry.status;
+		status = getLabelText(status);
 		if (status.toLowerCase().includes('image is up to date')) {
 			status = m.containers_batchupdate_image_cached();
 		} else if (status.toLowerCase().includes('status: image is up to date')) {
@@ -278,20 +280,17 @@
 					} else if (data.type === 'complete') {
 						status = 'complete';
 						summary = data.summary;
-						for (const item of progress) {
-							item.showLogs = false;
-						}
 						onComplete({ success: successIds, failed: failedIds, blocked: blockedIds });
 					} else if (data.type === 'error') {
 						status = 'error';
 						errorMessage = data.error || m.containers_batchupdate_unknown_error();
 					}
 				} catch (e) {
-					console.error('Failed to process job line:', e);
+					console.error('处理任务日志失败：', e);
 				}
 			});
 		} catch (error: any) {
-			console.error('Failed to update containers:', error);
+			console.error('容器更新操作失败:', error);
 			if (myRunId !== runId) return;
 			status = 'error';
 			errorMessage = error.message || m.containers_batchupdate_failed();
@@ -411,7 +410,7 @@ const severityOrder: Record<string, number> = { critical: 0, high: 1, medium: 2,
 				}
 			});
 		} catch (error: any) {
-			console.error('Failed to force update container:', error);
+			console.error('强制更新容器失败:', error);
 			item.step = 'failed';
 			item.error = error.message || m.containers_batchupdate_force_failed();
 			progress = [...progress];
@@ -633,7 +632,7 @@ const severityOrder: Record<string, number> = { critical: 0, high: 1, medium: 2,
 															</td>
 															<td class="py-1 pr-2">
 																<span class="inline-block px-1.5 py-0 rounded text-[10px] font-medium {severityColor(vuln.severity)}">
-																	{vuln.severity}
+																	{getLabelText(vuln.severity)}
 																</span>
 															</td>
 															<td class="py-1 pr-2 font-mono truncate max-w-[150px]">{vuln.package}</td>

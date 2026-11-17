@@ -14,11 +14,11 @@ import { getSelfhstManifest } from '$lib/server/selfhst-icons';
 export const GET: RequestHandler = async ({ cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !auth.isAuthenticated) {
-		return json({ error: 'Not authenticated' }, { status: 401 });
+		return json({ error: '未进行身份验证' }, { status: 401 });
 	}
 	const manifest = await getSelfhstManifest();
 	if (!manifest) {
-		return json({ error: 'Icon manifest unavailable' }, { status: 503 });
+		return json({ error: '图标清单不可用' }, { status: 503 });
 	}
 	return new Response(manifest, {
 		headers: {

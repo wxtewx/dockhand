@@ -46,7 +46,7 @@
 				envHasScanning = data.settings.scanner !== 'none';
 			}
 		} catch (err) {
-			console.error('Failed to fetch scanner settings:', err);
+			console.error('获取扫描器设置失败:', err);
 			envHasScanning = false;
 		}
 	}

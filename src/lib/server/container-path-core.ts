@@ -18,13 +18,13 @@
  */
 export function assertSafeContainerPath(path: string): string {
 	if (typeof path !== 'string' || path === '') {
-		throw new Error('Invalid path: empty');
+		throw new Error('路径无效: 为空');
 	}
 	if (path.includes('\0')) {
-		throw new Error('Invalid path: contains a null byte');
+		throw new Error('路径无效: 包含空字节');
 	}
 	if (path.split('/').some((segment) => segment === '..')) {
-		throw new Error('Invalid path: contains a ".." segment');
+		throw new Error('路径无效: 包含 ".." 路径段');
 	}
 	return path;
 }

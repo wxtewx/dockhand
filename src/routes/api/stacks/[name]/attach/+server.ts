@@ -45,21 +45,21 @@ export const POST: RequestHandler = async (event) => {
 
 	try {
 		if (auth.authEnabled && !(await auth.can('stacks', 'edit', envIdNum))) {
-			return json({ error: 'Permission denied' }, { status: 403 });
+			return json({ error: '权限不足' }, { status: 403 });
 		}
 
 		// Environment access check (enterprise only), matching the sibling stack endpoints.
 		if (envIdNum && auth.isEnterprise && !(await auth.canAccessEnvironment(envIdNum))) {
-			return json({ error: 'Access denied to this environment' }, { status: 403 });
+			return json({ error: '无权访问此环境' }, { status: 403 });
 		}
 
 		const source = await getStackSource(stackName, envIdNum);
 		if (!source) {
-			return json({ error: 'Stack not found' }, { status: 404 });
+			return json({ error: '未找到堆栈' }, { status: 404 });
 		}
 
 		if (source.sourceType !== 'internal') {
-			return json({ error: 'Only local stacks can be converted to Git management' }, { status: 400 });
+			return json({ error: '仅本地堆栈可转换为 Git 管理' }, { status: 400 });
 		}
 
 		const data = await request.json();
@@ -69,7 +69,7 @@ export const POST: RequestHandler = async (event) => {
 			data.secretProviderId !== null &&
 			typeof data.secretProviderId !== 'number'
 		) {
-			return json({ error: 'secretProviderId must be a number or null' }, { status: 400 });
+			return json({ error: 'secretProviderId 必须为数字或 null' }, { status: 400 });
 		}
 
 		const existingProviderId = source.secretProviderId ?? null;
@@ -82,37 +82,37 @@ export const POST: RequestHandler = async (event) => {
 			auth.authEnabled &&
 			!(await auth.can('secrets', 'view', envIdNum))
 		) {
-			return json({ error: 'Permission denied: binding a secret provider requires the secrets permission' }, { status: 403 });
+			return json({ error: '权限不足: 绑定密钥提供程序需要 secrets 权限' }, { status: 403 });
 		}
 
 		if (typeof data.secretProviderId === 'number' && !(await secretProviderExists(data.secretProviderId))) {
-			return json({ error: 'The selected secret provider no longer exists. Reopen the stack and pick a current provider.' }, { status: 400 });
+			return json({ error: '所选密钥提供程序已不存在。请重新打开堆栈并选择一个当前可用的提供程序。' }, { status: 400 });
 		}
 
 		if (data.stackName && data.stackName.trim() !== stackName) {
-			return json({ error: 'Stack name cannot be changed during conversion' }, { status: 400 });
+			return json({ error: '转换过程中不可修改堆栈名称' }, { status: 400 });
 		}
 
 		if (!isValidStackName(stackName)) {
-			return json({ error: 'Invalid stack name' }, { status: 400 });
+			return json({ error: '无效的堆栈名称' }, { status: 400 });
 		}
 
 		if (webhookConfigRequiresSecret(!!data.webhookEnabled, !!data.webhookSecret?.trim(), allowSecretlessWebhook())) {
-			return json({ error: 'A webhook secret is required when the webhook is enabled' }, { status: 400 });
+			return json({ error: '启用 Webhook 时必须填写 Webhook 密钥' }, { status: 400 });
 		}
 
 		let repositoryId = data.repositoryId;
 
 		if (!repositoryId) {
 			if (!data.url || typeof data.url !== 'string') {
-				return json({ error: 'Repository URL or existing repository ID is required' }, { status: 400 });
+				return json({ error: '仓库 URL 或已有仓库 ID 为必填项' }, { status: 400 });
 			}
 
 			if (data.credentialId) {
 				const credentials = await getGitCredentials();
 				const credential = credentials.find((c) => c.id === data.credentialId);
 				if (!credential) {
-					return json({ error: 'Invalid credential ID' }, { status: 400 });
+					return json({ error: '无效的凭证 ID' }, { status: 400 });
 				}
 			}
 
@@ -126,14 +126,14 @@ export const POST: RequestHandler = async (event) => {
 				repositoryId = repo.id;
 			} catch (error: any) {
 				if (error.message?.includes('UNIQUE constraint failed')) {
-					return json({ error: 'A repository with this name already exists' }, { status: 400 });
+					return json({ error: '已存在同名仓库' }, { status: 400 });
 				}
 				throw error;
 			}
 		} else {
 			const repo = await getGitRepository(repositoryId);
 			if (!repo) {
-				return json({ error: 'Repository not found' }, { status: 400 });
+				return json({ error: '未找到仓库' }, { status: 400 });
 			}
 		}
 
@@ -216,10 +216,10 @@ export const POST: RequestHandler = async (event) => {
 						deployResult
 					});
 				} catch (error) {
-					console.error('Failed to deploy git stack:', error);
+					console.error('Git 堆栈部署失败:', error);
 					send('result', {
 						...safeGitStack,
-						deployResult: { success: false, error: 'Failed to deploy git stack' }
+						deployResult: { success: false, error: 'Git 堆栈部署失败' }
 					});
 				}
 			}, request);
@@ -227,13 +227,13 @@ export const POST: RequestHandler = async (event) => {
 
 		return json(safeGitStack);
 	} catch (error: any) {
-		console.error('Failed to convert local stack to git:', error);
+		console.error('将本地堆栈转换为 Git 管理失败:', error);
 		if (error.message?.includes('UNIQUE constraint failed')) {
 			if (error.message?.includes('stack_environment_variables')) {
-				return json({ error: 'Duplicate environment variable keys detected' }, { status: 400 });
+				return json({ error: '检测到重复的环境变量键' }, { status: 400 });
 			}
-			return json({ error: 'A git stack with this name already exists for this environment' }, { status: 400 });
+			return json({ error: '该环境下已存在同名 Git 堆栈' }, { status: 400 });
 		}
-		return json({ error: 'Failed to convert stack to Git management' }, { status: 500 });
+		return json({ error: '将堆栈转换为 Git 管理失败' }, { status: 500 });
 	}
 };

@@ -10,6 +10,7 @@
 	import * as Alert from '$lib/components/ui/alert';
 	import { focusFirstInput } from '$lib/utils';
 	import { m } from '$lib/paraglide/messages.js';
+	import { getLabelText } from '$lib/types'
 
 	export interface OidcConfig {
 		id: number;
@@ -333,7 +334,7 @@
 						<Label>{m.settings_oidc_scopes_label()}</Label>
 						<Input
 							bind:value={formScopes}
-							placeholder="openid profile email"
+							placeholder="OpenID 权限范围 (个人资料、邮箱)"
 						/>
 					</div>
 				</div>
@@ -354,14 +355,14 @@
 							<Label>{m.settings_oidc_email_claim_label()}</Label>
 							<Input
 								bind:value={formEmailClaim}
-								placeholder="email"
+								placeholder="邮箱"
 							/>
 						</div>
 						<div class="space-y-2">
 							<Label>{m.settings_oidc_display_name_claim_label()}</Label>
 							<Input
 								bind:value={formDisplayNameClaim}
-								placeholder="name"
+								placeholder="名称"
 							/>
 						</div>
 					</div>
@@ -470,7 +471,7 @@
 															<Select.Item value={String(role.id)}>
 																<div class="flex items-center gap-2">
 																	<Shield class="w-3.5 h-3.5 text-muted-foreground" />
-																	{role.name}
+																	{getLabelText(role.name)}
 																</div>
 															</Select.Item>
 														{/each}

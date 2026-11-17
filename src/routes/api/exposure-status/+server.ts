@@ -33,7 +33,7 @@ export const POST: RequestHandler = async () => {
 	// The warning only shows while auth is off, so the dismiss only needs to work then.
 	// Gating it here means a secured instance has no unauthenticated write at all.
 	if (await isAuthEnabled()) {
-		return json({ error: 'Not applicable when authentication is enabled' }, { status: 403 });
+		return json({ error: '启用认证后不适用该操作' }, { status: 403 });
 	}
 	await setSetting(DISMISS_KEY, 'true');
 	return json({ dismissed: true });

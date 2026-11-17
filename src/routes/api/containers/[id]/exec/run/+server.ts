@@ -34,7 +34,7 @@ export const POST: RequestHandler = async ({ params, request, cookies, url }) =>
 
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !auth.isAuthenticated) {
-		return json({ error: 'Unauthorized' }, { status: 401 });
+		return json({ error: '未通过身份验证' }, { status: 401 });
 	}
 
 	const containerId = params.id;
@@ -42,13 +42,13 @@ export const POST: RequestHandler = async ({ params, request, cookies, url }) =>
 	const envId = envIdParam ? Number.parseInt(envIdParam, 10) : undefined;
 
 	if (!await auth.can('containers', 'exec', envId)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const body = await request.json().catch(() => ({}));
 	const cmd = body.cmd;
 	if (!Array.isArray(cmd) || cmd.length === 0 || !cmd.every((c: unknown) => typeof c === 'string')) {
-		return json({ error: 'cmd must be a non-empty array of strings' }, { status: 400 });
+		return json({ error: 'cmd 必须为非空字符串数组' }, { status: 400 });
 	}
 
 	try {
@@ -58,7 +58,7 @@ export const POST: RequestHandler = async ({ params, request, cookies, url }) =>
 		});
 		return json(result);
 	} catch (error: any) {
-		console.error('Failed to run exec command:', error);
-		return json({ error: error.message || 'Failed to run command' }, { status: 500 });
+		console.error('执行 exec 命令失败:', error);
+		return json({ error: error.message || '执行命令失败' }, { status: 500 });
 	}
 };

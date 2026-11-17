@@ -231,11 +231,11 @@
 			// applying retention), `stopped` is false — let the real progress stream
 			// finish and report the true 'Completed' status instead of a false 'Cancelled'.
 			if (body?.stopped) {
-				logModalLogs = [...logModalLogs, '⚠ Backup cancelled by user'];
+				logModalLogs = [...logModalLogs, '⚠ 备份已由用户取消'];
 				logModalStatus = 'error';
 				logModalError = m.backups_cancelled();
 			} else {
-				logModalLogs = [...logModalLogs, 'Backup is finishing and can no longer be cancelled.'];
+				logModalLogs = [...logModalLogs, '备份任务即将完成，无法取消。'];
 				toast.info(m.backups_already_finishing());
 			}
 		} catch { toast.error(m.backups_stop_failed()); }
@@ -295,6 +295,16 @@
 			// First selection
 			diffPending = { snapshot };
 		}
+	}
+
+	function formatTimestamp(ts: string): string {
+		if (!ts) return '-';
+		let fixedIso = ts.trim();
+		if (!fixedIso.includes('T')) fixedIso = fixedIso.replace(' ', 'T');
+		if (!fixedIso.endsWith('Z') && !fixedIso.includes('+') && !fixedIso.includes('-', 10)) {
+			fixedIso += 'Z';
+		}
+		return formatDateTime(fixedIso, true);
 	}
 
 	const getDestIcon = getRepoTypeIcon;

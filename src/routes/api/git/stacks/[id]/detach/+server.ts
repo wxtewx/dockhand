@@ -36,24 +36,24 @@ export const POST: RequestHandler = async (event) => {
 	try {
 		const id = parseInt(params.id, 10);
 		if (Number.isNaN(id)) {
-			return json({ error: 'Invalid git stack id' }, { status: 400 });
+			return json({ error: '无效的 Git 堆栈 ID' }, { status: 400 });
 		}
 
 		const gitStack = await getGitStack(id);
 		if (!gitStack) {
-			return json({ error: 'Git stack not found' }, { status: 404 });
+			return json({ error: '未找到 Git 堆栈' }, { status: 404 });
 		}
 
 		if (
 			auth.authEnabled &&
 			!(await auth.can('stacks', 'edit', gitStack.environmentId || undefined))
 		) {
-			return json({ error: 'Permission denied' }, { status: 403 });
+			return json({ error: '权限不足' }, { status: 403 });
 		}
 
 		// Environment access check (enterprise only), matching the sibling stack endpoints.
 		if (gitStack.environmentId && auth.isEnterprise && !(await auth.canAccessEnvironment(gitStack.environmentId))) {
-			return json({ error: 'Access denied to this environment' }, { status: 403 });
+			return json({ error: '无权访问此环境' }, { status: 403 });
 		}
 
 		const composeResult = await getStackComposeFile(
@@ -62,7 +62,7 @@ export const POST: RequestHandler = async (event) => {
 		);
 
 		if (!composeResult.success || !composeResult.composePath) {
-			return json({ error: 'No deployed compose file is available. Deploy the Git stack successfully before converting it to a local source.' }, { status: 409 });
+			return json({ error: '无可用的已部署 compose 文件。请先成功部署 Git 堆栈，再将其转换为本地源。' }, { status: 409 });
 		}
 
 		const envVars = await getStackEnvVars(gitStack.stackName, gitStack.environmentId ?? null, false);
@@ -131,7 +131,7 @@ export const POST: RequestHandler = async (event) => {
 
 		return json({ success: true });
 	} catch (error) {
-		console.error('Failed to detach git stack:', error);
-		return json({ error: 'Failed to convert stack to local source' }, { status: 500 });
+		console.error('Git 堆栈分离失败:', error);
+		return json({ error: '将堆栈转换为本地源失败' }, { status: 500 });
 	}
 };

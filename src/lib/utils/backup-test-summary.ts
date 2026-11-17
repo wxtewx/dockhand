@@ -33,11 +33,11 @@ export function formatTestSummary(counts: TestCounts): {
 	severity: 'success' | 'warning' | 'error';
 } {
 	const { passed, failed, needsInit } = counts;
-	const parts: string[] = [`${passed} passed`];
-	if (failed > 0) parts.push(`${failed} failed`);
-	if (needsInit > 0) parts.push(`${needsInit} need init`);
+	const parts: string[] = [`${passed} 项通过`];
+	if (failed > 0) parts.push(`${failed} 项失败`);
+	if (needsInit > 0) parts.push(`${needsInit} 项需要初始化`);
 
 	if (failed > 0) return { text: parts.join(', '), severity: 'error' };
 	if (needsInit > 0) return { text: parts.join(', '), severity: 'warning' };
-	return { text: `All ${passed} destinations tested & stats collected`, severity: 'success' };
+	return { text: `已完成全部 ${passed} 个目标的测试并收集统计数据`, severity: 'success' };
 }

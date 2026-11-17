@@ -36,7 +36,7 @@ export function deriveTerminalState(outcome: Outcome): TerminalState {
 		case 'warning':
 			return { status: 'warning', message: outcome.message };
 		case 'cancelled':
-			return { status: 'cancelled', message: outcome.message ?? 'Cancelled' };
+			return { status: 'cancelled', message: outcome.message ?? '已取消' };
 		case 'error':
 			return { status: 'error', message: outcome.message, errorCode: outcome.code };
 	}

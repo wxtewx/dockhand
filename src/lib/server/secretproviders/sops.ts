@@ -34,15 +34,15 @@ const KILL_GRACE_MS = 2_000;
 function executablePath(): string {
 	const override = process.env.DOCKHAND_SOPS_PATH?.trim();
 	if (!override) return DEFAULT_CLI_PATH;
-	if (!isAbsolute(override)) throw new Error('SOPS executable path must be absolute');
+	if (!isAbsolute(override)) throw new Error('SOPS 可执行文件路径必须是绝对路径');
 	return override;
 }
 
 function spawnFailure(error: unknown): Error {
 	const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : '';
-	if (code === 'ENOENT') return new Error('SOPS executable was not found');
-	if (code === 'EACCES') return new Error('SOPS executable is not executable');
-	return new Error('SOPS executable could not be started');
+	if (code === 'ENOENT') return new Error('未找到 SOPS 可执行文件');
+	if (code === 'EACCES') return new Error('SOPS 可执行文件没有执行权限');
+	return new Error('无法启动 SOPS 可执行文件');
 }
 
 /**
@@ -51,8 +51,8 @@ function spawnFailure(error: unknown): Error {
  * exit code is all the diagnosis there is.
  */
 function nonZeroExitMessage(code: number | null): string {
-	if (code === 128) return 'none of the configured age keys is a recipient of the env file';
-	return `sops exited with code ${code}; the env file may not be valid SOPS dotenv`;
+	if (code === 128) return '配置的所有 age 密钥都不是该环境文件的接收方';
+	return `sops 退出码为 ${code}; 该环境文件可能不是合法的 SOPS dotenv 文件`;
 }
 
 /**
@@ -117,7 +117,7 @@ async function executeSops(
 				const data = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
 				stdoutBytes += data.length;
 				if (stdoutBytes > STDOUT_OUTPUT_LIMIT) {
-					terminate(new Error('SOPS output exceeded the size limit'));
+					terminate(new Error('SOPS 输出超出大小限制'));
 					return;
 				}
 				stdoutChunks.push(Buffer.from(data));
@@ -128,7 +128,7 @@ async function executeSops(
 				if (failure) return;
 				stderrBytes += Buffer.byteLength(chunk);
 				if (stderrBytes > STDERR_OUTPUT_LIMIT) {
-					terminate(new Error('SOPS error output exceeded the size limit'));
+					terminate(new Error('SOPS 错误输出超出大小限制'));
 				}
 			});
 
@@ -162,7 +162,7 @@ async function executeSops(
 }
 
 function sanitizedError(error: unknown): string {
-	return error instanceof Error ? error.message : 'SOPS operation failed';
+	return error instanceof Error ? error.message : 'SOPS 操作失败';
 }
 
 export const sopsProvider: SecretProvider<SopsConfig> = {
@@ -188,11 +188,11 @@ export const sopsProvider: SecretProvider<SopsConfig> = {
 	},
 
 	async resolveSecretReferences(): Promise<Map<string, string>> {
-		throw new UnsupportedOperationError('SOPS does not resolve inline references; it decrypts the stack env file');
+		throw new UnsupportedOperationError('SOPS 不支持解析内联引用；它用于解密堆栈环境文件');
 	},
 
 	async resolveBulk(): Promise<Record<string, string>> {
-		throw new UnsupportedOperationError('SOPS does not support a bulk selector; it decrypts the stack env file');
+		throw new UnsupportedOperationError('SOPS 不支持批量选择器；它用于解密堆栈环境文件');
 	},
 
 	async decryptEnvFile(config: SopsConfig, content: string, logPrefix = ''): Promise<Record<string, string>> {
@@ -207,7 +207,7 @@ export const sopsProvider: SecretProvider<SopsConfig> = {
 			);
 			const { vars, skipped } = parseSopsDecryptOutput(output.toString('utf8'), sopsEncryptedKeys(content));
 			if (skipped.length > 0) {
-				console.warn(`${logPrefix} SOPS skipped ${skipped.length} key(s) that are not valid environment variable names: ${skipped.join(', ')}`);
+				console.warn(`${logPrefix} SOPS 跳过了 ${skipped.length} 个不是合法环境变量名称的键：${skipped.join(', ')}`);
 			}
 			return vars;
 		} finally {

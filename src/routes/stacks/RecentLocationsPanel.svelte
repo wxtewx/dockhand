@@ -29,7 +29,7 @@
 				defaultBasePath = data.basePath;
 			}
 		} catch (e) {
-			console.error('Failed to load default base path:', e);
+			console.error('加载默认基础路径失败:', e);
 		}
 	}
 
@@ -41,7 +41,7 @@
 				locations = settings.externalStackPaths || [];
 			}
 		} catch (e) {
-			console.error('Failed to load recent locations:', e);
+			console.error('加载最近位置失败:', e);
 		}
 	}
 
@@ -53,7 +53,7 @@
 				body: JSON.stringify({ externalStackPaths: newLocations })
 			});
 		} catch (e) {
-			console.error('Failed to save recent locations:', e);
+			console.error('保存最近位置失败:', e);
 		}
 	}
 

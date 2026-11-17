@@ -27,6 +27,7 @@
 	import { compareIps } from '$lib/utils/ip';
 	import NetworkGraphModal from './NetworkGraphModal.svelte';
 	import { m } from '$lib/paraglide/messages.js';
+	import { getLabelText } from '$lib/types';
 
 	type SortField = 'name' | 'driver' | 'containers' | 'subnet' | 'gateway';
 	type SortDirection = 'asc' | 'desc';
@@ -268,7 +269,7 @@
 			}
 			networks = await response.json();
 		} catch (error) {
-			console.error('Failed to fetch networks:', error);
+			console.error('获取网络列表失败:', error);
 			toast.error(m.networks_list_toast_load_failed());
 		} finally {
 			loading = false;
@@ -295,7 +296,7 @@
 			toast.success(m.networks_list_toast_removed({ name }));
 			await fetchNetworks();
 		} catch (error) {
-			console.error('Failed to remove network:', error);
+			console.error('删除网络失败:', error);
 			deleteError = { id, message: m.networks_list_error_remove() };
 			toast.error(m.networks_list_toast_remove_failed({ name }));
 			clearErrorAfterDelay(id);
@@ -374,7 +375,7 @@
 				toast.error(data.details || m.networks_list_toast_disconnect_failed());
 			}
 		} catch (error) {
-			console.error('Failed to disconnect container:', error);
+			console.error('断开容器网络连接失败:', error);
 			toast.error(m.networks_list_toast_disconnect_failed());
 		} finally {
 			disconnectingContainerId = null;
@@ -424,7 +425,7 @@
 				toast.error(data.details || m.networks_list_toast_duplicate_failed());
 			}
 		} catch (error) {
-			console.error('Failed to duplicate network:', error);
+			console.error('复制网络失败:', error);
 			toast.error(m.networks_list_toast_duplicate_failed());
 		}
 	}
@@ -558,7 +559,7 @@
 				{m.networks_list_view_graph()}
 			</Button>
 			{#if $canAccess('networks', 'create')}
-			<Button size="sm" variant="outline" onclick={() => showCreateModal = true}>
+			<Button size="sm" variant="secondary" onclick={() => showCreateModal = true}>
 				<Plus class="w-3.5 h-3.5" />
 				{m.networks_list_create()}
 			</Button>
@@ -637,9 +638,9 @@
 						{/if}
 					</div>
 				{:else if column.id === 'driver'}
-					<span class={getDriverClasses(network.driver)}>{network.driver}</span>
+					<span class={getDriverClasses(network.driver)}>{getLabelText(network.driver)}</span>
 				{:else if column.id === 'scope'}
-					<span class="text-xs">{network.scope}</span>
+					<span class="text-xs">{getLabelText(network.scope)}</span>
 				{:else if column.id === 'subnet'}
 					<code class="text-xs">{getSubnet(network)}</code>
 				{:else if column.id === 'gateway'}

@@ -8,6 +8,7 @@
  */
 
 import { rowsToCSV } from './csv';
+import { getLabelText } from '$lib/types';	
 
 export type ReportTier = 'smb' | 'enterprise';
 
@@ -176,26 +177,26 @@ export function reportToCSV(report: EnvironmentReport): string {
 	const sections: string[] = [];
 
 	sections.push(
-		'Containers\n' +
+		'容器\n' +
 			rowsToCSV(
-				['Environment', 'Container', 'Image', 'Status', 'Stack', 'Update available'],
+				['环境', '容器', '状态', '堆栈', '有可用更新'],
 				report.environments.flatMap((env) =>
 					env.containers.map((c) => [
 						env.name,
 						c.name,
 						c.image,
-						c.status,
+						getLabelText(c.status),
 						c.stack ?? '',
-						c.updateAvailable === undefined ? '' : c.updateAvailable ? 'yes' : 'no'
+						c.updateAvailable === undefined ? '' : c.updateAvailable ? '是' : '否'
 					])
 				)
 			)
 	);
 
 	sections.push(
-		'Vulnerabilities\n' +
+		'漏洞\n' +
 			rowsToCSV(
-				['Environment', 'Image', 'Critical', 'High', 'Medium', 'Low', 'Scanned at'],
+				['环境', '镜像', '严重', '高危', '中危', '低危', '扫描时间'],
 				report.environments.flatMap((env) =>
 					env.scans.map((s) => [
 						env.name,
@@ -204,7 +205,7 @@ export function reportToCSV(report: EnvironmentReport): string {
 						s.high,
 						s.medium,
 						s.low,
-						s.scannedAt ?? ''
+						s.scannedAt ? (s.scannedAt || '').replace('T', ' ').slice(0, 16) : ''
 					])
 				)
 			)
@@ -212,29 +213,29 @@ export function reportToCSV(report: EnvironmentReport): string {
 
 	const unreachable = report.environments
 		.filter((env) => env.unreachable)
-		.map((env) => [env.name, env.unreachableReason ?? 'not reachable']);
+		.map((env) => [env.name, env.unreachableReason ?? '无法访问']);
 	if (unreachable.length > 0) {
 		sections.push(
-			'Environments that could not be read\n' + rowsToCSV(['Environment', 'Reason'], unreachable)
+			'无法读取的环境\n' + rowsToCSV(['环境', '原因'], unreachable)
 		);
 	}
 
 	const unscanned = report.environments.flatMap((env) =>
 		unscannedImages(env).map((image) => [env.name, image])
 	);
-	sections.push('Unscanned images\n' + rowsToCSV(['Environment', 'Image'], unscanned));
+	sections.push('未扫描镜像\n' + rowsToCSV(['环境', '镜像'], unscanned));
 
 	if (report.includesChanges) {
 		sections.push(
-			'Changes\n' +
+			'变更记录\n' +
 				rowsToCSV(
-					['Environment', 'When', 'User', 'Action', 'Entity type', 'Entity'],
+					['环境', '时间', '用户', '操作', '实体类型', '实体'],
 					report.environments.flatMap((env) =>
 						(env.changes ?? []).map((c) => [
 							env.name,
-							c.at,
+							(c.at || '').replace('T', ' ').slice(0, 16),
 							c.username,
-							c.action,
+							getLabelText(c.action),
 							c.entityType,
 							c.entityName
 						])
@@ -243,7 +244,7 @@ export function reportToCSV(report: EnvironmentReport): string {
 		);
 	}
 
-	return sections.join('\n\n');
+	return '\ufeff' + sections.join('\n\n');
 }
 
 /** The filename an export downloads as. */

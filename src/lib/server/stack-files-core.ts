@@ -70,8 +70,8 @@ export async function readDirFilesAsMap(dirPath: string, maxTotalBytes: number =
 		const value = isBinaryContent(bytes) ? `base64:${bytes.toString('base64')}` : new TextDecoder().decode(bytes);
 		if (totalSize + value.length > maxTotalBytes) {
 			throw new StackPayloadTooLargeError(
-				`Stack is too large to deploy to a remote agent: it exceeds the ${maxTotalBytes / 1024 / 1024} MB transfer limit ` +
-				`(reached at ${relPath}). Reduce the stack size or exclude large files from the stack directory.`
+				`堆栈过大，无法部署至远程代理: 超出 ${maxTotalBytes / 1024 / 1024} MB 的传输限制 ` +
+				`(在 ${relPath} 处触发)。请减小堆栈大小，或将大文件从堆栈目录中排除。`
 			);
 		}
 		totalSize += value.length;
@@ -94,7 +94,7 @@ export async function readDirFilesAsMap(dirPath: string, maxTotalBytes: number =
 			if (entry.isSymbolicLink()) {
 				let target = '?';
 				try { target = readlinkSync(fullPath); } catch { /* keep the placeholder */ }
-				skipped.push(`${relPath} -> ${target} (symlink; only regular files are sent)`);
+				skipped.push(`${relPath} -> ${target} (符号链接；仅发送普通文件)`);
 				continue;
 			}
 
@@ -112,7 +112,7 @@ export async function readDirFilesAsMap(dirPath: string, maxTotalBytes: number =
 	await scanDir(dirPath);
 
 	if (skipped.length > 0) {
-		console.log(`[readDirFilesAsMap] Skipped ${skipped.length} file(s) not sent to the agent: ${skipped.join(', ')}`);
+		console.log(`[readDirFilesAsMap] 已跳过 ${skipped.length} 个文件，不会发送至代理: ${skipped.join(', ')}`);
 	}
 
 	return { files, modes, skipped };
@@ -127,6 +127,6 @@ export async function readDirFilesAsMap(dirPath: string, maxTotalBytes: number =
 export function reportSkippedStackFiles(skipped: string[] | undefined, forward: ((line: string) => void) | undefined): void {
 	if (!forward || !skipped || skipped.length === 0) return;
 	for (const entry of skipped) {
-		forward(`WARNING: not sent to the remote host: ${entry}`);
+		forward(`警告：不会发送到远程主机: ${entry}`);
 	}
 }

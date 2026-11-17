@@ -17,15 +17,15 @@
 set -e
 
 echo "========================================"
-echo "  Dockhand - Backup Database (PostgreSQL)"
+echo "  Dockhand - 备份数据库 (PostgreSQL)"
 echo "========================================"
 echo ""
 
 # Check DATABASE_URL
 if [ -z "$DATABASE_URL" ]; then
-    echo "Error: DATABASE_URL environment variable not set"
+    echo "错误：未设置 DATABASE_URL 环境变量"
     echo ""
-    echo "Example: DATABASE_URL=postgres://user:pass@host:5432/dockhand"
+    echo "示例：DATABASE_URL=postgres://user:pass@host:5432/dockhand"
     exit 1
 fi
 
@@ -52,20 +52,20 @@ DB_NAME="${DB_NAME%%\?*}"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 BACKUP_FILE="$OUTPUT_DIR/dockhand_backup_$TIMESTAMP.sql"
 
-echo "This script will create a backup of the database."
+echo "本脚本将创建数据库备份。"
 echo ""
-echo "Host: $DB_HOST:$DB_PORT"
-echo "Database: $DB_NAME"
-echo "Backup: $BACKUP_FILE"
+echo "主机：$DB_HOST:$DB_PORT"
+echo "数据库：$DB_NAME"
+echo "备份文件：$BACKUP_FILE"
 echo ""
-printf "Continue? [y/N]: "
+printf "是否继续？[y/N]："
 read CONFIRM
 
 case "$CONFIRM" in
     [yY]|[yY][eE][sS])
         ;;
     *)
-        echo "Aborted."
+        echo "已取消。"
         exit 0
         ;;
 esac
@@ -75,27 +75,27 @@ echo ""
 # Create output directory if needed
 mkdir -p "$OUTPUT_DIR"
 
-echo "Creating database backup..."
+echo "正在创建数据库备份..."
 
 # Use pg_dump to create backup
 export PGPASSWORD="$DB_PASS"
 if command -v pg_dump >/dev/null 2>&1; then
     pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -F p -f "$BACKUP_FILE"
 else
-    echo "Error: pg_dump not found"
-    echo "Install PostgreSQL client tools to use this script"
+    echo "错误：未找到 pg_dump 工具"
+    echo "请安装 PostgreSQL 客户端工具后再使用此脚本"
     exit 1
 fi
 
 if [ $? -eq 0 ] && [ -f "$BACKUP_FILE" ]; then
     SIZE=$(ls -lh "$BACKUP_FILE" | awk '{print $5}')
     echo ""
-    echo "Backup created successfully!"
-    echo "Size: $SIZE"
+    echo "备份创建成功！"
+    echo "大小：$SIZE"
     echo ""
-    echo "To copy from Docker container to host:"
+    echo "从 Docker 容器复制到主机："
     echo "  docker cp dockhand:$BACKUP_FILE ./dockhand_backup_$TIMESTAMP.sql"
 else
-    echo "Error: Failed to create backup"
+    echo "错误：创建备份失败"
     exit 1
 fi

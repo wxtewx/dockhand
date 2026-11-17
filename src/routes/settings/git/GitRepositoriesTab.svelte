@@ -44,7 +44,7 @@
 			const response = await fetch('/api/git/repositories');
 			repositories = await response.json();
 		} catch (error) {
-			console.error('Failed to fetch git repositories:', error);
+			console.error('获取 Git 仓库列表失败:', error);
 			toast.error(m.settings_git_repos_fetch_failed());
 		} finally {
 			loading = false;
@@ -56,7 +56,7 @@
 			const response = await fetch('/api/git/credentials');
 			credentials = await response.json();
 		} catch (error) {
-			console.error('Failed to fetch git credentials:', error);
+			console.error('获取 Git 凭证失败:', error);
 			toast.error(m.settings_git_credentials_fetch_failed());
 		}
 	}
@@ -101,7 +101,7 @@
 				toast.error(m.settings_git_repo_delete_failed());
 			}
 		} catch (error) {
-			console.error('Failed to delete repository:', error);
+			console.error('删除仓库失败:', error);
 			toast.error(m.settings_git_repo_delete_failed());
 		}
 	}

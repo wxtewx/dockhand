@@ -20,7 +20,7 @@ export async function renameEnvStorage<T>(d: EnvRenameDeps<T>): Promise<EnvRenam
 			try {
 				d.fs.rename(m.to, m.from);
 			} catch (e) {
-				console.error(`[Environments] Failed to move ${m.to} back to ${m.from}:`, e);
+				console.error(`[环境] 无法将 ${m.to} 移回至 ${m.from}:`, e);
 			}
 		}
 	};
@@ -42,7 +42,7 @@ export async function renameEnvStorage<T>(d: EnvRenameDeps<T>): Promise<EnvRenam
 			try {
 				await d.rebaseRows(d.stacks.to, d.stacks.from, [], changed);
 			} catch (e) {
-				console.error('[Environments] Failed to revert stack paths after a failed rename:', e);
+				console.error('[环境] 重命名失败后，无法回退堆栈路径:', e);
 			}
 		}
 		revertDirs();

@@ -62,13 +62,13 @@ const ARCHIVE_SVG = icon('archive', STROKE);
 
 function formatDate(dateStr: string, comingSoon?: boolean): string {
 	if (!dateStr || comingSoon) {
-		return 'Coming soon';
+		return '即将推出';
 	}
 	const date = new Date(dateStr);
 	if (isNaN(date.getTime())) {
-		return 'Coming soon';
+		return '即将推出';
 	}
-	return date.toLocaleDateString('en-US', {
+	return date.toLocaleDateString('zh-CN', {
 		year: 'numeric',
 		month: 'long',
 		day: 'numeric'
@@ -100,12 +100,12 @@ function linkifyIssues(text: string): string {
 		const end = start + m[0].length;
 		let html: string;
 		if (m[1]) {
-			html = `<a href="https://github.com/Finsys/dockhand/pull/${m[1]}" target="_blank" rel="noopener noreferrer" class="changelog-issue-link" title="Pull request #${m[1]}">${PR_SVG}#${m[1]}</a>`;
+			html = `<a href="https://github.com/Finsys/dockhand/pull/${m[1]}" target="_blank" rel="noopener noreferrer" class="changelog-issue-link" title="拉取请求 #${m[1]}">${PR_SVG}#${m[1]}</a>`;
 		} else if (m[2]) {
-			html = `<a href="https://github.com/Finsys/dockhand/issues/${m[2]}" target="_blank" rel="noopener noreferrer" class="changelog-issue-link" title="Issue #${m[2]}">#${m[2]}</a>`;
+			html = `<a href="https://github.com/Finsys/dockhand/issues/${m[2]}" target="_blank" rel="noopener noreferrer" class="changelog-issue-link" title="议题 #${m[2]}">#${m[2]}</a>`;
 		} else {
 			const name = m[3]!;
-			html = `<a href="https://github.com/${name}" target="_blank" rel="noopener noreferrer" class="changelog-issue-link" title="@${name} on GitHub">@${name}</a>`;
+			html = `<a href="https://github.com/${name}" target="_blank" rel="noopener noreferrer" class="changelog-issue-link" title="GitHub 上的 @${name}">@${name}</a>`;
 		}
 		matches.push({ start, end, ref: { html } });
 	}
@@ -149,7 +149,7 @@ function linkifyIssues(text: string): string {
 function generateChangeItem(change: { type: 'feature' | 'fix'; text: string }): string {
 	const pillClass = change.type === 'feature' ? 'changelog-pill-feature' : 'changelog-pill-fix';
 	const svg = change.type === 'feature' ? FEATURE_SVG : FIX_SVG;
-	const label = change.type === 'feature' ? 'New' : 'Fix';
+	const label = change.type === 'feature' ? '新增' : '修复';
 	return `                            <li><span class="changelog-pill ${pillClass}">${svg}${label}</span><span class="changelog-text">${linkifyIssues(change.text)}</span></li>`;
 }
 
@@ -194,12 +194,12 @@ function generateLatestEntry(entry: ChangelogEntry): string {
 ${changes}
                     </ul>
                     <div class="changelog-image-tag">
-                        <span>Docker image:</span>
+                        <span>Docker 镜像:</span>
                         <code>${entry.imageTag}</code>
-                        <button class="copy-btn" onclick="copyDockerImage(this, '${entry.imageTag}')" title="Copy to clipboard">${COPY_SVG}</button>
-                        <span style="color: var(--text-muted); margin: 0 0.25rem;">or</span>
+                        <button class="copy-btn" onclick="copyDockerImage(this, '${entry.imageTag}')" title="复制到剪贴板">${COPY_SVG}</button>
+                        <span style="color: var(--text-muted); margin: 0 0.25rem;">或</span>
                         <code>fnsys/dockhand:latest</code>
-                        <button class="copy-btn" onclick="copyDockerImage(this, 'fnsys/dockhand:latest')" title="Copy to clipboard">${COPY_SVG}</button>
+                        <button class="copy-btn" onclick="copyDockerImage(this, 'fnsys/dockhand:latest')" title="复制到剪贴板">${COPY_SVG}</button>
                     </div>
                 </div>`;
 }
@@ -222,9 +222,9 @@ function generateCollapsibleEntry(entry: ChangelogEntry): string {
 ${changes}
                         </ul>
                         <div class="changelog-image-tag">
-                            <span>Docker image:</span>
+                            <span>Docker 镜像:</span>
                             <code>${entry.imageTag}</code>
-                            <button class="copy-btn" onclick="copyDockerImage(this, '${entry.imageTag}')" title="Copy to clipboard">${COPY_SVG}</button>
+                            <button class="copy-btn" onclick="copyDockerImage(this, '${entry.imageTag}')" title="复制到剪贴板">${COPY_SVG}</button>
                         </div>
                     </div>
                 </div>`;
@@ -246,9 +246,9 @@ function generateRecentEntry(entry: ChangelogEntry): string {
 ${changes}
                     </ul>
                     <div class="changelog-image-tag">
-                        <span>Docker image:</span>
+                        <span>Docker 镜像:</span>
                         <code>${entry.imageTag}</code>
-                        <button class="copy-btn" onclick="copyDockerImage(this, '${entry.imageTag}')" title="Copy to clipboard">${COPY_SVG}</button>
+                        <button class="copy-btn" onclick="copyDockerImage(this, '${entry.imageTag}')" title="复制到剪贴板">${COPY_SVG}</button>
                     </div>
                 </div>`;
 }
@@ -285,7 +285,7 @@ export function generateChangelogSection(entries: ChangelogEntry[], full = true)
 		olderSection = `
                 <a class="older-releases-wrapper older-releases-link" href="/changelog.html">
                     <div class="older-releases-header">
-                        <h4>${ARCHIVE_SVG}Full release history (${releasedEntries.length} releases)</h4>
+                        <h4>${ARCHIVE_SVG}完整发布历史 (${releasedEntries.length} 个版本)</h4>
                     </div>
                 </a>`;
 	} else if (olderEntries.length > 0) {
@@ -295,7 +295,7 @@ export function generateChangelogSection(entries: ChangelogEntry[], full = true)
                 <!-- Older Releases -->
                 <div class="older-releases-wrapper" id="older-releases">
                     <div class="older-releases-header" onclick="toggleOlderReleases()">
-                        <h4>${ARCHIVE_SVG}Older releases (${firstOlder} – ${lastOlder})</h4>
+                        <h4>${ARCHIVE_SVG}历史版本 (${firstOlder} – ${lastOlder})</h4>
                         <svg class="older-releases-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                     </div>
                     <div class="older-releases-content">
@@ -309,12 +309,12 @@ ${olderHtml}
         ${iconSprite()}
         <div class="changelog-container">
             <div class="section-header">
-                <div class="section-label">Changelog</div>
+                <div class="section-label">更新日志</div>
                 <div class="changelog-title-row">
-                    <h2 class="section-title">Release history</h2>
-                    <a class="changelog-rss-link" href="/changelog.xml" title="Subscribe to release notes (RSS)">${RSS_SVG}<span>RSS</span></a>
+                    <h2 class="section-title">版本发布历史</h2>
+                    <a class="changelog-rss-link" href="/changelog.xml" title="订阅版本说明 (RSS)">${RSS_SVG}<span>RSS</span></a>
                 </div>
-                <p class="section-subtitle">Track our progress and see what's new in each version. <span style="color: #fbbf24; white-space: nowrap;">Spoiler: it gets better every time.</span></p>
+                <p class="section-subtitle">追踪项目进展，查看每个版本的新增内容。 <span style="color: #fbbf24; white-space: nowrap;">小提示：每一次更新都会变得更好。</span></p>
             </div>
             <div class="changelog-list">
 ${comingSoonHtml}
@@ -356,7 +356,7 @@ export function generateRssFeed(entries: ChangelogEntry[]): string {
 			const ver = e.version.startsWith('v') ? e.version : `v${e.version}`;
 			const pubDate = new Date(`${e.date}T00:00:00Z`).toUTCString();
 			const body = e.changes
-				.map((c) => `${c.type === 'feature' ? 'Feature' : 'Fix'}: ${stripRefs(c.text)}`)
+				.map((c) => `${c.type === 'feature' ? '新功能' : '修复'}: ${stripRefs(c.text)}`)
 				.join('\n');
 			return `        <item>
             <title>Dockhand ${escapeHtml(ver)}</title>
@@ -373,11 +373,11 @@ export function generateRssFeed(entries: ChangelogEntry[]): string {
 	return `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
     <channel>
-        <title>Dockhand - Release notes</title>
+        <title>Dockhand - 版本更新日志</title>
         <link>${SITE_URL}/changelog.html</link>
         <atom:link href="${SITE_URL}/changelog.xml" rel="self" type="application/rss+xml"/>
-        <description>New features and fixes in each Dockhand release.</description>
-        <language>en</language>
+        <description>Dockhand 各版本新增功能与问题修复。</description>
+        <language>zh-CN</language>
         <lastBuildDate>${lastBuild}</lastBuildDate>
 ${items}
     </channel>
@@ -400,8 +400,8 @@ export function generateChangelogPage(indexHtml: string, entries: ChangelogEntry
 			.replace(/\s*<li><a href="\/" class="open-roadmap-modal">Roadmap<\/a><\/li>/, '');
 	const released = entries.filter((e) => !e.comingSoon);
 	const latest = released[0];
-	const title = 'Dockhand release history - every version and change';
-	const description = `New features and fixes in every Dockhand release${latest ? `, up to v${latest.version.replace(/^v/, '')}` : ''}.`;
+	const title = 'Dockhand 版本历史 - 全部版本与变更记录';
+	const description = `Dockhand 所有版本包含的新功能与修复${latest ? `，最新至 v${latest.version.replace(/^v/, '')}` : ''}。`;
 	return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -411,7 +411,7 @@ export function generateChangelogPage(indexHtml: string, entries: ChangelogEntry
     <meta name="description" content="${description}">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="${SITE_URL}/changelog.html">
-    <link rel="alternate" type="application/rss+xml" title="Dockhand - Release notes" href="${SITE_URL}/changelog.xml">
+    <link rel="alternate" type="application/rss+xml" title="Dockhand - 版本更新日志" href="${SITE_URL}/changelog.xml">
     <meta property="og:type" content="website">
     <meta property="og:url" content="${SITE_URL}/changelog.html">
     <meta property="og:title" content="${title}">
@@ -419,7 +419,7 @@ export function generateChangelogPage(indexHtml: string, entries: ChangelogEntry
     <meta property="og:image" content="${SITE_URL}/images/og-image.jpg">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="Dockhand dashboard with Docker environments, containers and resource usage">
+    <meta property="og:image:alt" content="控制面板，包含 Docker 环境、容器与资源使用情况">
     <meta property="og:site_name" content="Dockhand">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:image" content="${SITE_URL}/images/og-image.jpg">
@@ -507,12 +507,12 @@ ${url('/privacy.html', 'yearly', '0.3', false)}
 // without triggering file reads/writes.
 if (import.meta.main) {
 	// Read changelog.json
-	console.log('Reading changelog from:', CHANGELOG_PATH);
+	console.log('正在读取更新日志文件:', CHANGELOG_PATH);
 	const changelog: ChangelogEntry[] = JSON.parse(readFileSync(CHANGELOG_PATH, 'utf-8'));
-	console.log(`Found ${changelog.length} changelog entries`);
+	console.log(`共读取到 ${changelog.length} 条更新日志条目`);
 
 	// Read index.html
-	console.log('Reading index.html from:', INDEX_PATH);
+	console.log('正在读取 index.html 文件:', INDEX_PATH);
 	let indexHtml = readFileSync(INDEX_PATH, 'utf-8');
 
 	// Generate new changelog section
@@ -523,8 +523,8 @@ if (import.meta.main) {
 	const changelogRegex = /    <!-- Changelog Section -->[\s\S]*?<\/section>(?=\s*\n\s*<!-- CTA -->)/;
 
 	if (!changelogRegex.test(indexHtml)) {
-		console.error('ERROR: Could not find changelog section in index.html');
-		console.error('Looking for pattern: <!-- Changelog Section --> ... </section> followed by <!-- CTA -->');
+		console.error('错误：在 index.html 中未找到更新日志区块');
+		console.error('匹配规则：<!-- Changelog Section --> ... </section> 后紧跟 <!-- CTA -->');
 		process.exit(1);
 	}
 
@@ -537,7 +537,7 @@ if (import.meta.main) {
 		const versionRegex = /"softwareVersion":\s*"[\d.]+"/;
 		if (versionRegex.test(indexHtml)) {
 			indexHtml = indexHtml.replace(versionRegex, `"softwareVersion": "${latestVersion}"`);
-			console.log(`Updated softwareVersion to: ${latestVersion}`);
+			console.log(`已将 softwareVersion 更新为: ${latestVersion}`);
 		}
 	}
 
@@ -548,10 +548,10 @@ if (import.meta.main) {
 	writeFileSync(CHANGELOG_PAGE_PATH, generateChangelogPage(indexHtml, changelog));
 	writeFileSync(RSS_PATH, generateRssFeed(changelog));
 	writeFileSync(SITEMAP_PATH, generateSitemap(changelog));
-	console.log('Generated RSS feed in webpage/changelog.xml');
+	console.log('已在 webpage/changelog.xml 生成 RSS 订阅源');
 
 	console.log('');
-	console.log('Generated changelog in webpage/index.html');
-	console.log(`  - Latest version: v${changelog[0]?.version || 'unknown'}`);
-	console.log(`  - Total entries: ${changelog.length}`);
+	console.log('已在 webpage/index.html 生成更新日志');
+	console.log(`  - 最新版本: v${changelog[0]?.version || '未知'}`);
+	console.log(`  - 总条目数: ${changelog.length}`);
 }

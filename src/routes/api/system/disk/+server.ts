@@ -21,18 +21,23 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 	const auth = await authorize(cookies);
 
 	if (auth.authEnabled && !await auth.can('environments', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const envId = url.searchParams.get('env') ? parseInt(url.searchParams.get('env')!) : null;
 
 	if (!envId) {
-		return json({ error: 'Environment ID required' }, { status: 400 });
+		return json({ error: '环境 ID 为必填项' }, { status: 400 });
 	}
 
 	// Check environment access in enterprise mode
 	if (auth.authEnabled && auth.isEnterprise && !await auth.canAccessEnvironment(envId)) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问该环境' }, { status: 403 });
+	}
+
+	// Skip disk usage when disabled (Synology NAS performance fix)
+	if (SKIP_DF_COLLECTION) {
+		return json({ diskUsage: null });
 	}
 
 	// Skip disk usage when disabled (Synology NAS performance fix)

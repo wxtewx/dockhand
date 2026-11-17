@@ -45,5 +45,5 @@ export function heldByLapsedLicence(state: LicenceHoldInput): boolean {
 /** What to tell somebody who is held, or null when they are not. */
 export function licenceHoldMessage(state: LicenceHoldInput): string | null {
 	if (!heldByLapsedLicence(state)) return null;
-	return 'This instance needs its licence renewed. Until then only administrators can make changes, so pages will look empty.';
+	return '该实例需要续期许可证。在此之前，仅管理员可执行修改操作，页面内容将显示为空。';
 }
