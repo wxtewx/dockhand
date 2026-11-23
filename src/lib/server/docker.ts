@@ -31,7 +31,7 @@ import { helperWaitDeadline, helperExitFromState, helperFailureDetail, needsDaem
 import { cancelReaderOnAbort } from './reader-abort-core';
 import { configuredMacAddress, endpointForRecreate } from './endpoint-mac-core';
 import { rescopeForPrimarySwitch } from './primary-network-switch-core';
-import { mapContainerNetworks } from '$lib/utils/network-identity';
+import { mapContainerNetworks, recreateEndpointAliases } from '$lib/utils/network-identity';
 import type { Environment } from './db';
 import { getSetting } from './db';
 import { releaseAgeAdvisory } from './release-age-advisory';
@@ -49,6 +49,7 @@ import { decideRespawnOutcome, isExactNameMatch, isSystemdManagedUnit } from './
 import { parseImageReference } from './registry/image-ref';
 import { fetchImageCreatedAt, imagePlatform } from './registry/image-age';
 export { parseImageReference } from './registry/image-ref';
+import { HELPER_CONTAINER_LABELS } from './container-labels';
 import { rebaseEnvOntoImage, rebaseLabelsOntoImage, rebaseCommand, describeEnvRebase, describeLabelRebase, composeImageLabelForRecreate, composeImageLabelForm, COMPOSE_IMAGE_LABEL, type ImageEnvLabels } from './container-env-merge';
 import { encodeRegistryAuth, isSafeRegistryHost } from './registry-auth';
 import { registryAuthHeader } from './registry/auth-header';
@@ -2554,6 +2555,13 @@ export async function recreateContainerFromInspect(
 		};
 	}
 
+	// The compose service alias is restored on the primary network, as the single update
+	// does: once missing, it would otherwise be carried forward by every later update and the
+	// stack's service-name DNS stays broken. The other networks pass through as-is.
+	const attachedNetworkNames = Object.keys(networks);
+	const recreateEndpoint = (netName: string, endpoint: any) =>
+		endpointForRecreate(recreateEndpointAliases(netName, { ...endpoint }, networkMode, attachedNetworkNames, config.Labels));
+
 	// Docker can only connect to one network at creation. Pass the first network
 	// from the old container's settings to avoid getting a random bridge IP.
 	// Skip for shared network modes — EndpointsConfig conflicts with container:/host/none modes.
@@ -2562,7 +2570,7 @@ export async function recreateContainerFromInspect(
 		// from the IP, the replacement gets a new address and the carried MAC then
 		// collides with whoever inherits the old one (#1618). Only a configured MAC, or one
 		// derived from an IP the endpoint pins, survives; otherwise Docker derives a fresh one.
-		const endpointConfig = endpointForRecreate({ ...initialNetworkConfig });
+		const endpointConfig = recreateEndpoint(initialNetworkName, initialNetworkConfig);
 		createConfig.NetworkingConfig = {
 			EndpointsConfig: {
 				[initialNetworkName]: endpointConfig
@@ -2602,7 +2610,7 @@ export async function recreateContainerFromInspect(
 			if (nc.NetworkID) {
 				try {
 					// Same rule as the creation endpoint above.
-					const settings = endpointForRecreate({ ...nc });
+					const settings = recreateEndpoint(netName, nc);
 					await connectContainerToNetworkRaw(nc.NetworkID, newContainerId, settings, envId);
 				} catch (netError: any) {
 					log?.(`Warning: Failed to connect to network "${netName}": ${netError.message}`);
@@ -5328,6 +5336,8 @@ export async function runContainer(options: {
 		Image: options.image,
 		Cmd: options.cmd,
 		Env: options.env || [],
+		// A helper like runContainerWithStreaming's (scanner version checks): silent, hidden.
+		Labels: { ...HELPER_CONTAINER_LABELS },
 		Tty: false,
 		HostConfig: {
 			Binds: options.binds || [],
@@ -5466,9 +5476,9 @@ export async function runContainerWithStreaming(options: {
 		Env: options.env || [],
 		// Every helper spawned here (backup/restore/probe, image scanner) is ephemeral and exits
 		// on purpose, so it must NOT fire a "Container died/exited" notification like a user's
-		// container would. dockhand.notify=false makes the event handler skip it
-		// (isNotifyDisabledByLabel). Caller labels win if they set notify explicitly.
-		Labels: { 'dockhand.notify': 'false', ...(options.labels || {}) },
+		// container would, and it is hidden from container lists (HELPER_CONTAINER_LABELS).
+		// Caller labels win if they set either explicitly.
+		Labels: { ...HELPER_CONTAINER_LABELS, ...(options.labels || {}) },
 		Tty: false,
 		HostConfig: {
 			Binds: options.binds || [],
