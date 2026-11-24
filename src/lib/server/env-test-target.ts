@@ -16,30 +16,30 @@ export async function resolveTestTarget(
 ): Promise<TestTargetResult> {
 	const protocol = config.protocol || 'http';
 	if (protocol !== 'http' && protocol !== 'https') {
-		return { ok: false, badRequest: true, error: 'Protocol must be http or https' };
+		return { ok: false, badRequest: true, error: '协议必须为 http 或 https' };
 	}
 	const host = (config.host ?? '').trim();
-	if (!host) return { ok: false, badRequest: true, error: 'Host is required' };
+	if (!host) return { ok: false, badRequest: true, error: '必须填写主机' };
 	const port = Number(config.port || 2375);
 	if (!Number.isInteger(port) || port < 1 || port > 65535) {
-		return { ok: false, badRequest: true, error: 'Port must be between 1 and 65535' };
+		return { ok: false, badRequest: true, error: '端口范围必须在 1 至 65535 之间' };
 	}
 
 	let url: URL;
 	try {
 		url = new URL(`${protocol}://${host}:${port}`);
 	} catch {
-		return { ok: false, badRequest: true, error: 'Host must be a hostname or IP address' };
+		return { ok: false, badRequest: true, error: '主机必须为主机名或 IP 地址' };
 	}
 	const parsed = url.hostname.replace(/^\[|\]$/g, '');
 	if (parsed !== host.toLowerCase().replace(/^\[|\]$/g, '')) {
-		return { ok: false, badRequest: true, error: 'Host must be a hostname or IP address' };
+		return { ok: false, badRequest: true, error: '主机必须为主机名或 IP 地址' };
 	}
 
 	const safety = isSafeNotificationUrl(url.href);
-	if (!safety.ok) return { ok: false, badRequest: false, error: `Host not allowed: ${safety.reason}` };
+	if (!safety.ok) return { ok: false, badRequest: false, error: `不允许访问该主机: ${safety.reason}` };
 	const resolved = await resolvedHostReason(parsed, lookupAll);
-	if (resolved) return { ok: false, badRequest: false, error: `Host not allowed: ${resolved}` };
+	if (resolved) return { ok: false, badRequest: false, error: `不允许访问该主机: ${resolved}` };
 
 	return { ok: true, protocol, origin: `http://${url.hostname}:${port}` };
 }

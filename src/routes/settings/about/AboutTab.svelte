@@ -606,7 +606,7 @@
 									<span class="text-muted-foreground">API</span>
 									<span>{systemInfo.docker.apiVersion}</span>
 									<span class="text-muted-foreground/50">|</span>
-									<span class="text-muted-foreground">OS/Arch</span>
+									<span class="text-muted-foreground">系统/架构</span>
 									<span>{systemInfo.docker.os}/{systemInfo.docker.arch}</span>
 								</div>
 							</div>
@@ -754,15 +754,15 @@
 									{#if $licenseStore.licenseType === 'enterprise'}
 										<span class="text-amber-500 font-medium flex items-center gap-1">
 											<Crown class="w-3.5 h-3.5 fill-current" />
-											Enterprise
+											企业版
 										</span>
 									{:else if $licenseStore.licenseType === 'smb'}
 										<span class="text-blue-500 font-medium flex items-center gap-1">
 											<Building2 class="w-3.5 h-3.5" />
-											SMB
+											中小企业版
 										</span>
 									{:else}
-										<span>Community</span>
+										<span>社区版</span>
 									{/if}
 									{#if $licenseStore.isLicensed && $licenseStore.licensedTo}
 										<span class="text-muted-foreground/50">|</span>

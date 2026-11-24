@@ -35,7 +35,7 @@ export function cliTimeoutMessage(
 ): string {
 	const seconds = Math.round(timeoutMs / 100) / 10;
 	return (
-		`${provider} ${phase} timed out after ${seconds}s. ` +
-		`If this host is legitimately slower, raise ${envVar} (milliseconds).`
+		`${provider} ${phase} 在 ${seconds}s 后超时。` +
+		`如果此主机确实运行较慢，请调高 ${envVar} (单位：毫秒)。`
 	);
 }

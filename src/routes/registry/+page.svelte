@@ -146,7 +146,7 @@
 				selectedRegistryId = defaultRegistry?.id ?? registries[0].id;
 			}
 		} catch (error) {
-			console.error('Failed to fetch registries:', error);
+			console.error('获取镜像仓库失败:', error);
 		}
 	}
 
@@ -161,7 +161,7 @@
 				envHasScanning = scanner !== 'none';
 			}
 		} catch (error) {
-			console.error('Failed to fetch scanner settings:', error);
+			console.error('获取扫描器设置失败:', error);
 		}
 	}
 
@@ -205,7 +205,7 @@
 				results = [];
 			}
 		} catch (error) {
-			console.error('Failed to search images:', error);
+			console.error('搜索镜像失败:', error);
 			errorMessage = m.registry_error_search_images();
 			results = [];
 		} finally {
@@ -259,7 +259,7 @@
 				}
 			}
 		} catch (error) {
-			console.error('Failed to browse registry:', error);
+			console.error('浏览镜像仓库失败:', error);
 			errorMessage = m.registry_error_browse_failed();
 			if (!loadMore) {
 				results = [];
@@ -610,7 +610,7 @@
 				{/if}
 				<span class="truncate">{selected ? selected.name : m.images_push_select_registry()}</span>
 				{#if selected?.hasCredentials}
-					<Badge variant="outline" class="ml-1.5 text-xs shrink-0">auth</Badge>
+					<Badge variant="outline" class="ml-1.5 text-xs shrink-0">已认证</Badge>
 				{/if}
 			</Select.Trigger>
 			<Select.Content>
@@ -623,7 +623,7 @@
 						{/if}
 						{registry.name}
 						{#if registry.hasCredentials}
-							<Badge variant="outline" class="ml-2 text-xs">auth</Badge>
+							<Badge variant="outline" class="ml-2 text-xs">已认证</Badge>
 						{/if}
 					</Select.Item>
 				{/each}

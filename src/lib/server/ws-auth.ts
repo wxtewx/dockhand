@@ -40,7 +40,7 @@ export async function authenticateWsUpgrade(
 		})
 	) {
 		console.warn(
-			`[WS] terminal refused: origin ${pickHeader(headers, 'origin')} does not match host ${pickHeader(headers, 'host')}; behind a proxy set ORIGIN or TRUSTED_ORIGINS`
+			`[WS] 终端请求被拒绝：origin ${pickHeader(headers, 'origin')} 与 host ${pickHeader(headers, 'host')} 不匹配；在代理后端请设置 ORIGIN 或 TRUSTED_ORIGINS`
 		);
 		return null;
 	}

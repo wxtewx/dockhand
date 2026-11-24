@@ -78,7 +78,7 @@
 	const tailOptions = [
 		{ value: '100', label: '100' },
 		{ value: '500', label: '500' },
-		{ value: '1000', label: '1K' }
+		{ value: '1000', label: '1000' }
 	];
 	const VALID_TAIL_VALUES = new Set(tailOptions.map(o => o.value));
 
@@ -371,7 +371,7 @@
 				handleStreamError();
 			};
 		} catch (error) {
-			console.error('Failed to start streaming:', error);
+			console.error('启动流读取失败:', error);
 			connectionError = m.logspanel_start_streaming_failed();
 			isConnected = false;
 			loading = false;
@@ -530,7 +530,7 @@
 			scrollToBottom();
 		} catch (error) {
 			if (seq !== fetchSeq) return;
-			console.error('Failed to fetch logs:', error);
+			console.error('获取日志失败:', error);
 			connectionError = m.logspanel_fetch_failed({ error: error instanceof Error ? error.message : m.logspanel_unknown_error() });
 			logs = [];
 		} finally {

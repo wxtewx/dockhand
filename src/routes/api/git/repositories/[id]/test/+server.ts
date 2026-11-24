@@ -18,24 +18,24 @@ import { authorize } from '$lib/server/authorize';
 export const POST: RequestHandler = async ({ params, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('git', 'edit')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
 		const id = parseInt(params.id);
 		if (isNaN(id)) {
-			return json({ error: 'Invalid repository ID' }, { status: 400 });
+			return json({ error: '无效的仓库 ID' }, { status: 400 });
 		}
 
 		const repository = await getGitRepository(id);
 		if (!repository) {
-			return json({ error: 'Repository not found' }, { status: 404 });
+			return json({ error: '仓库不存在' }, { status: 404 });
 		}
 
 		const result = await testRepository(id);
 		return json(result);
 	} catch (error: any) {
-		console.error('Failed to test git repository:', error);
+		console.error('测试 Git 仓库失败:', error);
 		return json({ success: false, error: error.message }, { status: 500 });
 	}
 };

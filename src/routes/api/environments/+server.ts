@@ -22,7 +22,7 @@ import { redactEnvironment } from '$lib/server/environment-redact';
 export const GET: RequestHandler = async ({ cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('environments', 'view')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -67,8 +67,8 @@ export const GET: RequestHandler = async ({ cookies }) => {
 
 		return json(envWithParsedLabels);
 	} catch (error) {
-		console.error('Failed to get environments:', error);
-		return json({ error: 'Failed to get environments' }, { status: 500 });
+		console.error('获取环境列表失败:', error);
+		return json({ error: '获取环境列表失败' }, { status: 500 });
 	}
 };
 
@@ -90,10 +90,10 @@ export const POST: RequestHandler = async (event) => {
 	// A new environment can point at any Docker socket or host, Dockhand's own included, so
 	// creating one is an instance-level action: admin under RBAC, as for DELETE.
 	if (auth.authEnabled && auth.isEnterprise && !auth.isAdmin) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 	if (auth.authEnabled && !await auth.can('environments', 'create')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -107,19 +107,19 @@ export const POST: RequestHandler = async (event) => {
 		// Check if environment with this name already exists
 		const existing = await getEnvironmentByName(data.name);
 		if (existing) {
-			return json({ error: 'An environment with this name already exists' }, { status: 409 });
+			return json({ error: '同名环境已存在' }, { status: 409 });
 		}
 
 		// Validate connection type
 		const validConnectionTypes = ['socket', 'direct', 'hawser-standard', 'hawser-edge'];
 		const connectionType = data.connectionType || 'socket';
 		if (!validConnectionTypes.includes(connectionType)) {
-			return json({ error: `Invalid connection type: ${connectionType}` }, { status: 400 });
+			return json({ error: `无效的连接类型：${connectionType}` }, { status: 400 });
 		}
 
 		// Host is required for direct and hawser-standard connections
 		if ((connectionType === 'direct' || connectionType === 'hawser-standard') && !data.host) {
-			return json({ error: 'Host is required for this connection type' }, { status: 400 });
+			return json({ error: '该连接类型需要填写主机地址' }, { status: 400 });
 		}
 
 		// Validate labels
@@ -162,7 +162,7 @@ export const POST: RequestHandler = async (event) => {
 
 		return json(redactEnvironment(env));
 	} catch (error) {
-		console.error('Failed to create environment:', error);
-		return json({ error: 'Failed to create environment' }, { status: 500 });
+		console.error('创建环境失败:', error);
+		return json({ error: '创建环境失败' }, { status: 500 });
 	}
 };

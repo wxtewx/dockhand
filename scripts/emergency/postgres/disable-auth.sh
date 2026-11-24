@@ -12,18 +12,18 @@
 set -e
 
 echo "========================================"
-echo "  Dockhand - Disable Authentication (PostgreSQL)"
+echo "  Dockhand - 禁用身份认证 (PostgreSQL)"
 echo "========================================"
 echo ""
-echo "This script will disable authentication,"
-echo "allowing access to Dockhand without login."
+echo "本脚本将禁用身份认证，"
+echo "无需登录即可访问 Dockhand。"
 echo ""
 
 # Check DATABASE_URL
 if [ -z "$DATABASE_URL" ]; then
-    echo "Error: DATABASE_URL environment variable not set"
+    echo "错误：未设置 DATABASE_URL 环境变量"
     echo ""
-    echo "Example: DATABASE_URL=postgres://user:pass@host:5432/dockhand"
+    echo "示例：DATABASE_URL=postgres://user:pass@host:5432/dockhand"
     exit 1
 fi
 
@@ -44,31 +44,31 @@ DB_NAME="${DB_NAME%%\?*}"
 
 export PGPASSWORD="$DB_PASS"
 
-echo "Database: $DB_HOST:$DB_PORT/$DB_NAME"
+echo "数据库：$DB_HOST:$DB_PORT/$DB_NAME"
 echo ""
-printf "Continue? [y/N]: "
+printf "是否继续？[y/N]："
 read CONFIRM
 
 case "$CONFIRM" in
     [yY]|[yY][eE][sS])
         ;;
     *)
-        echo "Aborted."
+        echo "已取消。"
         exit 0
         ;;
 esac
 
 echo ""
-echo "Disabling authentication..."
+echo "正在禁用身份认证..."
 psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "UPDATE auth_settings SET auth_enabled = false WHERE id = 1;"
 
 if [ $? -eq 0 ]; then
     echo ""
-    echo "Authentication disabled successfully."
-    echo "You can now access Dockhand without logging in."
+    echo "身份认证已成功禁用。"
+    echo "现在无需登录即可访问 Dockhand。"
     echo ""
-    echo "Remember to re-enable authentication in Settings after regaining access."
+    echo "恢复访问后，请记得在设置中重新启用身份认证。"
 else
-    echo "Error: Failed to disable authentication"
+    echo "错误：禁用身份认证失败"
     exit 1
 fi

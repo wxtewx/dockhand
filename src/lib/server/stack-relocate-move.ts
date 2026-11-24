@@ -25,12 +25,12 @@ export function moveDirEntries(
 			rename(oldFilePath, newFilePath);
 		} catch (renameErr: any) {
 			if (renameErr.code !== 'EXDEV') {
-				errors.push(`Failed to move ${file}: ${renameErr.message}`);
+				errors.push(`移动 ${file} 失败: ${renameErr.message}`);
 				continue;
 			}
 			// The copy reads the source and writes the target through any symlink.
 			if (protectedBefore || isForbiddenStackPath(newFilePath)) {
-				errors.push(`Skipped ${file}: path is not allowed`);
+				errors.push(`跳过 ${file}: 该路径不被允许访问`);
 				continue;
 			}
 			try {
@@ -38,7 +38,7 @@ export function moveDirEntries(
 				unlinkSync(oldFilePath);
 				movedFiles.push(file);
 			} catch (copyErr: any) {
-				errors.push(`Failed to copy ${file}: ${copyErr.message}`);
+				errors.push(`复制 ${file} 失败: ${copyErr.message}`);
 			}
 			continue;
 		}
@@ -47,7 +47,7 @@ export function moveDirEntries(
 		// itself can make it lead into a protected location. Put such an entry back.
 		if (!protectedBefore && lstatSync(newFilePath).isSymbolicLink() && isForbiddenStackPath(newFilePath)) {
 			rename(newFilePath, oldFilePath);
-			errors.push(`Skipped ${file}: it would lead into a protected location once moved`);
+			errors.push(`跳过 ${file}: 移动后会指向受保护位置`);
 			continue;
 		}
 		movedFiles.push(file);

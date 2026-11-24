@@ -9,6 +9,7 @@
 	import { scanProgressLines } from '$lib/utils/scan-progress-lines';
 	import ScanResultsView from '../../routes/images/ScanResultsView.svelte';
 	import { m } from '$lib/paraglide/messages.js';
+	import { getLabelText } from '$lib/types';
 
 	export interface ScanResult {
 		scanner: 'grype' | 'trivy';
@@ -139,7 +140,7 @@
 		startTime = Date.now();
 		results = [];
 
-		addOutputLine(`[dockhand] Starting vulnerability scan for ${imageName}`);
+		addOutputLine(`[dockhand] 开始对 ${imageName} 执行漏洞扫描`);
 
 		try {
 			const url = appendEnvParam('/api/images/scan', envId);
@@ -170,7 +171,7 @@
 		} catch (err) {
 			errorMessage = err instanceof Error ? err.message : String(err);
 			status = 'error';
-			addOutputLine(`[error] ${errorMessage}`);
+			addOutputLine(`[错误] ${errorMessage}`);
 			onError?.(errorMessage);
 		}
 	}
@@ -340,22 +341,22 @@
 					{#each outputLines as line}
 						<div class="whitespace-pre-wrap break-all leading-relaxed flex items-start gap-1.5">
 							{#if line.startsWith('[grype]')}
-								<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-violet-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">grype</span>
-								<span>{line.slice(8)}</span>
+								<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-violet-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">漏洞扫描</span>
+								<span>{getLabelText(line.slice(8))}</span>
 							{:else if line.startsWith('[trivy]')}
-								<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-teal-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">trivy</span>
-								<span>{line.slice(8)}</span>
+								<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-teal-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">安全扫描</span>
+								<span>{getLabelText(line.slice(8))}</span>
 							{:else if line.startsWith('[dockhand]')}
-								<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-slate-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">dockhand</span>
-								<span>{line.slice(11)}</span>
+								<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-slate-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">校验</span>
+								<span>{getLabelText(line.slice(11))}</span>
 							{:else if line.startsWith('[scan]')}
-								<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-violet-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">scan</span>
-								<span>{line.slice(7)}</span>
+								<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-violet-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">扫描</span>
+								<span>{getLabelText(line.slice(7))}</span>
 							{:else if line.startsWith('[error]')}
-								<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-red-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">error</span>
-								<span class="text-red-400">{line.slice(8)}</span>
+								<span class="inline-flex items-center px-1 rounded text-[8px] font-medium bg-red-500 text-white shadow-[0_1px_1px_rgba(0,0,0,0.2)] shrink-0 mt-[3px]">错误</span>
+								<span class="text-red-400">{getLabelText(line.slice(8))}</span>
 							{:else}
-								<span>{line}</span>
+								<span>{getLabelText(line)}</span>
 							{/if}
 						</div>
 					{/each}

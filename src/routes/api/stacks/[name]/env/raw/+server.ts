@@ -29,19 +29,19 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('stacks', 'view', envIdNum ?? undefined)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Environment access check (enterprise only)
 	if (envIdNum && auth.isEnterprise && !await auth.canAccessEnvironment(envIdNum)) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '无权访问该环境' }, { status: 403 });
 	}
 
 	try {
 		// Validate the name shape before it is used in a filesystem path.
 		const stackName = params.name;
 		if (!isValidStackName(stackName)) {
-			return json({ error: 'Invalid stack name' }, { status: 400 });
+			return json({ error: '堆栈名称无效' }, { status: 400 });
 		}
 
 		// Check if this stack has custom paths configured
@@ -76,7 +76,7 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 		// isProtectedPath adds /etc,/root on top of isForbiddenStackPath's /proc + Dockhand
 		// secrets, matching the compose-path guard so a stored envPath cannot read a home dir.
 		if (envFilePath && (isForbiddenStackPath(envFilePath) || isProtectedPath(envFilePath))) {
-			return json({ error: 'Env file path is not allowed' }, { status: 403 });
+			return json({ error: '环境文件路径不被允许' }, { status: 403 });
 		}
 		if (envFilePath && existsSync(envFilePath)) {
 			try {
@@ -88,8 +88,8 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
 
 		return json({ content });
 	} catch (error) {
-		console.error('Error getting raw env file:', error);
-		return json({ error: 'Failed to get environment file' }, { status: 500 });
+		console.error('获取原始环境变量文件时出错：', error);
+		return json({ error: '获取环境变量文件失败' }, { status: 500 });
 	}
 };
 
@@ -115,24 +115,24 @@ export const PUT: RequestHandler = async ({ params, url, cookies, request }) => 
 
 	// Permission check with environment context
 	if (auth.authEnabled && !await auth.can('stacks', 'edit', envIdNum ?? undefined)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Environment access check (enterprise only)
 	if (await deniesEnvScope(auth, envIdNum)) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '该环境访问被拒绝' }, { status: 403 });
 	}
 
 	try {
 		// Validate the name shape before it is used in a filesystem path.
 		const stackName = params.name;
 		if (!isValidStackName(stackName)) {
-			return json({ error: 'Invalid stack name' }, { status: 400 });
+			return json({ error: '堆栈名称无效' }, { status: 400 });
 		}
 		const body = await request.json();
 
 		if (typeof body.content !== 'string') {
-			return json({ error: 'Invalid request body: content string required' }, { status: 400 });
+			return json({ error: '请求体无效：必须提供内容字符串' }, { status: 400 });
 		}
 
 		// Check if this stack has custom paths configured
@@ -166,7 +166,7 @@ export const PUT: RequestHandler = async ({ params, url, cookies, request }) => 
 		// isProtectedPath adds /etc,/root so a stored envPath cannot write a cron unit or a
 		// home-dir payload (the arbitrary-write vector), matching the compose-path guard.
 		if (envFilePath && (isForbiddenStackPath(envFilePath) || isProtectedPath(envFilePath))) {
-			return json({ error: 'Env file path is not allowed' }, { status: 403 });
+			return json({ error: '环境文件路径不被允许' }, { status: 403 });
 		}
 		// Only write if we have a valid path
 		if (!envFilePath) {
@@ -187,7 +187,7 @@ export const PUT: RequestHandler = async ({ params, url, cookies, request }) => 
 		// Guard against writing masked secret placeholders (would corrupt the file)
 		if (content.match(/^[A-Za-z_][A-Za-z0-9_]*=\*\*\*$/m)) {
 			return json({
-				error: 'Cannot write masked placeholder "***" to .env file - this would corrupt secret values'
+				error: '无法将掩码占位符 "***" 写入 .env 文件 - 这会损坏密钥值'
 			}, { status: 400 });
 		}
 
@@ -200,7 +200,7 @@ export const PUT: RequestHandler = async ({ params, url, cookies, request }) => 
 
 		return json({ success: true });
 	} catch (error) {
-		console.error('Error saving raw env file:', error);
-		return json({ error: 'Failed to save environment file' }, { status: 500 });
+		console.error('保存原始环境变量文件时出错：', error);
+		return json({ error: '保存环境变量文件失败' }, { status: 500 });
 	}
 };

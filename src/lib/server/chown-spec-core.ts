@@ -19,17 +19,17 @@ export interface ChownSpec {
  * Accepts "user", "user:group", "uid", "uid:gid"; a bare token means owner only.
  */
 export function parseChownSpec(input: string | null | undefined): ChownSpec | { error: string } {
-	if (input == null) return { error: 'Owner is required' };
+	if (input == null) return { error: '必须填写所有者' };
 	const raw = String(input).trim();
-	if (!raw) return { error: 'Owner is required' };
-	if (raw.length > 128) return { error: 'Owner is too long' };
+	if (!raw) return { error: '必须填写所有者' };
+	if (raw.length > 128) return { error: '所有者内容过长' };
 
 	const parts = raw.split(':');
-	if (parts.length > 2) return { error: 'Owner must be "user" or "user:group"' };
+	if (parts.length > 2) return { error: '所有者格式必须为 "用户" 或者 "用户:组"' };
 
 	const [owner, group] = parts;
-	if (!TOKEN.test(owner)) return { error: `Invalid user "${owner}"` };
-	if (group !== undefined && !TOKEN.test(group)) return { error: `Invalid group "${group}"` };
+	if (!TOKEN.test(owner)) return { error: `无效的用户 "${owner}"` };
+	if (group !== undefined && !TOKEN.test(group)) return { error: `无效的用户组 "${group}"` };
 
 	// Normalise: bare owner stays owner-only (chown leaves the group untouched).
 	return { value: group !== undefined ? `${owner}:${group}` : owner };

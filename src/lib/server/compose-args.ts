@@ -80,7 +80,7 @@ export function runsSeparateBuild(build?: boolean, pullBase?: boolean, noBuildCa
 
 /** What a deploy logs when the Hawser agent has no build operation, so the separate build step cannot run. */
 export const BUILD_STEP_UNSUPPORTED_WARNING =
-	'The Hawser agent is older than 0.2.51 and has no build operation, so this deploy builds with the layer cache and without pulling base images; update the agent to get either';
+	'Hawser 代理版本低于 0.2.51，不支持构建操作，本次部署将使用分层缓存进行构建，且不会拉取基础镜像；请更新代理以启用该功能';
 
 /**
  * Run a deploy's separate build step. `stop` is the failed result when the deploy must stop.
@@ -171,7 +171,7 @@ export function deployPlan(build?: boolean, pullBase?: boolean, noBuildCache?: b
 }
 
 /** What a deploy logs when its separate pull fails and it goes on with the local images. */
-export const PULL_FAILED_WARNING = 'Some images could not be pulled; continuing with the images present locally';
+export const PULL_FAILED_WARNING = '部分镜像无法拉取；将继续使用本地已存在的镜像';
 
 /**
  * Run a deploy's pull and up for its pull policy. With 'respect' a separate

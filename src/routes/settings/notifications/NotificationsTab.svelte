@@ -41,7 +41,7 @@
 			const response = await fetch('/api/notifications');
 			notifications = await response.json();
 		} catch (error) {
-			console.error('Failed to fetch notifications:', error);
+			console.error('获取通知配置失败:', error);
 			toast.error(m.settings_notifications_toast_fetch_failed());
 		} finally {
 			notifLoading = false;
@@ -85,7 +85,7 @@
 				toast.error(m.settings_notifications_toast_toggle_failed());
 			}
 		} catch (error) {
-			console.error('Failed to toggle notification:', error);
+			console.error('切换通知开关失败:', error);
 			toast.error(m.settings_notifications_toast_toggle_failed());
 		}
 	}

@@ -18,7 +18,7 @@ export function ldapTlsOptions(
 		if (!warned) {
 			warned = true;
 			console.warn(
-				'[LDAP] LDAP_TLS_SKIP_VERIFY=true: the directory server certificate is NOT verified. Anyone between Dockhand and the LDAP server can read the passwords of users signing in. Fix the certificate or the configured CA and remove this setting.'
+				'[LDAP] LDAP_TLS_SKIP_VERIFY=true：不会校验目录服务器证书。任何位于 Dockhand 与 LDAP 服务器之间的主体都可以读取登录用户的密码。请修复证书或配置的 CA 并移除此配置项。'
 			);
 		}
 		return { rejectUnauthorized: false };

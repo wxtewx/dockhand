@@ -26,7 +26,7 @@ export function mergeServiceIntoCompose(baseCompose: string, serviceCompose: str
 	const generated = yaml.load(serviceCompose) as any;
 	const genServices = generated?.services ?? {};
 	const genKey = Object.keys(genServices)[0];
-	if (!genKey) throw new Error('Nothing to add');
+	if (!genKey) throw new Error('无内容可添加');
 
 	let key = genKey;
 	let renamed = false;

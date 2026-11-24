@@ -36,7 +36,7 @@ export const POST: RequestHandler = async (event) => {
 
 	// Permission check with environment context (update requires create permission)
 	if (auth.authEnabled && !await auth.can('containers', 'create', envIdNum)) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	const warnings: PullWarning[] = [];
@@ -68,17 +68,17 @@ export const POST: RequestHandler = async (event) => {
 		}
 
 		if (repullImage) {
-			console.log(`Pulling image...`);
+			console.log(`正在拉取镜像...`);
 			try {
 				await pullImage(options.image, (data) => collectPullWarning(warnings, data), envIdNum);
-				console.log(`Image pulled successfully`);
+				console.log(`镜像拉取成功`);
 			} catch (pullError: any) {
-				console.log(`Pull failed: ${pullError.message}`);
+				console.log(`拉取失败: ${pullError.message}`);
 				throw pullError;
 			}
 		}
 
-		console.log(`Updating container ${params.id} with name: ${options.name}`);
+		console.log(`正在更新容器 ${params.id}，名称: ${options.name}`);
 
 		// The recreate can carry a new name; settings keyed by the name have to follow it.
 		const oldName = (await inspectContainer(params.id, envIdNum).catch(() => null))?.Name?.replace(/^\//, '');
@@ -105,7 +105,7 @@ export const POST: RequestHandler = async (event) => {
 			image: options.image,
 			labels: options.labels
 		});
-		if (activityError) console.warn(`Failed to log container update activity event (update stands): ${activityError}`);
+		if (activityError) console.warn(`记录容器更新活动事件失败 (更新已生效): ${activityError}`);
 
 		// Audit log - include full options to see what was modified
 		await auditContainer(event, 'update', container.id, options.name, envIdNum, { ...options, startAfterUpdate });
@@ -113,9 +113,9 @@ export const POST: RequestHandler = async (event) => {
 		return json({ warnings, success: true, id: container.id });
 	} catch (error: any) {
 		if (error?.statusCode === 404) {
-			return json({ error: error.json?.message || 'Container not found' }, { status: 404 });
+			return json({ error: error.json?.message || '容器未找到' }, { status: 404 });
 		}
-		console.error('Error updating container:', error?.message || error);
-		return json({ warnings, error: 'Failed to update container', details: error?.message || String(error) }, { status: 500 });
+		console.error('更新容器错误:', error?.message || error);
+		return json({ warnings, error: '更新容器失败', details: error?.message || String(error) }, { status: 500 });
 	}
 };

@@ -103,7 +103,7 @@ function generateHtmlPage(title: string, content: string): string {
             <a href="index.html">
                 <img src="images/logo-dark.webp" alt="Dockhand" class="logo-img">
             </a>
-            <a href="index.html" class="back-link">&larr; Back to home</a>
+            <a href="index.html" class="back-link">&larr; 返回主页</a>
         </header>
 
         <h1>${title}</h1>
@@ -125,13 +125,13 @@ const licenseContent = readFileSync(join(ROOT_DIR, 'LICENSE.txt'), 'utf-8');
 const privacyContent = readFileSync(join(ROOT_DIR, 'PRIVACY.txt'), 'utf-8');
 
 // Generate HTML pages
-const licenseHtml = generateHtmlPage('License Terms and Conditions', licenseContent);
-const privacyHtml = generateHtmlPage('Privacy Policy', privacyContent);
+const licenseHtml = generateHtmlPage('许可条款', licenseContent);
+const privacyHtml = generateHtmlPage('隐私政策', privacyContent);
 
 // Write to webpage directory
 writeFileSync(join(WEBPAGE_DIR, 'license.html'), licenseHtml);
 writeFileSync(join(WEBPAGE_DIR, 'privacy.html'), privacyHtml);
 
-console.log('Generated legal pages:');
+console.log('已生成法律页面：');
 console.log('  - webpage/license.html');
 console.log('  - webpage/privacy.html');

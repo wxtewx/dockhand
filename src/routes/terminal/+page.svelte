@@ -95,7 +95,7 @@
 				clearSelection();
 			}
 		} catch (error) {
-			console.error('Failed to fetch containers:', error);
+			console.error('获取容器失败：', error);
 		}
 	}
 

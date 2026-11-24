@@ -13,15 +13,15 @@
 set -e
 
 echo "============================================"
-echo "  Dockhand - Reset User MFA (PostgreSQL)"
+echo "  Dockhand - 重置用户多因素认证 (PostgreSQL)"
 echo "============================================"
 echo ""
 
 # Check arguments
 if [ -z "$1" ]; then
-    echo "Usage: $0 <username>"
+    echo "用法: $0 <用户名>"
     echo ""
-    echo "Example:"
+    echo "示例:"
     echo "  $0 admin"
     exit 1
 fi
@@ -30,9 +30,9 @@ USERNAME="$1"
 
 # Check DATABASE_URL
 if [ -z "$DATABASE_URL" ]; then
-    echo "Error: DATABASE_URL environment variable not set"
+    echo "错误：未设置 DATABASE_URL 环境变量"
     echo ""
-    echo "Example: DATABASE_URL=postgres://user:pass@host:5432/dockhand"
+    echo "示例: DATABASE_URL=postgres://user:pass@host:5432/dockhand"
     exit 1
 fi
 
@@ -42,9 +42,9 @@ cd /app 2>/dev/null || true
 USER_EXISTS=$(psql "$DATABASE_URL" -t -A -c "SELECT COUNT(*) FROM users WHERE username = '$USERNAME';" 2>/dev/null)
 
 if [ "$USER_EXISTS" = "0" ]; then
-    echo "Error: User '$USERNAME' not found"
+    echo "错误：未找到用户 '$USERNAME'"
     echo ""
-    echo "Available users:"
+    echo "可用用户列表："
     psql "$DATABASE_URL" -t -A -c "SELECT username FROM users;" 2>/dev/null | while read user; do
         echo "  - $user"
     done
@@ -54,26 +54,26 @@ fi
 # Show current MFA state
 MFA_ENABLED=$(psql "$DATABASE_URL" -t -A -c "SELECT mfa_enabled FROM users WHERE username = '$USERNAME';" 2>/dev/null)
 if [ "$MFA_ENABLED" = "t" ] || [ "$MFA_ENABLED" = "true" ]; then
-    STATUS="enabled"
+    STATUS="已启用"
 else
-    STATUS="already disabled"
+    STATUS="已关闭"
 fi
 
-echo "This script will disable MFA (TOTP) for user '$USERNAME'."
-echo "Backup codes will also be wiped — they cannot be reused."
+echo "本脚本将关闭用户 '$USERNAME' 的多因素认证 (TOTP)。"
+echo "备用验证码也会被清除，无法再次使用。"
 echo ""
-echo "Database: $DATABASE_URL"
-echo "Username: $USERNAME"
-echo "Current MFA: $STATUS"
+echo "数据库: $DATABASE_URL"
+echo "用户名: $USERNAME"
+echo "当前多因素认证状态: $STATUS"
 echo ""
-printf "Continue? [y/N]: "
+printf "是否继续？ [y/N]: "
 read CONFIRM
 
 case "$CONFIRM" in
     [yY]|[yY][eE][sS])
         ;;
     *)
-        echo "Aborted."
+        echo "已取消。"
         exit 0
         ;;
 esac
@@ -84,9 +84,9 @@ psql "$DATABASE_URL" -c "UPDATE users SET mfa_enabled = false, mfa_secret = NULL
 
 if [ $? -eq 0 ]; then
     echo ""
-    echo "MFA disabled successfully for user '$USERNAME'."
-    echo "The user can now log in with just their password and can re-enable MFA from their profile."
+    echo "已成功关闭用户 '$USERNAME' 的多因素认证。"
+    echo "该用户现在可仅使用密码登录，并可在个人资料页面重新开启多因素认证。"
 else
-    echo "Error: Failed to disable MFA"
+    echo "错误：关闭多因素认证失败"
     exit 1
 fi

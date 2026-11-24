@@ -5,6 +5,7 @@
 	import { getSeverityColor } from '$lib/utils/vulnerability';
 	import type { Finding, FindingContainer, VulnerabilitySummary as Summary, SortField } from '$lib/utils/vulnerability';
 	import { formatDateTime } from '$lib/stores/settings';
+	import { getLabelText } from '$lib/types';
 	import { goto } from '$app/navigation';
 	import ContainerInspectModal from '../containers/ContainerInspectModal.svelte';
 	import SeveritySummaryPills from '$lib/components/SeveritySummaryPills.svelte';
@@ -68,6 +69,16 @@
 	function toggleSort(field: SortField) {
 		const dir = field === sortField && sortDirection === 'asc' ? 'desc' : 'asc';
 		onSortChange?.(field, dir);
+	}
+
+	function formatTimestamp(ts: string): string {
+		if (!ts) return '-';
+		let fixedIso = ts.trim();
+		if (!fixedIso.includes('T')) fixedIso = fixedIso.replace(' ', 'T');
+		if (!fixedIso.endsWith('Z') && !fixedIso.includes('+') && !fixedIso.includes('-', 10)) {
+			fixedIso += 'Z';
+		}
+		return formatDateTime(fixedIso, true);
 	}
 
 </script>
@@ -168,7 +179,7 @@
 							<span class="font-mono text-xs truncate" title={finding.package}>{finding.package}</span>
 						{:else if column.id === 'severity'}
 							<Badge variant="outline" class="{getSeverityColor(finding.severity)} text-xs py-0 px-1.5">
-								{finding.severity}
+								{getLabelText(finding.severity)}
 							</Badge>
 						{:else if column.id === 'installed'}
 							<span class="font-mono text-xs truncate" title={finding.installedVersion}>{finding.installedVersion}</span>
@@ -217,7 +228,7 @@
 							{/if}
 						{:else if column.id === 'scannedAt'}
 							{#if finding.scannedAt}
-								<span class="text-xs text-muted-foreground whitespace-nowrap" title={finding.scannedAt}>{formatDateTime(finding.scannedAt)}</span>
+								<span class="text-xs text-muted-foreground whitespace-nowrap" title={finding.scannedAt}>{formatTimestamp(finding.scannedAt)}</span>
 							{:else}
 								<span class="text-xs text-muted-foreground">—</span>
 							{/if}

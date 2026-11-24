@@ -31,7 +31,7 @@ export function extractFirstFileFromTar(tarData: Uint8Array): Uint8Array {
 		const size = sizeOctal ? parseInt(sizeOctal, 8) : 0;
 		// The archive comes from a daemon: a negative size would keep the walk on the same
 		// header forever, so refuse it, and an unreadable one with it.
-		if (!Number.isFinite(size) || size < 0) throw new Error('Invalid tar header size');
+		if (!Number.isFinite(size) || size < 0) throw new Error('tar 头部大小无效');
 		const typeFlag = header[156];
 
 		// Regular file: typeflag '0' (0x30) or NUL (0x00, legacy)
@@ -41,7 +41,7 @@ export function extractFirstFileFromTar(tarData: Uint8Array): Uint8Array {
 			const start = offset + 512;
 			const end = start + size;
 			if (end > tarData.length) {
-				throw new Error('Truncated tar archive');
+				throw new Error('tar 归档文件不完整');
 			}
 			return tarData.subarray(start, end);
 		}
@@ -49,7 +49,7 @@ export function extractFirstFileFromTar(tarData: Uint8Array): Uint8Array {
 		// Skip header + content (padded to 512-byte boundary)
 		offset += 512 + Math.ceil(size / 512) * 512;
 	}
-	throw new Error('No regular file entry found in tar archive');
+	throw new Error('tar 归档中未找到普通文件条目');
 }
 
 function isZeroBlock(block: Uint8Array): boolean {

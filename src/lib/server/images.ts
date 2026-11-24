@@ -33,7 +33,7 @@ export async function loadImage(
 	const config = await getDockerConfig(envId);
 	if (config.connectionType === 'hawser-edge' || config.connectionType === 'hawser-standard') {
 		throw new Error(
-			'Uploading an image tar is not supported on Hawser connections yet; use a local or direct-TCP environment.'
+			'Hawser 连接暂不支持上传镜像 tar 包；请使用本地或直接 TCP 环境。'
 		);
 	}
 
@@ -51,7 +51,7 @@ export async function loadImage(
 
 	if (!response.ok) {
 		const body = await response.text().catch(() => '');
-		throw new Error(`Failed to load image (HTTP ${response.status})${body ? `: ${body}` : ''}`);
+		throw new Error(`镜像加载失败 (HTTP ${response.status})${body ? `: ${body}` : ''}`);
 	}
 
 	// Docker streams NDJSON progress inside a 200 response, and reports a failed load
@@ -73,7 +73,7 @@ export async function loadImage(
 			try {
 				const data = JSON.parse(line) as LoadProgress;
 				if (data.error || data.errorDetail) {
-					streamError = data.errorDetail?.message || data.error || 'Image load failed';
+					streamError = data.errorDetail?.message || data.error || '镜像加载失败';
 				}
 				onProgress?.(data);
 			} catch {
@@ -83,6 +83,6 @@ export async function loadImage(
 	}
 
 	if (streamError) {
-		throw new Error(`Failed to load image: ${streamError}`);
+		throw new Error(`镜像加载失败: ${streamError}`);
 	}
 }

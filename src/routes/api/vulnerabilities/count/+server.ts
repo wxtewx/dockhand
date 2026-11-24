@@ -31,7 +31,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 	if (groupByParam !== null) {
 		const groupBy = parseVulnGroupBy(groupByParam);
 		if (!groupBy) {
-			return json({ error: `groupBy must be one of ${VULN_GROUP_BY.join(', ')}` }, { status: 400 });
+			return json({ error: `groupBy 必须为 ${VULN_GROUP_BY.join(', ')} 其中之一` }, { status: 400 });
 		}
 		if (!envIdNum) return json({ groupBy, groups: [] });
 		return json({ groupBy, groups: await getVulnerabilityGroups(envIdNum, groupBy) });

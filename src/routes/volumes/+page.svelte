@@ -21,6 +21,7 @@
 	import { appSettings } from '$lib/stores/settings';
 	import ContainerIcon from '$lib/components/ContainerIcon.svelte';
 	import type { VolumeInfo } from '$lib/types';
+	import { getLabelText } from '$lib/types';
 	import { currentEnvironment, environments, appendEnvParam, clearStaleEnvironment } from '$lib/stores/environment';
 	import MultiSelectFilter from '$lib/components/MultiSelectFilter.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -64,7 +65,7 @@
 	const driverOptions = $derived(
 		[...new Set(volumes.map(v => v.driver))].sort().map(d => {
 			const mapping = driverIconMap[d] || { icon: Database, color: 'text-muted-foreground' };
-			return { value: d, label: d, icon: mapping.icon, color: mapping.color };
+			return { value: d, label: getLabelText(d), icon: mapping.icon, color: mapping.color };
 		})
 	);
 
@@ -261,7 +262,7 @@
 			}
 			volumes = await response.json();
 		} catch (error) {
-			console.error('Failed to fetch volumes:', error);
+			console.error('获取数据卷列表失败:', error);
 			toast.error(m.volumes_list_toast_load_failed());
 		} finally {
 			loading = false;
@@ -285,7 +286,7 @@
 			toast.success(m.containers_list_toast_removed({ name }));
 			await fetchVolumes();
 		} catch (error) {
-			console.error('Failed to remove volume:', error);
+			console.error('删除数据卷失败:', error);
 			deleteError = { name, message: m.volumes_list_error_remove() };
 			toast.error(m.containers_list_toast_remove_failed({ name }));
 			pendingTimeouts.push(setTimeout(() => {
@@ -338,7 +339,7 @@
 
 			toast.success(m.volumes_list_toast_exporting({ name: volumeName }));
 		} catch (err) {
-			console.error('Failed to export volume:', err);
+			console.error('导出数据卷失败:', err);
 			toast.error(m.volumes_list_toast_export_failed({ name: volumeName }));
 		} finally {
 			pendingTimeouts.push(setTimeout(() => {
@@ -541,15 +542,15 @@
 				{#if column.id === 'name'}
 					<code class="text-xs truncate block" title={volume.name}>{volume.name}</code>
 				{:else if column.id === 'driver'}
-					<Badge variant="outline" class="text-xs py-0 px-1.5 shadow-sm rounded-sm">{volume.driver}</Badge>
+					<Badge variant="outline" class="text-xs py-0 px-1.5 shadow-sm rounded-sm">{getLabelText(volume.driver)}</Badge>
 				{:else if column.id === 'type'}
 					{#if volume.options?.type}
-						<Badge variant="outline" class="text-xs py-0 px-1.5 shadow-sm rounded-sm" title={Object.entries(volume.options).map(([k, v]) => `${k}=${v}`).join('\n')}>{volume.options.type}</Badge>
+						<Badge variant="outline" class="text-xs py-0 px-1.5 shadow-sm rounded-sm" title={Object.entries(volume.options).map(([k, v]) => `${k}=${v}`).join('\n')}>{getLabelText(volume.options.type)}</Badge>
 					{:else}
 						<span class="text-muted-foreground text-xs">-</span>
 					{/if}
 				{:else if column.id === 'scope'}
-					<span class="text-xs">{volume.scope}</span>
+					<span class="text-xs">{getLabelText(volume.scope)}</span>
 				{:else if column.id === 'stack'}
 					{#if stack}
 						<button

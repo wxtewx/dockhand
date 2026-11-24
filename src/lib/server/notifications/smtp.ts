@@ -11,7 +11,7 @@ export async function sendSmtpNotification(config: SmtpConfig, payload: Notifica
 		// so the guard sits here too, not only at save time.
 		const hostReason = smtpHostReason(config.host) ?? await resolvedHostReason(config.host, undefined, { allowLoopback: true });
 		if (hostReason) {
-			return { success: false, error: `SMTP error: ${hostReason}` };
+			return { success: false, error: `SMTP 错误: ${hostReason}` };
 		}
 
 		const transporter = nodemailer.createTransport({
@@ -43,6 +43,6 @@ export async function sendSmtpNotification(config: SmtpConfig, payload: Notifica
 		return { success: true };
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
-		return { success: false, error: `SMTP error: ${errorMsg}` };
+		return { success: false, error: `SMTP 发送异常: ${errorMsg}` };
 	}
 }

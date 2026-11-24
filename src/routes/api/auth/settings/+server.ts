@@ -22,10 +22,10 @@ export const GET: RequestHandler = async ({ cookies }) => {
 	// When auth is enabled, require authentication first, then settings:view permission
 	if (auth.authEnabled) {
 		if (!auth.isAuthenticated) {
-			return json({ error: 'Authentication required' }, { status: 401 });
+			return json({ error: '需要身份验证' }, { status: 401 });
 		}
 		if (!await auth.can('settings', 'view')) {
-			return json({ error: 'Permission denied' }, { status: 403 });
+			return json({ error: '权限不足' }, { status: 403 });
 		}
 	}
 
@@ -33,8 +33,8 @@ export const GET: RequestHandler = async ({ cookies }) => {
 		const [settings, passkeysEnabled] = await Promise.all([getAuthSettings(), getPasskeysEnabled()]);
 		return json({ ...settings, passkeysEnabled, passkeysConfigurable: isWebAuthnConfigured() });
 	} catch (error) {
-		console.error('Failed to get auth settings:', error);
-		return json({ error: 'Failed to get auth settings' }, { status: 500 });
+		console.error('获取身份验证设置失败:', error);
+		return json({ error: '获取身份验证设置失败' }, { status: 500 });
 	}
 };
 
@@ -59,10 +59,10 @@ export const PUT: RequestHandler = async ({ request, cookies }) => {
 
 	if (auth.authEnabled) {
 		if (!auth.isAuthenticated) {
-			return json({ error: 'Authentication required' }, { status: 401 });
+			return json({ error: '需要身份验证' }, { status: 401 });
 		}
 		if (!auth.isAdmin) {
-			return json({ error: 'Permission denied' }, { status: 403 });
+			return json({ error: '权限不足' }, { status: 403 });
 		}
 	}
 
@@ -75,8 +75,8 @@ export const PUT: RequestHandler = async ({ request, cookies }) => {
 			// PostgreSQL returns bigint for count(*), convert to number for comparison
 			if (Number(userCount) === 0) {
 				const errorMessage = auth.isEnterprise
-					? 'Cannot enable authentication without an admin user. Create a user and assign them the Admin role first.'
-					: 'Cannot enable authentication without any users. Create a user first.';
+					? '无法在不存在管理员用户的情况下启用身份验证。请先创建用户并为其分配管理员角色。'
+					: '无任何用户时无法启用身份验证，请先创建用户。';
 				return json({
 					error: errorMessage,
 					requiresUser: true
@@ -106,7 +106,7 @@ export const PUT: RequestHandler = async ({ request, cookies }) => {
 			passkeysConfigurable: isWebAuthnConfigured()
 		});
 	} catch (error) {
-		console.error('Failed to update auth settings:', error);
-		return json({ error: 'Failed to update auth settings' }, { status: 500 });
+		console.error('更新身份验证设置失败:', error);
+		return json({ error: '更新身份验证设置失败' }, { status: 500 });
 	}
 };

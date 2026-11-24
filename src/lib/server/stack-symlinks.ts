@@ -45,19 +45,19 @@ export function judgeSymlink(
 	exists?: (absPath: string) => boolean
 ): SymlinkVerdict {
 	if (isAbsolute(target)) {
-		return { kind: 'refuse', target, reason: 'the target is an absolute path' };
+		return { kind: 'refuse', target, reason: '目标为绝对路径' };
 	}
 	const rootAbs = resolve(root);
 	const linkDir = dirname(resolve(linkPath));
 	const resolved = resolve(linkDir, target);
 	if (!within(resolved, rootAbs)) {
-		return { kind: 'refuse', target, reason: 'the target is outside the stack directory' };
+		return { kind: 'refuse', target, reason: '目标位于堆栈目录之外' };
 	}
 	if (within(linkDir, resolved)) {
-		return { kind: 'refuse', target, reason: 'the target contains the link itself' };
+		return { kind: 'refuse', target, reason: '目标包含该链接自身' };
 	}
 	if (exists && !exists(resolved)) {
-		return { kind: 'refuse', target, reason: 'the target does not exist' };
+		return { kind: 'refuse', target, reason: '目标不存在' };
 	}
 	return { kind: 'carry', target };
 }

@@ -30,12 +30,12 @@ export const POST: RequestHandler = async (event) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !(await auth.can('stacks', 'start', envIdNum))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Environment access check (enterprise only)
 	if (await deniesEnvScope(auth, envIdNum)) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '该环境访问被拒绝' }, { status: 403 });
 	}
 
 	const body = await request.json().catch(() => ({}));
@@ -50,7 +50,7 @@ export const POST: RequestHandler = async (event) => {
 	// Validate the name shape before it is used in a filesystem path.
 	const stackName = params.name;
 	if (!isValidStackName(stackName)) {
-		return json({ error: 'Invalid stack name' }, { status: 400 });
+		return json({ error: '无效的堆栈名称' }, { status: 400 });
 	}
 
 	// Read up-front (not inside createJobResponse's callback, as before): the run
@@ -63,7 +63,7 @@ export const POST: RequestHandler = async (event) => {
 	} catch (error) {
 		const message = error instanceof ComposeFileNotFoundError
 			? error.message
-			: 'Failed to deploy compose stack';
+			: '部署 Compose 堆栈失败';
 		return createJobResponse(async (send) => {
 			send('result', { success: false, error: message });
 		}, event.request);
@@ -71,8 +71,8 @@ export const POST: RequestHandler = async (event) => {
 
 	if (!composeResult.success) {
 		const message = composeResult.needsFileLocation
-			? 'Stack compose file location not configured'
-			: composeResult.error || 'Compose file not found';
+			? '堆栈 Compose 文件路径未配置'
+			: composeResult.error || '未找到 Compose 文件';
 		return createJobResponse(async (send) => {
 			send('result', { success: false, error: message });
 		}, event.request);
@@ -95,7 +95,7 @@ export const POST: RequestHandler = async (event) => {
 
 	return createJobResponse(async (send) => {
 		try {
-			send('progress', { status: 'Deploying stack...' });
+			send('progress', { status: '正在部署堆栈...' });
 			const result = await deployStack({
 				name: stackName,
 				compose: composeResult.content!,
@@ -132,8 +132,8 @@ export const POST: RequestHandler = async (event) => {
 				send('result', { success: false, error: error.message });
 				return;
 			}
-			console.error('Error deploying compose stack:', error);
-			send('result', { success: false, error: 'Failed to deploy compose stack' });
+			console.error('部署 Compose 堆栈时发生错误:', error);
+			send('result', { success: false, error: '部署 Compose 堆栈失败' });
 		}
 	}, event.request, recorder);
 };

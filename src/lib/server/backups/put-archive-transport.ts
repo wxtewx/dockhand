@@ -28,7 +28,7 @@ export function withIdleWatchdog(tar: Readable, label: string, idleMs = TAR_IDLE
 	const arm = () => {
 		if (timer) clearTimeout(timer);
 		timer = setTimeout(() => {
-			const err = new Error(`${label}: no data flowed for ${Math.round(idleMs / 1000)}s - the target is not reading (stalled/dead); aborting upload`);
+			const err = new Error(`${label}: 连续 ${Math.round(idleMs / 1000)} 秒无数据传输，目标端未读取数据 (已停滞/失联)，终止上传`);
 			tar.destroy(err);
 			out.destroy(err);
 		}, idleMs);

@@ -3,6 +3,7 @@
 	import { CheckCircle2, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-svelte';
 	import { getSeverityColor, SEVERITY_ORDER } from '$lib/utils/vulnerability';
 	import { m } from '$lib/paraglide/messages.js';
+	import { getLabelText } from '$lib/types';
 
 	interface ScanResult {
 		scanner: 'grype' | 'trivy';
@@ -222,7 +223,7 @@
 									</td>
 									<td class="py-1 px-2">
 										<Badge variant="outline" class="{getSeverityColor(vuln.severity)} text-xs py-0 px-1.5">
-											{vuln.severity}
+											{getLabelText(vuln.severity)}
 										</Badge>
 									</td>
 									<td class="py-1 px-2 max-w-[300px]">

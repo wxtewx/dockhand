@@ -257,7 +257,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
 	// Every signed-in user gets the presentation half of this table, which the UI needs
 	// to render at all; the operational half is filtered out below.
 	if (auth.authEnabled && !auth.isAuthenticated) {
-		return json({ error: 'Authentication required' }, { status: 401 });
+		return json({ error: '需要身份验证' }, { status: 401 });
 	}
 
 	try {
@@ -453,8 +453,8 @@ export const GET: RequestHandler = async ({ cookies }) => {
 		// the same permission as the settings page itself.
 		return json(visibleGeneralSettings(settings, await auth.can('settings', 'view')));
 	} catch (error) {
-		console.error('Failed to get general settings:', error);
-		return json({ error: 'Failed to get general settings' }, { status: 500 });
+		console.error('获取常规设置失败：', error);
+		return json({ error: '获取常规设置失败' }, { status: 500 });
 	}
 };
 
@@ -469,7 +469,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	const auth = await authorize(cookies);
 	if (auth.authEnabled && !await auth.can('settings', 'edit')) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	try {
@@ -477,7 +477,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		// can() without an environmentId merges every role, env-scoped ones included, so it
 		// cannot express "instance-wide"; admin is the answer, as in POST /api/settings/scanner.
 		if (auth.authEnabled && !auth.isAdmin && writesAdminOnlySetting(body)) {
-			return json({ error: 'Changing scanner or backup helper settings requires administrator access' }, { status: 403 });
+			return json({ error: '修改扫描器或备份助手设置需要管理员权限' }, { status: 403 });
 		}
 
 		const { confirmDestructive, showStoppedContainers, highlightUpdates, coloredActionButtons, actionIconSize, timeFormat, dateFormat, downloadFormat, defaultGrypeArgs, defaultTrivyArgs, scheduleRetentionDays, eventRetentionDays, scheduleCleanupCron, eventCleanupCron, scheduleCleanupEnabled, eventCleanupEnabled, scannerCleanupCron, scannerCleanupEnabled, deployLogReconcileCron, deployLogReconcileEnabled, scanRetentionCron, scanRetentionEnabled, scanRetentionKeep, scanRetentionGraceDays, logBufferSizeKb, logMaxLines, defaultTimezone, eventCollectionMode, eventPollInterval, metricsCollectionInterval, lightTheme, darkTheme, font, fontSize, gridFontSize, terminalFont, editorFont, editorTheme, compactPorts, showExposedPorts, showGitCommitHash, formatLogTimestamps, externalStackPaths, primaryStackLocation, defaultGrypeImage, defaultTrivyImage, defaultComposeTemplate, labelFilterMode, defaultBackupImage, honorProxyLabels, showImageChangelogLinks, useSelfhstIcons, animateIcons, editorIndentGuides, protectScannerImages, showWhatsNew, defaultScannerNetworkMode, defaultScannerDns, stackLogOperations } = body;
@@ -885,7 +885,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 		return json(settings);
 	} catch (error) {
-		console.error('Failed to save general settings:', error);
-		return json({ error: 'Failed to save general settings' }, { status: 500 });
+		console.error('保存常规设置失败：', error);
+		return json({ error: '保存常规设置失败' }, { status: 500 });
 	}
 };

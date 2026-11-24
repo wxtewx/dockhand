@@ -10,11 +10,11 @@
 set -e
 
 echo "========================================"
-echo "  Dockhand - Clear All Sessions (SQLite)"
+echo "  Dockhand - 清空所有会话 (SQLite)"
 echo "========================================"
 echo ""
-echo "This script will clear all user sessions,"
-echo "forcing all users to log in again."
+echo "本脚本将清空所有用户会话，"
+echo "强制所有用户重新登录。"
 echo ""
 
 # Default database path
@@ -26,37 +26,37 @@ if [ ! -f "$DB_PATH" ] && [ -f "./data/db/dockhand.db" ]; then
 fi
 
 if [ ! -f "$DB_PATH" ]; then
-    echo "Error: Database not found at $DB_PATH"
-    echo "Set DOCKHAND_DB environment variable to specify the database path"
+    echo "错误：未在路径 $DB_PATH 找到数据库"
+    echo "请设置 DOCKHAND_DB 环境变量以指定数据库路径"
     exit 1
 fi
 
 COUNT=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM sessions;")
 
-echo "Database: $DB_PATH"
-echo "Active sessions: $COUNT"
+echo "数据库：$DB_PATH"
+echo "活跃会话数：$COUNT"
 echo ""
-printf "Continue? [y/N]: "
+printf "是否继续？[y/N]："
 read CONFIRM
 
 case "$CONFIRM" in
     [yY]|[yY][eE][sS])
         ;;
     *)
-        echo "Aborted."
+        echo "已取消。"
         exit 0
         ;;
 esac
 
 echo ""
-echo "Clearing all user sessions..."
+echo "正在清空所有用户会话..."
 sqlite3 "$DB_PATH" "DELETE FROM sessions;"
 
 if [ $? -eq 0 ]; then
     echo ""
-    echo "Cleared $COUNT session(s) successfully."
-    echo "All users will need to log in again."
+    echo "成功清空 $COUNT 个会话。"
+    echo "所有用户需要重新登录。"
 else
-    echo "Error: Failed to clear sessions"
+    echo "错误：清空会话失败"
     exit 1
 fi

@@ -29,6 +29,7 @@
 	import { Input } from "$lib/components/ui/input";
 	import type { NetworkInfo } from "$lib/types";
 	import { m } from "$lib/paraglide/messages.js";
+	import { getLabelText } from "$lib/types";
 
 	interface Props {
 		networks: NetworkInfo[];
@@ -52,11 +53,11 @@
 	let showLayoutMenu = $state(false);
 
 	const layoutOptions: { value: LayoutType; label: string; icon: string }[] = [
-		{ value: "breadthfirst", label: "Tree", icon: "tree" },
-		{ value: "grid", label: "Grid", icon: "grid" },
-		{ value: "circle", label: "Circle", icon: "circle" },
-		{ value: "concentric", label: "Radial", icon: "radial" },
-		{ value: "cose", label: "Force", icon: "force" },
+		{ value: "breadthfirst", label: "树状", icon: "tree" },
+		{ value: "grid", label: "网格", icon: "grid" },
+		{ value: "circle", label: "环形", icon: "circle" },
+		{ value: "concentric", label: "辐射", icon: "radial" },
+		{ value: "cose", label: "力导向", icon: "force" },
 	];
 
 	function buildGraphElements(nets: NetworkInfo[]) {
@@ -121,30 +122,15 @@
 			});
 		});
 
-		// Connect services to networks
 		services.forEach((service) => {
 			const serviceNetworks = service.networks;
 			if (serviceNetworks) {
 				serviceNetworks.forEach((network) => {
 					const netName = network.netName;
-					const foundName = networks.find((network) => network.name === netName);
-					if (foundName || netName === "default") {
-						const targetId = foundName ? `network-${netName}` : "network-default";
-						const defaultNet = networks.find((network) => network.name === "default");
-						if (netName === "default" && !defaultNet) {
-							const defaultExists = elements.find((e) => e.data.id === "network-default");
-							if (!defaultExists) {
-								elements.push({
-									data: {
-										id: "network-default",
-										label: "default",
-										type: "network",
-										driver: "bridge",
-										external: false,
-									},
-								});
-							}
-						}
+					const foundNetwork = networks.find(n => n.name === netName);
+
+					if (foundNetwork) {
+						const targetId = `network-${netName}`;
 						elements.push({
 							data: {
 								id: `net-${service.containerName}-${netName}`,
@@ -174,14 +160,12 @@
 	function createGraph(useExistingData = false, skipLayout = false) {
 		if (!containerEl) return;
 
-		// Even if parsing failed, we get at least an empty structure to render
 		if (!networks) {
 			networks = [];
 		}
 
 		const elements = buildGraphElements(networks);
 
-		// If skipping layout, store current positions before destroying
 		let savedPositions: Map<string, { x: number; y: number }> | null = null;
 		if (skipLayout && cy) {
 			savedPositions = new Map();
@@ -195,7 +179,6 @@
 			cy.destroy();
 		}
 
-		// Theme-based colors
 		const isDark = graphTheme === "dark";
 		const colors = {
 			service: {
@@ -319,45 +302,24 @@
 						"target-arrow-color": "#f59e0b",
 					},
 				},
-				// Connection mode - highlight services
-				{
-					selector: "node.connection-source",
-					style: {
-						"border-width": 4,
-						"border-color": "#22c55e",
-						"overlay-color": "#22c55e",
-						"overlay-padding": 5,
-						"overlay-opacity": 0.3,
-					},
-				},
-				{
-					selector: "node.connection-target",
-					style: {
-						"border-color": "#3b82f6",
-						"border-width": 3,
-						"overlay-color": "#3b82f6",
-						"overlay-padding": 3,
-						"overlay-opacity": 0.2,
-					},
-				},
 			],
 			layout:
 				skipLayout && savedPositions
 					? { name: "preset" }
 					: {
 							name: "breadthfirst",
-							directed: true,
+							directed: false,
 							padding: 50,
-							spacingFactor: 1.5,
+							spacingFactor: 1.8,
 							avoidOverlap: true,
 							nodeDimensionsIncludeLabels: true,
+							grid: true
 						},
 			wheelSensitivity: 0.3,
 			minZoom: 0.3,
 			maxZoom: 3,
 		});
 
-		// Restore saved positions if skipping layout
 		if (skipLayout && savedPositions) {
 			cy.nodes().forEach((node) => {
 				const savedPos = savedPositions!.get(node.id());
@@ -367,17 +329,16 @@
 			});
 		}
 
-		// Handle node selection
 		cy.on("tap", "node", (evt) => {
-			const nodeData = evt.target.data();
-			console.log("Node tapped:", nodeData);
+			evt.preventDefault();
+			const node = evt.target;
+			if (!node || !node.data) return;
 
-			selectedNode = nodeData;
+			const nodeData = node.data();
+			selectedNode = JSON.parse(JSON.stringify(nodeData));
 			selectedEdge = null;
-			console.log("selectedNode set to:", selectedNode);
 		});
 
-		// Handle edge selection
 		cy.on("tap", "edge", (evt) => {
 			selectedEdge = evt.target.data();
 			selectedNode = null;
@@ -392,7 +353,6 @@
 
 		graphInitialized = true;
 
-		// Ensure the graph renders correctly after container is sized
 		setTimeout(() => {
 			if (cy) {
 				cy.resize();
@@ -416,11 +376,7 @@
 	// Exported function to handle container resize
 	export function resize() {
 		if (cy && containerEl) {
-			// Cytoscape caches container dimensions aggressively
-			// We need to unmount and remount to the container
 			cy!.unmount();
-
-			// Wait for DOM to update
 			requestAnimationFrame(() => {
 				if (cy && containerEl) {
 					cy!.mount(containerEl);
@@ -436,6 +392,8 @@
 			padding: 50,
 			avoidOverlap: true,
 			nodeDimensionsIncludeLabels: true,
+			fit: true,
+			animate: false
 		};
 
 		switch (layoutName) {
@@ -443,41 +401,27 @@
 				return {
 					...baseConfig,
 					name: "breadthfirst",
-					directed: true,
-					spacingFactor: 1.5,
+					directed: false,
+					spacingFactor: 1.8,
+					grid: true
 				};
 			case "grid":
-				return {
-					...baseConfig,
-					name: "grid",
-					rows: undefined,
-					cols: undefined,
-				};
+				return { ...baseConfig, name: "grid" };
 			case "circle":
-				return {
-					...baseConfig,
-					name: "circle",
-					spacingFactor: 1.2,
-				};
+				return { ...baseConfig, name: "circle" };
 			case "concentric":
 				return {
 					...baseConfig,
 					name: "concentric",
-					minNodeSpacing: 50,
-					concentric: (node: any) => {
-						// Services at center, resources around
-						return node.data("type") === "service" ? 2 : 1;
-					},
-					levelWidth: () => 1,
+					minNodeSpacing: 50
 				};
 			case "cose":
 				return {
 					...baseConfig,
 					name: "cose",
-					idealEdgeLength: () => 100,
-					nodeOverlap: 20,
-					animate: true,
-					animationDuration: 500,
+					idealEdgeLength: 100,
+					nodeOverlap: 30,
+					randomize: false
 				};
 			default:
 				return { ...baseConfig, name: layoutName };
@@ -500,17 +444,14 @@
 	}
 
 	onMount(() => {
-		// Follow app theme from localStorage
 		const appTheme = localStorage.getItem("theme");
 		if (appTheme === "dark" || appTheme === "light") {
 			graphTheme = appTheme;
 		} else {
-			// Fallback to system preference
 			graphTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 		}
 	});
 
-	// Create graph when container element becomes available
 	$effect(() => {
 		if (containerEl && networks && !graphInitialized) {
 			createGraph();
@@ -526,28 +467,22 @@
 
 	function toggleGraphTheme() {
 		graphTheme = graphTheme === "light" ? "dark" : "light";
-		createGraph(true); // Recreate graph with new theme, preserve local edits
+		createGraph(true);
 	}
 
 	function getNodeIcon(type: string) {
 		switch (type) {
-			case "service":
-				return Box;
-			case "network":
-				return Network;
-			default:
-				return Database;
+			case "service": return Box;
+			case "network": return Network;
+			default: return Database;
 		}
 	}
 
 	function getNodeColor(type: string) {
 		switch (type) {
-			case "service":
-				return "bg-blue-500";
-			case "network":
-				return "bg-violet-500";
-			default:
-				return "bg-slate-500";
+			case "service": return "bg-blue-500";
+			case "network": return "bg-violet-500";
+			default: return "bg-slate-500";
 		}
 	}
 
@@ -714,7 +649,7 @@
 										<NodeIcon class="w-3.5 h-3.5 text-white" />
 									</div>
 									<div>
-										<h3 class="font-semibold text-sm text-zinc-800 dark:text-zinc-100">
+										<h3 class="font-semibold text-sm text-zinc-800 dark:zinc-100">
 											{selectedNode.label}
 										</h3>
 										<p class="text-xs text-zinc-500 dark:text-zinc-400 capitalize">
@@ -803,7 +738,7 @@
 												{:else}
 													<CircleOff class="w-3.5 h-3.5 text-muted-foreground" />
 												{/if}
-												<span class="capitalize">{selectedNode.config.driver}</span>
+												<span class="capitalize">{getLabelText(String(selectedNode.config.driver || 'bridge'))}</span>
 											</span>
 										</div>
 									</div>
@@ -823,7 +758,6 @@
 										</div>
 									</div>
 
-									<!-- Boolean flags -->
 									<div class="space-y-2 pointer-events-none select-none">
 										<label class="flex items-center gap-2 cursor-pointer">
 											<input type="checkbox" bind:checked={selectedNode.config.external} class="rounded border-zinc-300" />

@@ -26,12 +26,12 @@ export const POST: RequestHandler = async (event) => {
 
 	// Permission check with environment context
 	if (auth.authEnabled && !(await auth.can('stacks', 'restart', envIdNum))) {
-		return json({ error: 'Permission denied' }, { status: 403 });
+		return json({ error: '权限不足' }, { status: 403 });
 	}
 
 	// Environment access check (enterprise only)
 	if (await deniesEnvScope(auth, envIdNum)) {
-		return json({ error: 'Access denied to this environment' }, { status: 403 });
+		return json({ error: '该环境访问被拒绝' }, { status: 403 });
 	}
 
 	const modeParam = url.searchParams.get('mode');
@@ -39,7 +39,7 @@ export const POST: RequestHandler = async (event) => {
 
 	// Validate the name shape before it is used in a filesystem path.
 	if (!isValidStackName(params.name)) {
-		return json({ error: 'Invalid stack name' }, { status: 400 });
+		return json({ error: '堆栈名称无效' }, { status: 400 });
 	}
 
 	return createJobResponse(async (send) => {
@@ -60,8 +60,8 @@ export const POST: RequestHandler = async (event) => {
 				send('result', { success: false, error: error.message });
 				return;
 			}
-			console.error('Error restarting compose stack:', error);
-			send('result', { success: false, error: 'Failed to restart compose stack' });
+			console.error('重启 Compose 堆栈时出错：', error);
+			send('result', { success: false, error: '重启 Compose 堆栈失败' });
 		}
 	}, event.request);
 };

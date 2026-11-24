@@ -58,16 +58,16 @@ export function createTagCache(now: () => number = Date.now, warn: (message: str
 				result = await list();
 			} catch (error) {
 				result = { tags: [], complete: false };
-				warn(`[Semver] Listing tags for ${key} failed: ${error instanceof Error ? error.message : String(error)}`);
+				warn(`[语义化版本] 获取 ${key} 的标签列表失败: ${error instanceof Error ? error.message : String(error)}`);
 			}
 			if (!result.complete) {
 				// A failed or cut-off relist never replaces a complete list that is still valid.
 				const previous = cache.get(key);
 				if (previous && previous.complete && previous.expiresAt > now()) {
-					warn(`[Semver] Tag list for ${key} is incomplete (${result.tags.length} read); keeping the complete list from before`);
+					warn(`[语义化版本] ${key} 的标签列表不完整 (已读取 ${result.tags.length} 条)；保留之前已完成的列表`);
 					return previous.tags;
 				}
-				warn(`[Semver] Tag list for ${key} is incomplete (${result.tags.length} read); listing again in ${INCOMPLETE_TTL_MS / 60000} min`);
+				warn(`[语义化版本] ${key} 的标签列表不完整 (已读取 ${result.tags.length} 条)；将在 ${INCOMPLETE_TTL_MS / 60000} 分钟后重新拉取`);
 			}
 			// Keys include the running tag, so expired entries are dropped rather than left behind.
 			for (const [k, entry] of cache) if (entry.expiresAt <= now()) cache.delete(k);

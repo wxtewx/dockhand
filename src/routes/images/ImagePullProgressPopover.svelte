@@ -160,7 +160,7 @@
 
 							const layerProgress: LayerProgress = {
 								id: data.id,
-								status: data.status || 'Processing',
+								status: data.status || '处理中',
 								progress: data.progress,
 								current: data.progressDetail?.current,
 								total: data.progressDetail?.total,
@@ -178,7 +178,7 @@
 
 							const layerProgress: LayerProgress = {
 								id: data.id,
-								status: data.status || 'Processing',
+								status: data.status || '处理中',
 								progress: data.progress,
 								current: data.progressDetail?.current,
 								total: data.progressDetail?.total,
@@ -192,11 +192,11 @@
 						statusMessage = data.status;
 					}
 				} catch (e) {
-					console.error('Failed to process job line:', e);
+					console.error('处理任务日志失败:', e);
 				}
 			});
 		} catch (error: any) {
-			console.error('Failed to pull image:', error);
+			console.error('拉取镜像失败:', error);
 			overallStatus = 'error';
 			errorMessage = error.message || m.pull_error_failed();
 		}
@@ -320,7 +320,7 @@
 									</div>
 								{:else}
 									<span class="text-2xs {getStatusColor(layer.status)} truncate block">
-										{layer.status}
+										{getLabelText(layer.status)}
 									</span>
 								{/if}
 							</div>

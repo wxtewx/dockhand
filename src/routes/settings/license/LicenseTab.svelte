@@ -46,7 +46,7 @@
 			const response = await fetch('/api/license');
 			licenseInfo = await response.json();
 		} catch (error) {
-			console.error('Failed to fetch license info:', error);
+			console.error('获取许可证信息失败:', error);
 			licenseInfo = { valid: false, active: false, error: m.settings_license_load_failed() };
 		} finally {
 			licenseLoading = false;
@@ -102,7 +102,7 @@
 			await licenseStore.check();
 			toast.success(m.settings_license_toast_deactivated());
 		} catch (error) {
-			console.error('Failed to deactivate license:', error);
+			console.error('注销许可证失败:', error);
 			toast.error(m.settings_license_deactivate_failed());
 		}
 	}
@@ -160,10 +160,10 @@
 						<p class="font-medium flex items-center gap-1">
 							{#if isEnterprise}
 								<Crown class="w-3.5 h-3.5 text-amber-500" />
-								<span class="text-amber-600 dark:text-amber-400">Enterprise</span>
+								<span class="text-amber-600 dark:text-amber-400">企业版</span>
 							{:else}
 								<Building2 class="w-3.5 h-3.5 text-blue-500" />
-								<span class="text-blue-600 dark:text-blue-400">SMB</span>
+								<span class="text-blue-600 dark:text-blue-400">中小企业版</span>
 							{/if}
 						</p>
 					</div>

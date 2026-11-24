@@ -89,7 +89,7 @@ export function createDiskUsageCache<T>(
 		const giveUpMs = options.giveUpMs ?? options.hardTimeoutMs * 5;
 		let giveUpTimer: ReturnType<typeof setTimeout> | undefined;
 		const giveUp = new Promise<never>((_, reject) => {
-			giveUpTimer = setTimeout(() => reject(new Error(`no answer after ${giveUpMs} ms`)), giveUpMs);
+			giveUpTimer = setTimeout(() => reject(new Error(`等待 ${giveUpMs} 毫秒后仍无响应`)), giveUpMs);
 			(giveUpTimer as { unref?: () => void }).unref?.();
 		});
 		giveUp.catch(() => {});
@@ -115,7 +115,7 @@ export function createDiskUsageCache<T>(
 				const data = await Promise.race([scan, giveUp]);
 				return data ?? null;
 			} catch (error) {
-				console.warn(`[Docker] /system/df failed for env ${envId}:`, error instanceof Error ? error.message : String(error));
+				console.warn(`[Docker] env ${envId} 的 /system/df 查询失败:`, error instanceof Error ? error.message : String(error));
 				return null;
 			} finally {
 				clearTimeout(abortTimer);

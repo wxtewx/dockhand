@@ -136,7 +136,7 @@
 				filterToDate = parsed.toDate || '';
 			}
 		} catch (e) {
-			console.error('Failed to load audit filters from localStorage:', e);
+			console.error('从本地存储加载审计筛选条件失败:', e);
 		}
 	}
 
@@ -153,7 +153,7 @@
 				toDate: filterToDate
 			}));
 		} catch (e) {
-			console.error('Failed to save audit filters to localStorage:', e);
+			console.error('保存审计筛选条件到本地存储失败:', e);
 		}
 	}
 
@@ -176,7 +176,13 @@
 		{ value: 'role', label: m.audit_entity_roles() },
 		{ value: 'settings', label: m.nav_settings() },
 		{ value: 'git_repository', label: m.audit_entity_git_repositories() },
-		{ value: 'git_credential', label: m.audit_entity_git_credentials() }
+		{ value: 'git_credential', label: m.audit_entity_git_credentials() },
+		{ value: 'git_stack', label: 'Git 堆栈' },
+		{ value: 'config_set', label: '配置集' },
+		{ value: 'api_token', label: 'API 令牌' },
+		{ value: 'notification', label: '通知' },
+		{ value: 'backup_destination', label: '备份目标' },
+		{ value: 'backup_config', label: '备份配置' }
 	];
 
 	const actionTypes = [
@@ -198,6 +204,21 @@
 		{ value: 'logout', label: m.audit_action_logout() },
 		{ value: 'sync', label: m.audit_action_sync() }
 	];
+
+	function translateDescription(desc: string): string {
+  		if (!desc) return '';
+  		let translated = desc;
+
+  		entityTypes.forEach(item => {
+    		translated = translated.replace(new RegExp(`\\b${item.value}\\b`, 'g'), item.label);
+  		});
+
+  		actionTypes.forEach(item => {
+    		translated = translated.replace(new RegExp(`\\b${item.value}\\b`, 'g'), item.label);
+  		});
+
+  		return translated;
+	}
 
 	// Date filter preset
 	let selectedDatePreset = $state<string>('');
@@ -321,7 +342,7 @@
 				signal: fetchController.signal
 			});
 			if (!response.ok) {
-				throw new Error('Failed to fetch audit logs');
+				throw new Error('获取审计日志失败');
 			}
 			const data = await response.json();
 
@@ -348,7 +369,7 @@
 			if (error?.name === 'AbortError') {
 				return;
 			}
-			console.error('Failed to fetch audit logs:', error);
+			console.error('获取审计日志失败:', error);
 			if (!append && !silent) {
 				logs = [];
 				total = 0;
@@ -369,7 +390,7 @@
 				users = await response.json();
 			}
 		} catch (error) {
-			console.error('Failed to fetch users:', error);
+			console.error('获取用户列表失败:', error);
 		}
 	}
 
@@ -380,7 +401,7 @@
 				environments = await response.json();
 			}
 		} catch (error) {
-			console.error('Failed to fetch environments:', error);
+			console.error('获取环境列表失败:', error);
 		}
 	}
 
@@ -604,7 +625,7 @@
 	<!-- Header -->
 	<div class="shrink-0 flex flex-wrap justify-between items-center gap-3 min-h-8">
 		<div class="flex items-center gap-3">
-			<PageHeader icon={Crown} title={m.nav_audit_log()} iconClass="text-amber-500" count={visibleEnd > 0 ? `${visibleStart}-${visibleEnd}` : undefined} total={total > 0 ? total : undefined} countClass="min-w-32" />
+			<PageHeader icon={Crown} title={m.nav_audit_log()} iconClass="text-amber-500" count={visibleEnd > 0 && total > 0 ? `${visibleStart}-${visibleEnd} 条 / 共 ${total} 条` : undefined} total={undefined} countClass="min-w-32" />
 		</div>
 		{#if $licenseStore.isEnterprise}
 			<div class="flex flex-wrap items-center gap-2">
@@ -895,14 +916,14 @@
 					</div>
 				{:else if column.id === 'action'}
 					<div class="flex justify-center">
-						<Badge class="{getActionColor(log.action)} py-0.5 px-1" title={log.action.charAt(0).toUpperCase() + log.action.slice(1)}>
+						<Badge class="{getActionColor(log.action)} py-0.5 px-1" title={actionTypes.find(a => a.value === log.action)?.label || log.action}>
 							<svelte:component this={getActionIcon(log.action)} class="w-3 h-3" />
 						</Badge>
 					</div>
 				{:else if column.id === 'entity'}
 					<div class="flex items-center gap-1 text-xs">
 						<svelte:component this={getEntityIcon(log.entityType)} class="w-3 h-3 text-muted-foreground shrink-0" />
-						<span class="truncate">{log.entityType}</span>
+						<span class="truncate">{entityTypes.find(e => e.value === log.entityType)?.label || log.entityType}</span>
 					</div>
 				{:else if column.id === 'name'}
 					<span class="text-xs truncate" title={log.entityName || log.entityId || '-'}>
@@ -976,7 +997,7 @@
 						<p>
 							<Badge class="{getActionColor(selectedLog.action)} gap-1">
 								<svelte:component this={getActionIcon(selectedLog.action)} class="w-3 h-3" />
-								{selectedLog.action}
+								{actionTypes.find(a => a.value === selectedLog.action)?.label || selectedLog.action}
 							</Badge>
 						</p>
 					</div>
@@ -984,7 +1005,7 @@
 						<label class="text-sm font-medium text-muted-foreground">{m.audit_details_entity_type()}</label>
 						<p class="flex items-center gap-1">
 							<svelte:component this={getEntityIcon(selectedLog.entityType)} class="w-4 h-4 text-muted-foreground" />
-							{selectedLog.entityType}
+							{entityTypes.find(e => e.value === selectedLog.entityType)?.label || selectedLog.entityType}
 						</p>
 					</div>
 					{#if selectedLog.entityName}

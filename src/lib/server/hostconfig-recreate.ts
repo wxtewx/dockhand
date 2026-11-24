@@ -107,9 +107,9 @@ export function applyPodmanUsernsMode(
 	if (!fix) return;
 	if ('mode' in fix) {
 		hostConfig.UsernsMode = fix.mode;
-		log?.(`Restored UsernsMode "${fix.mode}" from Podman annotation (was "private")`);
+		log?.(`从 Podman 注解恢复 UsernsMode "${fix.mode}" (原值为 "private")`);
 	} else {
 		delete hostConfig.UsernsMode;
-		log?.('Dropped UsernsMode "private" - Podman rejects it without inline UID/GID mappings');
+		log?.('移除 UsernsMode "private" - Podman 在无内联 UID/GID 映射时会拒绝该配置');
 	}
 }

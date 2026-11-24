@@ -21,7 +21,7 @@ export async function refuseOwnContainer(
 	envId?: number
 ): Promise<Response | null> {
 	if (!(await isOwnContainer(containerRef, envId))) return null;
-	return json({ error: 'Only an administrator can act on the Dockhand container' }, { status: 403 });
+	return json({ error: '只有管理员可以对 Dockhand 容器执行操作' }, { status: 403 });
 }
 
 /** Whether the reference resolves to the container Dockhand itself runs in. */
